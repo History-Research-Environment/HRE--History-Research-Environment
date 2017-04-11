@@ -227,7 +227,7 @@ available option.
 
 3.  To provide plug-ins for genealogists to:
 
-    1.  Import project files created by The Master Genealogist v8.5 (and later)
+    1.  Import project files created by The Master Genealogist v8.05 (and later)
         without loss of information and loss of an ability to use that data as
         it was in TMG
 
