@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿## HRE History Research Environment
 #Towards the history of everything
 
