@@ -1,7 +1,7 @@
-## HRE HISTORY RESEARCH ENVIRONMENT
+# HRE HISTORY RESEARCH ENVIRONMENT
 Towards the history of everything
 
-# 1.1 HRE PROJECT AIMS - GENERAL
+## 1.1 HRE PROJECT AIMS - GENERAL
 
 **SUMMARY - APPLICATION GOALS:**
 
@@ -120,7 +120,7 @@ capable of supporting serious general historical research, rather than a simple
 application limited solely to the requirements of recording basic family
 history.
 
-# 1.2 HRE AIMS - DATABASE
+## 1.2 HRE AIMS - DATABASE
 
 **CHOICE OF DATABASE:**
 
@@ -147,7 +147,7 @@ available option.
 
 5.  Every record of every user data table shall have a persistent record ID.
 
-# 1.3 HRE AIMS – USER INTERFACE
+## 1.3 HRE AIMS – USER INTERFACE
 
 **USER INTERFACE:**
 
@@ -175,7 +175,7 @@ available option.
 4.  All operations that may take a long time to complete must give status
     progress back to the user.
 
-# 1.4 HRE AIMS – DATA MANAGEMENT
+## 1.4 HRE AIMS – DATA MANAGEMENT
 
 **DATA MANAGEMENT:**
 
@@ -216,7 +216,7 @@ available option.
 9.  All data management operations that may take a long time to complete must
     provide status progress back to the user.
 
-# 1.5 HRE AIMS - INTEROPERABILITY
+## 1.5 HRE AIMS - INTEROPERABILITY
 
 **INTEROPERABILITY:**
 
@@ -238,7 +238,7 @@ available option.
     4.  Import data from other genealogical programs by use of the plug-in
         concept.
 
-# 1.6 HRE IMPLEMENTATION STAGES
+## 1.6 HRE IMPLEMENTATION STAGES
 
 As this part is a complex document in its own right, refer to ‘1.6
 Implementation Stages’ in the /docs folder.
