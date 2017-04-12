@@ -88,7 +88,7 @@ Examples of such fields of research include the history of:
 
 -   botanical lineage, as in plant breeding
 
--   geographical regions, precincts, towns, villages, precincts, etc
+-   geographical regions, towns, villages, precincts, etc
 
 -   investigations and research (as in police work, experimental science, etc)
 
