@@ -1,5 +1,5 @@
 # HRE HISTORY RESEARCH ENVIRONMENT
-Towards the history of everything
+Towards a history of almost anything
 
 ## 1.1 HRE PROJECT AIMS - GENERAL
 
