@@ -37,7 +37,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1.  ECLIPSE Setup
 
--   (To be added)
+-   It is intended that HRE will be developed under the Eclipse RCP IDE using OGSi. 
+    This section is for documenting the required Eclipse setup.
+    
+    (To be added)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 2.4. **Coding Standards:**
