@@ -1,0 +1,18 @@
+﻿# Sample Code HRE 00002
+
+This folder contains an HRE starter pack, constructed within the Eclipse RCP
+IDE, as this is the intended development environment for HRE.
+
+It consists of sample code (and its required images) to setup and display the
+HRE Menu system and a simple ‘About HRE’ splash screen in Eclipse.
+
+It does conform to the HRE specifications for the menu layout for the planned
+v0.1 to v0.6 development, but is otherwise considered to be **THROW-AWAY code
+ONLY**. It was built to test the use of Eclipse as a suitable platform, NOT as a
+base for HRE development. It does not conform to any coding standard other than
+Eclipse code generation rules.
+
+It does **NOT** observe the module naming laid out in the HRE specification
+documents.
+
+It does **NOT** conform to OSGi requirements.
