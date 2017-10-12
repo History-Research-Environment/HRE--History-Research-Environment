@@ -34,47 +34,40 @@
 
 2.3. **Use of Software Tools:**
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1.  ECLIPSE Setup
+-  ECLIPSE: It is intended that HRE will be developed under the Eclipse RCP IDE 
+   using OGSi. The required Eclipse setup is defined in the notes accompanying 
+   the development versions saved in the GIT 'develop' branch.
+-  SQL Power Architect: creation of the initial H2 database definition is being 
+   performed un this tool.      
 
--   It is intended that HRE will be developed under the Eclipse RCP IDE using OGSi. 
-    The required Eclipse setup is defined in the notes accompanying the development versions saved in the GIT 'develop' branch.
-      
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 2.4. **Coding Standards:**
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1.  Java
-
--   All contributions should adhere to the Java Style Guide at
+-  Java: 
+   All contributions should adhere to the Java Style Guide at
     <https://google.github.io/styleguide/javaguide.html> or as implemented
     in the Eclipse tool.
 
     (More to be added)
 
-2.  Jython
-
--   In general, follow PEP 8 (<https://www.python.org/dev/peps/pep-0008/>).
+-  Jython
+   In general, follow PEP 8 (<https://www.python.org/dev/peps/pep-0008/>).
 
     Lines of code should not normally exceed 80 characters (please configure
     your environment to enforce that).
 
     Use **from future import** where possible to ease the transfer to Jython
     3, once it becomes available.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 2.5. **Documentation Standards:**
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1.  Source Documentation
+-  Source Documentation: Architecture and design documents are saved in the 
+   'docs' folder of the Master branch.
 
--   Architecture and design documents are saved in the 'docs' folder of the Master branch.
+-   User Feature Documentation
 
-2.  User Feature Documentation
-
--   (To be added)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  (To be added)
 
 2.6. **Test Cases for Unit & Regression Testing:**
 
