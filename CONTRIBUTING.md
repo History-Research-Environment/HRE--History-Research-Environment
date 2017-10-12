@@ -38,9 +38,8 @@
 1.  ECLIPSE Setup
 
 -   It is intended that HRE will be developed under the Eclipse RCP IDE using OGSi. 
-    This section is for documenting the required Eclipse setup.
-    
-    (To be added)
+    The required Eclipse setup is defined in the notes accompanying the development versions saved in the GIT 'develop' branch.
+      
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 2.4. **Coding Standards:**
@@ -70,7 +69,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1.  Source Documentation
 
--   (To be added)
+-   Architecture and design documents are saved in the 'docs' folder of the Master branch.
 
 2.  User Feature Documentation
 
@@ -85,3 +84,5 @@
 
 -   See
     <https://help.github.com/articles/setting-guidelines-for-repository-contributors/>
+    
+    Also see the file 'Contributing - GitHub Branch Management'.
