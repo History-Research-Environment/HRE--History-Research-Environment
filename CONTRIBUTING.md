@@ -34,11 +34,12 @@
 
 2.3. **Use of Software Tools:**
 
--  ECLIPSE: It is intended that HRE will be developed under the Eclipse RCP IDE 
-   using OGSi. The required Eclipse setup is defined in the notes accompanying 
-   the development versions saved in the GIT 'develop' branch.
--  SQL Power Architect: creation of the initial H2 database definition is being 
-   performed un this tool.      
+-  ECLIPSE: HRE will be developed under the Eclipse RCP IDE    using OGSi. 
+   The required Eclipse setup is defined in the notes accompanying the 
+   development versions saved in the GIT 'develop' branch.
+   
+-  SQL Power Architect: creation of the initial H2 database definition is  
+   performed in this tool.      
 
 
 2.4. **Coding Standards:**
@@ -50,7 +51,7 @@
 
     (More to be added)
 
--  Jython
+-  Jython: 
    In general, follow PEP 8 (<https://www.python.org/dev/peps/pep-0008/>).
 
     Lines of code should not normally exceed 80 characters (please configure
@@ -62,12 +63,11 @@
 
 2.5. **Documentation Standards:**
 
--  Source Documentation: Architecture and design documents are saved in the 
+-  Source Documentation: architecture and design documents are saved in the 
    'docs' folder of the Master branch.
 
--   User Feature Documentation
-
-  (To be added)
+-   User Feature Documentation 
+    (To be added)
 
 2.6. **Test Cases for Unit & Regression Testing:**
 
