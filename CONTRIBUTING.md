@@ -34,12 +34,18 @@
 
 2.3. **Use of Software Tools:**
 
--  ECLIPSE: HRE will be developed under the Eclipse RCP IDE    using OGSi. 
+-  ECLIPSE: HRE will be developed as an RCP under the Eclipse e4 IDE using OGSi. 
    The required Eclipse setup is defined in the notes accompanying the 
    development versions saved in the GIT 'develop' branch.
    
+   Also see the Vogella tutorials at:
+   http://www.vogella.com/tutorials/eclipse.html
+   
 -  SQL Power Architect: creation of the initial H2 database definition is  
-   performed in this tool.      
+   performed in this tool. 
+   
+   H2: the H2 database has been selected for use with HRE but this is not intended
+   to preclude use of Oracle or DB2 for very large implementations.
 
 
 2.4. **Coding Standards:**
