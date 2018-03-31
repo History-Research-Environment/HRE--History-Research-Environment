@@ -34,7 +34,7 @@
 
 2.3. **Use of Software Tools:**
 
--  ECLIPSE: HRE will be developed as an RCP under the Eclipse e4 IDE using OGSi. 
+-  ECLIPSE: HRE will be developed as an RCP under the Eclipse e4 IDE using OSGi. 
    The required Eclipse setup is defined in the notes accompanying the 
    development versions saved in the GIT 'develop' branch.
    
