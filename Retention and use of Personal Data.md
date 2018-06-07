@@ -1,6 +1,6 @@
-##Retention and use by HRE of volunteers' personal data##
+## Retention and use by HRE of volunteers' personal data ##
 
-##EU General Data Protection Regulation (GDPR)##
+## EU General Data Protection Regulation (GDPR) ##
 
 **Statement of purpose**
 
@@ -18,7 +18,7 @@
 
 6.  Unless held according to paragraph 2 above your data will be deleted on request, if your contact details no longer operate, or if the project ceases to exist, in which case you will be removed from the list of volunteers. If you do ask for deletion, that will not affect the lawfulness of any processing of your personal data prior to that date. You also retain the right of full access to your data, to require HRE to rectify any errors, and to object to any processing that you no longer agree with. All correspondence should be sent by email to info@historyresearchenvironment.org
 
-7.  Your personal data will be retained in confidence by HRE, and will not be used for any purpose other than those stated above. In addition to the board of HRE, personal data may be processed by a limited number of trusted volunteers, including HRE’s mailing list manager and its liaison & donor manager. Such trusted volunteers (who may be located outside the UK/EU, including in the US) have committed to handling all personal data in compliance with the GDPR and the UK Data Protection Act 2018. Personal data may also be held by the providers of HRE’s third-party platforms (which may also be US-based), including MailChimp, WordPress.com and GitHub.  HRE’s understanding is that insofar as they store and process personal data on behalf of HRE those third-party providers are GDPR-compliant. You will understand that HRE, as a small non-profit organisation, has to rely on the integrity of its trusted volunteers and on third-party platforms to maintain the security and integrity of your personal data, and risk should be assessed accordingly.
+7.  Your personal data will be retained in confidence by HRE, and will not be used for any purpose other than those stated above. In addition to the board of HRE, personal data may be processed by a limited number of trusted volunteers, including HREâ€™s mailing list manager and its liaison & donor manager. Such trusted volunteers (who may be located outside the UK/EU, including in the US) have committed to handling all personal data in compliance with the GDPR and the UK Data Protection Act 2018. Personal data may also be held by the providers of HREâ€™s third-party platforms (which may also be US-based), including MailChimp, WordPress.com and GitHub.  HREâ€™s understanding is that insofar as they store and process personal data on behalf of HRE those third-party providers are GDPR-compliant. You will understand that HRE, as a small non-profit organisation, has to rely on the integrity of its trusted volunteers and on third-party platforms to maintain the security and integrity of your personal data, and risk should be assessed accordingly.
 
 8.  You have the right to lodge a complaint about the manner in which HRE is handling your personal data with the UK supervisory authority, namely the Information Commissioner's Office (https://ico.org.uk).
 
