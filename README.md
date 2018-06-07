@@ -241,4 +241,4 @@ available option.
 ## 1.6 HRE IMPLEMENTATION STAGES
 
 As this part is a complex document in its own right, refer to ‘1.6
-Implementation Stages’ in the /docs folder.
+Implementation Stages’ in the /Specifications folder.
