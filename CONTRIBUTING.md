@@ -36,7 +36,8 @@
 
 -  ECLIPSE: HRE will be developed as an RCP under the Eclipse e4 IDE using OSGi. 
    The required Eclipse setup is defined in the notes accompanying the 
-   development versions saved in the GIT 'develop' branch.
+   development versions saved in the GIT 'develop' branch and further details may be
+   found in the Specifications folder at the 02.03.xx level of documents.
    
    Also see the Vogella tutorials at:
    http://www.vogella.com/tutorials/eclipse.html
