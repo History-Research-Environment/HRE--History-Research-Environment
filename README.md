@@ -231,9 +231,9 @@ available option.
         without loss of information and loss of an ability to use that data as
         it was in TMG
 
-    2.  Import GEDCOM v5.5.1 format files
+    2.  Import GEDCOM v7 format files
 
-    3.  Export data from HRE that conforms to the GEDCOM v5.5.1 specifications
+    3.  Export data from HRE that conforms to the GEDCOM v7 specifications
 
     4.  Import data from other genealogical programs by use of the plug-in
         concept.
