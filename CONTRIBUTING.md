@@ -10,7 +10,7 @@
     Attribution-ShareAlike 4.0 International licence** (CC BY-SA 4.0).
 
 -   Background material on our choice of open licences may be found on the wiki:
-    <http://hrewiki.org/index.php?title=Why_have_we_chosen_these_licences%3F>
+    <http://hrewiki.org/index.php?title=Why_have_we_chosen_these_licences>
 
     Contributing developers to HRE must release their code by default under the
     GNU Affero GPL, and contributors to the wiki, the website and project
@@ -34,18 +34,8 @@
 
 2.3. **Use of Software Tools:**
 
--  ECLIPSE: HRE will be developed as an RCP under the Eclipse e4 IDE using OSGi. 
-   The required Eclipse setup is defined in the notes accompanying the 
-   development versions saved in the GIT 'develop' branch and further details may be
-   found in the Specifications folder at the 02.03.xx level of documents.
-   
-   Also see the Vogella tutorials at:
-   http://www.vogella.com/tutorials/eclipse.html
-   
--  SQL Power Architect: creation of the initial H2 database definition is  
-   performed in this tool. 
-   
-   H2: the H2 database has been selected for use with HRE but this is not intended
+-  ECLIPSE: HRE will be developed as an RCP under the Eclipse IDE. 
+-  H2: the H2 database has been selected for use with HRE but this is not intended
    to preclude use of Oracle or DB2 for very large implementations.
 
 
@@ -56,31 +46,14 @@
     <https://google.github.io/styleguide/javaguide.html> or as implemented
     in the Eclipse tool.
 
-    (More to be added)
-
--  Jython: 
-   In general, follow PEP 8 (<https://www.python.org/dev/peps/pep-0008/>).
-
-    Lines of code should not normally exceed 80 characters (please configure
-    your environment to enforce that).
-
-    Use **from future import** where possible to ease the transfer to Jython
-    3, once it becomes available.
-
 
 2.5. **Documentation Standards:**
 
 -  Source Documentation: architecture and design documents are saved in the 
    'docs' folder of the Master branch.
 
--   User Feature Documentation 
-    (To be added)
 
-2.6. **Test Cases for Unit & Regression Testing:**
-
--   (To be added)
-
-2.7. **Submitting a Contribution:**
+2.6. **Submitting a Contribution:**
 
 -   See
     <https://help.github.com/articles/setting-guidelines-for-repository-contributors/>
