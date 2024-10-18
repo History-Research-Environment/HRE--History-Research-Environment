@@ -225,7 +225,7 @@ available option.
 2.  To provide functionality within the initial implementation that allows for
     the creation of plugin code to extend the functionality of HRE
 
-3.  To provide plug-ins for genealogists to:
+3.  To provide the ability for genealogists to:
 
     1.  Import project files created by The Master Genealogist v8.05 (and later)
         without loss of information and loss of an ability to use that data as
@@ -235,10 +235,16 @@ available option.
 
     3.  Export data from HRE that conforms to the GEDCOM v7 specifications
 
-    4.  Import data from other genealogical programs by use of the plug-in
+    4.  Potentially import data from other genealogical programs by use of the plug-in
         concept.
 
 ## 1.6 HRE IMPLEMENTATION STAGES
 
 As this part is a complex document in its own right, refer to ‘1.6
 Implementation Stages’ in the /Specifications folder.
+
+## 1.7 HRE IMPLEMENTATION ISSUES
+
+It is intended to publish HRE specification documents and code updates
+as frequently as developer resources permit. Observations, questions and Issues
+will also be responded to in as timely a manner as resources permit.
