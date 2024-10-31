@@ -15,6 +15,7 @@ package hre.tmgjava;
  * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
  * v0.01.0030 2023-08-16 - Test for length in line 303 and 309 changed to != (N. Tolleshaug)
  *			  2023-08-29 - Import year < 1000 in start/end year (N. Tolleshaug)
+ * v0.01.0031 2023-08-16 - Corrected class name in printout (N. Tolleshaug)
  *********************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -198,7 +199,8 @@ class TMGpass_Locations {
  */
 		if (placeNr > 1) {
 			vectorSize = tmgPPVtable.getVectorSize(placeNr);
-			if (vectorSize < 1) System.out.println(" TMGpass_V21c_Events - PPV Place vectorSize < 1 : " + placeNr + "/" + vectorSize);
+			if (vectorSize < 1) 
+				System.out.println(" TMGpass_Location - PPV Place vectorSize < 1 : " + placeNr + "/" + vectorSize);
 			printReport =  "" + (indexP_PID+1) + " Pers: " + personNr + " - " + eventName + " at ";
 			for (int i = 0; i < vectorSize; i++ ) {
 				placeNrInx = tmgPPVtable.findVectorInt(placeNr, i,"UID");

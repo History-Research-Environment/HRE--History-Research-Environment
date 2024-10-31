@@ -41,6 +41,7 @@ package hre.bila;
  * 			  2023-11-23 Added code add first person in empty project (N. Tolleshaug)
  * 			  2024-01-05 Added table colums adding in empty project (N. Tolleshaug)
  * 			  2024-10-11 Added initiateDateFormat(3); in add first person line 510 (N. Tolleshaug)
+ * 			  2024-10-21 Added dateFormatSelect() to addFirstPerson() (N. Tolleshaug)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -508,6 +509,8 @@ public class HBProjectHandler extends HBBusinessLayer {
 		updateTableData("ALTER TABLE T170_DATE ALTER HDATE_DETAILS CHARACTER(50)",databaseIndex);
 		
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
+		
+		dateFormatSelect(); // set dateFormat index
 
      // Activate add new first person
         HG0505AddPerson addScreen = pointPersonHandler.activateAddPerson(pointOpenProject, sexIndex);

@@ -18,6 +18,7 @@ package hre.gui;
  * 			  2024-06-27 Activated parent classes for edit and add name (N Tolleshaug)
  * 			  2024-06-28 Removed sort date fields (N Tolleshaug)
  * 			  2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
+ * 			  2024-10-25 Make date fields non-editable by keyboard (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE01 load/edit/save of Citation data
@@ -459,6 +460,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		contents.add(lbl_DateStart, "cell 0 6, align right");	//$NON-NLS-1$
 		dateStart = new JTextField(nameData[1]);
 		dateStart.setColumns(20);
+		dateStart.setEditable(false);		// ensure field cannot be edited from keyboard
+		dateStart.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		contents.add(dateStart, "cell 1 6");	//$NON-NLS-1$
 		dateStart.setText(" " + pointPersonHandler.formatDateSelector(startMainYear, startMainDetails,  //$NON-NLS-1$
 				startExtraYear, startExtraDetails).trim());
@@ -467,6 +470,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		contents.add(lbl_DateEnd, "cell 0 7, align right");		//$NON-NLS-1$
 		dateEnd = new JTextField(nameData[2]);
 		dateEnd.setColumns(20);
+		dateEnd.setEditable(false);		// ensure field cannot be edited from keyboard
+		dateEnd.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		contents.add(dateEnd, "cell 1 7");	//$NON-NLS-1$
 		dateEnd.setText(" " + pointPersonHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$
 				endExtraYear, endExtraDetails).trim());
@@ -548,23 +553,24 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 					}
 		});
 
-		// Listener for changes made in tablePerson
+		// Listener for changes made in tablePerson (name fields)
 		TableModelListener persListener = new TableModelListener() {
 			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
-				nameChanged = true;
-				TableModel nameModel = (TableModel) e.getSource();
-				int selectedRow = tablePerson.getSelectedRow();
-				// *** Temp solution
-				if (selectedRow < 0) selectedRow = 0; // Remove selected = -1
-				String nameElementData = (String) nameModel.getValueAt(selectedRow, 1);
-				if (HGlobal.DEBUG) {
-					String element = (String) nameModel.getValueAt(tablePerson.getSelectedRow(), 0);
-					System.out.println("HG0509ManagePersonName - table changed: " + tablePerson.getSelectedRow() 	//$NON-NLS-1$
-										+ " Element: " + element + "/" + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
+				// Process name data
+				if (!(tablePerson.getSelectedRow() == -1)) {
+					TableModel nameModel = (TableModel) e.getSource();
+					int selectedRow = tablePerson.getSelectedRow();
+					String nameElementData = ((String) nameModel.getValueAt(selectedRow, 1)).trim();
+					if (HGlobal.DEBUG) {
+						String element = (String) nameModel.getValueAt(tablePerson.getSelectedRow(), 0);
+						System.out.println("HG0509ManagePersonName - table changed: " + tablePerson.getSelectedRow() 	//$NON-NLS-1$
+											+ " Element: " + element + "/" + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
+					}
+					btn_Save.setEnabled(true);
+					nameChanged = true;
+					pointPersonHandler.addToNameChangeList(selectedRow, nameElementData);
 				}
-				pointPersonHandler.addToNameChangeList(selectedRow, nameElementData);
 			}
 		};
 		tablePerson.getModel().addTableModelListener(persListener);
@@ -673,7 +679,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
             protected void updateFieldState() {
             	memoChanged = true;
             	btn_Save.setEnabled(true);
-            	}
+            }
         };
         memoNameText.getDocument().addDocumentListener(textListen);
 

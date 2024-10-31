@@ -104,6 +104,11 @@ package hre.bila;
   *			   2024-10-10 - Use getChangedDateFormat() if date format changed (N. Tolleshaug)
   *			   2024-10-12 - HGlobal.reloadPS control in resetPersonSelect() (N. Tolleshaug)
   *			   2024-10-13 - Removed if (HGlobal.DEBUG) {} to if (HGlobal.DEBUG) (N. Tolleshaug)
+  *			   2024-10-19 - Removed resetPersonManager() in deletePartnerEvent (N. Tolleshaug)
+  *			   2024-10-19 - Added child with no birth in PersonManager event table (N. Tolleshaug)
+  *			   2024-10-21 - In addPartnerAssocToAssoc() removed self assoc (N. Tolleshaug)
+  *			   2024-10-24 - Added more tests for self assocs Person Manager (N. Tolleshaug)
+  *			   2024-10-29 - Added close window call to HBOpenProjectData ResetPS/PM (N. Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -170,6 +175,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
+	
 	int dateFormatIndex = 0;
 	boolean updateMonitor = true;
 
@@ -850,6 +856,8 @@ public class HBPersonHandler extends HBBusinessLayer {
 		if (personSelectScreen != null) {
 			if (HGlobal.DEBUG) 
 				System.out.println(" HBPersonHandler - Reset Person Select!");
+			pointOpenProject.removeOpenScreen(screenID);
+			personSelectScreen.dispose();
 			
 		// Set new dateformat
 		//	dateFormatSelect();
@@ -874,11 +882,14 @@ public class HBPersonHandler extends HBBusinessLayer {
  * resetPersonmanager()
  */
 	public void resetPersonManager() {
-		String screenID = "50600";
 		long personSelectedPID;
+		//String screenID = "50600";
+		String screenID = HG0506ManagePerson.screenID;
+		
 	// Remove Manage person GUI
 		if (managePersonScreen != null) {
 			managePersonScreen.dispose();
+			pointOpenProject.removeOpenScreen(screenID);
 			personSelectedPID = pointOpenProject.getSelectedPersonPID();
 			initiateManagePerson(pointOpenProject, personSelectedPID, screenID);
 		}
@@ -1597,23 +1608,23 @@ public class HBPersonHandler extends HBBusinessLayer {
 			pointOpenProject.setManagePersonPointer(managePersonScreen);
 
 		// Set size for frame
-			Dimension frameSize = pointOpenProject.pointGuiData.getFrameSize(managePersonScreen.screenID);
+			Dimension frameSize = pointOpenProject.pointGuiData.getFrameSize(HG0506ManagePerson.screenID);
 			if (frameSize != null) {
 				managePersonScreen.setSize(frameSize);
 			}
 
 		// Set location for frame
-			Point location = pointOpenProject.pointGuiData.getFramePosition(managePersonScreen.screenID);
+			Point location = pointOpenProject.pointGuiData.getFramePosition(HG0506ManagePerson.screenID);
 			if (location == null) {
 		// Sets screen top-left corner relative to parent window
 				managePersonScreen.setLocation(50,50);
 				  if (HGlobal.DEBUG) 
-					System.out.println(" initiateManagePerson - initiate location: " + managePersonScreen.screenID);
+					System.out.println(" initiateManagePerson - initiate location: " + HG0506ManagePerson.screenID);
 				
 			} else {
 				 managePersonScreen.setLocation(location);
 				 if (HGlobal.DEBUG) 
-					System.out.println(" initiateManagePerson - reset location: " + managePersonScreen.screenID);
+					System.out.println(" initiateManagePerson - reset location: " + HG0506ManagePerson.screenID);
 			}
 
 
@@ -1624,11 +1635,11 @@ public class HBPersonHandler extends HBBusinessLayer {
 		  	HG0401HREMain.mainFrame.setCursor(Cursor.getDefaultCursor());
 
 	// Mark the window as open in the T302 table
-		  	pointOpenProject.pointGuiData.setOpenStatus(managePersonScreen.screenID,
+		  	pointOpenProject.pointGuiData.setOpenStatus(HG0506ManagePerson.screenID,
 		  				pointOpenProject.pointT302_GUI_CONFIG,true);
 
 	// Set class name in GUI config data
-		  	pointOpenProject.setClassName(managePersonScreen.screenID, managePersonScreen.getClassName());
+		  	pointOpenProject.setClassName(HG0506ManagePerson.screenID, managePersonScreen.getClassName());
 
 	// register the open screen on HBOpenprojectData
 
@@ -1994,7 +2005,7 @@ public class HBPersonHandler extends HBBusinessLayer {
  */
 	public void deletePersonInTable(long personPID, HBProjectOpenData pointOpenProject) throws HBException {
 		if (HGlobal.DEBUG) 
-			System.out.println(" HBPersonHandler - delete person!");
+			System.out.println(" HBPersonHandler - delete person: " + personPID);
 		
 		ResultSet personTableRS, personNameTableRS, personElementNameRS, parentTableRS, partnerTableRS;
 		long bestNameRPID, nameOwner;
@@ -2081,7 +2092,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 		// Delete all events for person
 			deleteEventForPerson(personPID);
 
-		// Now change the focus person PID
+		// Now change the focus person PID because old focus is deleted
 			long firstPersonPID = firstRowPID(personTable, pointOpenProject);
 	        pointOpenProject.setSelectedPersonPID(firstPersonPID);
 
@@ -2240,10 +2251,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 		// End transaction
 			updateTableData("COMMIT", dataBaseIndex);
 
-		// Reset Person Select and person manager
-			//resetPersonSelect();
-			//resetPersonManager();
-
 		} catch (SQLException sqle) {
 		// Roll back transaction
 			updateTableData("ROLLBACK", dataBaseIndex);
@@ -2347,9 +2354,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 
 		// End transaction
 			updateTableData("COMMIT", dataBaseIndex);
-
-		// Reset Person person manager
-			resetPersonManager();
 
 		} catch (SQLException sqle) {
 		// Roll back transaction
@@ -2480,11 +2484,13 @@ class ManagePersonData extends HBBusinessLayer {
 
 	long proOffset = 1000000000000000L;
 	long null_RPID  = 1999999999999999L;
+	
 	private String[] locationNameStyle;
 
 	int personImage = 0;
 	long selectPersonPID, personNamePID;
 	long nameStyleRPID;
+	long selectedPersonPID; // Stores the selected person PID
 
 	String personName = " Person name";
 	int dataBaseIndex = 0;
@@ -3488,23 +3494,23 @@ class ManagePersonData extends HBBusinessLayer {
 		String personName = "", eventRoleName = "", eventName = "", eventDate = "--";
 		long partnerPersonPID = null_RPID, selectedEventPID, eventHDatePID;
 		ResultSet personPartnerSelected, partnerEventSelected;
+		this.selectedPersonPID = selectedPersonPID;
 		int index = 0;
+		int partnerEventCount = 0;
 		try {
 			selectString = setSelectSQL("*", personPartnerTable, "PRI_PARTNER_RPID = " + selectedPersonPID
 								+ " OR SEC_PARTNER_RPID = " + selectedPersonPID);
 			personPartnerSelected = requestTableData(selectString, dataBaseIndex);
 			personPartnerSelected.beforeFirst();
 			while (personPartnerSelected.next()) {
-				//if (personPartnerSelected.getBoolean("IMP_TMG")) continue; // If imported from TMG
 
 			// Find the PID for the event
 				selectedEventPID = personPartnerSelected.getLong("EVNT_RPID");
 
 			// No partner event recorded EVNT_RPID = null_RPID
-				if (selectedEventPID == null_RPID) {
+				if (selectedEventPID == null_RPID) 
 					return index;
-				}
-
+				
 				partnerType = personPartnerSelected.getInt("PARTNER_TYPE");
 				if (selectedPersonPID == personPartnerSelected.getLong("PRI_PARTNER_RPID")) {
 					eventRole = personPartnerSelected.getInt("SEC_ROLE");
@@ -3515,18 +3521,18 @@ class ManagePersonData extends HBBusinessLayer {
 				} else {
 					System.out.println(" Not found: " + selectedPersonPID);
 				}
+				
+			// Duplicated self assoc fix - 24.10.2024
+				if (selectedPersonPID == partnerPersonPID) continue; // Self assoc detected
 
 		    // Selected partner vent
 				selectString = setSelectSQL("*", eventTable, "PID = " + selectedEventPID);
 				partnerEventSelected = requestTableData(selectString, dataBaseIndex);
-				int partnerCount = 0;
+				partnerEventCount = 0;
 
 			// Test for no partner event recorded
-				partnerEventSelected.last();
-				if (partnerEventSelected.getRow() == 0) {
-					return index;
-				}
-
+				if (isResultSetEmpty(partnerEventSelected)) return index;
+				
 				partnerEventSelected.beforeFirst();
 				while (partnerEventSelected.next()) {
 					eventNumber = partnerEventSelected.getInt("EVNT_TYPE");
@@ -3548,15 +3554,17 @@ class ManagePersonData extends HBBusinessLayer {
 					asociate[4] = partnerPersonPID;
 					assocList.add(asociate);
 					index++;
+					partnerEventCount++;
 					if (HGlobal.DEBUG) 
 						dumpEvents("Associate partner", asociate);
 					
-
-					index = index + addPartnerAssocToAssoc(selectedEventPID, eventName, eventNumber, eventDate);
+				//  Must exclude self assocs *****************************
+					index = index + addPartnerAssocToAssoc(partnerPersonPID, selectedEventPID, 
+								eventName, eventNumber, eventDate);
 				}
-				if (partnerCount > 1) {
-					System.out.println(" Number of added partner events: " + partnerCount);
-				}
+				if (partnerEventCount > 1) 
+					System.out.println(" Number of added partner events: " + partnerEventCount);
+				
 			}
 			return index;
 		} catch (SQLException sqle) {
@@ -3567,14 +3575,16 @@ class ManagePersonData extends HBBusinessLayer {
 	}
 
 /**
- * addPartnerAssocToAssoc(long eventTablePID, String eventName, String eventDate)
+ * private int addPartnerAssocToAssoc()
+ * @param focusPersonPID
  * @param eventTablePID
  * @param eventName
+ * @param eventType
  * @param eventDate
  * @return
  * @throws HBException
  */
-	private int addPartnerAssocToAssoc(long eventTablePID, String eventName, int eventType, String eventDate) throws HBException {
+	private int addPartnerAssocToAssoc(long focusPersonPID, long eventTablePID, String eventName, int eventType, String eventDate) throws HBException {
 		String selectString = null;
 		ResultSet eventAssocSelected;
 		String langCode = HGlobal.dataLanguage;
@@ -3586,19 +3596,22 @@ class ManagePersonData extends HBBusinessLayer {
 			eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 			while (eventAssocSelected.next()) {
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
+				
+		// Duplicated self assoc fix - 24.10.2024
+				if (focusPersonPID == assocPersonPID || selectedPersonPID == assocPersonPID) continue; 
+				
 				assocRoleCode = eventAssocSelected.getInt("ROLE_NUM");
 				eventRole = pointLibraryResultSet.getRoleName(assocRoleCode,
 			  			eventType,
 			  			langCode,
 			  			dataBaseIndex);
-				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
+				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex).trim();
 
-				if (HGlobal.DEBUG) {
+				if (HGlobal.DEBUG) 
 					System.out.println(" Associate nr: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
 						+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRole);
-			// The focus person can also be a witness to another event
-				}
-
+					
+			// The focus person can also be a witness to another event	
 				Object[] associates = new String[4];
 				associates[0] = " " + personName.trim();
 				associates[1] = " " + eventRole.trim();
@@ -3639,42 +3652,62 @@ class ManagePersonData extends HBBusinessLayer {
 				eventRPID = personChildSelected.getLong("EVNT_RPID");
 				selectString = setSelectSQL("*", eventTable, "PID = " + eventRPID);
 				personBirthEvent = requestTableData(selectString, dataBaseIndex);
-				personBirthEvent.beforeFirst();
+				
 				int eventCount = 0;
-				while (personBirthEvent.next()) {
-					if (!eventDuplicateList.contains(personBirthEvent.getLong("PID"))) {
-						long eventPID = personBirthEvent.getLong("PID");
-						eventDuplicateList.add(personBirthEvent.getLong("PID"));
-						events = new Object[8];
-						eventRole = personBirthEvent.getInt("PRIM_ASSOC_ROLE_NUM");
-						eventNumber = personBirthEvent.getInt("EVNT_TYPE");
-						eventHDatePID = personBirthEvent.getLong("START_HDATE_RPID");
-						sortHDatePID = personBirthEvent.getLong("SORT_HDATE_RPID");
+				if (!isResultSetEmpty(personBirthEvent)) {
+			// Birth event recorded for parent relation
+					personBirthEvent.beforeFirst();
+					while (personBirthEvent.next()) {
+						if (!eventDuplicateList.contains(personBirthEvent.getLong("PID"))) {
+							long eventPID = personBirthEvent.getLong("PID");
+							eventDuplicateList.add(personBirthEvent.getLong("PID"));
+							events = new Object[8];
+							eventRole = personBirthEvent.getInt("PRIM_ASSOC_ROLE_NUM");
+							eventNumber = personBirthEvent.getInt("EVNT_TYPE");
+							eventHDatePID = personBirthEvent.getLong("START_HDATE_RPID");
+							sortHDatePID = personBirthEvent.getLong("SORT_HDATE_RPID");
+	
+							events[0] = pointLibraryResultSet.getEventName(parentType,
+															langCode, dataBaseIndex).trim();
+							events[1] = pointLibraryResultSet.exstractDate(eventHDatePID,
+															dataBaseIndex).trim();
+							events[2] = pointLibraryResultSet.getRoleName(eventRole,
+															eventNumber, langCode, dataBaseIndex).trim();
+							events[3] = pointLibraryResultSet.exstractPersonName(personPID,
+															personStyle, dataBaseIndex);
+							events[4] = "" + pointLibraryResultSet.calculateAge(eventHDatePID,
+															selectPersonPID, dataBaseIndex);
+							events[5] = "C"; // set as child event
+							events[6] = pointLibraryResultSet.exstractSortString(sortHDatePID, dataBaseIndex);
+							events[7] = eventPID;
+							eventCount++;
+							eventList.add(events);
+							index++;
+							if (HGlobal.DEBUG) 
+								dumpEvents("Child",events);
+							
+						}
+					} 
 
-						events[0] = pointLibraryResultSet.getEventName(parentType,
-														langCode, dataBaseIndex).trim();
-						events[1] = pointLibraryResultSet.exstractDate(eventHDatePID,
-														dataBaseIndex).trim();
-						events[2] = pointLibraryResultSet.getRoleName(eventRole,
-														eventNumber, langCode, dataBaseIndex).trim();
-						events[3] = pointLibraryResultSet.exstractPersonName(personPID,
-														personStyle, dataBaseIndex);
-						events[4] = "" + pointLibraryResultSet.calculateAge(eventHDatePID,
-														selectPersonPID, dataBaseIndex);
-						events[5] = "C"; // set as child event
-						events[6] = pointLibraryResultSet.exstractSortString(sortHDatePID, dataBaseIndex);
-						events[7] = eventPID;
-						eventCount++;
-						eventList.add(events);
-						index++;
-						if (HGlobal.DEBUG) 
-							dumpEvents("Child",events);
-						
-					}
-				}
-				if (eventCount > 1) {
+				} else {			
+			// No birth event recorded for child in parent relation
+					events = new Object[8];
+					events[0] = pointLibraryResultSet.getEventName(parentType,
+											langCode, dataBaseIndex).trim();
+					events[1] = "";
+					events[2] = "";
+					events[3] = pointLibraryResultSet.exstractPersonName(personPID,
+							personStyle, dataBaseIndex);
+					events[4] = "";
+					events[5] = "C"; // set as child event
+					events[6] = "";
+					events[7] = null_RPID;
+					eventCount++;
+					eventList.add(events);
+					index++;
+				}		
+				if (eventCount > 1) 
 					System.out.println(" Number of added child birth events: " + eventCount);
-				}
 			}
 			children = index;
 			return index;
@@ -3724,12 +3757,8 @@ class ManagePersonData extends HBBusinessLayer {
 				eventHDatePID = personEventSelected.getLong("START_HDATE_RPID");
 				eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 				eventType = personEventSelected.getInt("EVNT_TYPE");
-
 				eventGroup = pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
-				if (eventGroup == marrGroup || eventGroup == divorceGroup) {
-					continue;
-				}
-
+				if (eventGroup == marrGroup || eventGroup == divorceGroup) continue;
 				eventName = pointLibraryResultSet.getEventName(eventType, langCode, dataBaseIndex);
 			// Get associate persons with the events in list
 				selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + eventTablePID);
@@ -3744,11 +3773,10 @@ class ManagePersonData extends HBBusinessLayer {
 				  			dataBaseIndex);
 					personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
 
-					if (HGlobal.DEBUG) {
-						System.out.println(" Associate: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
-							+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRole);
-				// The focus person can also be a witness to another event
-					}
+					if (HGlobal.DEBUG) 
+						System.out.println(" Associate: " + witness + " Event PID: " + eventTablePID 
+								+ " Group: "+ eventGroup + " Type: " + eventType + " Eventname: " 
+								+ eventName.trim() + " Person: " + personName + " Role: " + eventRole);
 
 					Object[] associates = new String[4];
 					associates[0] = " " + personName.trim();
@@ -3782,13 +3810,10 @@ class ManagePersonData extends HBBusinessLayer {
 		int witness = 0, eventNumber = 0, eventRoleCode, selfAssocCount = 0;
 		long eventTablePID, eventPID, assocPersonPID;
 
-		//if (!pointOpenProject.getImportedProject()) {
-			associateRows = addPartnersToAssocs(selectedPersonPID, associateList); //
-			//System.out.println(" New project - Partner assocs found: " + associateRows);
-			associateRows = associateRows + addEventToAssociates(selectedPersonPID, associateList); // Def
-			//System.out.println(" New project - event assocs found: " + associateRows);
-		//} else if (HGlobal.DEBUG)
-		//	System.out.println(" Imported project - Assocs for person: " + selectedPersonPID);
+		associateRows = addPartnersToAssocs(selectedPersonPID, associateList); //
+		//System.out.println(" After addPartnersToAssocs - assocs found: " + associateRows);
+		associateRows = associateRows + addEventToAssociates(selectedPersonPID, associateList); // Def
+		//System.out.println(" After addEventToAssociates - assocs found: " + associateRows);
 
 		try {
 			selectString = setSelectSQL("*", eventAssocTable, "ASSOC_RPID = " + selectedPersonPID);
@@ -3799,9 +3824,9 @@ class ManagePersonData extends HBBusinessLayer {
 		// Get associate persons with the events in list
 				eventTablePID = personAssociateSelected.getLong("EVNT_RPID");
 
-				// Add key associate
-				associateRows = associateRows + addKeyAssocToAssoc(eventTablePID);
-
+			// Add key associate
+				associateRows = associateRows + addKeyAssocToAssoc(selectedPersonPID, eventTablePID);	
+				//System.out.println(" After addKeyAssocToAssocs - assocs found: " + associateRows);
 				selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + eventTablePID);
 				eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 				eventAssocSelected.beforeFirst();
@@ -3818,12 +3843,7 @@ class ManagePersonData extends HBBusinessLayer {
 						eventSelected = requestTableData(selectString, dataBaseIndex);
 						eventSelected.beforeFirst();
 						while (eventSelected.next()) {
-							// If new project set the assoc person to the primary assoc of the event
-							if (!pointOpenProject.getImportedProject())
-							 {
-								assocPersonPID = eventSelected.getLong("PRIM_ASSOC_RPID"); // Test for nytt prosjekt
-							}
-
+						
 							long eventHDatePID = eventSelected.getLong("START_HDATE_RPID");
 							eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 							eventNumber = eventSelected.getInt("EVNT_TYPE");
@@ -3856,16 +3876,14 @@ class ManagePersonData extends HBBusinessLayer {
 					}
 				}
 			}
-			if (HGlobal.DEBUG) {
-				if (selfAssocCount > 0) {
+			if (HGlobal.DEBUG) 
+				if (selfAssocCount > 0) 
 					System.out.println(" Number of self assocs: " + selfAssocCount);
-				}
-			}
+				
+			
 
 		// Set number of row in asscociate table
 			associateRows = associateRows + witness;
-			if (HGlobal.DEBUG) 
-				System.out.println(" Any project - Total assocs found : " + associateRows);
 			
 			associateTable = new Object[associateRows][4];
 			for (int i = 0; i < associateRows; i++) {
@@ -3876,7 +3894,7 @@ class ManagePersonData extends HBBusinessLayer {
 			}
 		// print out number of asscoated for person
 			if (HGlobal.DEBUG) 
-				System.out.println(" Person manager associate rows: " + associateRows);
+				System.out.println(" Person Manager associate table rows: " + associateRows);
 
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
@@ -3891,7 +3909,7 @@ class ManagePersonData extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-	private int addKeyAssocToAssoc(long eventTablePID) throws HBException {
+	private int addKeyAssocToAssoc(long focusPersonPID, long eventTablePID) throws HBException {
 		String selectString = null;
 		ResultSet keyAssocSelected, partnerRelationRS;
 		String langCode = HGlobal.dataLanguage;
@@ -3904,11 +3922,13 @@ class ManagePersonData extends HBBusinessLayer {
 			keyAssocSelected.first();
 			eventType = keyAssocSelected.getInt("EVNT_TYPE");
 			assocPersonPID = keyAssocSelected.getLong("PRIM_ASSOC_RPID");
+			
 			assocRoleCode = keyAssocSelected.getInt("PRIM_ASSOC_ROLE_NUM");
 			eventHDatePID = keyAssocSelected.getLong("START_HDATE_RPID");
 			eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 			eventName = pointLibraryResultSet.getEventName(eventType,
 															langCode, dataBaseIndex);
+			
 		// if partner event process partner person and roles
 			eventGroup = pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
@@ -3921,6 +3941,7 @@ class ManagePersonData extends HBBusinessLayer {
 				secPartnerPID = partnerRelationRS.getLong("SEC_PARTNER_RPID");
 				keyAssocs = 2;
 			}
+			
 			for (int i = 0; i < keyAssocs; i++) {
 				if (keyAssocs == 2) {
 					if (i == 0) {
@@ -3932,16 +3953,20 @@ class ManagePersonData extends HBBusinessLayer {
 						assocRoleCode = secRole;
 					}
 				}
+			// Detect self assoc - fix 24.10.2024	
+				if (focusPersonPID == assocPersonPID) return 0; // Self assoc detected
+				
 				eventRoleName = pointLibraryResultSet.getRoleName(assocRoleCode,
 			  			eventType,
 			  			langCode,
 			  			dataBaseIndex);
 				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
 
-				if (HGlobal.DEBUG) {
-					System.out.println(" Key Associate nr: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
-						+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRoleName);
-				}
+				if (HGlobal.DEBUG) 
+					System.out.println(" Key Associate nr: " + witness + " Event PID: " + eventTablePID
+							+ " Event group: " + eventGroup + " Type: " + eventType + " Event: " 
+							+ eventName.trim() + " Name: " + personName.trim() + " Role: " + eventRoleName);
+				
 
 				Object[] asociates = new Object[5];
 				asociates[0] = " " + personName.trim();
@@ -4365,11 +4390,11 @@ class ManagePersonNameData extends HBBusinessLayer {
  * @return nextPersonNameTablePID
  * @throws HBException
  */
-	long createPersonNameRecord(long pesonTablePID, int nameType) throws HBException {
+	long createPersonNameRecord(long personTablePID, int nameType) throws HBException {
 		this.nameEventType = nameType;
 		String selectString;
 		namePrimary = false;
-		newPersonTablePID = pesonTablePID;
+		newPersonTablePID = personTablePID;
 		newPersonNameTablePID = lastRowPID(personNameTable, dataBaseIndex) + 1;
 		personNameTableResultSet = pointOpenProject.getT402Names();
 		pointLibraryBusiness.findBaseSubTypePID(0, dataBaseIndex);
@@ -4660,11 +4685,11 @@ class ManagePersonNameData extends HBBusinessLayer {
 		ResultSet  personNameTableSet, personTableSet;
 		selectString = setSelectSQL("*", personNameTable,"PID = " + personNamePID);
 		personNameTableSet = requestTableData(selectString, dataBaseIndex);
-		//selectString = setSelectSQL("*", personTable,"PID = " + personNamePID);
 		nameStyleAndDates[0] = " No selection!";
 		nameStyleAndDates[1] = " ";
 		nameStyleAndDates[2] = " ";
 		nameStyleAndDates[3] = "1037";
+		if (HGlobal.DEBUG) System.out.println(" updateStyleAndDates - Person Name PID: " + personNamePID);
 	// Test for add name
 		if (personNamePID == null_RPID) {
 			return;
@@ -4700,8 +4725,9 @@ class ManagePersonNameData extends HBBusinessLayer {
 			} else {
 				primaryName = false;
 			}
-		} catch (SQLException hbe) {
-			throw new HBException("ManagePersonNameData - updateStyleAndDates: " + hbe.getMessage());
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("ManagePersonNameData - updateStyleAndDates: " + sqle.getMessage());
 		}
 	}
 
@@ -6128,6 +6154,7 @@ class AddPersonRecord extends HBBusinessLayer {
 		try {
 	// Start transaction handling
 			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+			
 	// Data for T403
 			newNamesTableElementsPID = lastRowPID(personNamesTableElements, dataBaseIndex) + 1;
 			selectString = setSelectSQL("*", personNamesTableElements,"");
@@ -6153,14 +6180,15 @@ class AddPersonRecord extends HBBusinessLayer {
 	            	elementNamePID++;
 	            }
 	        }
+			
+	// End transaction and COMMIT
+			updateTableData("COMMIT", dataBaseIndex);		
 
 	// Close all used result sets
-			personTableResultSet.close();
-			personNameTableResultSet.close();
+			//personTableResultSet.close();
+			//personNameTableResultSet.close();
 			personNameElementTableResultSet.close();
 
-	// End transaction and COMMIT
-			updateTableData("COMMIT", dataBaseIndex);
 			return newPersonTablePID;
 
 		} catch (HBException hbe) {

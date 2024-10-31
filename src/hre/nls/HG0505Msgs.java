@@ -16,7 +16,7 @@ public class HG0505Msgs extends NLS {
 	public static String Text_7;
 	public static String Text_8;
 	public static String Text_9;
-	
+
 	public static String Text_10;
 	public static String Text_11;
 	public static String Text_12;
@@ -43,7 +43,8 @@ public class HG0505Msgs extends NLS {
 	public static String Text_31;
 	public static String Text_32;
 	public static String Text_34;
-	
+	public static String Text_35;
+
 	// For HG0505AddPersonChild
 	public static String Text_40;
 	public static String Text_41;
@@ -51,14 +52,14 @@ public class HG0505Msgs extends NLS {
 	public static String Text_43;
 	public static String Text_44;
 	public static String Text_45;
-	
+
 	// For HG0505AddPersonParent
 	public static String Text_50;
 	public static String Text_51;
 	public static String Text_52;
 	public static String Text_53;
-	
-	// For HG0505AddPersonPartner	
+
+	// For HG0505AddPersonPartner
 	public static String Text_60;
 	public static String Text_61;
 	public static String Text_62;
@@ -66,8 +67,8 @@ public class HG0505Msgs extends NLS {
 	public static String Text_64;
 	public static String Text_65;
 	public static String Text_66;
-	
-	// For HG0505AddPersonSibling	
+
+	// For HG0505AddPersonSibling
 	public static String Text_70;
 	public static String Text_71;
 	public static String Text_72;
@@ -75,11 +76,11 @@ public class HG0505Msgs extends NLS {
 	public static String Text_74;
 	public static String Text_75;
 	public static String Text_76;
-	
+
 	public HG0505Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG0505-" + guiLanguage;  //$NON-NLS-1$
 		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, HG0505Msgs.class);			
+		NLS.initializeMessages(BUNDLE_NAME, HG0505Msgs.class);
 	}
 }

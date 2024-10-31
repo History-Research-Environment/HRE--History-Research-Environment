@@ -14,6 +14,7 @@ package hre.gui;
  *  		  2024-08-17 Fix for add partner event from main add partner (N Tolleshaug)
  * 			  2024-08-25 NLS conversion (D Ferguson)
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
+ * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  ******************************************************************************/
 
 import java.awt.Font;
@@ -110,7 +111,6 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
  ******************/
 		// Listener to copy partner date to sort date if sort date empty
 		partnerDateText.addFocusListener(new FocusAdapter() {
-            @Override
             public void focusLost(FocusEvent e) {
 				if (partnerSortDateText.getText().length() < 4)
 					partnerSortDateText.setText(partnerDateText.getText());
@@ -120,7 +120,6 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 
 		// Listener for selection within partner1 role combobox
 		comboRole1Change = new ActionListener () {
-	        @Override
 	        public void actionPerformed(ActionEvent e) {
 	        	lbl_ChosenPartnerRole1.setText(comboPartRole1.getSelectedItem().toString());
 	        }
@@ -129,7 +128,6 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 
 		// Listener for selection within partner2 role combobox
 		comboRole2Change = new ActionListener () {
-	        @Override
 	        public void actionPerformed(ActionEvent e) {
 	        	lbl_ChosenPartnerRole2.setText(comboPartRole2.getSelectedItem().toString());
 	        }
@@ -138,7 +136,6 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 
 		// ComboBox listener for partner event type and setting of partner role lists
 		comboPartnerType.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				selectedPartTypeIndex = comboPartnerType.getSelectedIndex();
 				selectedPartnerType = partnerEventType[selectedPartTypeIndex];
@@ -174,8 +171,12 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 
 		// Listener for Save button add Partner
 		btn_Save.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// Check person has a name before allowing Save to proceed
+				if (nameElementUpdates == 0) {
+					addNameErrorMessage();
+					return;
+				}
 				// if no sex has been set, throw warning msg and halt Save operation
 				for (int i = 0; i < tableFlags.getRowCount(); i++) {
 					// First, find flagIdent = 1 (Birth sex)
@@ -208,22 +209,17 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 				// Perform DB updates for all changes not yet saved
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0505AddPersonPartner");	//$NON-NLS-1$
 				try {
-				// Check if person is given name
-					if (nameElementUpdates > 0) {
-						pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
-						pointPersonHandler.addNewPerson(refText.getText());
-						selectedPartTypeIndex = comboPartnerType.getSelectedIndex();
-						selectedPartnerType = pointPersonHandler.getPartnerEventTypes()[selectedPartTypeIndex];
-						partRole1 = partnerRoleType[comboPartRole1.getSelectedIndex()];
-						partRole2 = partnerRoleType[comboPartRole2.getSelectedIndex()];
-					} else createEvent = false;
-
-					if (nameElementUpdates > 0)
-						newPartnerPID = pointPersonHandler.addNewPartner(selectedPartnerType, partRole1, partRole2);
-
+				// Do updates
+					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
+					pointPersonHandler.addNewPerson(refText.getText());
+					selectedPartTypeIndex = comboPartnerType.getSelectedIndex();
+					selectedPartnerType = pointPersonHandler.getPartnerEventTypes()[selectedPartTypeIndex];
+					partRole1 = partnerRoleType[comboPartRole1.getSelectedIndex()];
+					partRole2 = partnerRoleType[comboPartRole2.getSelectedIndex()];
+					newPartnerPID = pointPersonHandler.addNewPartner(selectedPartnerType, partRole1, partRole2);
 					createAllEvents(pointPersonHandler);
 
-					// reload preloaded result set for T401 and Person Select
+				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
 					pointPersonHandler.resetPersonSelect();

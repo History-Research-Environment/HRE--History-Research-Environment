@@ -66,6 +66,7 @@ package hre.gui;
  * v0.01.0030 2023-07-01 - Revision of Person Select table processing (N. Tolleshaug)
  * 			  2023-08-05 - Enable update status bar - on/off (N. Tolleshaug)
  * v0.01.0031 2024-03-24 - Removed right click error line 957 (N. Tolleshaug)
+ * v0.01.0031 2024-10-29 - Modified public static final String screenID = "50700" (N. Tolleshaug)
  ***************************************************************************************
  * NOTES for incomplete functionality
  * NOTE02 No code for importing saved filters
@@ -227,8 +228,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 
 		// Test translated data from T204
 		if (HGlobal.DEBUG)
+		 {
 			System.out.println("Translated texts: 0-" 					//$NON-NLS-1$
 					+ Arrays.toString(pointPersonHandler.setTranslatedData(screenID, "0", false)));		//$NON-NLS-1$
+		}
 
 		// Collect static gui texts from T204
 		String[] translatedTexts = pointPersonHandler.setTranslatedData(screenID, "0", false);			//$NON-NLS-1$
@@ -243,9 +246,14 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 
 		// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507PersonSelect");	//$NON-NLS-1$
-		if (HGlobal.TIME) HGlobalCode.timeReport("start of HG0507PerSel on thread "  				//$NON-NLS-1$
-											+ Thread.currentThread().getName());
+		if (HGlobal.writeLogs)
+		 {
+			HB0711Logging.logWrite("Action: entering HG0507PersonSelect");	//$NON-NLS-1$
+		}
+		if (HGlobal.TIME) {
+			HGlobalCode.timeReport("start of HG0507PerSel on thread "  				//$NON-NLS-1$
+												+ Thread.currentThread().getName());
+		}
 
 		// Create and Show Progress Bar
 		JFrame progFrame = new JFrame(HG05070Msgs.Text_16);
@@ -261,8 +269,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 
 		// Set pointer to progbar in Handler
 		pointPersonHandler.setPointProgBar(progBar);
-		if (HGlobal.TIME) HGlobalCode.timeReport("show HG0507PerSel progress bar on thread "  //$NON-NLS-1$
-											+ Thread.currentThread().getName());
+		if (HGlobal.TIME) {
+			HGlobalCode.timeReport("show HG0507PerSel progress bar on thread "  //$NON-NLS-1$
+												+ Thread.currentThread().getName());
+		}
 		progFrame.setVisible(true);
 
 		// Setup panel
@@ -357,7 +367,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		comboBox_View.setPreferredSize(new Dimension(300, 20));
 		comboBox_View.setToolTipText(HG05070Msgs.Text_49);
 		// If selected index > number of select items in JComboBox - reset name display index
-		if (pointOpenProject.getNameDisplayIndex() >= nameViews.length) pointOpenProject.setNameDisplayIndex(0);
+		if (pointOpenProject.getNameDisplayIndex() >= nameViews.length) {
+			pointOpenProject.setNameDisplayIndex(0);
+		}
 		comboBox_View.setSelectedIndex(pointOpenProject.getNameDisplayIndex());
 		contents.add(comboBox_View, "cell 1 2");	 		//$NON-NLS-1$
 		contents.add(btn_DisplayType, "cell 1 2, gapx 20");	//$NON-NLS-1$
@@ -434,13 +446,18 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 	         @Override
 	         protected Void doInBackground() throws Exception {
 	        	 int errorCode;
-	     		 if (HGlobal.TIME) HGlobalCode.timeReport("start of HG0507PerSel HBTreeCreator on background thread "  //$NON-NLS-1$
-	     				 + Thread.currentThread().getName());
+	     		 if (HGlobal.TIME) {
+					HGlobalCode.timeReport("start of HG0507PerSel HBTreeCreator on background thread "  //$NON-NLS-1$
+							 + Thread.currentThread().getName());
+				}
 
 	     	// Set project Name Display Index
 	     		 int nameDisplayIndex = pointOpenProject.getNameDisplayIndex();
 	     		 pointPersonHandler.setNameDisplayIndex(nameDisplayIndex);
-	     		 if (HGlobal.DEBUG) System.out.println("Name display index = " + nameDisplayIndex);	//$NON-NLS-1$
+	     		 if (HGlobal.DEBUG)
+				 {
+					System.out.println("Name display index = " + nameDisplayIndex);	//$NON-NLS-1$
+				}
 
 	     	// Initiate partners for HBTreeCreator
 	     		pointPersonHandler.enableUpdateMonitor(true);
@@ -462,8 +479,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 					 dispose();
 				 }
 
-	     		 if (HGlobal.TIME) HGlobalCode.timeReport("Start of HG0507PerSel tabledata on thread "  //$NON-NLS-1$
-	     				 + Thread.currentThread().getName());
+	     		 if (HGlobal.TIME) {
+					HGlobalCode.timeReport("Start of HG0507PerSel tabledata on thread "  //$NON-NLS-1$
+							 + Thread.currentThread().getName());
+				}
 
 	    		 tableData = pointPersonHandler.createPersonTable(tableColHeads.length,
 	    				 											tableControlData,
@@ -474,7 +493,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 					errorCloseAction();
 				 }
 
-	     		 if (HGlobal.TIME) HGlobalCode.timeReport("End of HG0507PerSel background on thread "+Thread.currentThread().getName());   //$NON-NLS-1$
+	     		 if (HGlobal.TIME)
+				 {
+					HGlobalCode.timeReport("End of HG0507PerSel background on thread "+Thread.currentThread().getName());   //$NON-NLS-1$
+				}
 		         return null;
 	         }
 
@@ -487,8 +509,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 	    // All code to be executed AFTER background thread is done
 	         @Override
 	         protected void done() {
-	        	 if (HGlobal.TIME) HGlobalCode.timeReport("start of HG0507PerSel 'done' component on thread "  //$NON-NLS-1$
-	        			 + Thread.currentThread().getName());
+	        	 if (HGlobal.TIME) {
+					HGlobalCode.timeReport("start of HG0507PerSel 'done' component on thread "  //$NON-NLS-1$
+							 + Thread.currentThread().getName());
+				}
 	        	 	publish(100);	// Set Progress bar to 100%
 					tree = pointTree.getTree();
 			        scrollTree = new JScrollPane(tree);
@@ -505,7 +529,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 
 		     // Setup table model and renderer
 				// No table data ??
-					if (tableData == null) return;
+					if (tableData == null) {
+						return;
+					}
 
 					myTableModel = new DefaultTableModel(
 		        		tableData, tableColHeads) {
@@ -587,12 +613,18 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 				HG0401HREMain.mainPane.add(personFrame);
 				personFrame.setVisible(true);
 				// Set frame position relative to other frames
-				if (position == "F") personFrame.toFront();		//$NON-NLS-1$
-					else personFrame.toBack();
+				if (position == "F") {
+					personFrame.toFront();		//$NON-NLS-1$
+				} else { //$NON-NLS-1$
+					personFrame.toBack();
+				}
 
 				// Remove the Progress Bar panel
 			    progFrame.dispose();
-			    if (HGlobal.TIME) HGlobalCode.timeReport("Completed HG0507PerSel on thread "+Thread.currentThread().getName()); //$NON-NLS-1$
+			    if (HGlobal.TIME)
+				 {
+					HGlobalCode.timeReport("Completed HG0507PerSel on thread "+Thread.currentThread().getName()); //$NON-NLS-1$
+				}
 
 			/*****************************
 			 * CREATE All ACTION LISTENERS
@@ -601,9 +633,14 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 			     personFrame.addInternalFrameListener(new InternalFrameAdapter() {
 			    	 @Override
 					public void internalFrameClosing(InternalFrameEvent e)  {
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG00507PersonSelect"); //$NON-NLS-1$
+						if (HGlobal.writeLogs)
+						 {
+							HB0711Logging.logWrite("Action: exiting HG00507PersonSelect"); //$NON-NLS-1$
+						}
 					// close reminder display
-						if (reminderDisplay != null) reminderDisplay.dispose();
+						if (reminderDisplay != null) {
+							reminderDisplay.dispose();
+						}
 
 				    // Set frame size in GUI data
 						Dimension frameSize = getSize();
@@ -641,17 +678,23 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 			            String searchValue = searchField.getText();
 			         // If Ignore Diacritics checked, remove diacritics from searchValue
 			            if (chkbox_ignoreDiacriticFind.isSelected())
-			            	searchValue = Normalizer.normalize(searchValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+						 {
+							searchValue = Normalizer.normalize(searchValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+						}
 			            findActivated = true;
 			            for (int row = 0; row <= table_Entity.getRowCount() - 1; row++) {
 			            		String tableValue = (String) table_Entity.getValueAt(row, 1);
 			            		// If Ignore Diacritics checked, remove diacritics from tableValue
 					            if (chkbox_ignoreDiacriticFind.isSelected())
-					            	tableValue = Normalizer.normalize(tableValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+								 {
+									tableValue = Normalizer.normalize(tableValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+								}
 		   	                    if (tableValue.toLowerCase().contains(searchValue.toLowerCase())) {
 		   	                    // set the found row to the middle of the scrollpane; adjusted for scroll-up or down
 		   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-		   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
+		   	                    	if (first > row) {
+										halfVisibleRows = -halfVisibleRows;
+									}
 		   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 		   	                    // set the 'found' row as selected, clear any other selection, save it
 		   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -680,18 +723,24 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 			            String searchValue = searchField.getText();
 			        // If Ignore Diacritics checked, remove diacritics from searchValue
 			            if (chkbox_ignoreDiacriticFind.isSelected())
-			            	searchValue = Normalizer.normalize(searchValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+						 {
+							searchValue = Normalizer.normalize(searchValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+						}
 			            findActivated = true;
 			            foundRow = foundRow + 1;
 			            for (int row = foundRow; row <= table_Entity.getRowCount() - 1; row++) {
 			            		String tableValue = (String) table_Entity.getValueAt(row, 1);
 			            		// If Ignore Diacritics checked, remove diacritics from tableValue
 					            if (chkbox_ignoreDiacriticFind.isSelected())
-					            	tableValue = Normalizer.normalize(tableValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+								 {
+									tableValue = Normalizer.normalize(tableValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+								}
 		   	                    if (tableValue.toLowerCase().contains(searchValue.toLowerCase())) {
 		   	                    // set the found row to the middle of the scrollpane; adjusted for scroll-up or down
 		   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-		   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
+		   	                    	if (first > row) {
+										halfVisibleRows = -halfVisibleRows;
+									}
 		   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 		   	                    // set the 'found' row as selected, clear any other selection, save it
 		   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -720,18 +769,24 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 			            String searchValue = searchField.getText();
 			        // If Ignore Diacritics checked, remove diacritics from searchValue
 			            if (chkbox_ignoreDiacriticFind.isSelected())
-			            	searchValue = Normalizer.normalize(searchValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+						 {
+							searchValue = Normalizer.normalize(searchValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+						}
 			            findActivated = true;
 			            foundRow = foundRow - 2;
 			            for (int row = foundRow; row >= 0; row--) {
 			            		String tableValue = (String) table_Entity.getValueAt(row, 1);
 			            		// If Ignore Diacritics checked, remove diacritics from tableValue
 					            if (chkbox_ignoreDiacriticFind.isSelected())
-					            	tableValue = Normalizer.normalize(tableValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+								 {
+									tableValue = Normalizer.normalize(tableValue, Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", ""); //$NON-NLS-1$ //$NON-NLS-2$
+								}
 		   	                    if (tableValue.toLowerCase().contains(searchValue.toLowerCase())) {
 		   	                    // set the found row to the middle of the scrollpane; adjusted for scroll-up or down
 		   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-		   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
+		   	                    	if (first > row) {
+										halfVisibleRows = -halfVisibleRows;
+									}
 		   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 		   	                    // set the 'found' row as selected, clear any other selection, save it
 		   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -817,14 +872,18 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 								DefaultComboBoxModel<String> comboNameTypes = new DefaultComboBoxModel<>(nameViews);
 								comboBox_View.setModel(comboNameTypes);
 					// If selected index > number of select items in JComboBox - reset name display index
-								if (pointOpenProject.getNameDisplayIndex() >= nameViews.length) pointOpenProject.setNameDisplayIndex(0);
+								if (pointOpenProject.getNameDisplayIndex() >= nameViews.length) {
+									pointOpenProject.setNameDisplayIndex(0);
+								}
 								comboBox_View.setSelectedIndex(pointOpenProject.getNameDisplayIndex());
 					// reset for next button click
 								btn_DisplayType.setText(HG05070Msgs.Text_50);		// Use Simple Formats
 								selectStyleNamesControl = false;
 							} catch (HBException hbe) {
 								if (HGlobal.DEBUG)
+								 {
 									System.out.println("HG0507PersonSelect - error loading name styles: " + hbe.getMessage());  //$NON-NLS-1$
+								}
 							}
 					// else use the translated terms for Birth-name + Surname; Surname, Birth-name and reset button
 						} else {
@@ -833,8 +892,11 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 							DefaultComboBoxModel<String> comboNameTypes = new DefaultComboBoxModel<>(nameViews);
 							comboBox_View.setModel(comboNameTypes);
 					// Set selected #1 of name display index > 1
-							if (pointOpenProject.getNameDisplayIndex() > 1) comboBox_View.setSelectedIndex(1);
-							else comboBox_View.setSelectedIndex(pointOpenProject.getNameDisplayIndex());
+							if (pointOpenProject.getNameDisplayIndex() > 1) {
+								comboBox_View.setSelectedIndex(1);
+							} else {
+								comboBox_View.setSelectedIndex(pointOpenProject.getNameDisplayIndex());
+							}
 					// reset for next button click
 							btn_DisplayType.setText(HG05070Msgs.Text_51);		// Use Name Styles
 							selectStyleNamesControl = true;
@@ -856,7 +918,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 								int viewRow = table_Entity.getSelectedRow();
 								int selectedRowInTable = table_Entity.convertRowIndexToModel(viewRow);
 						 // Return if filter location triggers select in table
-								if (selectedRowInTable == -1) return;
+								if (selectedRowInTable == -1) {
+									return;
+								}
 								personTablePID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
 								try {
 									if (!findActivated) {
@@ -864,24 +928,32 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 										personVPindex = pointViewPointHandler.findClosedVP("5300", pointOpenProject);  //$NON-NLS-1$
 										String personVPident = pointViewPointHandler.getPersonScreenID(personVPindex);
 										if (HGlobal.DEBUG)
+										 {
 											System.out.println("HG0507PersonSelect row: " + selectedRowInTable //$NON-NLS-1$
 													+ " personVPindex: " + personVPindex	//$NON-NLS-1$
 													+ " personVPident: " + personVPident	//$NON-NLS-1$
 													+ " PersonPID: " + personTablePID);		//$NON-NLS-1$
+										}
 								// Set PID for event from event list
-										if (personVPindex >= 0)
+										if (personVPindex >= 0) {
 											pointOpenProject.pointGuiData.setTableViewPointPID(personVPident, personTablePID);
-										else {
+										} else {
 											userInfoInitVP(1);
-											if (HGlobal.DEBUG)
+											if (HGlobal.DEBUG) {
 												System.out.println("HG0507PersonSelect valueChanged - personVPindex: "	//$NON-NLS-1$
 														+ personVPindex);
+											}
 										}
-									}	else findActivated = false;
+									} else {
+										findActivated = false;
+									}
 
 								// Set visible IDX for Person Select
 									pointOpenProject.pointGuiData.setVisibleIDX(screenID, selectedRowInTable + 1);
-									if (selectedRowInTable < 0) return;			// exit if listener call was caused by emptying table_User
+									if (selectedRowInTable < 0)
+									 {
+										return;			// exit if listener call was caused by emptying table_User
+									}
 									int indexPerson = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
 									String selectedPersonPID = (String) myTableModel.getValueAt(selectedRowInTable, 1);
 									pointPersonHandler.setSelectedPerson(projectName, selectedRowInTable, indexPerson, selectedPersonPID);
@@ -890,7 +962,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 									pointTree.setFocusPerson(indexPerson);
 								} catch (HBException hbe) {
 									if (HGlobal.DEBUG)
+									 {
 										System.out.println("HG0507PersonSelect - Not able to set focus person: " + hbe.getMessage());  //$NON-NLS-1$
+									}
 									JOptionPane.showMessageDialog(null, HG05070Msgs.Text_93 + hbe.getMessage(),
 											HG05070Msgs.Text_94,JOptionPane.INFORMATION_MESSAGE);
 								}
@@ -911,7 +985,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 						tablePersonPID = pointPersonHandler.getPersonTablePID(rowInTable);
 					// Open Viewpoint for selected person
 						errorCode = pointViewPointHandler.initiatePersonVP(pointOpenProject, tablePersonPID);
-						if (errorCode > 0) userInfoInitVP(errorCode);
+						if (errorCode > 0) {
+							userInfoInitVP(errorCode);
+						}
 			        }
 			      };
 				// For popupMenu item popMenu2 - show Manage Person screen
@@ -924,7 +1000,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 						tablePersonPID = pointPersonHandler.getPersonTablePID(rowInTable);
 						pointOpenProject.pointGuiData.setTableViewPointPID("50600", tablePersonPID); //$NON-NLS-1$
 						int errorCode = pointPersonHandler.initiateManagePerson(pointOpenProject, tablePersonPID, "50600" ); //$NON-NLS-1$
-						if (errorCode > 1) userInfoInitVP(errorCode);
+						if (errorCode > 1) {
+							userInfoInitVP(errorCode);
+						}
 			        }
 			      };
 				// Define a right-click popup menu to use below
@@ -948,17 +1026,23 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 							tablePersonPID = pointPersonHandler.getPersonTablePID(rowInTable);
 						// Open Viewpoint for selected person
 							errorCode = pointViewPointHandler.initiatePersonVP(pointOpenProject, tablePersonPID);
-							if (errorCode > 0) userInfoInitVP(errorCode);
+							if (errorCode > 0) {
+								userInfoInitVP(errorCode);
+							}
 		                }
 		                // if right-click
 		                if (me.getButton() == MouseEvent.BUTTON3) {
 		                	selectedRow = table_Entity.rowAtPoint(me.getPoint());
 		                // Avoid right click outside table
-		                	if (selectedRow < 0) return;	                	
+		                	if (selectedRow < 0) {
+								return;
+							}
 		                	table_Entity.addRowSelectionInterval(selectedRow, selectedRow);
 		                	int rowInTable = table_Entity.convertRowIndexToModel(selectedRow);
 		                // exit if listener call was caused by emptying table_Entity
-		                	if (rowInTable < 0) return;
+		                	if (rowInTable < 0) {
+								return;
+							}
 						// Show popup menu of all possible actions
 		                	popupMenu.show(me.getComponent(), me.getX(), me.getY());
 		                }
@@ -998,7 +1082,9 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
  */
 	private void errorCloseAction() {
 	// close reminder display
-		if (reminderDisplay != null) reminderDisplay.dispose();
+		if (reminderDisplay != null) {
+			reminderDisplay.dispose();
+		}
     // Set frame size	in GUI data
 		Dimension frameSize = getSize();
 		pointOpenProject.setSizeScreen(screenID,frameSize);
@@ -1021,7 +1107,11 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
  */
 	private String[] setColumnHeaders(Object[][] tableControl) {
 		int rows = 2;
-		for (int i = 2; i < 6; i++) if (((boolean)tableControl[i][1])) rows++;
+		for (int i = 2; i < 6; i++) {
+			if (((boolean)tableControl[i][1])) {
+				rows++;
+			}
+		}
 		String [] tableHeads = new String[rows];
 		tableHeads[0] = (String) tableControl[0][0];
 		tableHeads[1] = (String) tableControl[1][0];
@@ -1053,12 +1143,14 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 			if (selectString.trim().equals(allColumnsText2.trim())) {				// All Columns
 				// For whole table
 				sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText));	// case-insensitive unicode filter //$NON-NLS-1$
-			} else for (int i = 0; i < tableColHeads.length; i++) {
-					if (selectString.trim().equals(tableColHeads[i].trim())) {
-						// For only one column
-						sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText, i));	// case-insensitive unicode filter //$NON-NLS-1$
-						break;
-					}
+			} else { // All Columns
+				for (int i = 0; i < tableColHeads.length; i++) {
+									if (selectString.trim().equals(tableColHeads[i].trim())) {
+										// For only one column
+										sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText, i));	// case-insensitive unicode filter //$NON-NLS-1$
+										break;
+									}
+							}
 			}
 		} catch (PatternSyntaxException pse) {
 			JOptionPane.showMessageDialog(chkbox_Filter, HG05070Msgs.Text_121 						// Cannot use
@@ -1106,9 +1198,14 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		Vector<hre.bila.HBTreeCreator.GenealogyPerson> partners = pointTree.findPartners();
 		if (partners != null) {
 			for (GenealogyPerson partner : partners)
-				if (partner != null)
+			 {
+				if (partner != null) {
 					names = names + partner.getName() + "\n"; //$NON-NLS-1$
-				else names = names + " No partner name \n";   //$NON-NLS-1$
+				}
+				else {
+					names = names + " No partner name \n";   //$NON-NLS-1$
+				}
+			}
 			JOptionPane.showMessageDialog(personFrame, " " + names, HG05070Msgs.Text_101, //$NON-NLS-1$
 						 JOptionPane.PLAIN_MESSAGE);
 		}
@@ -1127,8 +1224,14 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 	// Show partner list error message
 		if (errorCode == 2) {
 			String errorText = HG05070Msgs.Text_102;						// no error
-			if (message.equals("ERR1")) errorText = HG05070Msgs.Text_103;	// No partner recorded  //$NON-NLS-1$
-			if (message.equals("ERR2")) errorText = HG05070Msgs.Text_104;	// Select a person in the tree first  //$NON-NLS-1$
+			if (message.equals("ERR1"))
+			 {
+				errorText = HG05070Msgs.Text_103;	// No partner recorded  //$NON-NLS-1$
+			}
+			if (message.equals("ERR2"))
+			 {
+				errorText = HG05070Msgs.Text_104;	// Select a person in the tree first  //$NON-NLS-1$
+			}
 			JOptionPane.showMessageDialog(tree, errorText, HG05070Msgs.Text_108, JOptionPane.INFORMATION_MESSAGE);  // Partner/Spouse:
 		}
 	}	//End userInfoTreeCreator
@@ -1158,7 +1261,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 												+ HG05070Msgs.Text_119,
 										HG05070Msgs.Text_120, JOptionPane.ERROR_MESSAGE);
 			return;
-		} else	System.out.println("HG0507PersonSelect - unidentified errorcode: " + errorCode);	//$NON-NLS-1$
+		}
+		else {
+			System.out.println("HG0507PersonSelect - unidentified errorcode: " + errorCode);	//$NON-NLS-1$
+		}
 	}	// End userInfoInitVP
 
 }  // End of HG0507PersonSelect

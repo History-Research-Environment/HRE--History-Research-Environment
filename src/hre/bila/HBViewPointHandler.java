@@ -77,6 +77,8 @@ package hre.bila;
  * 			  2024-08-10 - Updated processing Event VP person name
  * 			  2024-09-04 - PersonVP, eventVP and locationVP with key assoc (N. Tolleshaug)
  * 			  2024-09-22 - Set for eventVP partner event correct type and name (N. Tolleshaug)
+ *			  2024-10-21 - In addPartnerAssocToAssoc() removed self assoc (N. Tolleshaug)
+ *			  2024-10-24 - Added more tests for self assocs Person VP (N. Tolleshaug)
  *********************************************************************************
  * NOTE 1 - Not implemented handling of missing birth date line 1023
  * NOTE 2 - line 2996 findLocationWithImage() always return false???
@@ -148,9 +150,15 @@ public class HBViewPointHandler extends HBBusinessLayer {
  * NB! Cannot handle multiple open projects
  */
 	public void resetVPdata() {
-		for (int i = 0; i < pointPersonData.length; i++) pointPersonData[i] = null;
-		for (int i = 0; i < pointLocationData.length; i++) pointLocationData[i] = null;
-		for (int i = 0; i < pointEventData.length; i++) pointEventData[i] = null;
+		for (int i = 0; i < pointPersonData.length; i++) {
+			pointPersonData[i] = null;
+		}
+		for (int i = 0; i < pointLocationData.length; i++) {
+			pointLocationData[i] = null;
+		}
+		for (int i = 0; i < pointEventData.length; i++) {
+			pointEventData[i] = null;
+		}
 	}
 
 /**
@@ -392,9 +400,10 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				boolean open = pointT302_GUI_CONFIG.getBoolean("IS_OPEN");
 				if (ScreenId.startsWith(scrrenIDmatch)) {
 					if (!open) {
-						if (HGlobal.DEBUG)
+						if (HGlobal.DEBUG) {
 							System.out.println(" HBViewpointHandler - findClosedVP: " + ScreenId
 								+ " indexVP: " + indexVP);
+						}
 						return indexVP;
 					}
 					indexVP++;
@@ -423,9 +432,10 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				boolean open = pointT302_GUI_CONFIG.getBoolean("IS_OPEN");
 				if (ScreenId.startsWith(scrrenIDmatch)) {
 					if (open) {
-						if (HGlobal.DEBUG)
+						if (HGlobal.DEBUG) {
 							System.out.println(" HBViewpointHandler - findClosedVP: " + ScreenId
 								+ " indexVP: " + indexVP);
+						}
 						return indexVP;
 					}
 				}
@@ -453,8 +463,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				boolean open = pointT302_GUI_CONFIG.getBoolean("IS_OPEN");
 				if (screenID.equals(screenIDcode)) {
 					if (open) {
-						if (HGlobal.DEBUG)
+						if (HGlobal.DEBUG) {
 							System.out.println("HBViewpointHandler - foundOpenVP: " + screenID);
+						}
 						return true;
 					}
 				}
@@ -472,16 +483,27 @@ public class HBViewPointHandler extends HBBusinessLayer {
 	public String getPersonScreenID(int personVPnr) {
 	    String screenID = null;
     	if (personVPnr < maxPersonVPIs) {
-    		if (personVPnr == 0) screenID = "53000";
-	    	if (personVPnr == 1) screenID = "53001";
-	    	if (personVPnr == 2) screenID = "53002";
-	    	if (personVPnr == 3) screenID = "53003";
-	    	if (personVPnr == 4) screenID = "53004";
+    		if (personVPnr == 0) {
+				screenID = "53000";
+			}
+	    	if (personVPnr == 1) {
+				screenID = "53001";
+			}
+	    	if (personVPnr == 2) {
+				screenID = "53002";
+			}
+	    	if (personVPnr == 3) {
+				screenID = "53003";
+			}
+	    	if (personVPnr == 4) {
+				screenID = "53004";
+			}
 	    	return screenID;
     	} else {
-    		if (HGlobal.DEBUG)
-    			System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
+    		if (HGlobal.DEBUG) {
+				System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
     					+ personVPnr);
+			}
     		return "";
     	}
 	}
@@ -494,16 +516,27 @@ public class HBViewPointHandler extends HBBusinessLayer {
 	public String getLocationScreenID(int locationVPnr) {
 	    String screenID = null;
     	if (locationVPnr < maxLocationVPIs) {
-    		if (locationVPnr == 0) screenID = "53030";
-	    	if (locationVPnr == 1) screenID = "53031";
-	    	if (locationVPnr == 2) screenID = "53032";
-	    	if (locationVPnr == 3) screenID = "53033";
-	    	if (locationVPnr == 4) screenID = "53034";
+    		if (locationVPnr == 0) {
+				screenID = "53030";
+			}
+	    	if (locationVPnr == 1) {
+				screenID = "53031";
+			}
+	    	if (locationVPnr == 2) {
+				screenID = "53032";
+			}
+	    	if (locationVPnr == 3) {
+				screenID = "53033";
+			}
+	    	if (locationVPnr == 4) {
+				screenID = "53034";
+			}
 	    	return screenID;
     	} else {
-    		if (HGlobal.DEBUG)
-    			System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
+    		if (HGlobal.DEBUG) {
+				System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
     					+ locationVPnr);
+			}
     		return "";
     	}
 	}
@@ -516,16 +549,27 @@ public class HBViewPointHandler extends HBBusinessLayer {
 	public String getEventScreenID(int eventVPnr) {
 	    String screenID = null;
     	if (eventVPnr < maxEventVPIs) {
-    		if (eventVPnr == 0) screenID = "53060";
-	    	if (eventVPnr == 1) screenID = "53061";
-	    	if (eventVPnr == 2) screenID = "53062";
-	    	if (eventVPnr == 3) screenID = "53063";
-	    	if (eventVPnr == 4) screenID = "53064";
+    		if (eventVPnr == 0) {
+				screenID = "53060";
+			}
+	    	if (eventVPnr == 1) {
+				screenID = "53061";
+			}
+	    	if (eventVPnr == 2) {
+				screenID = "53062";
+			}
+	    	if (eventVPnr == 3) {
+				screenID = "53063";
+			}
+	    	if (eventVPnr == 4) {
+				screenID = "53064";
+			}
 	    	return screenID;
     	} else {
-    		if (HGlobal.DEBUG)
-    			System.out.println("HBViewpointHandler - getEventScreenID ERROR personVPnr: "
+    		if (HGlobal.DEBUG) {
+				System.out.println("HBViewpointHandler - getEventScreenID ERROR personVPnr: "
     					+ eventVPnr);
+			}
     		return "";
     	}
 	}
@@ -543,7 +587,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			int index = findOpenVP(searchID, pointOpenProject);
 
 		// if no more open VPs
-			if (index == -1) break;
+			if (index == -1) {
+				break;
+			}
 		    pointVPscreen = (HG0451SuperIntFrame) pointOpenProject.getWindowPointer(index);
 		    String screenID = pointVPscreen.getScreenID();
 
@@ -552,7 +598,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				pointOpenProject.closeStatusScreen(screenID);
 
 				// close reminder display
-				if (pointVPscreen.reminderDisplay != null) pointVPscreen.reminderDisplay.dispose();
+				if (pointVPscreen.reminderDisplay != null) {
+					pointVPscreen.reminderDisplay.dispose();
+				}
 
 		    // Set frame size in GUI data
 				Dimension frameSize = pointVPscreen.getSize();
@@ -578,8 +626,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			closeVPscreens(pointOpenProject, "5300", maxPersonVPIs);
 			return 0;
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("closePersonVPs() ERROR " + hbe.getMessage());
+			}
 			return 2;
 		}
 	}
@@ -605,18 +654,23 @@ public class HBViewPointHandler extends HBBusinessLayer {
 						errorCode = initiateViewPeople(pointOpenProject, personVPindex, personTablePID, windowId);
 						initiatedPersonWindows = true;
 						if (HGlobal.DEBUG)
+						 {
 							System.out.println("Main PersVP open: "  //$NON-NLS-1$
 									+ pointOpenProject.getProjectName() + " VPn: " + personVPindex  //$NON-NLS-1$
 										+ " ID: " + windowId);	 //$NON-NLS-1$
+						}
 
-						if (single) return errorCode;
+						if (single) {
+							return errorCode;
+						}
 					} else {
 						if (vpNr == 0 && !initiatedPersonWindows) {
 
 							// Find the PID for first person in table
 							long firstPersonPID = firstRowPID(personTable, pointOpenProject);
-							if (HGlobal.DEBUG)
+							if (HGlobal.DEBUG) {
 								System.out.println(" Initiate first person VP - PID: " + firstPersonPID);
+							}
 							errorCode = initiateViewPeople(pointOpenProject, 0, firstPersonPID,"53000"); //$NON-NLS-1$
 
 							// Set table PID for first person
@@ -630,7 +684,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			return 0 ;
 		} catch (HBException hbe) {
 			if (HGlobal.DEBUG)
+			 {
 				System.out.println("Main View People error:\n" + hbe.getMessage()); //$NON-NLS-1$
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("Main View People error: " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
@@ -656,12 +712,16 @@ public class HBViewPointHandler extends HBBusinessLayer {
 																  personVPindex,
 																  tablePersonPID,
 																  screenId );
-				if (errorCode > 0) return errorCode;
+				if (errorCode > 0) {
+					return errorCode;
+				}
 			} else {
 				errorCode = 1;
 				if (HGlobal.DEBUG)
+				 {
 					System.out.println(" \"Max number of open person VPs! vpnr: "
 							+ personVPindex + " Error: " + errorCode);  //$NON-NLS-1$
+				}
 			}
 			return errorCode;
     	} catch (HBException e) {
@@ -685,8 +745,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 		int personVPindex = personVPix;
 		String screenID = screenIDent;
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println("HBViewPointHandler initiateViewPeople - Person table PID: " + personTablePID);
+		}
 
 		int errorCode = 0;
 		HG0530ViewPeople viewPeopleScreen = null;
@@ -704,24 +765,28 @@ public class HBViewPointHandler extends HBBusinessLayer {
 					if (pointPersonData[i] != null) {
 						long personPID = pointPersonData[i].getPersonPID();
 						if (personTablePID == personPID) {
-							if (HGlobal.DEBUG) System.out.println("Person VP for PID exist: " + personTablePID);
+							if (HGlobal.DEBUG) {
+								System.out.println("Person VP for PID exist: " + personTablePID);
+							}
 					// Test if open
 								String screenIDtest = pointPersonData[i].getScreenID();
 								if (testOpenVP(screenIDtest, pointOpenProject)) {
-									if (HGlobal.DEBUG)
+									if (HGlobal.DEBUG) {
 										System.out.println("HBViewPointHandler - Person VP to front VPnr: "
 												+ personVPindex + " ScreenID: " + screenIDtest
 												+ " personVP-PID: " + personTablePID);
+									}
 									pointOpenProject.toFrontOpenScreen(screenIDtest);
 									return errorCode;
 
 								} else {
 									personVPindex = i;
 									screenID = screenIDtest;
-									if (HGlobal.DEBUG)
+									if (HGlobal.DEBUG) {
 										System.out.println("HBViewPointHandler - Person VP reopen VPnr: "
 												+ personVPindex + " ScreenID: " + screenIDtest
 												+ " personVP-PID: " + personTablePID);
+									}
 								}
 						}
 					}
@@ -737,8 +802,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			// Load data from database(dataBaseIndex) into ViewPeopleData
 					errorCode = pointPersonData[personVPindex].updatePersonVPtable(personTablePID, screenID);
 					if (errorCode > 0) {
-						if (errorCode == 3)
+						if (errorCode == 3) {
 							System.out.println("PersonVP Error Exhibt image: " + " PID=" + personTablePID);
+						}
 					}
 
 			// Select date format
@@ -756,7 +822,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 			// Set size for frame
 					  Dimension frameSize = pointOpenProject.pointGuiData.getFrameSize(viewPeopleScreen.screenID);
-					  if (frameSize != null) viewPeopleScreen.setSize(frameSize);
+					  if (frameSize != null) {
+						viewPeopleScreen.setSize(frameSize);
+					}
 
 			// Set location for frame
 					  Point location = pointOpenProject.pointGuiData.getFramePosition(viewPeopleScreen.screenID);
@@ -764,12 +832,14 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 			// Sets screen top-left corner relative to parent window
 						  viewPeopleScreen.setLocation((personVPindex+1)*50, (personVPindex+1)*50);
-						  if (HGlobal.DEBUG)
-							  System.out.println("HBViewPointHandler - initiateViewPeople - initiate location: " + personVPindex);
+						  if (HGlobal.DEBUG) {
+							System.out.println("HBViewPointHandler - initiateViewPeople - initiate location: " + personVPindex);
+						}
 					  } else {
 						  viewPeopleScreen.setLocation(location);
-						  if (HGlobal.DEBUG)
-							  System.out.println("HBViewPointHandler - initiateViewPeople - Reset location: " + personVPindex);
+						  if (HGlobal.DEBUG) {
+							System.out.println("HBViewPointHandler - initiateViewPeople - Reset location: " + personVPindex);
+						}
 					  }
 
 			// Set visible ID in GUI config
@@ -790,25 +860,30 @@ public class HBViewPointHandler extends HBBusinessLayer {
 		// register the open screen on HBOpenprojectData
 			  		pointOpenProject.registerOpenScreen(viewPeopleScreen);
 
-			  		if (HGlobal.DEBUG)
-			  			System.out.println("Initiate: " + viewPeopleScreen.getClassName() + " personVP() nr: "
+			  		if (HGlobal.DEBUG) {
+						System.out.println("Initiate: " + viewPeopleScreen.getClassName() + " personVP() nr: "
 			  											+ personVPindex);
+					}
 
 		// Count number of open personVP
-			  		if (personVPnr < maxPersonVPIs) pointOpenProject.countUpPersonVP();
+			  		if (personVPnr < maxPersonVPIs) {
+						pointOpenProject.countUpPersonVP();
+					}
 
 	    // return errorCode to HG0507PersonSelect/Main
 			  		//System.out.println("HBViewPointHandler - initiateViewPeople - errorCode: " + errorCode);
 		  		return errorCode;
 			} else {
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("initiateViewPeople - Max number of ViewPoints! vpnr: " + personVPindex);
+				}
 				errorCode = 1;
 			}
 			return errorCode;
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" HBViewPointHandler - initiateViewPeople error: \n" + hbe.getMessage());
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("HBViewPointHandler - initiateViewPeople error: " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
@@ -828,8 +903,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			closeVPscreens(pointOpenProject, "5303", maxLocationVPIs);
 			return 0;
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("closeLocationVPs() ERROR" + hbe.getMessage());
+			}
 			return 2;
 		}
 	}
@@ -848,7 +924,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 			for (int vpIndex = 0; vpIndex < maxLocationVPIs; vpIndex++) {
 				locationVPindex = findClosedVP("5303", pointOpenProject);  //$NON-NLS-1$
-				if (HGlobal.DEBUG) System.out.println("Main LocationVP - Test: " + locationVPindex);
+				if (HGlobal.DEBUG) {
+					System.out.println("Main LocationVP - Test: " + locationVPindex);
+				}
 				if (locationVPindex >= 0 ) {
 					String windowId = getLocationScreenID(locationVPindex);
 					long locationTablePID = pointOpenProject.pointGuiData.getTableViewPointPID(windowId);
@@ -856,23 +934,29 @@ public class HBViewPointHandler extends HBBusinessLayer {
 						errorCode = initiateViewLocation(pointOpenProject, locationTablePID, locationVPindex, windowId);
 						initiatedLocationWindows = true;
 						if (HGlobal.DEBUG)
+						 {
 							System.out.println("Main LocationVP open: "  //$NON-NLS-1$
 									+ pointOpenProject.getProjectName() + " VPindex: " + locationVPindex  //$NON-NLS-1$
 										+ " ID: " + windowId);	 //$NON-NLS-1$
-						if (single) return errorCode;
+						}
+						if (single) {
+							return errorCode;
+						}
 					} else {
 						if (vpIndex == 0 && !initiatedLocationWindows) {
 
 							// First the PID for first location in table
 							long firstLocationPID = firstRowPID(locationNameTable, pointOpenProject);
 
-							if (HGlobal.DEBUG)
+							if (HGlobal.DEBUG) {
 								System.out.println(" Initiate first location PID: " + firstLocationPID);
+							}
 
 							if (pointLibraryResultSet.
 									//selectLocationNameElements(firstLocationPID,locationNameStyle, dataBaseIndex) == null)
-									selectLocationName(firstLocationPID,locationNameStyle, dataBaseIndex).length() == 0)
-										firstLocationPID = firstLocationPID + 1;
+									selectLocationName(firstLocationPID,locationNameStyle, dataBaseIndex).length() == 0) {
+								firstLocationPID = firstLocationPID + 1;
+							}
 
 							errorCode = initiateViewLocation(pointOpenProject, firstLocationPID , 0, "53030"); //$NON-NLS-1$
 
@@ -887,7 +971,10 @@ public class HBViewPointHandler extends HBBusinessLayer {
 		// If all opened
 			return 0;
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG) System.out.println("Main View Location error:\n" + hbe.getMessage()); //$NON-NLS-1$
+			if (HGlobal.DEBUG)
+			 {
+				System.out.println("Main View Location error:\n" + hbe.getMessage()); //$NON-NLS-1$
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("Main View Location error: " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
@@ -916,10 +1003,14 @@ public class HBViewPointHandler extends HBBusinessLayer {
 						locationVPindex,
 						screenId);
 
-				if (errorCode > 0) return errorCode;
+				if (errorCode > 0) {
+					return errorCode;
+				}
 			} else {
 				if (HGlobal.DEBUG)
-						System.out.println("Max number of open location VPs! vpnr: " + locationVPindex);  //$NON-NLS-1$
+				 {
+					System.out.println("Max number of open location VPs! vpnr: " + locationVPindex);  //$NON-NLS-1$
+				}
 				errorCode = 1;
 			}
 			return errorCode;
@@ -962,20 +1053,22 @@ public class HBViewPointHandler extends HBBusinessLayer {
 					// Test if open
 								String screenIDtest = pointLocationData[i].getScreenID();
 								if (testOpenVP(screenIDtest, pointOpenProject)) {
-									if (HGlobal.DEBUG)
+									if (HGlobal.DEBUG) {
 										System.out.println(" Location VP for PID to front indexVP: "
 												+ locationVPindex + " ScreenID: " + screenIDtest
 												+ " locationVP-PID: " + locationTablePID);
+									}
 										pointOpenProject.toFrontOpenScreen(screenIDtest);
 									return errorCode;
 
 								} else {
 									locationVPindex = i;
 									screenID = screenIDtest;
-									if (HGlobal.DEBUG)
+									if (HGlobal.DEBUG) {
 										System.out.println(" Location VP for PID reopen indexVP: "
 												+ locationVPindex + " ScreenID: " + screenIDtest
 												+ " locationVP-PID: " + locationTablePID);
+									}
 								}
 						}
 					}
@@ -989,7 +1082,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			// Move nameDisplayIndex from HBOpenProjectData to ViewPeopleData
 							 pointLocationData[locationVPindex].setNameDisplayIndex(pointOpenProject.getNameDisplayIndex());
 							 errorCode = pointLocationData[locationVPindex].updateLocationVPtable(locationTablePID, screenID);
-				} else	System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
+				} else {
+					System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
+				}
 
 				 viewLocationScreen = new HG0530ViewLocation(
 						 pointOpenProject.getViewPointHandler(),
@@ -999,7 +1094,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 				// Set size for frame
 				  Dimension frameSize = pointOpenProject.pointGuiData.getFrameSize(viewLocationScreen.screenID);
-				  if (frameSize != null) viewLocationScreen.setSize(frameSize);
+				  if (frameSize != null) {
+					viewLocationScreen.setSize(frameSize);
+				}
 
 				// Set location for frame
 				  Point location = pointOpenProject.pointGuiData.getFramePosition(viewLocationScreen.screenID);
@@ -1007,13 +1104,15 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 				// Sets screen top-left corner
 					  viewLocationScreen.setLocation((locationVPindex + 1)*50, (locationVPindex + 1)*50);
-					  if (HGlobal.DEBUG)
-						  System.out.println("initiateViewLocation - initiate location: " + locationVPindex);
+					  if (HGlobal.DEBUG) {
+						System.out.println("initiateViewLocation - initiate location: " + locationVPindex);
+					}
 				  } else {
 
 					  viewLocationScreen.setLocation(location);
-					  if (HGlobal.DEBUG)
-						  System.out.println("initiateViewLocation - Reset location: " + locationVPindex);
+					  if (HGlobal.DEBUG) {
+						System.out.println("initiateViewLocation - Reset location: " + locationVPindex);
+					}
 				  }
 
 				// Set visible ID in GUI config
@@ -1035,23 +1134,28 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				  pointOpenProject.registerOpenScreen(viewLocationScreen);
 
 			// Count number of open personVP
-			  	if (locationVPnr < maxLocationVPIs) pointOpenProject.countUpLocationVP();
+			  	if (locationVPnr < maxLocationVPIs) {
+					pointOpenProject.countUpLocationVP();
+				}
 
-			   if (HGlobal.DEBUG)
-			  		System.out.println("Initiate LocationVP() nr: " + locationVPnr);
+			   if (HGlobal.DEBUG) {
+				System.out.println("Initiate LocationVP() nr: " + locationVPnr);
+			}
 
 			//return errorcode;
 				return 0;
 			} else {
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("Max number of ViewPoints! vpnr: " + locationVPindex);
+				}
 				return 1;
 			}
 
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("Error - Initiate LocationVP() nr: "
 						+ locationVPnr + "\n" + hbe.getMessage());
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("Error - Initiate LocationVP(): " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
@@ -1070,8 +1174,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			closeVPscreens(pointOpenProject, "5306", maxEventVPIs);
 			return 0;
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("closeEventVPs() ERROR" + hbe.getMessage());
+			}
 			return 2;
 		}
 	}
@@ -1096,18 +1201,23 @@ public class HBViewPointHandler extends HBBusinessLayer {
 						errorCode = initiateViewEvent(pointOpenProject, eventTablePID, eventVPindex, windowId);
 						initiatedEventWindows = true;
 						if (HGlobal.DEBUG)
+						 {
 							System.out.println("Main EventVP open: "  //$NON-NLS-1$
 									+ pointOpenProject.getProjectName() + " VPn: " + eventVPindex  //$NON-NLS-1$
 										+ " ID: " + windowId);	 //$NON-NLS-1$
+						}
 
-						if (single) return errorCode;
+						if (single) {
+							return errorCode;
+						}
 					} else {
 						if (vpNr == 0 && !initiatedEventWindows) {
 
 							// Find the PID for first event in table
 							long firstEventPID = firstRowPID(eventTable, pointOpenProject);
-							if (HGlobal.DEBUG)
+							if (HGlobal.DEBUG) {
 								System.out.println(" Initiate first event VP - PID: " + firstEventPID);
+							}
 							errorCode = initiateViewEvent(pointOpenProject, firstEventPID , 0, "53060"); //$NON-NLS-1$
 
 							// Set table PID for first person
@@ -1121,7 +1231,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			return 0;
 		} catch (HBException hbe) {
 			if (HGlobal.DEBUG)
+			 {
 				System.out.println("Main View Event error:\n" + hbe.getMessage()); //$NON-NLS-1$
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("Main View Event error: " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
@@ -1143,18 +1255,25 @@ public class HBViewPointHandler extends HBBusinessLayer {
 			if (eventVPindex >= 0 ) {
 				String screenEventId = getEventScreenID(eventVPindex);
 				pointOpenProject.pointGuiData.setTableViewPointPID(screenEventId, tableEventPID);
-				if (HGlobal.DEBUG) System.out.println("HG0530ViewPeople - Initiate Event VP nr: " 		//$NON-NLS-1$
-							+ eventVPindex + " ScreenID: " + screenEventId + " EventPID: " + tableEventPID); //$NON-NLS-1$ //$NON-NLS-2$
+				if (HGlobal.DEBUG)
+				 {
+					System.out.println("HG0530ViewPeople - Initiate Event VP nr: " 		//$NON-NLS-1$
+								+ eventVPindex + " ScreenID: " + screenEventId + " EventPID: " + tableEventPID); //$NON-NLS-1$ //$NON-NLS-2$
+				}
 				errorCode = initiateViewEvent(pointOpenProject,
 											  tableEventPID,
 											  eventVPindex,
 											  screenEventId );
 
-				if (errorCode > 0) return errorCode;
+				if (errorCode > 0) {
+					return errorCode;
+				}
 			} else {
 				errorCode = 1;
 				if (HGlobal.DEBUG)
+				 {
 					System.out.println("Illegal eventVPs! vpnr: " + eventVPindex);  //$NON-NLS-1$
+				}
 			}
 			return errorCode;
     	} catch (HBException hbe) {
@@ -1191,29 +1310,32 @@ public class HBViewPointHandler extends HBBusinessLayer {
 					// Test if open
 								String screenIDtest = pointEventData[i].getScreenID();
 								if (testOpenVP(screenIDtest, pointOpenProject)) {
-									if (HGlobal.DEBUG)
+									if (HGlobal.DEBUG) {
 										System.out.println(" Event VP for PID set to front indexVP: "
 												+ eventVPindex + " ScreenID: " + screenIDtest
 												+ " eventVP-PID: " + eventTablePID);
+									}
 										pointOpenProject.toFrontOpenScreen(screenIDtest);
 									return errorCode;
 
 								} else {
 									eventVPindex = i;
 									screenID = screenIDtest;
-									if (HGlobal.DEBUG)
+									if (HGlobal.DEBUG) {
 										System.out.println(" Event VP for PID reopen indexVP: "
 												+ eventVPindex + " ScreenID: " + screenIDtest
 												+ " eventVP-PID: " + eventTablePID);
+									}
 								}
 						}
 					}
 				}
 
 				pointEventData[eventVPindex] = new ViewEventData(pointDBlayer, dataBaseIndex, pointOpenProject);
-			  	if (HGlobal.DEBUG)
-			  		System.out.println("initiateViewEvent - eventVP() nr: "
+			  	if (HGlobal.DEBUG) {
+					System.out.println("initiateViewEvent - eventVP() nr: "
   						+ eventVPindex + " ScreenID: " + screenID + " EventPID: " + eventTablePID);
+				}
 
 			// Create eventVPData
 			  	if (dBbuild.startsWith("v22b")) {
@@ -1222,7 +1344,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 					pointEventData[eventVPindex].setNameDisplayIndex(pointOpenProject.getNameDisplayIndex());
 			    	pointEventData[eventVPindex].updateEventVPtable(eventTablePID, screenID);
 
-				} else	System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
+				} else {
+					System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
+				}
 
 			//Initiate 	HG0530ViewEvent
 				HG0401HREMain.mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -1234,7 +1358,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 		// Set size for frame
 				  Dimension frameSize = pointOpenProject.pointGuiData.getFrameSize(viewEventScreen.screenID);
-				  if (frameSize != null) viewEventScreen.setSize(frameSize);
+				  if (frameSize != null) {
+					viewEventScreen.setSize(frameSize);
+				}
 
 		// Set location for frame
 				  Point location = pointOpenProject.pointGuiData.getFramePosition(viewEventScreen.screenID);
@@ -1244,12 +1370,14 @@ public class HBViewPointHandler extends HBBusinessLayer {
 		// Sets screen top-left corner relative to parent window
 					  viewEventScreen.setLocation((eventVPindex+1)*50, (eventVPindex+1)*50);
 
-					  if (HGlobal.DEBUG)
-						  System.out.println("initiateViewPeople - initiate location: " + eventVPindex);
+					  if (HGlobal.DEBUG) {
+						System.out.println("initiateViewPeople - initiate location: " + eventVPindex);
+					}
 				  } else {
 					  viewEventScreen.setLocation(location);
-					  if (HGlobal.DEBUG)
-						  System.out.println("initiateViewPeople - Reset location: " + eventVPindex);
+					  if (HGlobal.DEBUG) {
+						System.out.println("initiateViewPeople - Reset location: " + eventVPindex);
+					}
 				  }
 
 				  viewEventScreen.setVisible(true);
@@ -1270,20 +1398,25 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 
 		// Count number of open eventVP
-			  	  if (eventVPnr < maxEventVPIs) pointOpenProject.countUpEventVP();
+			  	  if (eventVPnr < maxEventVPIs) {
+					pointOpenProject.countUpEventVP();
+				}
 
-				  if (HGlobal.DEBUG)
-					  System.out.println("Initiate EventVP() nr: " + eventVPnr);
+				  if (HGlobal.DEBUG) {
+					System.out.println("Initiate EventVP() nr: " + eventVPnr);
+				}
 
 			} else {
 				errorCode = 1;
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("Max number of ViewPoints! vpnr: " + eventVPindex);
+				}
 			}
 			return errorCode;
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("Error initiateViewEvent: " + hbe.getMessage());
+			}
 			errorCode = 2;
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("Error initiateViewEvent: " + hbe.getMessage());
@@ -1325,6 +1458,7 @@ class ViewPeopleData extends HBBusinessLayer {
 	String personName = " Person name";
 	String reference;
 	long personTablePID;
+	long selectedPersonPID; // Stores the selected person PID
 	String screenID;
 	int dataBaseIndex = 0;
 	int nrRows = 0, childRow = 0, row = 0, grandRow = 0, nameRows = 0, eventRows = 0, asociateRows = 0;
@@ -1414,14 +1548,20 @@ class ViewPeopleData extends HBBusinessLayer {
 		dateFormatSelect();
 		pointMediaHandler = pointOpenProject.getMediaHandler();
 
-		if (HGlobal.DEBUG) System.out.println("Dateformat: "
-				+ dateFormatIndex + " / " + HGlobal.dateFormat);
+		if (HGlobal.DEBUG) {
+			System.out.println("Dateformat: "
+					+ dateFormatIndex + " / " + HGlobal.dateFormat);
+		}
 	}
 
 	public void setWinessState(boolean state) throws HBException {
-        if (HGlobal.DEBUG)
-        	if (state) System.out.println(" Witness ON");
-        	else System.out.println(" Witness OFF");
+        if (HGlobal.DEBUG) {
+			if (state) {
+				System.out.println(" Witness ON");
+			} else {
+				System.out.println(" Witness OFF");
+			}
+		}
         includeWitnessEvents = state;
         prepareEventTable();
 	}
@@ -1459,8 +1599,11 @@ class ViewPeopleData extends HBBusinessLayer {
 	}
 
 	public int getNumberOfImages() {
-		if (listOfImages == null) return 0;
-		else return listOfImages.size();
+		if (listOfImages == null) {
+			return 0;
+		} else {
+			return listOfImages.size();
+		}
 	}
 
 	public Object[][] getEventTable() {
@@ -1634,17 +1777,23 @@ class ViewPeopleData extends HBBusinessLayer {
 
 	   // Person  NAME_STYLE_RPID
 			birthFatherPID = personSelected.getLong(personFatherField);
-			if (birthFatherPID != null_RPID)
+			if (birthFatherPID != null_RPID) {
 				fatherName = pointLibraryResultSet.exstractPersonName(birthFatherPID,personStyle, dataBaseIndex);
-			else fatherName = " --- ";
+			} else {
+				fatherName = " --- ";
+			}
 			birthMotherPID = personSelected.getLong(personMotherField);
-			if (birthMotherPID != null_RPID)
+			if (birthMotherPID != null_RPID) {
 				motherName = pointLibraryResultSet.exstractPersonName(birthMotherPID, personStyle, dataBaseIndex);
-			else motherName = " --- ";
+			} else {
+				motherName = " --- ";
+			}
 
 		// initiate partner list
 			partnerPID = findLastPartner(personTablePID);
-			if (partnerPID != null_RPID) preparePartnerTable(personTablePID);
+			if (partnerPID != null_RPID) {
+				preparePartnerTable(personTablePID);
+			}
 
 	    //Father
 			if (birthFatherPID != null_RPID) {
@@ -1733,8 +1882,9 @@ class ViewPeopleData extends HBBusinessLayer {
 			// Set up parent table
 			int parentCode = 0;
 			updateParentTable(personTablePID);
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" Parent table parentCode: " + parentCode);
+			}
 			if (parentCode > 0)	{
 				parentTable[0][1] = fatherName;
 				if (fatherName.trim().equals("---")) {
@@ -1843,13 +1993,17 @@ class ViewPeopleData extends HBBusinessLayer {
 			nameSelected.beforeFirst();
 			row = 0;
 			while (nameSelected.next()) {
-				if (row > 0 ) nameTable[row][0] = " Other ";
+				if (row > 0 ) {
+					nameTable[row][0] = " Other ";
+				}
 
 				if (dBbuild.startsWith("v22b")) {
 					long name_RPID = nameSelected.getLong("PID");
 					nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,
 							dataBaseIndex, personStyle);
-				} else System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
+				} else {
+					System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
+				}
 
 				long hdatePID = nameSelected.getLong("START_HDATE_RPID");
 				nameTable[row][2] = pointLibraryResultSet.exstractDate(hdatePID, dataBaseIndex);
@@ -1901,17 +2055,22 @@ class ViewPeopleData extends HBBusinessLayer {
 		ResultSet parentsSelected = requestTableData(birthSelect, dataBaseIndex);
 		parentsSelected.last();
 		tableSize = parentsSelected.getRow();
-		if (tableSize > 0)
+		if (tableSize > 0) {
 			parentTable = new Object[tableSize][3];
-		else return 1;
+		} else {
+			return 1;
+		}
 		row = 0;
 		parentsSelected.beforeFirst();
 		while (parentsSelected.next()) {
 			parentType = parentsSelected.getInt("PARENT_TYPE");
-			if (HGlobal.DEBUG) System.out.println(" Parent type: " + parentType);
+			if (HGlobal.DEBUG) {
+				System.out.println(" Parent type: " + parentType);
+			}
 			parentSurety = parentsSelected.getString("SURETY");
-			if (parentSurety.trim().length() == 0)
+			if (parentSurety.trim().length() == 0) {
 				parentSurety = "   Not set";
+			}
 			parentPID = parentsSelected.getLong("PARENT_RPID");
 			parentName =  pointLibraryResultSet.exstractPersonName(parentPID, personStyle, dataBaseIndex);
 			String typeSelect = setSelectSQL("*", eventDefnTable, "EVNT_TYPE = " + parentType
@@ -1922,17 +2081,22 @@ class ViewPeopleData extends HBBusinessLayer {
 				parentRole = " " + typesSelected.getString("EVNT_NAME");
 				parentTable[row][0] = " " + parentRole.trim();
 			} else {
-				if (parentType == 1079) parentRole = " Father (en-US)";
-				else if (parentType == 1090) parentRole = " Mother (en-US)";
-				else parentRole = "  Not found  ";
+				if (parentType == 1079) {
+					parentRole = " Father (en-US)";
+				} else if (parentType == 1090) {
+					parentRole = " Mother (en-US)";
+				} else {
+					parentRole = "  Not found  ";
+				}
 				parentTable[row][0] = parentRole.trim();
 			}
 			parentTable[row][1] = " " + parentName;
 			parentTable[row][2] = "   " + parentSurety;
 			row++;
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" Parent Role: "
 					+ parentRole + " Name: " + parentName + " Surety: " + parentSurety);
+			}
 		}
 		return errorCode;
 	}
@@ -1952,7 +2116,9 @@ class ViewPeopleData extends HBBusinessLayer {
 			partnerList.last();
 			nrRows = partnerList.getRow();
 			//System.out.println(" Number of partners: " + nrRows);
-			if (nrRows == 0) return null_RPID;
+			if (nrRows == 0) {
+				return null_RPID;
+			}
 			Object[][] partners = new Object[nrRows][3];
 			sortStrings = new String[nrRows];
 			partnerList.beforeFirst();
@@ -1980,8 +2146,12 @@ class ViewPeopleData extends HBBusinessLayer {
 			partnerTable = sortTable(partners, rowsSorted);
 			priPartner = (long) partnerTable[nrRows-1][0];
 			secPartner = (long) partnerTable[nrRows-1][1];
-			if (personPID == priPartner) return secPartner;
-			if (personPID == secPartner) return priPartner;
+			if (personPID == priPartner) {
+				return secPartner;
+			}
+			if (personPID == secPartner) {
+				return priPartner;
+			}
 		} catch (SQLException sqle) {
 			System.out.println( " HBViewPointHandler - findPartne: " + sqle.getMessage());
 			throw new HBException(" HBViewPointHandler - findPartne: " + sqle.getMessage());
@@ -2003,8 +2173,12 @@ class ViewPeopleData extends HBBusinessLayer {
 		for (int i = 0; i < nrOfPartners; i++) {
 			priPartner = (long) partnerTable[i][0];
 			secPartner = (long) partnerTable[i][1];
-			if (personPID == priPartner) partnerPID = secPartner;
-			if (personPID == secPartner) partnerPID = priPartner;
+			if (personPID == priPartner) {
+				partnerPID = secPartner;
+			}
+			if (personPID == secPartner) {
+				partnerPID = priPartner;
+			}
 			try {
 				relativesGS0Table[i+1][0]  = pointLibraryResultSet.exstractPersonName(partnerPID, personStyle, dataBaseIndex);
 				selectString = setSelectSQL("*", personTable,"PID = " + partnerPID);
@@ -2050,9 +2224,12 @@ class ViewPeopleData extends HBBusinessLayer {
 	// Add events to table
 		rowCount = rowCount + addEventToEvents(selectPersonPID, eventList);
 	// Include witness events
-		if (includeWitnessEvents) rowCount = rowCount + addWitnesToEvents(selectPersonPID, eventList);
-	//	Include list of child's
-		//if (includeCildrenEvents) rowCount = rowCount + addChildsToTable(selectPersonPID, eventList);
+		if (includeWitnessEvents)
+		 {
+			rowCount = rowCount + addWitnesToEvents(selectPersonPID, eventList);
+//	Include list of child's
+			//if (includeCildrenEvents) rowCount = rowCount + addChildsToTable(selectPersonPID, eventList);
+		}
 
 		nrRows = rowCount;
 	// Set number of events for GUI
@@ -2079,13 +2256,18 @@ class ViewPeopleData extends HBBusinessLayer {
 	// Sort the events according to HDATE SORT
 
 		if (rowCount > 0)
+		 {
 			eventsTable = sortTable(eventsData, rowsSorted);
 	// Test 2023.12.21
 		//else eventsTable[0][5] = "";
+		}
 
 	// Setup the HashMap for row to eventPID
-		if (rowsSorted != null)
-			for (int i = 0; i < rowsSorted.length; i++) eventPIDhash.put(i, eventsPIDs[rowsSorted[i]]);
+		if (rowsSorted != null) {
+			for (int i = 0; i < rowsSorted.length; i++) {
+				eventPIDhash.put(i, eventsPIDs[rowsSorted[i]]);
+			}
+		}
 
 		return nrRows;
 	}
@@ -2113,23 +2295,29 @@ class ViewPeopleData extends HBBusinessLayer {
 			while (personPartnerSelected.next()) {
 			// Find the PID for the event
 				selectedEvent = personPartnerSelected.getLong("EVNT_RPID");
-				
+
 			// No partner event recorded EVNT_RPID = null_RPID
-				if (selectedEvent == null_RPID)  return index;
-				
+				if (selectedEvent == null_RPID) {
+					return index;
+				}
+
 				partnerType = personPartnerSelected.getInt("PARTNER_TYPE");
-				if (selectedPersonPID == personPartnerSelected.getLong("PRI_PARTNER_RPID"))
+				if (selectedPersonPID == personPartnerSelected.getLong("PRI_PARTNER_RPID")) {
 					eventRole = personPartnerSelected.getInt("PRI_ROLE");
-				else if (selectedPersonPID == personPartnerSelected.getLong("SEC_PARTNER_RPID"))
+				} else if (selectedPersonPID == personPartnerSelected.getLong("SEC_PARTNER_RPID")) {
 					eventRole = personPartnerSelected.getInt("SEC_ROLE");
-				else System.out.println(" Not found: " + selectedPersonPID);
+				} else {
+					System.out.println(" Not found: " + selectedPersonPID);
+				}
 				selectString = setSelectSQL("*", eventTable, "PID = " + selectedEvent);
 				partnerEventSelected = requestTableData(selectString, dataBaseIndex);
 				int eventCount = 0;
-			// Test for no partner event recorded	
-				partnerEventSelected.last();	
-				if (partnerEventSelected.getRow() == 0) return index;
-				
+			// Test for no partner event recorded
+				partnerEventSelected.last();
+				if (partnerEventSelected.getRow() == 0) {
+					return index;
+				}
+
 				partnerEventSelected.beforeFirst();
 				while (partnerEventSelected.next()) {
 					events = new Object[7];
@@ -2137,7 +2325,11 @@ class ViewPeopleData extends HBBusinessLayer {
 					eventNumber = partnerEventSelected.getInt("EVNT_TYPE");
 					locationName_RPID = partnerEventSelected.getLong("EVNT_LOCN_RPID");
 					bestImageRPID = partnerEventSelected.getLong("BEST_IMAGE_RPID");
-					if (bestImageRPID != null_RPID) image = "*"; else image = "";
+					if (bestImageRPID != null_RPID) {
+						image = "*";
+					} else {
+						image = "";
+					}
 					eventHDatePID = partnerEventSelected.getLong("START_HDATE_RPID");
 					sortHDatePID = partnerEventSelected.getLong("SORT_HDATE_RPID");
 
@@ -2157,11 +2349,14 @@ class ViewPeopleData extends HBBusinessLayer {
 					eventList.add(events);
 					index++;
 					eventCount++;
-					
-					if (HGlobal.DEBUG) dumpEvents("Partner",events);
+
+					if (HGlobal.DEBUG) {
+						dumpEvents("Partner",events);
+					}
 				}
-				if (eventCount > 1)
+				if (eventCount > 1) {
 					System.out.println(" Number of added partner events: " + eventCount);
+				}
 			}
 			return index;
 		} catch (SQLException sqle) {
@@ -2169,7 +2364,7 @@ class ViewPeopleData extends HBBusinessLayer {
 						+ "\nSQL string: " + selectString);
 		}
 	}
-	
+
 /**
  * addPartnersToAssocs(long selectedPersonPID, ArrayList<Object[]> assocList)
  * @param selectedPersonPID
@@ -2184,8 +2379,9 @@ class ViewPeopleData extends HBBusinessLayer {
 		String personName = "", eventRoleName = "", eventName = "", eventDate = "--";
 		long partnerPersonPID = null_RPID, selectedEventPID, eventHDatePID;
 		ResultSet personPartnerSelected, partnerEventSelected;
+		this.selectedPersonPID = selectedPersonPID;
 		int index = 0;
-		
+
 	// Add the partner relations as assocs to the list
 		try {
 			selectString = setSelectSQL("*", personPartnerTable, "PRI_PARTNER_RPID = " + selectedPersonPID
@@ -2193,15 +2389,15 @@ class ViewPeopleData extends HBBusinessLayer {
 			personPartnerSelected = requestTableData(selectString, dataBaseIndex);
 			personPartnerSelected.beforeFirst();
 			while (personPartnerSelected.next()) {
-			//*************
-				//if (personPartnerSelected.getBoolean("IMP_TMG")) continue; // If imported from TMG
-			//*****************	
+
 			// Find the PID for the event
 				selectedEventPID = personPartnerSelected.getLong("EVNT_RPID");
-				
+
 			// No partner event recorded EVNT_RPID = null_RPID
-				if (selectedEventPID == null_RPID)  return index;
-				
+				if (selectedEventPID == null_RPID) {
+					return index;
+				}
+
 				partnerType = personPartnerSelected.getInt("PARTNER_TYPE");
 				if (selectedPersonPID == personPartnerSelected.getLong("PRI_PARTNER_RPID")) {
 					eventRole = personPartnerSelected.getInt("SEC_ROLE");
@@ -2209,21 +2405,28 @@ class ViewPeopleData extends HBBusinessLayer {
 				} else if (selectedPersonPID == personPartnerSelected.getLong("SEC_PARTNER_RPID")) {
 					eventRole = personPartnerSelected.getInt("PRI_ROLE");
 					partnerPersonPID = personPartnerSelected.getLong("PRI_PARTNER_RPID");
-				} else System.out.println(" Not found: " + selectedPersonPID);
+				} else {
+					System.out.println(" Not found: " + selectedPersonPID);
+				}
 				
+				// Duplicated self assoc fix - 24.10.2024
+				if (selectedPersonPID == partnerPersonPID) continue; // Self assoc detected
+
 		    // Selected partner vent
 				selectString = setSelectSQL("*", eventTable, "PID = " + selectedEventPID);
 				partnerEventSelected = requestTableData(selectString, dataBaseIndex);
 				int partnerCount = 0;
-				
-			// Test for no partner event recorded	
-				partnerEventSelected.last();	
-				if (partnerEventSelected.getRow() == 0) return index;
-				
+
+			// Test for no partner event recorded
+				partnerEventSelected.last();
+				if (partnerEventSelected.getRow() == 0) {
+					return index;
+				}
+
 				partnerEventSelected.beforeFirst();
 				while (partnerEventSelected.next()) {
 					eventNumber = partnerEventSelected.getInt("EVNT_TYPE");
-					eventHDatePID = partnerEventSelected.getLong("START_HDATE_RPID");					
+					eventHDatePID = partnerEventSelected.getLong("START_HDATE_RPID");
 					personName = pointLibraryResultSet.exstractPersonName(partnerPersonPID, personStyle, dataBaseIndex);
 					eventRoleName = pointLibraryResultSet.getRoleName(eventRole,
 														eventNumber, langCode, dataBaseIndex);
@@ -2238,15 +2441,17 @@ class ViewPeopleData extends HBBusinessLayer {
 					asociate[4] = partnerPersonPID;
 					assocList.add(asociate);
 					index++;
-					
-			// Add the assocs to the partner event to assoc list		
-					index = index + addPartnerAssocToAssoc(selectedEventPID, eventName, eventNumber, eventDate);
-					
-					if (HGlobal.DEBUG) 
+
+			// Add the assocs to the partner event to assoc list
+					index = index + addPartnerAssocToAssoc(partnerPersonPID, selectedEventPID, eventName, eventNumber, eventDate);
+
+					if (HGlobal.DEBUG) {
 						dumpEvents("Associate partner", asociate);
+					}
 				}
-				if (partnerCount > 1)
+				if (partnerCount > 1) {
 					System.out.println(" Number of added partner events: " + partnerCount);
+				}
 			}
 			return index;
 		} catch (SQLException sqle) {
@@ -2254,16 +2459,18 @@ class ViewPeopleData extends HBBusinessLayer {
 						+ "\nSQL string: " + selectString);
 		}
 	}
-	
+
 /**
- * private int addPartnerAssocToAssoc(long eventTablePID, String eventName, int eventType, String eventDate)
+ * private int addPartnerAssocToAssoc()
+ * @param focusPersonPID
  * @param eventTablePID
  * @param eventName
+ * @param eventType
  * @param eventDate
  * @return
  * @throws HBException
  */
-	private int addPartnerAssocToAssoc(long eventTablePID, String eventName, int eventType, String eventDate) throws HBException {	
+	private int addPartnerAssocToAssoc(long focusPersonPID, long eventTablePID, String eventName, int eventType, String eventDate) throws HBException {
 		String selectString = null;
 		ResultSet eventAssocSelected;
 		String langCode = HGlobal.dataLanguage;
@@ -2275,6 +2482,9 @@ class ViewPeopleData extends HBBusinessLayer {
 			eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 			while (eventAssocSelected.next()) {
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
+				// Duplicated self assoc fix - 24.10.2024
+				if (focusPersonPID == assocPersonPID || selectedPersonPID == assocPersonPID) continue; 
+				//if (focusPersonPID == assocPersonPID) continue; // Self assoc detected
 				assocRoleCode = eventAssocSelected.getInt("ROLE_NUM");
 				eventRole = pointLibraryResultSet.getRoleName(assocRoleCode,
 			  			eventType,
@@ -2282,9 +2492,10 @@ class ViewPeopleData extends HBBusinessLayer {
 			  			dataBaseIndex);
 				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
 
-				if (HGlobal.DEBUG) 
+				if (HGlobal.DEBUG) {
 					System.out.println(" Associate nr: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
 						+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRole);
+				}
 
 				Object[] asociates = new Object[5];
 				asociates[0] = " " + personName.trim();
@@ -2299,16 +2510,16 @@ class ViewPeopleData extends HBBusinessLayer {
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HBPersonHandler - addPartnerAssocToAssoc \nerror: " + sqle.getMessage());
-		} 
+		}
 	}
-	
+
 /**
  * addKeyAssocToAssoc(long eventTablePID)
  * @param eventTablePID
  * @return
  * @throws HBException
  */
-	private int addKeyAssocToAssoc(long eventTablePID) throws HBException {	
+	private int addKeyAssocToAssoc(long focusPersonPID, long eventTablePID) throws HBException {
 		String selectString = null;
 		ResultSet keyAssocSelected, partnerRelationRS;
 		String langCode = HGlobal.dataLanguage;
@@ -2326,7 +2537,7 @@ class ViewPeopleData extends HBBusinessLayer {
 			eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 			eventName = pointLibraryResultSet.getEventName(eventType,
 															langCode, dataBaseIndex);
-		// if partner event process partner person and roles	
+		// if partner event process partner person and roles
 			eventGroup = pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
 				selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
@@ -2349,16 +2560,20 @@ class ViewPeopleData extends HBBusinessLayer {
 						assocRoleCode = secRole;
 					}
 				}
+				
+				// Detect self assoc - fix 24.10.2024	
+				if (focusPersonPID == assocPersonPID) return 0; // Self assoc detected
 				eventRoleName = pointLibraryResultSet.getRoleName(assocRoleCode,
 			  			eventType,
 			  			langCode,
 			  			dataBaseIndex);
 				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
-	
-				if (HGlobal.DEBUG) 
+
+				if (HGlobal.DEBUG) {
 					System.out.println(" Key Associate nr: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
 						+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRoleName);
-	
+				}
+
 				Object[] asociates = new Object[5];
 				asociates[0] = " " + personName.trim();
 				asociates[1] = " " + eventRoleName.trim();
@@ -2368,12 +2583,12 @@ class ViewPeopleData extends HBBusinessLayer {
 				asociateList.add(asociates);
 				witness++;
 			}
-			
+
 			return witness;
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HBPersonHandler - addPartnerAssocToAssoc \nerror: " + sqle.getMessage());
-		} 
+		}
 	}
 /**
  * addEventToEvents(long selectPersonPID, ArrayList<Object[]> eventList)
@@ -2403,7 +2618,11 @@ class ViewPeopleData extends HBBusinessLayer {
 					//System.out.println(" Event list: " + selectPersonPID + "/" + eventPID + "/" + eventRole);
 					events = new Object[7];
 					bestImageRPID = eventSelected.getLong("BEST_IMAGE_RPID");
-					if (bestImageRPID != null_RPID) image = "*"; else image = "";
+					if (bestImageRPID != null_RPID) {
+						image = "*";
+					} else {
+						image = "";
+					}
 					locationName_RPID = eventSelected.getLong("EVNT_LOCN_RPID");
 					eventNumber = eventSelected.getInt("EVNT_TYPE");
 					eventRole = eventSelected.getInt("PRIM_ASSOC_ROLE_NUM");
@@ -2424,13 +2643,17 @@ class ViewPeopleData extends HBBusinessLayer {
 					eventList.add(events);
 					eventCount++;
 					index++;
-					if (HGlobal.DEBUG) dumpEvents("Event",events);
+					if (HGlobal.DEBUG) {
+						dumpEvents("Event",events);
+					}
 				}
 			}
 
-			if (HGlobal.DEBUG)
-				if (eventCount > 1)
+			if (HGlobal.DEBUG) {
+				if (eventCount > 1) {
 					System.out.println(" Number of added events: " + eventCount);
+				}
+			}
 			return index;
 		} catch (SQLException sqle) {
 			throw new HBException(" addEventToTable - SQL exception: " + sqle.getMessage()
@@ -2472,7 +2695,11 @@ class ViewPeopleData extends HBBusinessLayer {
 						events = new Object[7];
 						locationName_RPID = eventSelected.getLong("EVNT_LOCN_RPID");
 						bestImageRPID = eventSelected.getLong("BEST_IMAGE_RPID");
-						if (bestImageRPID != null_RPID) image = "*"; else image = "";
+						if (bestImageRPID != null_RPID) {
+							image = "*";
+						} else {
+							image = "";
+						}
 						eventNumber = eventSelected.getInt("EVNT_TYPE");
 						eventHDatePID = eventSelected.getLong("START_HDATE_RPID");
 						sortHDatePID = eventSelected.getLong("SORT_HDATE_RPID");
@@ -2492,11 +2719,14 @@ class ViewPeopleData extends HBBusinessLayer {
 						eventCount++;
 						index++;
 						eventList.add(events);
-						if (HGlobal.DEBUG) dumpEvents("Witness", events);
+						if (HGlobal.DEBUG) {
+							dumpEvents("Witness", events);
+						}
 					}
 				}
-				if (eventCount > 1)
+				if (eventCount > 1) {
 					System.out.println("Multiple witness events :" + eventCount);
+				}
 			}
 			return index;
 		} catch (SQLException sqle) {
@@ -2511,8 +2741,9 @@ class ViewPeopleData extends HBBusinessLayer {
  */
 	private void dumpEvents(String eventType, Object[] events) {
 		System.out.print(" Event - " + eventType + " - ");
-		for (Object event : events)
+		for (Object event : events) {
 			System.out.print(event + " / ");
+		}
 		System.out.println();
 	}
 
@@ -2530,17 +2761,16 @@ class ViewPeopleData extends HBBusinessLayer {
 		long eventTablePID, eventPID, assocPersonPID;
 		asociateList = new ArrayList<>();
 		personPIDhash = new HashMap<>();
-		
+
 	// Add partners to Assocs
-		if (HGlobal.DEBUG) System.out.println(" Imported project: " + pointOpenProject.getImportedProject());
-		//if (!pointOpenProject.getImportedProject()) {
-			asociateRows = addPartnersToAssocs(selectedPersonPID, asociateList);
-			//System.out.println(" New project - partner assocs found: " + asociateRows);
-			asociateRows = asociateRows + addEventToAssociates(selectedPersonPID, asociateList); // Def
-			//System.out.println(" New project - event assocs found: " + asociateRows);
-		//} else if (HGlobal.DEBUG) 
-		//	System.out.println(" Imported project - Assocs for person: " + selectedPersonPID);
-		
+		if (HGlobal.DEBUG) 
+			System.out.println(" Imported project: " + pointOpenProject.getImportedProject());
+
+		asociateRows = addPartnersToAssocs(selectedPersonPID, asociateList);
+		//System.out.println(" addPartnersToAssocs - partner assocs found: " + asociateRows);
+		asociateRows = asociateRows + addEventToAssociates(selectedPersonPID, asociateList); // Def
+		//System.out.println(" addEventToAssociates- event assocs found: " + asociateRows);
+
 		try {
 			selectString = setSelectSQL("*", eventAssocTable, "ASSOC_RPID = " + selectedPersonPID);
 			personAssociateSelected = requestTableData(selectString, dataBaseIndex);
@@ -2550,7 +2780,7 @@ class ViewPeopleData extends HBBusinessLayer {
 		// Get associate persons with the events in list
 				eventTablePID = personAssociateSelected.getLong("EVNT_RPID");
 		// Add key associate
-				asociateRows = asociateRows + addKeyAssocToAssoc(eventTablePID);
+				asociateRows = asociateRows + addKeyAssocToAssoc(selectedPersonPID, eventTablePID);
 				selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + eventTablePID);
 				eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 				eventAssocSelected.beforeFirst();
@@ -2559,15 +2789,12 @@ class ViewPeopleData extends HBBusinessLayer {
 					assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
 					eventRoleCode = eventAssocSelected.getInt("ROLE_NUM");
 
-				// The focus person can also be a witness to another event
-			//****************************		
-					if (assocPersonPID != selectedPersonPID) { 
+					if (assocPersonPID != selectedPersonPID) {
 				// Get event data
 						selectString = setSelectSQL("*", eventTable, "PID = " + eventPID);
 						eventSelected = requestTableData(selectString, dataBaseIndex);
 						//eventSelected.beforeFirst();
 						eventSelected.first();
-						//while (eventSelected.next()) {
 						long eventHDatePID = eventSelected.getLong("START_HDATE_RPID");
 						eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 						eventNumber = eventSelected.getInt("EVNT_TYPE");
@@ -2587,21 +2814,23 @@ class ViewPeopleData extends HBBusinessLayer {
 						asociate[4] = assocPersonPID;
 						asociateList.add(asociate);
 						assocs++;
-						//}
-						
+
 					} else {
 						selfAssocCount++;
-						if (HGlobal.DEBUG) 
+						if (HGlobal.DEBUG) {
 							System.out.println(" Self assoc: " + selfAssocCount
 														  + " Event PID: " + eventPID
 														  + " RoleCode: " + eventRoleCode
 														  + " Assoc per: " + assocPersonPID);
-					} 
+						}
+					}
 				}
 			}
-			if (HGlobal.DEBUG)
-				if (selfAssocCount > 0)
+			if (HGlobal.DEBUG) {
+				if (selfAssocCount > 0) {
 					System.out.println(" Number of self assocs: " + selfAssocCount);
+				}
+			}
 
 		// Set number of row in asscociate table
 			asociateRows = asociateRows + assocs;
@@ -2618,14 +2847,16 @@ class ViewPeopleData extends HBBusinessLayer {
 			}
 
 		// Setup the HashMap for row to personPID
-			for (int row = 0; row < personPID.length; row++) personPIDhash.put(row, personPID[row]);
+			for (int row = 0; row < personPID.length; row++) {
+				personPIDhash.put(row, personPID[row]);
+			}
 
 		} catch (SQLException sqle) {
 			throw new HBException(" prepareAssociateTable - SQL exception: " + sqle.getMessage()
 						+ "\nSQL string: " + selectString);
 		}
 	}
-	
+
 /**
  * addEventToAssociates(long selectedPersonPID, ArrayList<Object[]> assocList)
  * @param selectedPersonPID
@@ -2638,10 +2869,11 @@ class ViewPeopleData extends HBBusinessLayer {
 		String personName = "", eventRole = "", eventName = "", eventDate = "--";
 		int witness = 0, eventType = 0, eventRoleCode, eventGroup;
 		long eventTablePID, eventHDatePID, assocPersonPID;
-		if (HGlobal.DEBUG) 
+		if (HGlobal.DEBUG) {
 			System.out.println(" Imported project: " + pointOpenProject.getImportedProject());
+		}
 		try {
-			
+
 		// Get person events from T450
 			selectString = setSelectSQL("*", eventTable, "PRIM_ASSOC_RPID = " + selectedPersonPID);
 			personEventSelected = requestTableData(selectString, dataBaseIndex);
@@ -2655,10 +2887,12 @@ class ViewPeopleData extends HBBusinessLayer {
 				eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 				eventType = personEventSelected.getInt("EVNT_TYPE");
 				eventGroup = pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
-				if (eventGroup == marrGroup || eventGroup == divorceGroup) continue;
+				if (eventGroup == marrGroup || eventGroup == divorceGroup) {
+					continue;
+				}
 				eventName = pointLibraryResultSet.getEventName(eventType, langCode, dataBaseIndex);
 
-			// Get associate persons with the events in list	
+			// Get associate persons with the events in list
 				selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + eventTablePID);
 				eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 				eventAssocSelected.beforeFirst();
@@ -2670,11 +2904,13 @@ class ViewPeopleData extends HBBusinessLayer {
 				  			langCode,
 				  			dataBaseIndex);
 					personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
-		
-					if (HGlobal.DEBUG) 
+
+					if (HGlobal.DEBUG)
+					 {
 						System.out.println(" Person VP - Associate: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
 							+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRole);
 				// The focus person can also be a witness to another event
+					}
 
 					Object[] asociates = new Object[5];
 					asociates[0] = " " + personName.trim();
@@ -2687,7 +2923,7 @@ class ViewPeopleData extends HBBusinessLayer {
 				}
 			}
 			return witness;
-			
+
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException("SQL exception: " + sqle.getMessage()
@@ -2711,23 +2947,29 @@ class ViewPeopleData extends HBBusinessLayer {
 				selectString = setSelectSQL("*", dateTable, "PID = " + birthPID);
 				hdateSelected = requestTableData(selectString, dataBaseIndex);
 				hdateSelected.first();
-				if (hdateSelected.getString("MAIN_HDATE_DETAILS").startsWith("I"))
+				if (hdateSelected.getString("MAIN_HDATE_DETAILS").startsWith("I")) {
 					lifSpanString = "<?>";
-				else
+				} else {
 					lifSpanString = hdateSelected.getString("MAIN_HDATE_YEARS");
-			} else lifSpanString = "";
+				}
+			} else {
+				lifSpanString = "";
+			}
 
 		// Death Year
 			if (deathPID != null_RPID ) {
 				selectString = setSelectSQL("*", dateTable, "PID = " + deathPID);
 				hdateSelected = requestTableData(selectString, dataBaseIndex);
 				hdateSelected.first();
-				if	(hdateSelected.getString("MAIN_HDATE_DETAILS").startsWith("I"))
+				if	(hdateSelected.getString("MAIN_HDATE_DETAILS").startsWith("I")) {
 					lifSpanString = lifSpanString + " - " + "<?>";
-				else
+				} else {
 					lifSpanString = lifSpanString + " - "
 							+ hdateSelected.getString("MAIN_HDATE_YEARS");
-			} else lifSpanString = lifSpanString + " - ";
+				}
+			} else {
+				lifSpanString = lifSpanString + " - ";
+			}
 			return lifSpanString;
 		} catch (SQLException sqle) {
 			throw new HBException(" exstractLifeSpan - SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
@@ -2887,8 +3129,11 @@ class ViewPeopleData extends HBBusinessLayer {
 				ResultSet personData = requestTableData(selectSQL, dataBaseIndex);
 				personData.first();
 				flagValue = personData.getInt(flagFieldsT401[flagIdent-1]);
-				if (flagValue != -1 && flagValue < flagValueOptions.length) setting = flagValueOptions[flagValue];
-				else setting = " F-ERR";
+				if (flagValue != -1 && flagValue < flagValueOptions.length) {
+					setting = flagValueOptions[flagValue];
+				} else {
+					setting = " F-ERR";
+				}
 			} else {
 				selectSQL = setSelectSQL("*", flagSettingValues,
 											"ENTITY_RPID = " + selectedPersonPID +
@@ -2898,18 +3143,23 @@ class ViewPeopleData extends HBBusinessLayer {
 				if (flagData.getRow() > 0) {
 					flagData.first();
 					flagValue = flagData.getInt("FLAG_INDEX");
-					if (flagValue != -1 && flagValue < flagValueOptions.length) setting = flagValueOptions[flagValue];
-					else setting = " F-ERR";
-					//System.out.println(" Flag setting: " + setting +  " Value: " + flagValue + " Options: "  + flagValues);
+					if (flagValue != -1 && flagValue < flagValueOptions.length) {
+						setting = flagValueOptions[flagValue];
+					}
+					else {
+						setting = " F-ERR";
+						//System.out.println(" Flag setting: " + setting +  " Value: " + flagValue + " Options: "  + flagValues);
+					}
 				} else {
 					setting = flagValueOptions[0];
 				}
 			}
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" Flag ident: " + flagIdent
 							 + " Setting: " + setting
 							 + " Value: " + flagValue
 							 + " Options: " + flagValues);
+			}
 			return setting;
 		} catch (SQLException sqle) {
 			System.out.println(" HBPersonHandler - getFlagSetting ERROR: " + sqle.getMessage());
@@ -2950,7 +3200,7 @@ class ViewLocationData extends HBBusinessLayer {
 // HashMap index for eventPID's
 	HashMap<Integer, Long> eventPIDs;
 	HashMap<Integer, Long> personPIDs;
-	
+
 	ArrayList<Object[]> eventList;
 	HashMap<Long, Object[]> usedEventPID;
 
@@ -2981,9 +3231,13 @@ class ViewLocationData extends HBBusinessLayer {
 	}
 
 	public void setWinessState(boolean state) throws HBException {
-        if (HGlobal.DEBUG)
-        	if (state) System.out.println(" Witness ON");
-        	else System.out.println(" Witness OFF");
+        if (HGlobal.DEBUG) {
+			if (state) {
+				System.out.println(" Witness ON");
+			} else {
+				System.out.println(" Witness OFF");
+			}
+		}
         includeWitnessEvents = state;
      // Create new event table
         resetEventTable();
@@ -3010,8 +3264,11 @@ class ViewLocationData extends HBBusinessLayer {
  * @return
  */
 	public int getNumberOfImages() {
-		if (listOfImages == null) return 0;
-		else return listOfImages.size();
+		if (listOfImages == null) {
+			return 0;
+		} else {
+			return listOfImages.size();
+		}
 	}
 
 /**
@@ -3067,7 +3324,7 @@ class ViewLocationData extends HBBusinessLayer {
 		ResultSet locationNameSelected, locationSelected;
 	// Initiate index HashMap for eventPID's
 		eventPIDs = new HashMap<>();
-		
+
 	// Initiate language translation for date
 		setUpDateTranslation();
 		dateFormatSelect();
@@ -3096,17 +3353,22 @@ class ViewLocationData extends HBBusinessLayer {
 				placeName = pointLibraryResultSet
 						.selectLocationName(locationTablePID, locationNameStyle, dataBaseIndex);
 
-    		} else System.out.println("HBViewPointHandler - initiateHRElocation21a"
-    									+ " - locationNamePID == null: " + locationTablePID);
+    		} else {
+				System.out.println("HBViewPointHandler - initiateHRElocation21a"
+											+ " - locationNamePID == null: " + locationTablePID);
+			}
 
 		// Start preparing event table
 			eventList = new ArrayList<>();
-			usedEventPID = new HashMap<Long,Object[]>();
-			
-		// Include withnessed events	
-			if(includeWitnessEvents) eventRows = prepareEventWithTable(locationTablePID);
-			else eventRows = 0;
-			
+			usedEventPID = new HashMap<>();
+
+		// Include withnessed events
+			if(includeWitnessEvents) {
+				eventRows = prepareEventWithTable(locationTablePID);
+			} else {
+				eventRows = 0;
+			}
+
 		// Set add location event table
 			prepareEventTable(locationTablePID);
 
@@ -3116,8 +3378,9 @@ class ViewLocationData extends HBBusinessLayer {
 		// set up pictures for location
 			errorCode = pointMediaHandler.getAllExhibitImage(locationTablePID, locationImage, dataBaseIndex);
 
-			if (errorCode > 1)
+			if (errorCode > 1) {
 				System.out.println(" ViewLocationData - exhibittable, Image error PID: " + locationTablePID);
+			}
 
 		} catch (SQLException sqle) {
 			throw new HBException(" ViewLocationData - updateLocationVPtable - SQL exception: " + sqle.getMessage()
@@ -3132,12 +3395,15 @@ class ViewLocationData extends HBBusinessLayer {
  */
 	private void resetEventTable() throws HBException {
 		eventList = new ArrayList<>();
-		usedEventPID = new HashMap<Long,Object[]>();
-		
-	// Include withnessed events	
-		if(includeWitnessEvents) eventRows = prepareEventWithTable(locationTablePID);
-		else eventRows = 0;
-		
+		usedEventPID = new HashMap<>();
+
+	// Include withnessed events
+		if(includeWitnessEvents) {
+			eventRows = prepareEventWithTable(locationTablePID);
+		} else {
+			eventRows = 0;
+		}
+
 	// Set up event table
 		prepareEventTable(locationTablePID);
 	}
@@ -3160,15 +3426,20 @@ class ViewLocationData extends HBBusinessLayer {
 			eventsSelected = requestTableData(selectString, dataBaseIndex);
 			eventsSelected.last();
 			if (eventsSelected.getRow() > 0) {
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("Location VP - Selected Place:  "
 						+ placeName + " / Event rows: " + eventRows);
+				}
 
 				String imageMark = "";
 				eventsSelected.beforeFirst();
 				row = 0;
 				while (eventsSelected.next()) {
-					if (findLocationWithImage()) imageMark = " *";  else imageMark = "";
+					if (findLocationWithImage()) {
+						imageMark = " *";
+					} else {
+						imageMark = "";
+					}
 					int eventNumber = eventsSelected.getInt("EVNT_TYPE");
 
 				// Get first associate person
@@ -3195,18 +3466,21 @@ class ViewLocationData extends HBBusinessLayer {
 						}
 					}
 				}
-				
-				if (HGlobal.DEBUG) 
+
+				if (HGlobal.DEBUG) {
 					System.out.println(" Witness events: " + row);
-			} else 
-				if (HGlobal.DEBUG) System.out.println(" Found no events for locationTablePID: " + locationTablePID);
+				}
+			} else
+				if (HGlobal.DEBUG) {
+					System.out.println(" Found no events for locationTablePID: " + locationTablePID);
+				}
 			return row;
 		} catch (SQLException sqle) {
 			throw new HBException(" ViewLocationData - updateLocationVPtable - SQL exception: " + sqle.getMessage()
 				+ "\nSQL string: " + selectString);
 		}
 	}
-	
+
 /**
  * prepareEventTable(long locationTablePID)
  * @param locationTablePID
@@ -3226,16 +3500,21 @@ class ViewLocationData extends HBBusinessLayer {
 			eventsSelected = requestTableData(selectString, dataBaseIndex);
 			eventsSelected.last();
 			if (eventsSelected.getRow() > 0) {
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("Location VP - Selected Place:  "
 						+ placeName + " / Event rows: " + eventRows);
+				}
 
 				String imageMark = "";
 				eventsSelected.beforeFirst();
 				int row = 0;
 				while (eventsSelected.next()) {
-					if (findLocationWithImage()) imageMark = " *";  else imageMark = "";
-					if (!usedEventPID.containsKey(eventsSelected.getLong("PID"))) {				
+					if (findLocationWithImage()) {
+						imageMark = " *";
+					} else {
+						imageMark = "";
+					}
+					if (!usedEventPID.containsKey(eventsSelected.getLong("PID"))) {
 						int eventNumber = eventsSelected.getInt("EVNT_TYPE");
 						events = new Object[5];
 					// Populate table
@@ -3250,13 +3529,15 @@ class ViewLocationData extends HBBusinessLayer {
 						events[4] = eventsSelected.getLong("PID");
 						eventList.add(events);
 						row++;
-					} else 
-						if (HGlobal.DEBUG) 
+					} else
+						if (HGlobal.DEBUG) {
 							System.out.println(" DUPLICATE: " + eventsSelected.getInt("EVNT_TYPE"));
-				}	
-				
-				if (HGlobal.DEBUG) 
+						}
+				}
+
+				if (HGlobal.DEBUG) {
 					System.out.println(" Standard events: " + row);
+				}
 				eventRows = eventRows + row;
 				nrRows = eventRows;
 				eventsData = new Object[nrRows][5];
@@ -3276,13 +3557,18 @@ class ViewLocationData extends HBBusinessLayer {
 				int [] rowsSorted = pointLibraryBusiness.sorter.sort(sortStrings);
 
 			// Sort the events according to HDATE SORT
-				if (rowsSorted != null) eventsTable = sortTable(eventsData, rowsSorted);
+				if (rowsSorted != null) {
+					eventsTable = sortTable(eventsData, rowsSorted);
+				}
 
 			// Setup the HashMap for row to eventPID
-				for (int i = 0; i < eventRows; i++) eventPIDs.put(i, eventsPID[rowsSorted[i]]);
+				for (int i = 0; i < eventRows; i++) {
+					eventPIDs.put(i, eventsPID[rowsSorted[i]]);
+				}
 
-			} else if (HGlobal.DEBUG)
+			} else if (HGlobal.DEBUG) {
 				System.out.println(" Found no events for locationTablePID: " + locationTablePID);
+			}
 
 		} catch (SQLException sqle) {
 			throw new HBException(" ViewLocationData - updateLocationVPtable - SQL exception: " + sqle.getMessage()
@@ -3297,7 +3583,7 @@ class ViewLocationData extends HBBusinessLayer {
 	private boolean findLocationWithImage() {
 		return false;
 	}
-	
+
 /**
  * void personList(long locationTablePID)
  * Set data for person table
@@ -3323,7 +3609,7 @@ class ViewLocationData extends HBBusinessLayer {
 				eventPID = eventSelected.getLong("PID");
 			// Add key assocs
 				associateRows = associateRows + addKeyAssocToAssoc(eventPID, associateList);
-				
+
 				eventType = eventSelected.getInt("EVNT_TYPE");
 				eventName = " " + pointLibraryResultSet.getEventName(eventType, langCode, dataBaseIndex);
 				eventHDatePID = eventSelected.getLong("START_HDATE_RPID");
@@ -3368,21 +3654,23 @@ class ViewLocationData extends HBBusinessLayer {
 			}
 
 	  // Setup the HashMap for row to personPID
-			for (int i = 0; i < personPID.length; i++) personPIDs.put(i,personPID[i]);
+			for (int i = 0; i < personPID.length; i++) {
+				personPIDs.put(i,personPID[i]);
+			}
 
 		} catch (SQLException sqle) {
 			throw new HBException(" prepareAssocTable - SQL exception: " + sqle.getMessage()
 						+ "\nSQL string: " + selectString);
 		}
 	}
-	
+
 /**
  * addKeyAssocToAssoc(long eventTablePID)
  * @param eventTablePID
  * @return
  * @throws HBException
  */
-	private int addKeyAssocToAssoc(long eventTablePID, ArrayList<Object[]> associateList) throws HBException {	
+	private int addKeyAssocToAssoc(long eventTablePID, ArrayList<Object[]> associateList) throws HBException {
 		String selectString = null;
 		ResultSet keyAssocSelected, partnerRelationRS;
 		String langCode = HGlobal.dataLanguage;
@@ -3400,7 +3688,7 @@ class ViewLocationData extends HBBusinessLayer {
 			eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 			eventName = pointLibraryResultSet.getEventName(eventType,
 															langCode, dataBaseIndex);
-		// if partner event process partner person and roles	
+		// if partner event process partner person and roles
 			eventGroup = pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
 				selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
@@ -3428,11 +3716,12 @@ class ViewLocationData extends HBBusinessLayer {
 			  			langCode,
 			  			dataBaseIndex);
 				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personNameStyle, dataBaseIndex);
-	
-				if (HGlobal.DEBUG) 
+
+				if (HGlobal.DEBUG) {
 					System.out.println(" Key Associate nr: " + witness + " Event PID: " + eventTablePID + " Type: " + eventType
 						+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRoleName);
-	
+				}
+
 				Object[] associates = new Object[5];
 				associates[0] = " " + personName.trim();
 				associates[1] = " " + eventRoleName.trim();
@@ -3442,15 +3731,15 @@ class ViewLocationData extends HBBusinessLayer {
 				associateList.add(associates);
 				witness++;
 			}
-			
+
 			return witness;
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HBPersonHandler - addPartnerAssocToAssoc \nerror: " + sqle.getMessage());
-		} 
-	}	
-	
-	
+		}
+	}
+
+
 } // End Class ViewLocationData
 
 /**
@@ -3523,9 +3812,13 @@ class ViewEventData extends HBBusinessLayer {
  */
 
 	public void setWinessState(boolean state) throws HBException {
-        if (HGlobal.DEBUG)
-        	if (state) System.out.println(" Witness ON");
-        	else System.out.println(" Witness OFF");
+        if (HGlobal.DEBUG) {
+			if (state) {
+				System.out.println(" Witness ON");
+			} else {
+				System.out.println(" Witness OFF");
+			}
+		}
         includeWitnessEvents = state;
         prepareAssociateTable();
 	}
@@ -3580,8 +3873,8 @@ class ViewEventData extends HBBusinessLayer {
 			eventSelected = requestTableData(selectString, dataBaseIndex);
 			eventSelected.first();
 			eventNumber = eventSelected.getInt("EVNT_TYPE");
-		
-		// if partner event process partner person and roles	
+
+		// if partner event process partner person and roles
 			eventGroup = pointLibraryResultSet.getEventGroup(eventNumber, dataBaseIndex);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
 				//personTablePID = pointOpenProject.getSelectedPersonPID(); // Selected person
@@ -3601,7 +3894,7 @@ class ViewEventData extends HBBusinessLayer {
 			}
 			eventName = " " + pointLibraryResultSet.getEventName(eventNumber, langCode, dataBaseIndex).trim();
 			eventInfo = " " + eventName + " for" + personName;
-			
+
 		// Find location for event
 			locationNameRPID = eventSelected.getLong("EVNT_LOCN_RPID");
 			eventPlace = pointLibraryResultSet.selectLocationName(locationNameRPID,
@@ -3615,8 +3908,9 @@ class ViewEventData extends HBBusinessLayer {
 
 	// Set up images
 			errorCode = pointMediaHandler.getAllExhibitImage(eventTablePID, eventImage, dataBaseIndex);
-			if (errorCode > 1)
+			if (errorCode > 1) {
 				System.out.println(" HBViewPointHandler - ViewEventData - exhibittable, Image error PID: " + eventTablePID);
+			}
 
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
@@ -3647,16 +3941,16 @@ class ViewEventData extends HBBusinessLayer {
 		long eventPID, assocPersonPID, eventHDatePID;
 		personPIDs = new HashMap<>();
 		try {
-		
+
 		// Add key assoc to list
 			numberOfAssociates = addKeyAssocToAssoc(eventTablePID, associateList);
-			
-		// Select the associte person for the event	
+
+		// Select the associte person for the event
 			selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + eventTablePID);
 			eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 			eventAssocSelected.beforeFirst();
 			while (eventAssocSelected.next()) {
-				eventPID = eventAssocSelected.getLong("EVNT_RPID");				
+				eventPID = eventAssocSelected.getLong("EVNT_RPID");
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
 				eventRoleCode = eventAssocSelected.getInt("ROLE_NUM");
 				if (includeWitnessEvents) {
@@ -3673,9 +3967,10 @@ class ViewEventData extends HBBusinessLayer {
 						  			langCode,
 						  			dataBaseIndex);
 					personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personNameStyle, dataBaseIndex);
-					if (HGlobal.DEBUG) 
+					if (HGlobal.DEBUG) {
 						System.out.println(" Event Associate: " + assocs + " Event PID: " + eventPID + " Type: " + eventNumber
 										+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRole);
+					}
 					Object[] associates = new Object[5];
 					associates[0] = personName.trim();
 					associates[1] = eventRole.trim();
@@ -3701,7 +3996,9 @@ class ViewEventData extends HBBusinessLayer {
 			}
 
 		// Setup the HashMap for row to personPID
-			for (int row = 0; row < personPID.length; row++) personPIDs.put(row, personPID[row]);
+			for (int row = 0; row < personPID.length; row++) {
+				personPIDs.put(row, personPID[row]);
+			}
 
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
@@ -3709,14 +4006,14 @@ class ViewEventData extends HBBusinessLayer {
 						+ "\nSQL string: " + selectString);
 		}
 	}
-	
+
 /**
  * addKeyAssocToAssoc(long eventTablePID)
  * @param eventTablePID
  * @return
  * @throws HBException
  */
-	private int addKeyAssocToAssoc(long eventTablePID, ArrayList<Object[]> associateList) throws HBException {	
+	private int addKeyAssocToAssoc(long eventTablePID, ArrayList<Object[]> associateList) throws HBException {
 		String selectString = null;
 		ResultSet keyAssocSelected, partnerRelationRS;
 		String langCode = HGlobal.dataLanguage;
@@ -3734,7 +4031,7 @@ class ViewEventData extends HBBusinessLayer {
 			eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 			eventName = pointLibraryResultSet.getEventName(eventType,
 															langCode, dataBaseIndex);
-		// if partner event process partner person and roles	
+		// if partner event process partner person and roles
 			eventGroup = pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
 				selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
@@ -3762,11 +4059,12 @@ class ViewEventData extends HBBusinessLayer {
 			  			langCode,
 			  			dataBaseIndex);
 				personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personNameStyle, dataBaseIndex);
-	
-				if (HGlobal.DEBUG) 
+
+				if (HGlobal.DEBUG) {
 					System.out.println(" Key Associate nr: " + keyAssociates + " Event PID: " + eventTablePID + " Type: " + eventType
 						+ " Event: " + eventName.trim() + " Name: " + personName + " Role: " + eventRoleName);
-	
+				}
+
 				Object[] associates = new Object[5];
 				associates[0] = " " + personName.trim();
 				associates[1] = " " + eventRoleName.trim();
@@ -3776,12 +4074,12 @@ class ViewEventData extends HBBusinessLayer {
 				associateList.add(associates);
 				keyAssociates++;
 			}
-			
+
 			return keyAssociates;
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HBPersonHandler - addPartnerAssocToAssoc \nerror: " + sqle.getMessage());
-		} 
+		}
 	}
 
 /**
@@ -3797,8 +4095,11 @@ class ViewEventData extends HBBusinessLayer {
  * @return
  */
 	public int getNumberOfImages() {
-		if (listOfImages == null) return 0;
-		else return listOfImages.size();
+		if (listOfImages == null) {
+			return 0;
+		} else {
+			return listOfImages.size();
+		}
 	}
 
 } // End Class ViewEventData

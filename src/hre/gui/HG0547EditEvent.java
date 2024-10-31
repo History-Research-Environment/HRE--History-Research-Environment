@@ -20,6 +20,7 @@ package hre.gui;
  * 			  2024-07-28 Updated for use of HG0547TypeEvent (N Tolleshaug)
  * 			  2024-08-29 After Event type change, force Save action (D Ferguson)
  * 			  2024-10-05 Removed console output (N Tolleshaug)
+ * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
@@ -207,9 +208,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     	this.setResizable(true);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs)
-		 {
 			HB0711Logging.logWrite("Action: entering HG0547EditEvent");	//$NON-NLS-1$
-		}
 
 	    pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 	    pointPersonHandler = pointOpenProject.getPersonHandler();
@@ -223,12 +222,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  ***********************************/
 	 // Get Name style and start/end dates i exist for update
 	    if (this instanceof HG0547UpdateEvent) {
-
-	    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
+	    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup)
 				roleName = pointWhereWhenHandler.getPartnerNames();
-			} else {
+			else
 				roleName = pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber);
-			}
 
 			String selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.eventTable,	//$NON-NLS-1$
 					"PID = " + eventPID);																//$NON-NLS-1$
@@ -253,8 +250,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				startSortCode = (String) startHREDate[4];
 	    	}
 	  // Collect end date Hdate
-	    	sortHREDate = pointPersonHandler.pointLibraryResultSet.
-	    			dateIputHdate(sortHDatePID, dataBaseIndex);
+	    	sortHREDate = pointPersonHandler.pointLibraryResultSet.dateIputHdate(sortHDatePID, dataBaseIndex);
 	    	if (sortHREDate != null) {
 				sortMainYear = (long) sortHREDate[0];
 				sortMainDetails = (String) sortHREDate[1];
@@ -271,12 +267,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	     }
 	    eventName = pointWhereWhenHandler.getEventName(eventNumber);
 	    if (this instanceof HG0547PartnerEvent) {
-	    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
+	    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup)
 				roleName = pointWhereWhenHandler.getPartnerNames();
-			} else {
+			else
 				roleName = pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber);
-			}
-	    	if (HGlobal.DEBUG) System.out.println(" Event " + eventName + " partners " + roleName);
+	    	if (HGlobal.DEBUG)
+	    		System.out.println(" Event " + eventName + " partners " + roleName);
 	    }
 
 	    try {
@@ -377,6 +373,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 		dateText = new JTextField(" ");	//$NON-NLS-1$
 		dateText.setColumns(18);
+		dateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		dateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		topEvntPanel.add(dateText, "cell 2 0");	//$NON-NLS-1$
 
 		JLabel lbl_sortDate = new JLabel(HG0547Msgs.Text_8);	// Sort Date:
@@ -384,6 +382,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 		sortDateText = new JTextField(" ");	//$NON-NLS-1$
 		sortDateText.setColumns(18);
+		sortDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		sortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		topEvntPanel.add(sortDateText, "cell 2 1");	//$NON-NLS-1$
 
 		cardEvent.add(topEvntPanel, "cell 0 0 2, aligny top");	//$NON-NLS-1$
@@ -407,11 +407,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				}
 				@Override
 				public boolean isCellEditable(int row, int col) {
-					if (col == 1) {
-						return true;
-					} else {
-						return false;
-					}
+					if (col == 1) return true;
+					return false;
 				}
 		};
 		tableAssocs.setModel(new DefaultTableModel (tableAssocsData, tableAssocsHeader));
@@ -431,9 +428,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		persScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		persScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		// Setup tabbing within table against all rows, cols
-		if (tableAssocs.getRowCount() > 0) {
+		if (tableAssocs.getRowCount() > 0)
 			JTableCellTabbing.setTabMapping(tableAssocs, 0, tableAssocs.getRowCount(), 0, 2);
-		}
 		midLeftEvntPanel.add(persScrollPane, "cell 0 1 2");	//$NON-NLS-1$
 
 		cardEvent.add(midLeftEvntPanel, "cell 0 1, aligny top");	//$NON-NLS-1$
@@ -462,17 +458,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 					 }
 				@Override
 				public boolean isCellEditable(int row, int col) {
-					if (col == 1) {
-						return true;
-					} else {
-						return false;
-					}
+					if (col == 1) return true;
+					return false;
 				}
 				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
-					if (col == 0) {
-						return false;
-					}
+					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
@@ -490,9 +481,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
-					if (col == 1) {
-						cell.setCursor(Cursor.getDefaultCursor());
-					}
+					if (col == 1) cell.setCursor(Cursor.getDefaultCursor());
 					cell.setBackground((Color) UIManager.get("Table.background"));		//$NON-NLS-1$
 					cell.setForeground((Color) UIManager.get("Table.foreground"));		//$NON-NLS-1$
 					return cell;
@@ -608,10 +597,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a 4-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 4) {
-						r = 4;
-					}
-					  return new Dimension(super.getPreferredSize().width,
+					if (r < 4)	r = 4;
+					return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
 				@Override
@@ -644,10 +631,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		tableCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
 		tableCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
 	// Setup tabbing within table against all rows but only column 1, 2
-		if (tableCite.getRowCount() > 0) {
+		if (tableCite.getRowCount() > 0)
 			JTableCellTabbing.setTabMapping(tableCite, 0, tableCite.getRowCount(), 1, 2);
-		}
-		// Add to Event panel
+	// Add to Event panel
 		botmRightEvntPanel.add(citeScrollPane, "cell 0 1 3 1, alignx left, aligny top");	//$NON-NLS-1$
 
 		cardEvent.add(botmRightEvntPanel, "cell 1 2 1 2, aligny top");	//$NON-NLS-1$
@@ -767,10 +753,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		}
    // Event type and role need to be changed from partner table
         if (eventGroup == pointWhereWhenHandler.marrGroup || eventGroup == pointWhereWhenHandler.divorceGroup)
-		 {
 			btn_EventType.setEnabled(false);
-        //	if (eventGroup == 6) btn_EventType.setEnabled(false);
-		}
 
 	// Display the screen
 		pack();
@@ -792,19 +775,18 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			public void mouseClicked(MouseEvent e){
             	btn_Save.setEnabled(true);
           // Initiate edit date window and preload
-            	if (editStartDate != null) {
+            	if (editStartDate != null)
 					editStartDate.convertFromHDate(startMainYear, startMainDetails, startExtraYear, startExtraDetails);
-				} else {
+				else {
             		editStartDate = new HG0590EditDate(pointOpenDisplay, false, false, false, true);
             		editStartDate.dateType = 1;  // set start date
-            		if (startHREDate != null) {
+            		if (startHREDate != null)
 						editStartDate.convertFromHDate(startMainYear, startMainDetails, startExtraYear, startExtraDetails);
-					}
             	}
-           // 	Set positin and set visible
+           // 	Set position and set visible
     			editStartDate.setModalityType(ModalityType.APPLICATION_MODAL);
     			Point xyDate = dateText.getLocationOnScreen();
-    			editStartDate.setLocation(xyDate.x, xyDate.y-100);
+    			editStartDate.setLocation(xyDate.x, xyDate.y-50);
     			editStartDate.setVisible(true);
             }
         });
@@ -815,19 +797,18 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
-            	if (sortEndDate != null) {
+            	if (sortEndDate != null)
 					sortEndDate.convertFromHDate(sortMainYear, sortMainDetails, sortExtraYear, sortExtraDetails);
-				} else {
+				else {
             		sortEndDate = new HG0590EditDate(pointOpenDisplay, false, false, false, true);
             		sortEndDate.dateType = 3;  // set end date
-            		//if (sortHREDate != null)
-            			sortEndDate.convertFromHDate(sortMainYear, sortMainDetails, sortExtraYear, sortExtraDetails);
+            		sortEndDate.convertFromHDate(sortMainYear, sortMainDetails, sortExtraYear, sortExtraDetails);
             	}
 
-           // 	Set positin and set visible
+           // 	Set position and set visible
     			sortEndDate.setModalityType(ModalityType.APPLICATION_MODAL);
     			Point xyDate = sortDateText.getLocationOnScreen();
-    			sortEndDate.setLocation(xyDate.x, xyDate.y-150);
+    			sortEndDate.setLocation(xyDate.x, xyDate.y-50);
     			sortEndDate.setVisible(true);
             }
         });
@@ -854,21 +835,21 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 	// Listeners for radio button group items, to show each rightPanel card
 		ActionListener actionRadioEvent = new ActionListener() {
-		      @Override
+		    @Override
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "EVENT");	//$NON-NLS-1$
 		      }
 		    };
 		ActionListener actionRadioFlag = new ActionListener() {
-		      @Override
+		    @Override
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "FLAGS");	//$NON-NLS-1$
 		      }
 		    };
 		ActionListener actionRadioMedia = new ActionListener() {
-		      @Override
+		    @Override
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "MEDIA");	//$NON-NLS-1$
@@ -918,15 +899,14 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						   HG0547Msgs.Text_34,						// Delete Associate
 						   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 					return;
-				} else {
-	        		try {
-						pointWhereWhenHandler.deleteAssocPerson(rowInTable);
-						btn_Save.setEnabled(true);
-					} catch (HBException hbe) {
-						System.out.println(" Delete assoc error: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
-					}
-	        	}
+				}
+				try {
+					pointWhereWhenHandler.deleteAssocPerson(rowInTable);
+					btn_Save.setEnabled(true);
+				} catch (HBException hbe) {
+					System.out.println(" Delete assoc error: " + hbe.getMessage());	//$NON-NLS-1$
+					hbe.printStackTrace();
+				}
 	        }
 	      };
 
@@ -975,11 +955,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
                 if (me.getButton() == MouseEvent.BUTTON3) {
                 // RIGHT-CLICK
                 	rowClicked = tableAssocs.rowAtPoint(me.getPoint());
-                	if (tableAssocs.rowAtPoint(me.getPoint()) < 0) {
+                	if (tableAssocs.rowAtPoint(me.getPoint()) < 0)
 						popupMenuOnlyAdd.show(me.getComponent(), me.getX(), me.getY());
-					} else {
+					else
 						popupMenuAssoc.show(me.getComponent(), me.getX(), me.getY());
-					}
                 }
             }
         });
@@ -1037,7 +1016,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE07 need code here to action media Save & turn on btn_Save
-
 			}
 		});
 
@@ -1046,7 +1024,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE07 need code here to action media Save & turn on btn_Save
-
 			}
 		});
 
@@ -1055,7 +1032,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE07 need code here to action media Save & turn on btn_Save
-
 			}
 		});
 
@@ -1064,7 +1040,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE07 need code here to action media Save & turn on btn_Save
-
 			}
 		});
 
@@ -1125,41 +1100,28 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				btn_Save.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
-
 						// NOTE08 need code to check we have as many KEY_ASSOC roles selected as the Event requires
-
 						if (HGlobal.writeLogs)
-						 {
 							HB0711Logging.logWrite("Action: accepting updates and leaving HG0547EditEvent");		//$NON-NLS-1$
-						}
 						if (HGlobal.DEBUG)
-						 {
 							System.out.println(" Edit event save button: " + selectedEventNum + "/" + selectedRoleNum); //$NON-NLS-1$ //$NON-NLS-2$
-						}
 						try {
 						// Check if data updated
 							if (locationElementUpdate > 0 || startDateOK || sortDateOK || memoEdited) {
-						//if update memo text
-								if (memoEdited) {
+								//if update memo text
+								if (memoEdited)
 									pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
-								}
-						// Create new event
+								// Create new event
 								long newEventPID =
 										pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
-						// Create a new set of HDATE records
+								// Create a new set of HDATE records
 								if (startDateOK)
-								 {
 									pointWhereWhenHandler.createEventDates(false, newEventPID, "START_HDATE_RPID", startHREDate);  //$NON-NLS-1$
-								}
-								if (sortDateOK)
-								 {
-									pointWhereWhenHandler.createEventDates(false, newEventPID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
-								}
 
+								if (sortDateOK)
+									pointWhereWhenHandler.createEventDates(false, newEventPID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
 							}
-							else {
-								System.out.println(" HG0547EditEvent - No edited data for event!");	//$NON-NLS-1$
-							}
+							else System.out.println(" HG0547EditEvent - No edited data for event!");	//$NON-NLS-1$
 
 					// Reload Person windows
 							pointOpenProject.reloadT401Persons();
@@ -1172,9 +1134,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 							System.out.println("HG0547EditEvent - Failed to edit event: " + hbe.getMessage());		//$NON-NLS-1$
 							JOptionPane.showMessageDialog(btn_Save, HG0547Msgs.Text_39 + hbe.getMessage(),
 									HG0547Msgs.Text_40, JOptionPane.ERROR_MESSAGE);
-							if (HGlobal.DEBUG) {
+							if (HGlobal.DEBUG)
 								hbe.printStackTrace();
-							}
 						}
 					}
 				});
@@ -1193,24 +1154,19 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						HG0547Msgs.Text_43,		// Edit Event
 						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 							if (HGlobal.writeLogs)
-							 {
 								HB0711Logging.logWrite("Action: cancelling out of HG0547EditEvent"); //$NON-NLS-1$
-							}
+
 						// Yes option: clear Reminder and exit
-							if (reminderDisplay != null) {
+							if (reminderDisplay != null)
 								reminderDisplay.dispose();
-							}
 							dispose();
 						}
 				}
 			else {
 				if (HGlobal.writeLogs)
-				 {
 					HB0711Logging.logWrite("Action: exiting HG0547EditEvent"); //$NON-NLS-1$
-				}
-				if (reminderDisplay != null) {
+				if (reminderDisplay != null)
 					reminderDisplay.dispose();
-				}
 				dispose();
 				}
 			}
@@ -1233,7 +1189,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		changeEventType = true;
 		btn_Save.setEnabled(true);
 	}
-
 	@Override
 	public void saveStartDate() {
 		if (editStartDate != null) {
@@ -1246,9 +1201,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			dateText.setText(" " + pointWhereWhenHandler.formatDateSelector(startMainYear, startMainDetails, 	//$NON-NLS-1$
 					startExtraYear, startExtraDetails).trim());
 		}
-		if (startHREDate == null) {
+		if (startHREDate == null)
 			startHREDate = new Object[5];
-		}
 		startHREDate[0] = startMainYear;
 		startHREDate[1] = startMainDetails;
 		startHREDate[2] = startExtraYear;
@@ -1289,9 +1243,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			sortDateText.setText(" " + pointWhereWhenHandler.formatDateSelector(sortMainYear, sortMainDetails, 	//$NON-NLS-1$
 					sortExtraYear, sortExtraDetails).trim());
 		}
-		if (sortHREDate == null) {
+		if (sortHREDate == null)
 			sortHREDate = new Object[5];
-		}
 		sortHREDate[0] = sortMainYear;
 		sortHREDate[1] = sortMainDetails;
 		sortHREDate[2] = sortExtraYear;

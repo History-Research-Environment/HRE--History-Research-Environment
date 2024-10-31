@@ -19,21 +19,22 @@ package hre.gui;
  * 			  2024-04-14 Removed variable importedData added 2024-02-15 (N. Tolleshaug)
  * 			  2024-10-12 Added boolean reloadPS user option (D Ferguson)
  ************************************************************************/
+
 import java.awt.Color;
 import java.awt.Window;
 import java.util.ArrayList;
 
 import hre.bila.HBProjectOpenData;
+
 /**
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author Don Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version build 0.03.3124.1015
+ * @version build 0.03.3124.1031
  */
 public class HGlobal {
-
-	public static String buildNo = "0.03.3124.1015";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "15 Oct 2024";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.03.3124.1031";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "31 Oct 2024";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "v22b";		    // Set Database DDL version //$NON-NLS-1$
 
@@ -122,7 +123,7 @@ public class HGlobal {
 	public static boolean openLastProject = false;			// whether Last used project opened at HRE startup (default false)
 	public static boolean backupActivProject = false;		// whether to auto-backup Active Project at close (default false)
 	public static boolean pluginEnabled = true;				// whether plugins are loaded at open project(default true)
-	public static boolean reloadPS = false;					// whether to always reload Person Selector (default false)
+	public static boolean reloadPS = true;					// whether to always reload Person Selector (default true)
 	public static boolean writeLogs = true;					// whether external Log files are written (default true)
 
 	// Following items relate to the window bounds for positioning mainMenu at startup

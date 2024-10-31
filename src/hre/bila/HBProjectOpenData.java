@@ -995,9 +995,9 @@ public class HBProjectOpenData {
 				 if (windowID.equals(screenID)) {
 					guiScreenPointers[i] = null;
 					nrOpen--;
-				if (HGlobal.DEBUG) {
+				if (HGlobal.DEBUG) 
 					System.out.println("HBProjectOpenData - Window removed: " + screenID + " NrOpen: " + nrOpen);
-				}
+				
 				 }
  			 }
  	     }

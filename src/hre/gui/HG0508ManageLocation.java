@@ -12,6 +12,7 @@ package hre.gui;
  * 			  2023-03-10 Add Caption handling into media card (N. Tolleshaug)
  * v0.03.0030 2023-09-13 Add scroll and image/text icons to media card (D Ferguson)
  * v0.03.0031 2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
+ * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  ********************************************************************************
  * NB: cannot execute 'externalize strings' check without temporarily commenting
  *     out the statement: txt_Text = new JTextArea("\""+listText+" ...\"");
@@ -47,7 +48,6 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -84,11 +84,9 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Location
  * @author D Ferguson
- * @version v0.03.0030
+ * @version v0.03.0031
  * @since 2022-06-20
  */
-
-//public class HG0508ManageLocation extends HG0451SuperIntFrame {
 public class HG0508ManageLocation extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBWhereWhenHandler pointWhereWhenHandler;
@@ -101,7 +99,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	boolean dateChanged = false;
 	boolean startDateOK = false;
 	boolean endDateOK = false;
-	
+
 	HG0590EditDate editStartDate;
 	long startMainYear = 0L;
 	String startMainDetails = "";	//$NON-NLS-1$
@@ -110,7 +108,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	String startSortCode = "";		//$NON-NLS-1$
 	Object[] startHREDate;
 	long startHDatePID;
-	
+
 	HG0590EditDate editEndDate;
 	long endMainYear = 0L;
 	String endMainDetails = "";		//$NON-NLS-1$
@@ -119,7 +117,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	String endSortCode = "";		//$NON-NLS-1$
 	Object[] endHREDate;
 	long endHDatePID;
-	
+
 	JTextField dateStart, dateEnd;
 
     static focusPolicy newPolicy;
@@ -150,7 +148,6 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
  * Create the dialog
  * @throws HBException
  */
-
 	public HG0508ManageLocation(HBWhereWhenHandler pointWhereWhenHandler
 							, HBProjectOpenData pointOpenProject
 							, String screenID
@@ -158,16 +155,16 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		this.pointWhereWhenHandler = pointWhereWhenHandler;
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
-		
+
 	// Setup references for HG0508ManageLocation
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0508ManageLocation");	//$NON-NLS-1$
 		windowID = screenID;
 		helpName = "managelocation";	//$NON-NLS-1$
-    	HG0508ManageLocation.screenID = screenID;	
+    	HG0508ManageLocation.screenID = screenID;
     	className = getClass().getSimpleName();
     	this.setResizable(true);
     	int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-    	String selectString = 
+    	String selectString =
     			pointWhereWhenHandler.setSelectSQL("*", pointWhereWhenHandler.locationNameTable,"PID = " + locationNamePID); //$NON-NLS-1$ //$NON-NLS-2$
     	ResultSet personNameTable = pointWhereWhenHandler.requestTableData(selectString, dataBaseIndex);
 		try {
@@ -179,8 +176,8 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			sqle.printStackTrace();
 			throw new HBException(" SQL error personNameTable: " + sqle.getMessage());	//$NON-NLS-1$
 		}
-		
-	// Collect start date Hdate  
+
+	// Collect start date Hdate
     	startHREDate = pointWhereWhenHandler.pointLibraryResultSet.dateIputHdate(startHDatePID, dataBaseIndex);
     	if (startHREDate != null) {
 			startMainYear = (long) startHREDate[0];
@@ -189,8 +186,8 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			startExtraDetails = (String) startHREDate[3];
 			startSortCode = (String) startHREDate[4];
     	}
-    	
-    // Collect end date Hdate  	
+
+    // Collect end date Hdate
     	endHREDate = pointWhereWhenHandler.pointLibraryResultSet.dateIputHdate(endHDatePID, dataBaseIndex);
     	if (endHREDate != null) {
 			endMainYear = (long) endHREDate[0];
@@ -198,7 +195,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			endExtraYear = (long) endHREDate[2];
 			endExtraDetails = (String) endHREDate[3];
 			endSortCode = (String) endHREDate[4];
-    	}    
+    	}
 
    	 // Get Name style
 	    nameData = pointWhereWhenHandler.getNameData();
@@ -217,7 +214,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
     	toolBar.setFloatable(false);
     	toolBar.setAlignmentX(Component.LEFT_ALIGNMENT);
     	toolBar.add(Box.createHorizontalGlue());
-    	// Add HG0451 icons
+    	// Add HG0450 icons
 		toolBar.add(btn_Remindericon);
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
@@ -319,7 +316,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
-						else return false;
+					return false;
 				}
 				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
@@ -409,17 +406,21 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		JLabel lbl_DateStart = new JLabel(HG0508Msgs.Text_12);	// Start Date:
 		cardLocn.add(lbl_DateStart, "cell 0 4, align right");	//$NON-NLS-1$
 		dateStart = new JTextField(nameData[1]);
-		dateStart.setColumns(15);
+		dateStart.setColumns(22);
+		dateStart.setEditable(false);		// ensure field cannot be edited from keyboard
+		dateStart.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		cardLocn.add(dateStart, "cell 1 4");	//$NON-NLS-1$
 		dateStart.setText(" " + pointWhereWhenHandler.formatDateSelector(startMainYear, startMainDetails,  //$NON-NLS-1$
 				startExtraYear, startExtraDetails).trim());
-		
+
 		JLabel lbl_DateEnd = new JLabel(HG0508Msgs.Text_13);	// End Date:
 		cardLocn.add(lbl_DateEnd, "cell 0 5, align right");		//$NON-NLS-1$
 		dateEnd = new JTextField(nameData[2]);
-		dateEnd.setColumns(15);
+		dateEnd.setColumns(22);
+		dateEnd.setEditable(false);		// ensure field cannot be edited from keyboard
+		dateEnd.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		cardLocn.add(dateEnd, "cell 1 5");	//$NON-NLS-1$
-		dateEnd.setText(" " + pointWhereWhenHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$ 
+		dateEnd.setText(" " + pointWhereWhenHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$
 				endExtraYear, endExtraDetails).trim());
 
 	// Setup Order of components for Focus Policy
@@ -612,7 +613,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 								dispose();	}	// yes option - exit
 							}
 					}
-		});			
+		});
 
 		// Listener for SaveStyle button
 		btn_SaveStyle.addActionListener(new ActionListener() {
@@ -641,7 +642,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				new TableModelEvent(tableLocation.getModel());
 				try {
 					if (locationChanged) {
-					// Update name element table T403	
+					// Update name element table T403
 						pointWhereWhenHandler.updateLocationElementData(locationNamePID);
 						locationChanged = false;
 					}
@@ -685,13 +686,13 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			@Override
 			public void mouseClicked(MouseEvent e){
 				btn_SaveNameDate.setEnabled(true);
-          // Initiate edit date window and preload  
+          // Initiate edit date window and preload
             	if (editStartDate != null)
             		editStartDate.convertFromHDate(startMainYear, startMainDetails, startExtraYear, startExtraDetails);
             	else {
             		editStartDate = new HG0590EditDate(pointOpenDisplay, false, false, true, false);
             		editStartDate.dateType = 1;  // set start date
-            		if (startHREDate != null) 
+            		if (startHREDate != null)
             			editStartDate.convertFromHDate(startMainYear, startMainDetails, startExtraYear, startExtraDetails);
             	}
            // 	Set position and set visible
@@ -701,28 +702,28 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
     			editStartDate.setVisible(true);
             }
         });
-		
+
 		// Listener to End date to enable save button
 		dateEnd.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				btn_SaveNameDate.setEnabled(true);
-                // Initiate edit date window and preload  	
+                // Initiate edit date window and preload
             	if (editEndDate != null)
             		editEndDate.convertFromHDate(endMainYear, endMainDetails, endExtraYear, endExtraDetails);
             	else {
             		editEndDate = new HG0590EditDate(pointOpenDisplay, false, false, true, false);
-            		editEndDate.dateType = 2;  // set end date 
+            		editEndDate.dateType = 2;  // set end date
             		if (endHREDate != null)
             			editEndDate.convertFromHDate(endMainYear, endMainDetails, endExtraYear, endExtraDetails);
             	}
-           // 	Set positin and set visible
+           // 	Set position and set visible
     			editEndDate.setModalityType(ModalityType.APPLICATION_MODAL);
     			Point xyDate = dateEnd.getLocationOnScreen();
     			editEndDate.setLocation(xyDate.x, xyDate.y-100);
     			editEndDate.setVisible(true);
             }
-        });		
+        });
 
 		// Listener for 'Show Hidden' button
 		btn_Hidden.addActionListener(new ActionListener() {
@@ -821,7 +822,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		radio_Note.addActionListener(actionRadioNote);
 
 	}	// End HG0508ManageLocation constructor
-	
+
 	@Override
 	public void saveStartDate() {
 		if (editStartDate != null) {
@@ -840,11 +841,11 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		startHREDate[2] = startExtraYear;
 		startHREDate[3] = startExtraDetails;
 		startHREDate[4] = startSortCode;
-		startDateOK = true;	
+		startDateOK = true;
 	}
-	
+
 	@Override
-	public void saveEndDate() {	
+	public void saveEndDate() {
 		if (editEndDate != null) {
 			endMainYear = editEndDate.returnYearToGUI();
 			endMainDetails = editEndDate.returnDetailToGUI().trim();
@@ -852,7 +853,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			endExtraDetails = editEndDate.returnDetail2ToGUI().trim();
 			endSortCode = editEndDate.returnSortString().trim();
 			pointWhereWhenHandler.setUpDateTranslation();
-			dateEnd.setText(" " + pointWhereWhenHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$ 
+			dateEnd.setText(" " + pointWhereWhenHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$
 					endExtraYear, endExtraDetails).trim());
 		}
 		if (endHREDate == null) endHREDate = new Object[5];
@@ -861,7 +862,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		endHREDate[2] = endExtraYear;
 		endHREDate[3] = endExtraDetails;
 		endHREDate[4] = endSortCode;
-		endDateOK = true;		
+		endDateOK = true;
 	}
 
 /**

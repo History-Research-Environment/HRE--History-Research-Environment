@@ -44,6 +44,8 @@ package hre.tmgjava;
  * 			  2023-10-20 - Loading Source/Citation TMG tables
  * 			  2023-10-20 - Removed all v22a handling
  * 			  2023-11-03 - Updated for new associate event processing
+ * 			  2024-10-20 - Removed finally console and status printout (N. Tolleshaug)
+ * 
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -370,7 +372,6 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	    	// Release all TMG tables
 			closeAllTMGtables("All");
-			System.out.println(" TMG to HRE converter completed!");
 
 			reporNameStyleUse();
 
@@ -393,7 +394,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			HB0711Logging.logWrite("ERROR TMG convert: " + exc.getMessage());
 			HB0711Logging.printStackTraceToFile(exc);
 		}  finally {
-			processMonitor.setContextOfAction(" HRE conversion terminated with errors!");
+			System.out.println(" TMG to HRE converter completed!");
 	    }
 	}
 
@@ -745,7 +746,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		try {
 
 			pointEventPass.addEventTagTables(this);		
-			setStatusMessage(" Completed EVENT_TYPE and EVENT_ROLES");
+			setStatusMessage(" Completed EVENT TAG table");
 			
 			pointEventPass.addEventTable(this);
 			setStatusMessage(" Completed EVENT table");

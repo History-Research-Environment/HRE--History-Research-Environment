@@ -6,6 +6,7 @@ package hre.gui;
  * 			  2023-12-30 Implemented add sibling (N Tolleshaug)
  * 			  2024-08-25 NLS conversion (D Ferguson)
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
+ * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  ******************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -62,23 +63,25 @@ public class HG0505AddPersonSibling extends HG0505AddPerson {
 /******************
  * ACTION LISTENERS
  ******************/
-// Listener for Save button add Sibling
+	// Listener for Save button add Sibling
 		btn_Save.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// Check person has a name before allowing Save to proceed
+				if (nameElementUpdates == 0) {
+					addNameErrorMessage();
+					return;
+				}
 				// Perform DB updates for all changes not yet saved
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0505AddPersonSibling");		//$NON-NLS-1$
 				try {
 				// Code for check update of database
 					if (HGlobal.DEBUG) for (int i = 0; i < objReqFlagData.length; i++)
 						System.out.println(" Flagid: " + objReqFlagData[i][3] + " / " + objReqFlagData[i][2]); //$NON-NLS-1$ //$NON-NLS-2$
-				// Check if person is given name
-					if (nameElementUpdates > 0) {
-						pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
-						pointPersonHandler.addNewPerson(refText.getText());
-					} else createEvent = false;
+				// Do updates
+					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
+					pointPersonHandler.addNewPerson(refText.getText());
 					createAllEvents(pointPersonHandler);
-					if (nameElementUpdates > 0) pointPersonHandler.addNewSibling(siblingType.getSelectedIndex());
+					pointPersonHandler.addNewSibling(siblingType.getSelectedIndex());
 
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();

@@ -58,6 +58,7 @@ package hre.gui;
  * 			  2024-10-03 Modified popup action edit partner for error message (N. Tolleshaug)
  * 			  2024-10-05 Modified add partner event and reset PS (N. Tolleshaug)
  * 			  2024-10-06 NLS cleanup (D Ferguson)
+ * 			  2024-10-29 Modified public static final String screenID = "50600"; (N. Tolleshaug)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE01 need code to action Surety input
@@ -158,7 +159,7 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	private static final long serialVersionUID = 001L;
-	public String screenID = "50600";	//$NON-NLS-1$
+	public static final String screenID = "50600";	//$NON-NLS-1$
 	private String className;
 	protected HBPersonHandler pointPersonHandler;
     protected HBProjectOpenData pointOpenProject;
@@ -271,7 +272,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	// Setup references for HG0506ManagePerson
 		windowID = screenID;
 		helpName = "manageperson";	//$NON-NLS-1$
-    	this.screenID = screenID;
+    	//this.screenID = screenID; // Removed 29.10.2024
     	this.pointOpenProject = pointOpenProject;
 		this.personPID = personPID;
     	className = getClass().getSimpleName();
@@ -1126,8 +1127,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					pointPersonHandler.deletePersonInTable(personPID, pointOpenProject);
 					JOptionPane.showMessageDialog(null, HG0506Msgs.Text_48 + persName.getText(),		// Deleted Person:
 							HG0506Msgs.Text_49, JOptionPane.INFORMATION_MESSAGE);						// Delete Person
+				
 				// Indicate we are closing this screen after a Person delete
 					closeAfterDelete = true;
+					
 				// Delete person from Person menu Recents list
 					HG0401HREMain.mainFrame.deleteRecentPerson(personPID);
 

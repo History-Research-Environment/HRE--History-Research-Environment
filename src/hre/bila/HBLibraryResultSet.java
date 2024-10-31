@@ -36,6 +36,8 @@ package hre.bila;
  * 			  2024-03-11 - Line 1359 - getEventName Updated for fall back to en-US (N. Tolleshaug)
  * 			  2024-02-30 - Updated read result set eventtype for both parents (N. Tolleshaug)
  * 			  2024-03-31 - Updated getEventTypeList for event group selection (N. Tolleshaug)
+ * 			  2024-10-19 - getPersonBirthEventPID() returns null_RPID if no birth event(N. Tolleshaug)
+ * 			  2024-10-21 - getEventGroup() checks only em-US for eventGroup
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -74,7 +76,9 @@ public class HBLibraryResultSet {
  */
 	public HBLibraryResultSet(HBBusinessLayer pointBusinessLayer) {
 		this.pointBusinessLayer = pointBusinessLayer;
-		if (HGlobal.DEBUG) System.out.println("HBLibraryResultSet initiated");
+		if (HGlobal.DEBUG) {
+			System.out.println("HBLibraryResultSet initiated");
+		}
 	}
 
 /**
@@ -141,13 +145,16 @@ public class HBLibraryResultSet {
 		try {
 			nameStyleOutputCodes = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		// Check if the stores absolute selectNameStyleIndex in absolute exceeds result set size
-			if (nameStyleOutputCodes.absolute(selectNameStyleIndex + 1))
+			if (nameStyleOutputCodes.absolute(selectNameStyleIndex + 1)) {
 				nameStyleOutputCodes.absolute(selectNameStyleIndex + 1);
-			else nameStyleOutputCodes.absolute(1);
+			} else {
+				nameStyleOutputCodes.absolute(1);
+			}
 
 			String styleCodes = nameStyleOutputCodes.getString("OUT_ELEMNT_CODES");
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" Name Style Codes: " + nameType + " / " + selectNameStyleIndex + " / " + styleCodes);
+			}
 			return styleCodes.split("\\|");
 		} catch (SQLException sqle) {
 			throw new HBException("LibraryResultSet - getNameStyleOutput: " + sqle.getMessage());
@@ -177,13 +184,20 @@ public class HBLibraryResultSet {
 		long startPID  = 1000000000000001L;
 		long valuePID;
 		try {
-			if (HGlobal.DEBUG) System.out.println("ResultSet - addNameStyleToTable: ");
+			if (HGlobal.DEBUG) {
+				System.out.println("ResultSet - addNameStyleToTable: ");
+			}
 
 		// Increment PID for next row i table or start with empty database
 			//pointResultSet.last();
-			if (HGlobal.DEBUG) System.out.println("Last row in ResultSet: " + lastPID);
-			if (pointResultSet.getRow() == 0) valuePID = startPID;
-			else valuePID = lastPID;
+			if (HGlobal.DEBUG) {
+				System.out.println("Last row in ResultSet: " + lastPID);
+			}
+			if (pointResultSet.getRow() == 0) {
+				valuePID = startPID;
+			} else {
+				valuePID = lastPID;
+			}
 
 			pointResultSet.moveToInsertRow(); // moves cursor to the insert row
 
@@ -202,7 +216,9 @@ public class HBLibraryResultSet {
 			pointResultSet.beforeFirst();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to update for: " + userData[0]);
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to update for: " + userData[0]);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - addNameStyleToTable: " + sqle.getMessage());
 		}
@@ -234,13 +250,20 @@ public class HBLibraryResultSet {
 		long startPID  = 1000000000000001L;
 		long valuePID = lastPID +1;
 		try {
-			if (HGlobal.DEBUG) System.out.println("ResultSet - addNameStyleToTable: ");
+			if (HGlobal.DEBUG) {
+				System.out.println("ResultSet - addNameStyleToTable: ");
+			}
 
 		// Increment PID for next row i table or start with empty database
 			//pointResultSet.last();
-			if (HGlobal.DEBUG) System.out.println("Last row in ResultSet: " + lastPID);
-			if (pointResultSet.getRow() == 0) valuePID = startPID;
-			else valuePID = lastPID;
+			if (HGlobal.DEBUG) {
+				System.out.println("Last row in ResultSet: " + lastPID);
+			}
+			if (pointResultSet.getRow() == 0) {
+				valuePID = startPID;
+			} else {
+				valuePID = lastPID;
+			}
 
 			pointResultSet.moveToInsertRow(); // moves cursor to the insert row
 
@@ -259,7 +282,9 @@ public class HBLibraryResultSet {
 			pointResultSet.beforeFirst();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to update for: " + userData[0]);
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to update for: " + userData[0]);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - addNameStyleToTable: " + sqle.getMessage());
 		}
@@ -295,7 +320,9 @@ public class HBLibraryResultSet {
 			pointResultSet.beforeFirst();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to update for: " + userData[0]);
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to update for: " + userData[0]);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - updateNameStyleTable: " + sqle.getMessage());
 		}
@@ -322,7 +349,9 @@ public class HBLibraryResultSet {
 			pointResultSet.updateString("ELEMNT_NAMES", dataString);
 			pointResultSet.updateRow();
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBLibraryResultSet - updateElementName: " + dataString);
+			if (HGlobal.DEBUG) {
+				System.out.println("HBLibraryResultSet - updateElementName: " + dataString);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - updateElementName: " + sqle.getMessage());
 		}
@@ -336,7 +365,9 @@ public class HBLibraryResultSet {
 			pointResultSet.updateString("ELEMNT_CODES", codeString);
 			pointResultSet.updateRow();
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBLibraryResultSet - updateElementList: " + nameString);
+			if (HGlobal.DEBUG) {
+				System.out.println("HBLibraryResultSet - updateElementList: " + nameString);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - updateElementList: " + sqle.getMessage());
 
@@ -373,7 +404,9 @@ public class HBLibraryResultSet {
 			pointResultSet.updateRow();
 			pointResultSet.beforeFirst();
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to update for: " + userData[0]);
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to update for: " + userData[0]);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - updateNameStyleTable: " + sqle.getMessage());
 		}
@@ -387,17 +420,21 @@ public class HBLibraryResultSet {
 
 	public void deleteNameStyleRow(ResultSet pointResultSet, int selectIndex) throws HBException {
 		try {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("ResultSet - Delete: " + selectIndex + " in Table T160/T162");
+			}
 		//Absolute starts with row 1,2... and index starts with 0
-			if (!pointResultSet.absolute(selectIndex + 1))
+			if (!pointResultSet.absolute(selectIndex + 1)) {
 				throw new HBException("HBLibraryResultSet_v21c - delete Name Styel - absolute error: "
 						+ (selectIndex + 1));
+			}
 			pointResultSet.deleteRow();
 			pointResultSet.updateRow();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to delete row in T160/T165");
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to delete row in T160/T165");
+			}
 			throw new HBException("HBLibraryResultSet - Delete user error: " + sqle.getMessage());
 		}
 	}
@@ -418,7 +455,9 @@ public class HBLibraryResultSet {
 		String[] nameElements = new String[16];
 		String selectString;
 		ResultSet nameElementTable;
-		for (int i = 0; i < 16; i++) nameElements[i] = "";
+		for (int i = 0; i < 16; i++) {
+			nameElements[i] = "";
+		}
 		try {
 			selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.personNamesTableElements, "OWNER_RPID = " + namePID);
@@ -471,15 +510,17 @@ public class HBLibraryResultSet {
 				while (nameElementTable.next()) {
 					String elementCode = nameElementTable.getString("ELEMNT_CODE").trim();
 					String elementName = nameElementTable.getString("NAME_DATA").trim();
-					if (personNameCode.trim().equals(elementCode))
+					if (personNameCode.trim().equals(elementCode)) {
 						if (first) {
 							personName = elementName + commaChar;
 							first = false;
 						//} else if (nameElementTable.isLast())
-						} else if (i == personStyle.length)
-								personName = personName  + elementName; // ***** Note
-							else
-								personName = personName  + elementName + commaChar;
+						} else if (i == personStyle.length) {
+							personName = personName  + elementName; // ***** Note
+						} else {
+							personName = personName  + elementName + commaChar;
+						}
+					}
 				}
 			}
 			return personName;
@@ -506,7 +547,9 @@ public class HBLibraryResultSet {
 		String[] placeElements = new String[elemntCodes.length];
 
 		// Initiate location data array
-		for (int i = 0; i < placeElements.length; i++) placeElements[i] = "";
+		for (int i = 0; i < placeElements.length; i++) {
+			placeElements[i] = "";
+		}
 		try {
 			selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.locationNameElementTable, "OWNER_RPID = " + ownerRPID);
@@ -518,7 +561,9 @@ public class HBLibraryResultSet {
 
 			if (row == 0) {
 				placeElements[0] = "----";
-				if (HGlobal.DEBUG) System.out.println("Rows == 0");
+				if (HGlobal.DEBUG) {
+					System.out.println("Rows == 0");
+				}
 				return placeElements;
 			}
 
@@ -561,7 +606,9 @@ public class HBLibraryResultSet {
 		// Check if ResultSet has no rows and return
 			placeElementTable.last();
 			if (placeElementTable.getRow() == 0) {
-				if (HGlobal.DEBUG) System.out.println("Rows == 0");
+				if (HGlobal.DEBUG) {
+					System.out.println("Rows == 0");
+				}
 				return elementCodemap;
 			}
 
@@ -604,14 +651,20 @@ public class HBLibraryResultSet {
 			int row = placeElementTable.getRow();
 
 		// If ResultSet has rows - collect place data from ResultSet
-			if (HGlobal.DEBUG) if (row == 0) System.out.println("Rows == 0");
+			if (HGlobal.DEBUG) {
+				if (row == 0) {
+					System.out.println("Rows == 0");
+				}
+			}
 
 			boolean first = true;
 			for (String element : locationNameStyle) {
 				String personNameCode = element.trim();
 				String[] commaData = null;
 				String commaChar = " ";
-				if (row == 0) break;
+				if (row == 0) {
+					break;
+				}
 
 			// if comma after name element data is marked in name element code
 				if (personNameCode.length() > 4) {
@@ -623,13 +676,16 @@ public class HBLibraryResultSet {
 				while (placeElementTable.next()) {
 					String elementCode = placeElementTable.getString("ELEMNT_CODE").trim();
 					String elementName = placeElementTable.getString("NAME_DATA").trim();
-					if (personNameCode.trim().equals(elementCode))
+					if (personNameCode.trim().equals(elementCode)) {
 						if (first) {
 							locationName = " " + elementName + commaChar;
 							first = false;
-						} else if (placeElementTable.isLast())
-									locationName = locationName  + elementName;
-								else locationName = locationName  + elementName + commaChar;
+						} else if (placeElementTable.isLast()) {
+							locationName = locationName  + elementName;
+						} else {
+							locationName = locationName  + elementName + commaChar;
+						}
+					}
 				}
 			}
 			return locationName;
@@ -649,18 +705,22 @@ public class HBLibraryResultSet {
 
 	public String getDatabaseVersion(ResultSet pointT10X_SCHEMA_DEFNS, int dataBaseIndex) throws HBException {
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println("getDatabaseVersion - dbindex: " + dataBaseIndex);
+		}
         try {
 
 			pointT10X_SCHEMA_DEFNS.first();
-			if (HGlobal.DEBUG) System.out.println("Found databaseVersion - VERSION_NAME: " +
-						pointT10X_SCHEMA_DEFNS.getNString("VERSION_NAME"));
+			if (HGlobal.DEBUG) {
+				System.out.println("Found databaseVersion - VERSION_NAME: " +
+							pointT10X_SCHEMA_DEFNS.getNString("VERSION_NAME"));
+			}
 			return pointT10X_SCHEMA_DEFNS.getNString("VERSION_NAME");
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("getDatabaseVersion - SQLException: " + sqle.getMessage());
+			}
 			throw new HBException ("getDatabaseVersion - SQLException: " + sqle.getMessage());
 		}
 	}
@@ -689,8 +749,9 @@ public class HBLibraryResultSet {
 			selectSQL = pointBusinessLayer.setSelectSQL("*","T126_PROJECTS","");
 			projectTable =  pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex );
 			projectTable.first();
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("SQL Project Name: " + projectTable.getNString("PROJECT_NAME"));
+			}
 
 			projectName = projectTable.getNString("PROJECT_NAME");
 			projectTable.updateRow();
@@ -701,15 +762,19 @@ public class HBLibraryResultSet {
 			return projectName;
 
 		} catch(HDException hde) {
-			if (HGlobal.DEBUG) System.out.println("setDatabaseProjectName - HDException: \n"
-					+ hde.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("setDatabaseProjectName - HDException: \n"
+						+ hde.getMessage());
+			}
 
 			projectTable= null;
 			pointBusinessLayer.closeDatabase(dataBaseIndex);
 			throw new HBException("getDatabaseProjectName - HDException: \n" + hde.getMessage());
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("getDatabaseProjectName - SQLException: \n"
-					+ sqle.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("getDatabaseProjectName - SQLException: \n"
+						+ sqle.getMessage());
+			}
 
 			projectTable= null;
 			pointBusinessLayer.closeDatabase(dataBaseIndex);
@@ -740,8 +805,9 @@ public class HBLibraryResultSet {
 			selectSQL = pointBusinessLayer.setSelectSQL("*","T126_PROJECTS","");
 			projectTable =  pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex );
 			projectTable.first();
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("SQL Project Name: " + projectTable.getNString("PROJECT_NAME"));
+			}
 			projectTable.updateLong("PID",proOffset + 1);
 			projectTable.updateLong("CL_COMMIT_RPID",null_RPID);
 			projectTable.updateTime("COMMENCED",new Time(1000000L));
@@ -756,15 +822,19 @@ public class HBLibraryResultSet {
 			return true;
 
 		} catch(HDException hde) {
-			if (HGlobal.DEBUG) System.out.println("setDatabaseProjectName - HDException: \n"
-					+ hde.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("setDatabaseProjectName - HDException: \n"
+						+ hde.getMessage());
+			}
 
 			projectTable= null;
 			pointBusinessLayer.closeDatabase(dataBaseIndex);
 			throw new HBException("setDatabaseProjectName - HDException: \n" + hde.getMessage());
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("setDatabaseProjectName - SQLException: \n"
-					+ sqle.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("setDatabaseProjectName - SQLException: \n"
+						+ sqle.getMessage());
+			}
 
 			projectTable= null;
 			pointBusinessLayer.closeDatabase(dataBaseIndex);
@@ -789,12 +859,14 @@ public class HBLibraryResultSet {
 		try {
 
 		// PER1 can be 0 in TMG event table G.dbf
-			if (personPID != proOffset)
+			if (personPID != proOffset) {
 				if (personPID != null_RPID) {
 					selectSQL = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.personTable,"PID = " + personPID);
 					nameSelected = pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex);
 					nameSelected.last();
-					if (nameSelected.getRow() == 0) return " --- ";
+					if (nameSelected.getRow() == 0) {
+						return " --- ";
+					}
 					nameSelected.first();
 					personNamePID = nameSelected.getLong("BEST_NAME_RPID");
 					visibleID = nameSelected.getInt("VISIBLE_ID");
@@ -806,7 +878,10 @@ public class HBLibraryResultSet {
  *  WARNING Name element not always == 1 - must be selected
  */
 					personName = personName + " ("+ visibleID + ")";
-				} else personName  = " --- ";
+				} else {
+					personName  = " --- ";
+				}
+			}
 			return " " + personName;
 		} catch (SQLException sqle) {
 			throw new HBException("SQL exception: " + sqle.getMessage() + "\nPersonPID: " + personPID);
@@ -824,8 +899,9 @@ public class HBLibraryResultSet {
 	public String exstractSortString(long hdatePID, int dataBaseIndex) throws HBException {
 		String selectString = null, sortString = "";
 		ResultSet hdateSelected;
-		if (hdatePID == null_RPID) return sortString;
-		else {
+		if (hdatePID == null_RPID) {
+			return sortString;
+		} else {
 			try {
 				selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable,"PID = " + hdatePID);
 				hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
@@ -852,8 +928,9 @@ public class HBLibraryResultSet {
 	public String exstractDate(long hdatePID, int dataBaseIndex) throws HBException {
 		String dateString = "", selectString = null;
 		ResultSet hdateSelected;
-		if (hdatePID == null_RPID) return dateString;
-		else {
+		if (hdatePID == null_RPID) {
+			return dateString;
+		} else {
 			try {
 			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + hdatePID);
 			hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
@@ -874,9 +951,9 @@ public class HBLibraryResultSet {
 		}
 
 	}
-	
+
 /**
- * dateIputHdate(long hdatePID, int dataBaseIndex)	
+ * dateIputHdate(long hdatePID, int dataBaseIndex)
  * @param hdatePID
  * @param dataBaseIndex
  * @return
@@ -886,8 +963,9 @@ public class HBLibraryResultSet {
 		String selectString = null;
 		Object[] dateHREDate = new Object[5];
 		ResultSet hdateSelected;
-		if (hdatePID == null_RPID) return null;
-		else {
+		if (hdatePID == null_RPID) {
+			return null;
+		} else {
 			try {
 				selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + hdatePID);
 				hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
@@ -932,6 +1010,7 @@ public class HBLibraryResultSet {
 			// Position to first row in ResultSet
 			pointT131usersResultSet.absolute(1);
 			if (HGlobal.DEBUG)
+			 {
 				System.out.println("updateUserInTable user creds: "
 					+ userData[0]	+ "/"
 							+ userData[1]	+ "/"
@@ -940,6 +1019,7 @@ public class HBLibraryResultSet {
 		// Create database user
 			//((HBToolHandler)pointBusinessLayer).
 			//		createNewDatabaseUser(userData[0], userData[2], dataBaseIndex);
+			}
 
 		// Create entry in T131
 			updateUserInTable(pointT131usersResultSet, userData);
@@ -975,11 +1055,16 @@ public class HBLibraryResultSet {
 		try {
 			ResultSet translatedData = pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex);
 			translatedData.first();
-			if (abbrev) data = translatedData.getString("ABBR");
-			else data = translatedData.getString("DATA");
+			if (abbrev) {
+				data = translatedData.getString("ABBR");
+			} else {
+				data = translatedData.getString("DATA");
+			}
 			return data.split("\\|");
 		} catch (HBException | SQLException hbe) {
-			if (HGlobal.DEBUG) System.out.println(" HBLibraryResultSet_v22a - getTranslatedData error: " + hbe.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println(" HBLibraryResultSet_v22a - getTranslatedData error: " + hbe.getMessage());
+			}
 			throw new HBException(" HBLibraryResultSet_v22a  - getTranslatedData error: " + hbe.getMessage());
 		}
 	}
@@ -1004,14 +1089,18 @@ public class HBLibraryResultSet {
 	        		surName = resSet.getString("SUR_NAME");
 	        		givName = resSet.getString("GIV_NAME");
 	        		projectLoc = resSet.getString("PROJECT");
-	        		if (HGlobal.DEBUG) System.out.println(ID + " - "
-	        				+ surName + " "
-	        				+ givName + " /  "
-	        				+ projectLoc );
+	        		if (HGlobal.DEBUG) {
+						System.out.println(ID + " - "
+								+ surName + " "
+								+ givName + " /  "
+								+ projectLoc );
+					}
 	    		}
 	    	}
 
-	    	if (HGlobal.DEBUG) System.out.println("readH2project: " + ID + " Loc: " + projectLoc);
+	    	if (HGlobal.DEBUG) {
+				System.out.println("readH2project: " + ID + " Loc: " + projectLoc);
+			}
 	    	return projectLoc;
 	   	} catch(SQLException exc) {
 	   		throw new HBException("readH2project - SQL error: \n" + exc.getMessage());
@@ -1027,8 +1116,12 @@ public class HBLibraryResultSet {
  */
 
 	public String findPassword(String userIDname, ResultSet resSet) throws HBException {
-		   if (HGlobal.DEBUG) System.out.println("Find password: ");
-		   if (resSet == null) throw new HBException("User table T131 not available\n");
+		   if (HGlobal.DEBUG) {
+			System.out.println("Find password: ");
+		}
+		   if (resSet == null) {
+			throw new HBException("User table T131 not available\n");
+		}
 		   	String userName = "";
 		   	String passWord = "";
 		   	try {
@@ -1037,7 +1130,9 @@ public class HBLibraryResultSet {
 			   		userName = resSet.getString("LOGON_NAME");
 			   		if (userName.equals(userIDname)) {
 			   			passWord = resSet.getString("PASSWORD");
-			   			if (HGlobal.DEBUG) System.out.println("User: " + userName + "\n" + "Pass: " + passWord);
+			   			if (HGlobal.DEBUG) {
+							System.out.println("User: " + userName + "\n" + "Pass: " + passWord);
+						}
 			   		}
 			   	}
 			   	return passWord;
@@ -1094,28 +1189,37 @@ public class HBLibraryResultSet {
 		String logonID = "", userName, passWord;
 		try {
 
-			if (HGlobal.DEBUG) System.out.println("ResultSet - updateUserInTable Table T131");
+			if (HGlobal.DEBUG) {
+				System.out.println("ResultSet - updateUserInTable Table T131");
+			}
 
 		// NOTE 03 - Position in ResultSet is set in calling method: ex. sqlTable.absolute(1);
 			logonID = pointResultSet.getNString("LOGON_NAME");
 			userName = pointResultSet.getNString("USER_NAME");
 			passWord = pointResultSet.getNString("PASSWORD");
-			if (HGlobal.DEBUG) System.out.println("ResultSet - content UserInTable - row: "
-					+ pointResultSet.getRow() + " - " + logonID + "/" + userName);
+			if (HGlobal.DEBUG) {
+				System.out.println("ResultSet - content UserInTable - row: "
+						+ pointResultSet.getRow() + " - " + logonID + "/" + userName);
+			}
 
 			pointResultSet.updateString("LOGON_NAME", userData[0]);
 			pointResultSet.updateString("USER_NAME", userData[1]);
 
 		// Update user password if set
-			if (userData[2] != null) pointResultSet.updateString("PASSWORD", userData[2]);
-			else pointResultSet.updateString("PASSWORD", passWord);
+			if (userData[2] != null) {
+				pointResultSet.updateString("PASSWORD", userData[2]);
+			} else {
+				pointResultSet.updateString("PASSWORD", passWord);
+			}
 
 	    // PASSWORD kept and not updated
 			pointResultSet.updateString("EMAIL", userData[3]);
 			pointResultSet.updateRow();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to update T131 for: " + logonID);
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to update T131 for: " + logonID);
+			}
 			throw new HBException("HBLibraryResultSet updateUserInTable error: " + sqle.getMessage());
 		}
 	}
@@ -1132,13 +1236,18 @@ public class HBLibraryResultSet {
 		long startPID  = 1000000000000001L;
 		long valuePID;
 		try {
-			if (HGlobal.DEBUG) System.out.println("ResultSet - addUserToTable: " + "Table T131");
+			if (HGlobal.DEBUG) {
+				System.out.println("ResultSet - addUserToTable: " + "Table T131");
+			}
 
 		// Increment PID for next row i table or start with empty database
 			pointResultSet.last();
-			if (HGlobal.DEBUG) System.out.println("Last row in ResultSet: " + pointResultSet.getRow());
-			if (pointResultSet.getRow() == 0) valuePID = startPID;
-			else {
+			if (HGlobal.DEBUG) {
+				System.out.println("Last row in ResultSet: " + pointResultSet.getRow());
+			}
+			if (pointResultSet.getRow() == 0) {
+				valuePID = startPID;
+			} else {
 				valuePID = pointResultSet.getLong("PID");
 				valuePID++;
 			}
@@ -1157,7 +1266,9 @@ public class HBLibraryResultSet {
 			pointResultSet.beforeFirst();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to update T131 for: " + userData[0]);
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to update T131 for: " + userData[0]);
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet add user error: " + sqle.getMessage());
 		}
@@ -1171,11 +1282,14 @@ public class HBLibraryResultSet {
 
 	public void deleteUserInTable(ResultSet pointResultSet, int selectIndex) throws HBException {
 		try {
-			if (HGlobal.DEBUG) System.out.println("ResultSet - Mod: " + "Table T131");
+			if (HGlobal.DEBUG) {
+				System.out.println("ResultSet - Mod: " + "Table T131");
+			}
 		//Absolute starts with row 1,2... and index starts with 0
-			if (!pointResultSet.absolute(selectIndex + 1))
+			if (!pointResultSet.absolute(selectIndex + 1)) {
 				throw new HBException("HBLibraryResultSet_v21a - deleteUserInTable - absolute error: "
 						+ (selectIndex + 1));
+			}
 /**
  * Result Set operation need to reorganize PID values
  * and update of T104 with last PID for table
@@ -1184,7 +1298,9 @@ public class HBLibraryResultSet {
 			pointResultSet.updateRow();
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Not able to delete row in T131");
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to delete row in T131");
+			}
 			throw new HBException("HBLibraryResultSet - Delete user error: " + sqle.getMessage());
 		}
 	}
@@ -1220,9 +1336,13 @@ public class HBLibraryResultSet {
 				eventYear = dataSelected.getLong("MAIN_HDATE_YEARS");
 				detailEvent = dataSelected.getString("MAIN_HDATE_DETAILS");
 				qualifier = detailEvent.charAt(16);
-				if (qualifier != 'X') ca = '~';
+				if (qualifier != 'X') {
+					ca = '~';
+				}
 				eventDateDec = pointBusinessLayer.numericalDate(eventYear, detailEvent);
-			} else return "";
+			} else {
+				return "";
+			}
 
 	// Find birth year
 			if (selectPersonPID != null_RPID ) {
@@ -1241,27 +1361,42 @@ public class HBLibraryResultSet {
 					birthYear = dataSelected.getLong("MAIN_HDATE_YEARS");
 					detailBirth = dataSelected.getString("MAIN_HDATE_DETAILS");
 					qualifier = detailBirth.charAt(16);
-					if (qualifier != 'X') ca = '~';
+					if (qualifier != 'X') {
+						ca = '~';
+					}
 					birthDateDec = pointBusinessLayer.numericalDate(birthYear, detailBirth);
-				}  else return "";
-			} else return "";
+				} else {
+					return "";
+				}
+			} else {
+				return "";
+			}
 
 	 // Compare month and day
 			age = eventDateDec[0] - birthDateDec[0];
 			if (age != 0) {
-				if (eventDateDec[1] < birthDateDec[1]) age--;
-				if (eventDateDec[1] == birthDateDec[1])
-					if (eventDateDec[2] < birthDateDec[2]) age--;
-			} else ca = ' ';
+				if (eventDateDec[1] < birthDateDec[1]) {
+					age--;
+				}
+				if (eventDateDec[1] == birthDateDec[1]) {
+					if (eventDateDec[2] < birthDateDec[2]) {
+						age--;
+					}
+				}
+			} else {
+				ca = ' ';
+			}
 			return "" + ca + age;
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
 		} catch (NumberFormatException nfe) {
-			if (HGlobal.DEBUG) System.out.println(" In Library ResultSer calculateAge: \nNumberformatException date value: "
-								+ eventYear + "/" + detailEvent.trim()
-								+ " - Event Hdate PID =  " + eventHDatePID
-								+ " Person PID = " + selectPersonPID);
+			if (HGlobal.DEBUG) {
+				System.out.println(" In Library ResultSer calculateAge: \nNumberformatException date value: "
+									+ eventYear + "/" + detailEvent.trim()
+									+ " - Event Hdate PID =  " + eventHDatePID
+									+ " Person PID = " + selectPersonPID);
+			}
 			return "";
 		}
 	}
@@ -1310,7 +1445,7 @@ public class HBLibraryResultSet {
 	public ResultSet getRoleNameList(int eventNumber, String selectRoles, int dataBaseIndex) throws HBException {
 		String langCode = HGlobal.dataLanguage;
 		return getRoleNameList(eventNumber, selectRoles, langCode, dataBaseIndex);
-		
+
 	}
 	public ResultSet getRoleNameList(int eventNumber, String selectRoles, String langCode, int dataBaseIndex) throws HBException {
 		ResultSet roleNameList;
@@ -1333,33 +1468,32 @@ public class HBLibraryResultSet {
 		ResultSet eventTypeList;
 		String langCode = HGlobal.dataLanguage;
 		String selectString = null;
-	// Select events in eventGroup #		
-		if (eventGroup > 0) 
+	// Select events in eventGroup #
+		if (eventGroup > 0) {
 			selectString = 	pointBusinessLayer.setSelectSQL("*",
 				pointBusinessLayer.eventDefnTable,
 				"EVNT_GROUP = " + eventGroup + " AND LANG_CODE = '" + langCode + "'");
-	// If eventGroup=0, select all events EXCEPT group 1,2,3,12
-	// These groups are Name, Father-xxx, Mother-xxx, Parent-xxx
-		else if (eventGroup == 0) 
+		} else if (eventGroup == 0) {
 			selectString = pointBusinessLayer.setSelectSQL("*",
 				pointBusinessLayer.eventDefnTable,
 				"EVNT_GROUP NOT IN(1,2,3,12) AND LANG_CODE = '" + langCode + "'");
-	// If eventGroup=-1, select ONLY events in Parent groups 2 & 3		
-		else if (eventGroup == -1) 
+		} else if (eventGroup == -1) {
 			selectString = pointBusinessLayer.setSelectSQL("*",
 				pointBusinessLayer.eventDefnTable,
 				"EVNT_GROUP IN(2,3) AND LANG_CODE = '" + langCode + "'");
-		else if (eventGroup == -2) 
+		} else if (eventGroup == -2) {
 			selectString = pointBusinessLayer.setSelectSQL("*",
 				pointBusinessLayer.eventDefnTable,
 				"EVNT_GROUP IN(6,7) AND LANG_CODE = '" + langCode + "'");
-		else System.out.println(" getEventTypeList - event group error: " + eventGroup);
+		} else {
+			System.out.println(" getEventTypeList - event group error: " + eventGroup);
+		}
 		eventTypeList = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		return eventTypeList;
 	}
-	
+
 /**
- * public int getEventGroup(int eventType, int dataBaseIndex)	
+ * public int getEventGroup(int eventType, int dataBaseIndex)
  * @param eventType
  * @param dataBaseIndex
  * @return
@@ -1367,7 +1501,7 @@ public class HBLibraryResultSet {
  */
 	public int getEventGroup(int eventType, int dataBaseIndex) throws HBException {
 		ResultSet eventTypeList;
-		String langCode = HGlobal.dataLanguage;
+		String langCode = "en-US"; // en-US has entries for all eventtypes
 		String selectString = null;
 		selectString = 	pointBusinessLayer.setSelectSQL("*",
 				pointBusinessLayer.eventDefnTable,
@@ -1375,7 +1509,7 @@ public class HBLibraryResultSet {
 		eventTypeList = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		try {
 			eventTypeList.last();
-			if (eventTypeList.getRow() == 0) return 99;
+			if (eventTypeList.getRow() == 0) return 99;	
 			eventTypeList.first();
 			return eventTypeList.getInt("EVNT_GROUP");
 		} catch (SQLException sqle) {
@@ -1383,7 +1517,7 @@ public class HBLibraryResultSet {
 			throw new HBException(" HBLibraryResultSet - getEventGroup error\n" + sqle.getMessage());
 		}
 	}
-	
+
 /**
  * getPersonBirthEventPID(long selectedPersonPID,  int dataBaseIndex)
  * @param selectedPersonPID
@@ -1399,6 +1533,7 @@ public class HBLibraryResultSet {
 				"PRIM_ASSOC_RPID = " + selectedPersonPID + " AND EVNT_TYPE = 1002");
 		eventRecord = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		try {
+			if (pointBusinessLayer.isResultSetEmpty(eventRecord)) return null_RPID;
 			eventRecord.first();
 			return eventRecord.getLong("PID");
 		} catch (SQLException sqle) {
@@ -1439,7 +1574,9 @@ public class HBLibraryResultSet {
 								+ " AND EVNT_ROLE_NUM  = '" + eventRoleCode + "'" );
 				eventRoleSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 				eventRoleSet.last();
-				if (eventRoleSet.getRow() == 0) return " Not Found";
+				if (eventRoleSet.getRow() == 0) {
+					return " Not Found";
+				}
 				eventRoleSet.first();
 				return eventRoleSet.getString("EVNT_ROLE_NAME");
 			}
@@ -1468,7 +1605,7 @@ public class HBLibraryResultSet {
 				eventTagSet.first();
 				return eventTagSet.getString("EVNT_NAME");
 			} else {
-				
+
 	// fall back to en-US translation
 				selectString = pointBusinessLayer.setSelectSQL("EVNT_NAME", pointBusinessLayer.eventDefnTable,
 						"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'");

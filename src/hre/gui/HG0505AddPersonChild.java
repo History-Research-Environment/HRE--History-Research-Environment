@@ -6,6 +6,7 @@ package hre.gui;
  * 			  2023-12-24 Implemented add child (N Tolleshaug)
  * 			  2024-08-25 NLS conversion (D Ferguson)
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
+ * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  ******************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -79,10 +80,14 @@ public class HG0505AddPersonChild extends HG0505AddPerson {
 /******************
  * ACTION LISTENERS
  ******************/
-// Listener for Save button add Child
+	// Listener for Save button add Child
 		btn_Save.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// Check person has a name before allowing Save to proceed
+				if (nameElementUpdates == 0) {
+					addNameErrorMessage();
+					return;
+				}
 				// Perform DB updates for all changes not yet saved
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0505AddPersonChild");	//$NON-NLS-1$
 				try {
@@ -90,14 +95,12 @@ public class HG0505AddPersonChild extends HG0505AddPerson {
 					if (HGlobal.DEBUG)
 						for (Object[] element : objReqFlagData)
 							System.out.println(" Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
-				// Check if person is given name
-					if (nameElementUpdates > 0) {
-						pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
-						pointPersonHandler.addNewPerson(refText.getText());
-						pointPersonHandler.setParentRole(childType.getSelectedIndex());
-					} else createEvent = false;
+				// Do updates
+					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
+					pointPersonHandler.addNewPerson(refText.getText());
+					pointPersonHandler.setParentRole(childType.getSelectedIndex());
 					createAllEvents(pointPersonHandler);
-					if (nameElementUpdates > 0) pointPersonHandler.addNewChild();
+					pointPersonHandler.addNewChild();
 
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();

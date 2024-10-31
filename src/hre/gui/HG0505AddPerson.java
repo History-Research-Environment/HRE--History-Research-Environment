@@ -35,6 +35,11 @@ package hre.gui;
  * 			  2024-08-25 NLS conversion (D Ferguson)
  * 			  2024-10-06 In Name panel, swap Flag/Citation areas (D Ferguson)
  * 			  2024-10-12 Change screen layouts for consistency with Event screen ( D Ferguson)
+ * 			  2024-10-18 used 'if (HGlobal.DEBUG)' to removed console printout (N Tolleshaug)
+ * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
+ * 			  2024-10-24 ignore null data entry in name, location fields (D Ferguson)
+ * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
+ * 			  2024-10-31 Reduce Memo/Citation area size and make consistent (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
@@ -474,24 +479,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Name data
 		JTable tableName = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
 					  return new Dimension(super.getPreferredSize().width,
 					    		super.getRowCount() * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
-				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
 					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
 							public void run() {
 				        		((JTextField)editor).requestFocus();
 				        		((JTextField)editor).getCaret().setVisible(true);
@@ -500,7 +501,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    }
 				    return result;
 				}
-				@Override
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
@@ -607,7 +607,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create table for the Flag data
 		tableFlags = new JTable(flagModel) {
 			private static final long serialVersionUID = 1L;
-				@Override
+
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a maximum of a 9-row table
 					int r = super.getRowCount();
@@ -615,14 +615,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 				  }
-				@Override
+
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
 
 				// Now change the Flag Settings to comboboxes of the Flag Values, so user can reset flags
-				@Override
 				public TableCellEditor getCellEditor(int row, int col) {
 	                if (col != 1)
 						return super.getCellEditor(row, col);
@@ -632,7 +631,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					DefaultComboBoxModel<String> comboFlagModel = new DefaultComboBoxModel<>(flagList);
 					JComboBox<String> comboBoxFlag = new JComboBox<>(comboFlagModel);
 					comboBoxFlag.addActionListener (new ActionListener() {
-						@Override
 						public void actionPerformed(ActionEvent event) {
 							int flagIdent = (Integer) objReqFlagData[row][3];
 							int flagSetIndex = comboBoxFlag.getSelectedIndex();
@@ -691,7 +689,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//**************************************************
 		JPanel panelNameMemo = new JPanel();
 		panelNameMemo.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelNameMemo.setLayout(new MigLayout("insets 5", "[]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelNameMemo.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_MemoN = new JLabel(memoText);
 		lbl_MemoN.setFont(lbl_MemoN.getFont().deriveFont(lbl_MemoN.getFont().getStyle() | Font.BOLD));
@@ -709,7 +707,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoNameText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoNameScroll = new JScrollPane(memoNameText);
-		memoNameScroll.setMinimumSize(new Dimension(320, 150)); // set a starter size
+		memoNameScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
 		memoNameScroll.getViewport().setOpaque(false);
 		memoNameScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoNameText.setCaretPosition(0);	// set scrollbar to top
@@ -762,15 +760,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 		JTable tableNameCite = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of a 7-row table, even if empty
+					// Force a minimum of a 5-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 7) r = 7;
+					if (r < 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
@@ -854,12 +850,16 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBirthDetail.add(lbl_EventDateBi, "cell 0 2, alignx left");		//$NON-NLS-1$
 		birthDateText = new JTextField();
 		birthDateText.setColumns(22);
+		birthDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		birthDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelBirthDetail.add(birthDateText, "cell 1 2, alignx left");		//$NON-NLS-1$
 
 		JLabel lbl_SortDateBi = new JLabel(sortDateText);
 		panelBirthDetail.add(lbl_SortDateBi, "cell 0 3, alignx left");		//$NON-NLS-1$
 		birthSortDateText = new JTextField();
 		birthSortDateText.setColumns(22);
+		birthSortDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		birthSortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelBirthDetail.add(birthSortDateText, "cell 1 3, alignx left");		//$NON-NLS-1$
 
 	// Add Birth details sub-panel to Birth panel
@@ -883,24 +883,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		JTable tableBirthLocn = new JTable() {
 		private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
 				    return new Dimension(super.getPreferredSize().width,
 				    		super.getRowCount() * super.getRowHeight());
 				  }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
-				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
 					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
 							public void run() {
 				        		((JTextField)editor).requestFocus();
 				        		((JTextField)editor).getCaret().setVisible(true);
@@ -909,7 +905,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    }
 				    return result;
 				}
-				@Override
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
@@ -957,7 +952,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//***************************************************************
 		JPanel panelBirthMemo = new JPanel();
 		panelBirthMemo.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelBirthMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]7[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelBirthMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_MemoBi = new JLabel(memoText);
 		lbl_MemoBi.setFont(lbl_MemoBi.getFont().deriveFont(lbl_MemoBi.getFont().getStyle() | Font.BOLD));
 		panelBirthMemo.add(lbl_MemoBi, "cell 0 0,alignx left");		//$NON-NLS-1$
@@ -972,7 +967,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoBirthText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoBirthScroll = new JScrollPane(memoBirthText);
-		memoBirthScroll.setMinimumSize(new Dimension(300, 120)); // set a starter size
+		memoBirthScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
 		memoBirthScroll.getViewport().setOpaque(false);
 		memoBirthScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoBirthText.setCaretPosition(0);	// set scrollbar to top
@@ -1027,15 +1022,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Birth Citations
 		JTable tableBirthCite = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 8-row table, even if empty
+					// Force a minimum of an 5-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 8) r = 8;
+					if (r < 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
@@ -1117,12 +1110,16 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBaptDetail.add(lbl_EventDateBa, "cell 0 2, alignx left");		//$NON-NLS-1$
 		baptDateText = new JTextField();
 		baptDateText.setColumns(22);
+		baptDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		baptDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelBaptDetail.add(baptDateText, "cell 1 2, alignx left");		//$NON-NLS-1$
 
 		JLabel lbl_SortDateBa = new JLabel(sortDateText);
 		panelBaptDetail.add(lbl_SortDateBa, "cell 0 3, alignx left");		//$NON-NLS-1$
 		baptSortDateText = new JTextField();
 		baptSortDateText.setColumns(22);
+		baptSortDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		baptSortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelBaptDetail.add(baptSortDateText, "cell 1 3, alignx left");		//$NON-NLS-1$
 
 	// Add Bapth details sub-panel to Bapt panel
@@ -1145,24 +1142,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Bapt location data
 		JTable tableBaptLocn = new JTable() {
 		private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
 				    return new Dimension(super.getPreferredSize().width,
 				    		super.getRowCount() * super.getRowHeight());
 				  }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
-				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
 					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
 							public void run() {
 				        		((JTextField)editor).requestFocus();
 				        		((JTextField)editor).getCaret().setVisible(true);
@@ -1171,7 +1164,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    }
 				    return result;
 				}
-				@Override
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
@@ -1219,7 +1211,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//***************************************************************
 		JPanel panelBaptMemo = new JPanel();
 		panelBaptMemo.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelBaptMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]7[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelBaptMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_MemoBa = new JLabel(memoText);
 		lbl_MemoBa.setFont(lbl_MemoBa.getFont().deriveFont(lbl_MemoBa.getFont().getStyle() | Font.BOLD));
@@ -1235,7 +1227,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoBaptText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoBaptScroll = new JScrollPane(memoBaptText);
-		memoBaptScroll.setMinimumSize(new Dimension(300, 120)); // set a starter size
+		memoBaptScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
 		memoBaptScroll.getViewport().setOpaque(false);
 		memoBaptScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoBaptText.setCaretPosition(0);	// set scrollbar to top
@@ -1290,15 +1282,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Bapt Citations
 		JTable tableBaptCite = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 8-row table, even if empty
+					// Force a minimum of an 5-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 8) r = 8;
+					if (r < 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
@@ -1381,12 +1371,16 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelDeathDetail.add(lbl_EventDateD, "cell 0 2, alignx left");		//$NON-NLS-1$
 		deathDateText = new JTextField();
 		deathDateText.setColumns(22);
+		deathDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		deathDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelDeathDetail.add(deathDateText, "cell 1 2, alignx left");		//$NON-NLS-1$
 
 		JLabel lbl_SortDateD = new JLabel(sortDateText);
 		panelDeathDetail.add(lbl_SortDateD, "cell 0 3, alignx left");		//$NON-NLS-1$
 		deathSortDateText = new JTextField();
 		deathSortDateText.setColumns(22);
+		deathSortDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		deathSortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelDeathDetail.add(deathSortDateText, "cell 1 3, alignx left");		//$NON-NLS-1$
 
 	// Add Death details sub-panel to Death panel
@@ -1409,24 +1403,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Death location data
 		JTable tableDeathLocn = new JTable() {
 		private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
 				    return new Dimension(super.getPreferredSize().width,
 				    		super.getRowCount() * super.getRowHeight());
 				  }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
-				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
 					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
 							public void run() {
 				        		((JTextField)editor).requestFocus();
 				        		((JTextField)editor).getCaret().setVisible(true);
@@ -1435,7 +1425,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    }
 				    return result;
 				}
-				@Override
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
@@ -1483,7 +1472,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//***************************************************************
 		JPanel panelDeathMemo = new JPanel();
 		panelDeathMemo.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelDeathMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]7[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelDeathMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_MemoD = new JLabel(memoText);
 		lbl_MemoD.setFont(lbl_MemoD.getFont().deriveFont(lbl_MemoD.getFont().getStyle() | Font.BOLD));
 		panelDeathMemo.add(lbl_MemoD, "cell 0 0, alignx left");		//$NON-NLS-1$
@@ -1498,7 +1487,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoDeathText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoDeathScroll = new JScrollPane(memoDeathText);
-		memoDeathScroll.setMinimumSize(new Dimension(300, 120)); // set a starter size
+		memoDeathScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
 		memoDeathScroll.getViewport().setOpaque(false);
 		memoDeathScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoDeathText.setCaretPosition(0);	// set scrollbar to top
@@ -1553,15 +1542,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Death Citations
 		JTable tableDeathCite = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 8-row table, even if empty
+					// Force a minimum of an 5-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 8) r = 8;
+					if (r < 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
@@ -1643,12 +1630,16 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBurialDetail.add(lbl_EventDateBu, "cell 0 2, alignx left");		//$NON-NLS-1$
 		burialDateText = new JTextField();
 		burialDateText.setColumns(22);
+		burialDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		burialDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelBurialDetail.add(burialDateText, "cell 1 2, alignx left");		//$NON-NLS-1$
 
 		JLabel lbl_SortDateBu = new JLabel(sortDateText);
 		panelBurialDetail.add(lbl_SortDateBu, "cell 0 3, alignx left");		//$NON-NLS-1$
 		burialSortDateText = new JTextField();
 		burialSortDateText.setColumns(22);
+		burialSortDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		burialSortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelBurialDetail.add(burialSortDateText, "cell 1 3, alignx left");		//$NON-NLS-1$
 
 	// Add Burial details sub-panel to Burial panel
@@ -1672,24 +1663,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Burial location data
 		JTable tableBurialLocn = new JTable() {
 		private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
 				    return new Dimension(super.getPreferredSize().width,
 				    		super.getRowCount() * super.getRowHeight());
 				  }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
-				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
 					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
 							public void run() {
 				        		((JTextField)editor).requestFocus();
 				        		((JTextField)editor).getCaret().setVisible(true);
@@ -1698,7 +1685,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    }
 				    return result;
 				}
-				@Override
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
@@ -1746,7 +1732,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//***************************************************************
 		JPanel panelBurialMemo = new JPanel();
 		panelBurialMemo.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelBurialMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]7[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelBurialMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_MemoBu = new JLabel(memoText);
 		lbl_MemoBu.setFont(lbl_MemoBu.getFont().deriveFont(lbl_MemoBu.getFont().getStyle() | Font.BOLD));
@@ -1762,7 +1748,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoBurialText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoBurialScroll = new JScrollPane(memoBurialText);
-		memoBurialScroll.setMinimumSize(new Dimension(300, 120)); // set a starter size
+		memoBurialScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
 		memoBurialScroll.getViewport().setOpaque(false);
 		memoBurialScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoBurialText.setCaretPosition(0);	// set scrollbar to top
@@ -1817,15 +1803,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Burial Citations
 		JTable tableBurialCite = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 8-row table, even if empty
+					// Force a minimum of an 5-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 8) r = 8;
+					if (r < 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
@@ -1890,12 +1874,16 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelPartnerDetail.add(lbl_EventDateP, "cell 0 2, alignx left");		//$NON-NLS-1$
 		partnerDateText = new JTextField();
 		partnerDateText.setColumns(22);
+		partnerDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		partnerDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelPartnerDetail.add(partnerDateText, "cell 1 2, alignx left");		//$NON-NLS-1$
 
 		JLabel lbl_SortDateP = new JLabel(sortDateText);
 		panelPartnerDetail.add(lbl_SortDateP, "cell 0 3, alignx left");		//$NON-NLS-1$
 		partnerSortDateText = new JTextField();
 		partnerSortDateText.setColumns(22);
+		partnerSortDateText.setEditable(false);		// ensure field cannot be edited from keyboard
+		partnerSortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		panelPartnerDetail.add(partnerSortDateText, "cell 1 3, alignx left");		//$NON-NLS-1$
 
 	// Add Partner details sub-panel to Partner panel
@@ -1919,24 +1907,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Partner location data
 		JTable tablePartnerLocn = new JTable() {
 		private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
 				    return new Dimension(super.getPreferredSize().width,
 				    		super.getRowCount() * super.getRowHeight());
 				  }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
 				}
-				@Override
 				public boolean editCellAt(int row, int col, EventObject e) {
 					if (col == 0) return false;
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
 							public void run() {
 				        		((JTextField)editor).requestFocus();
 				        		((JTextField)editor).getCaret().setVisible(true);
@@ -1945,7 +1929,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    }
 				    return result;
 				}
-				@Override
 				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
 					Component cell = super.prepareRenderer(renderer, row, col);
 					// For the Selected cell we let the editor take over with no highlights
@@ -1993,7 +1976,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//***************************************************************
 		JPanel panelPartnerMemo = new JPanel();
 		panelPartnerMemo.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelPartnerMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]7[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelPartnerMemo.setLayout(new MigLayout("insets 5", "[grow]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_MemoP = new JLabel(memoText);
 		lbl_MemoP.setFont(lbl_MemoP.getFont().deriveFont(lbl_MemoP.getFont().getStyle() | Font.BOLD));
@@ -2009,7 +1992,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoPartnerText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoPartnerScroll = new JScrollPane(memoPartnerText);
-		memoPartnerScroll.setMinimumSize(new Dimension(300, 120)); // set a starter size
+		memoPartnerScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
 		memoPartnerScroll.getViewport().setOpaque(false);
 		memoPartnerScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoPartnerText.setCaretPosition(0);	// set scrollbar to top
@@ -2064,15 +2047,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create scrollpane and table for the Partner Citations
 		JTable tablePartnerCite = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 8-row table, even if empty
+					// Force a minimum of an 5-row table, even if empty
 					int r = super.getRowCount();
-					if (r < 8) r = 8;
+					if (r < 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 					 }
-				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
@@ -2185,7 +2166,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
  ******************/
 		// Listener for clicking 'X' on screen
 		addWindowListener(new WindowAdapter() {
-		    @Override
 			public void windowClosing(WindowEvent e)  {
 				btn_Cancel.doClick();
 			}
@@ -2193,7 +2173,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Cancel button
 		btn_Cancel.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 			// Test for unsaved changes
 			if (btn_Save.isEnabled()) {
@@ -2310,7 +2289,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// On selection of a name style update the Name table
 		persNameStyle.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(persNameStyle.getSelectedIndex() == -1)) {
 					DefaultTableModel tableModel = (DefaultTableModel) tableName.getModel();
@@ -2327,7 +2305,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// On selection of a birth locn style update the Location table
 		birthLocnStyle.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(birthLocnStyle.getSelectedIndex() == -1)) {
 					DefaultTableModel tableModel = (DefaultTableModel) tableBirthLocn.getModel();
@@ -2344,7 +2321,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// On selection of a bapt locn style update the Location table
 		baptLocnStyle.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(baptLocnStyle.getSelectedIndex() == -1)) {
 					DefaultTableModel tableModel = (DefaultTableModel) tableBaptLocn.getModel();
@@ -2361,7 +2337,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// On selection of a death locn style update the Location table
 		deathLocnStyle.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(deathLocnStyle.getSelectedIndex() == -1)) {
 					DefaultTableModel tableModel = (DefaultTableModel) tableDeathLocn.getModel();
@@ -2378,7 +2353,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// On selection of a burial locn style update the Location table
 		burialLocnStyle.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(burialLocnStyle.getSelectedIndex() == -1)) {
 					DefaultTableModel tableModel = (DefaultTableModel) tableBurialLocn.getModel();
@@ -2395,7 +2369,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// On selection of a partner locn style update the Location table
 		partnerLocnStyle.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(partnerLocnStyle.getSelectedIndex() == -1)) {
 					DefaultTableModel tableModel = (DefaultTableModel) tablePartnerLocn.getModel();
@@ -2412,7 +2385,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// ComboBox listener for event type Birth and setting of role list
 		comboBirthType.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				int selectedBirthIndex = comboBirthType.getSelectedIndex();
 				int selectedEventType = birthEventType[selectedBirthIndex];
@@ -2435,7 +2407,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// ComboBox listener for event type Bapt and setting of role list
 		comboBaptType.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				int selectedBaptIndex = comboBaptType.getSelectedIndex();
 				int selectedEventType = baptEventType[selectedBaptIndex];
@@ -2460,7 +2431,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// ComboBox listener for event type Death and setting of role list
 		comboDeathType.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				int selectedDeathIndex = comboDeathType.getSelectedIndex();
 				int selectedEventType = deathEventType[selectedDeathIndex];
@@ -2485,7 +2455,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// ComboBox listener for event type Burial and setting of role list
 		comboBurialType.addActionListener (new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent event) {
 				int selectedBurialIndex = comboBurialType.getSelectedIndex();
 				int selectedEventType = burialEventType[selectedBurialIndex];
@@ -2510,7 +2479,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to birth date to enable save button
 		birthDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e){
             	btn_Save.setEnabled(true);
           // Initiate edit date window and preload
@@ -2534,7 +2502,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to birth sort date to enable save button
 		birthSortDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
@@ -2558,7 +2525,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to Start date to enable save button
 		baptDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e){
             	btn_Save.setEnabled(true);
           // Initiate edit date window and preload
@@ -2582,7 +2548,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to sort date to enable save button
 		baptSortDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
@@ -2606,7 +2571,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to death date to enable save button
 		deathDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e){
             	btn_Save.setEnabled(true);
           // Initiate edit date window and preload
@@ -2630,7 +2594,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to sort date to enable save button
 		deathSortDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
@@ -2654,7 +2617,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to burial date to enable save button
 		burialDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e){
             	btn_Save.setEnabled(true);
           // Initiate edit date window and preload
@@ -2678,7 +2640,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// Listener to burial sort date to enable save button
 		burialSortDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
@@ -2703,7 +2664,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to partner date to enable save button
 		partnerDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e){
             	btn_Save.setEnabled(true);
           // Initiate edit date window and preload
@@ -2727,7 +2687,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener to partner sort date to enable save button
 		partnerSortDateText.addMouseListener(new MouseAdapter(){
-			@Override
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
@@ -2752,7 +2711,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// Listener for editing birth, bapth, death and burial memo text
 		memoBirthText.addFocusListener(new FocusAdapter() {
-            @Override
             public void focusLost(FocusEvent e) {
             	birthMemoEdited = true;
             	btn_Save.setEnabled(true);
@@ -2760,7 +2718,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         });
 
 		memoBaptText.addFocusListener(new FocusAdapter() {
-            @Override
             public void focusLost(FocusEvent e) {
             	baptMemoEdited = true;
             	btn_Save.setEnabled(true);
@@ -2768,7 +2725,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         });
 
 		memoBurialText.addFocusListener(new FocusAdapter() {
-            @Override
+
             public void focusLost(FocusEvent e) {
             	deathMemoEdited = true;
             	btn_Save.setEnabled(true);
@@ -2776,7 +2733,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         });
 
 		memoBurialText.addFocusListener(new FocusAdapter() {
-            @Override
             public void focusLost(FocusEvent e) {
             	burialMemoEdited = true;
             	btn_Save.setEnabled(true);
@@ -2784,7 +2740,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         });
 
 		memoPartnerText.addFocusListener(new FocusAdapter() {
-            @Override
             public void focusLost(FocusEvent e) {
             	partnerMemoEdited = true;
             	btn_Save.setEnabled(true);
@@ -2793,19 +2748,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in tableName
 		TableModelListener persListener = new TableModelListener() {
-			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
+			// Process name data
 				if (!(tableName.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = (String) model.getValueAt(tableName.getSelectedRow(), 1);
+					String nameElementData = ((String) model.getValueAt(tableName.getSelectedRow(), 1)).trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableName.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - name table changed: " + tableName.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					pointPersonHandler.addToPersonNameChangeList(tableName.getSelectedRow(), nameElementData);
-					nameElementUpdates++;
+				// Ignore entry of null data in a name field
+					if (nameElementData.length() > 0) {
+						pointPersonHandler.addToPersonNameChangeList(tableName.getSelectedRow(), nameElementData);
+						btn_Save.setEnabled(true);
+						nameElementUpdates++;
+					}
 				}
 			}
 		};
@@ -2813,20 +2771,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Birth location
 		TableModelListener birthEventListener = new TableModelListener() {
-			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
 			// Process birth location data
 				if (!(tableBirthLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = (String) model.getValueAt(tableBirthLocn.getSelectedRow(), 1);
+					String nameElementData = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 1)).trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - birth locn table changed: " + tableBirthLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					pointPersonHandler.addToLocationChangeList( 1, tableBirthLocn.getSelectedRow(), nameElementData);
-					eventLocationUpdates[0]++;
+				// Ignore entry of null data in a location field
+					if (nameElementData.length() > 0) {
+						pointPersonHandler.addToLocationChangeList( 1, tableBirthLocn.getSelectedRow(), nameElementData);
+						btn_Save.setEnabled(true);
+						eventLocationUpdates[0]++;
+					}
 				}
 			}
 		};
@@ -2834,20 +2794,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// Listener for changes made in person Bapt location
 		TableModelListener baptEventListener = new TableModelListener() {
-			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
 			// Process baptism location data
 				if (!(tableBaptLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = (String) model.getValueAt(tableBaptLocn.getSelectedRow(), 1);
+					String nameElementData = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 1)).trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - baptism locn table changed: " + tableBaptLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					pointPersonHandler.addToLocationChangeList(2, tableBaptLocn.getSelectedRow(), nameElementData);
-					eventLocationUpdates[1]++;
+				// Ignore entry of null data in a location field
+					if (nameElementData.length() > 0) {
+						pointPersonHandler.addToLocationChangeList(2, tableBaptLocn.getSelectedRow(), nameElementData);
+						btn_Save.setEnabled(true);
+						eventLocationUpdates[1]++;
+					}
 				}
 			}
 		};
@@ -2855,20 +2817,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Death location
 		TableModelListener deathEventListener = new TableModelListener() {
-			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
 			// Process death location data
 				if (!(tableDeathLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = (String) model.getValueAt(tableDeathLocn.getSelectedRow(), 1);
+					String nameElementData = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 1)).trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - death locn table changed: " + tableDeathLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					pointPersonHandler.addToLocationChangeList(3, tableDeathLocn.getSelectedRow(), nameElementData);
-					eventLocationUpdates[2]++;
+				// Ignore entry of null data in a location field
+					if (nameElementData.length() > 0) {
+						pointPersonHandler.addToLocationChangeList(3, tableDeathLocn.getSelectedRow(), nameElementData);
+						btn_Save.setEnabled(true);
+						eventLocationUpdates[2]++;
+					}
 				}
 			}
 		};
@@ -2876,20 +2840,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Burial location
 		TableModelListener burialEventListener = new TableModelListener() {
-			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
 			// Process burial location data
 				if (!(tableBurialLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = (String) model.getValueAt(tableBurialLocn.getSelectedRow(), 1);
+					String nameElementData = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 1)).trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - burial locntable changed: " + tableBurialLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					pointPersonHandler.addToLocationChangeList(4, tableBurialLocn.getSelectedRow(), nameElementData);
-					eventLocationUpdates[3]++;
+				// Ignore entry of null data in a location field
+					if (nameElementData.length() > 0) {
+						pointPersonHandler.addToLocationChangeList(4, tableBurialLocn.getSelectedRow(), nameElementData);
+						btn_Save.setEnabled(true);
+						eventLocationUpdates[3]++;
+					}
 				}
 			}
 		};
@@ -2897,20 +2863,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Partner location
 		TableModelListener partnerEventListener = new TableModelListener() {
-			@Override
 			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
 			// Process partner location data
 				if (!(tablePartnerLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = (String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 1);
+					String nameElementData = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 1)).trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - partner locn table changed: " + tablePartnerLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					pointPersonHandler.addToLocationChangeList(5, tablePartnerLocn.getSelectedRow(), nameElementData);
-					eventLocationUpdates[4]++;
+				// Ignore entry of null data in a location field
+					if (nameElementData.length() > 0) {
+						pointPersonHandler.addToLocationChangeList(5, tablePartnerLocn.getSelectedRow(), nameElementData);
+						btn_Save.setEnabled(true);
+						eventLocationUpdates[4]++;
+					}
 				}
 			}
 		};
@@ -2918,11 +2886,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// General Listener after edit of any text field
 		DocumentListener textListen = new DocumentListener() {
-            @Override
             public void insertUpdate(DocumentEvent e) {updateFieldState();}
-            @Override
             public void removeUpdate(DocumentEvent e) {updateFieldState();}
-            @Override
             public void changedUpdate(DocumentEvent e) {updateFieldState();}
             protected void updateFieldState() {
             // do not turn on btn_Save here as memo-only updates do not cause event saves
@@ -2938,7 +2903,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Add Name Citation button
 		btn_AddN.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
@@ -2947,7 +2911,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// General Listener for Sentence Editor buttons
 		ActionListener sentenceListener = new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE02 need code here to allow sentence editing
 				JOptionPane.showMessageDialog(null, "This function is not yet implemented"); //$NON-NLS-1$
@@ -2961,7 +2924,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Add Birth Citation button
 		btn_AddB.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
@@ -2970,7 +2932,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Add Bapt Citation button
 		btn_AddBap.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
@@ -2979,7 +2940,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Add Death Citation button
 		btn_AddD.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
@@ -2988,7 +2948,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Add Burial Citation button
 		btn_AddBur.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
@@ -2997,7 +2956,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Add Partner Citation button
 		btn_AddPart.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
@@ -3006,7 +2964,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Delete Name Citation button
 		btn_DelN.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE06 need code here to delete selected Name Citation
@@ -3015,7 +2972,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Delete Birth Citation button
 		btn_DelB.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE06 need code here to delete selected Birth Citation
@@ -3024,7 +2980,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Delete Bapt Citation button
 		btn_DelBap.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE06 need code here to delete selected Birth Citation
@@ -3033,7 +2988,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Delete Death Citation button
 		btn_DelD.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE06 need code here to delete selected Birth Citation
@@ -3042,7 +2996,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Delete Burial Citation button
 		btn_DelBur.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE06 need code here to delete selected Birth Citation
@@ -3051,7 +3004,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for Delete Partner Citation button
 		btn_DelPart.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE06 need code here to delete selected Birth Citation
@@ -3060,7 +3012,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Name Citation up button
 		btn_UpN.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation up in table
@@ -3069,7 +3020,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Name Citation down button
 		btn_DownN.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation down in table
@@ -3078,7 +3028,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Birth Citation up button
 		btn_UpB.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation up in table
@@ -3087,7 +3036,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Birth Citation down button
 		btn_DownB.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation down in table
@@ -3096,7 +3044,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Bapt Citation up button
 		btn_UpBap.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation up in table
@@ -3105,7 +3052,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Bapt Citation down button
 		btn_DownBap.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation down in table
@@ -3114,7 +3060,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Death Citation up button
 		btn_UpD.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation up in table
@@ -3123,7 +3068,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Death Citation down button
 		btn_DownD.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation down in table
@@ -3132,7 +3076,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Burial Citation up button
 		btn_UpBur.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation up in table
@@ -3141,7 +3084,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Burial Citation down button
 		btn_DownBur.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation down in table
@@ -3150,7 +3092,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Partner Citation up button
 		btn_UpPart.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation up in table
@@ -3159,7 +3100,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for move Partner Citation down button
 		btn_DownPart.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				// NOTE07 need code here to move selected Citation down in table
@@ -3169,20 +3109,20 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Activate listener for Add New Person SAVE button ONLY
 	if (unrelated)
 		btn_Save.addActionListener(new ActionListener() {
-			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving updates and leaving HG0505AddPerson-New");		//$NON-NLS-1$
+				// Check person has a name before allowing Save to proceed
+				if (nameElementUpdates == 0) {
+					addNameErrorMessage();
+					return;
+				}
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving updates and leaving HG0505AddPerson-New");	//$NON-NLS-1$
 				try {
 				// Code for initiate update of database
 					if (HGlobal.DEBUG)
 						for (Object[] element : objReqFlagData)
 							System.out.println(" Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
-				// Check if person is given name
-					if (nameElementUpdates > 0) {
-						pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
-						pointPersonHandler.addNewPerson(refText.getText());
-					} else createEvent = false;
-
+					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
+					pointPersonHandler.addNewPerson(refText.getText());
 				// Create the edited evnts
 					createAllEvents(pointPersonHandler); // If events created
 
@@ -3201,6 +3141,14 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			}
 		});
 	}	// End HG0505AddPerson constructor
+
+/**
+ * addNameErrorMessage - show prompt for a Name
+ */
+	public void addNameErrorMessage() {
+		JOptionPane.showMessageDialog(btn_Save, HG0505Msgs.Text_35,		// Please add a Name for this Person
+				HG0505Msgs.Text_13, JOptionPane.ERROR_MESSAGE);
+	}
 
 /**
  * createAllEvents(HBPersonHandler pointPersonHandler)
@@ -3271,7 +3219,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 						if (partnerMemoEdited) pointPersonHandler.createAddPersonGUIMemo(memoPartnerText.getText());
 						newEventPID = pointPersonHandler.addPersonEvent(eventIndex,
 									selectedPartnerType);
-						System.out.println(" Create partner event index/type: " + eventIndex + "/" + selectedPartnerType); //$NON-NLS-1$ //$NON-NLS-2$
+						if (HGlobal.DEBUG)
+							System.out.println(" Create partner event index/type: " + eventIndex + "/" + selectedPartnerType); //$NON-NLS-1$ //$NON-NLS-2$
 						if (partnerDateOK) pointPersonHandler.createPersonEventDates(false, newEventPID, "START_HDATE_RPID", partnerHREDate); //$NON-NLS-1$
 						if (partnerSortDateOK) pointPersonHandler.createPersonEventDates(false, newEventPID, "SORT_HDATE_RPID", partnerSortHREDate); //$NON-NLS-1$
 						pointPersonHandler.updatePartnerEventLink(newPartnerPID, newEventPID);
@@ -3284,7 +3233,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		return newEventPID;
 	}
 
-	@Override
 	public void saveBirthDate() {
 		if (editBirthDate != null) {
 			birthMainYear = editBirthDate.returnYearToGUI();
@@ -3325,7 +3273,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		}
 	}
 
-	@Override
 	public void saveBirthSortDate() {
 		if (editBirthSortDate != null) {
 			birthSortMainYear = editBirthSortDate.returnYearToGUI();
@@ -3347,7 +3294,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		birthSortDateOK = true;
 	}
 
-	@Override
 	public void saveBaptDate() {
 		if (editBaptDate != null) {
 			baptMainYear = editBaptDate.returnYearToGUI();
@@ -3388,7 +3334,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		}
 	}
 
-	@Override
 	public void saveBaptSortDate() {
 		if (editBaptSortDate != null) {
 			baptSortMainYear = editBaptSortDate.returnYearToGUI();
@@ -3410,7 +3355,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		baptSortDateOK = true;
 	}
 
-	@Override
 	public void saveDeathDate() {
 		if (editDeathDate != null) {
 			deathMainYear = editDeathDate.returnYearToGUI();
@@ -3451,7 +3395,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		}
 	}
 
-	@Override
 	public void saveDeathSortDate() {
 		if (editBirthSortDate != null) {
 			deathSortMainYear = editBirthSortDate.returnYearToGUI();
@@ -3473,7 +3416,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		deathSortDateOK = true;
 	}
 
-	@Override
 	public void saveBurialDate() {
 		if (editBurialDate != null) {
 			burialMainYear = editBurialDate.returnYearToGUI();
@@ -3514,7 +3456,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		}
 	}
 
-	@Override
 	public void saveBurialSortDate() {
 		if (editBurialSortDate != null) {
 			burialSortMainYear = editBurialSortDate.returnYearToGUI();
@@ -3536,7 +3477,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		burialSortDateOK = true;
 	}
 
-	@Override
 	public void savePartnerDate() {
 		if (editPartnerDate != null) {
 			partnerMainYear = editPartnerDate.returnYearToGUI();
@@ -3577,7 +3517,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		}
 	}
 
-	@Override
 	public void savePartnerSortDate() {
 		if (editPartnerSortDate != null) {
 			partnerSortMainYear = editPartnerSortDate.returnYearToGUI();

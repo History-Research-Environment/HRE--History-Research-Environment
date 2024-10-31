@@ -65,6 +65,7 @@ package hre.bila;
   *			   2024-08-04 - Updated event create new location if not exist (N Tolleshaug)
   *			   2024-08-17 - Fix for add partner event from main add partner (N Tolleshaug)
   *			   2024-10-05 - Fix for add partner event - double PS (N Tolleshaug)
+  *			   2024-10-19 - Added updateParentTableEvnt() to update parent relation (N Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -3519,8 +3520,6 @@ class EditEventRecord extends HBBusinessLayer {
 		String selectString;
 		selectString = setSelectSQL("*", eventAssocTable, "PID = " + assocTablePID);
 		assocTableRS = requestTableData(selectString, dataBaseIndex);
-		//assocPersonPID = personPID;
-		//assocEventPID = eventTablePID;
 		updateT451_EVNT_ASSOC(assocTableRS, roleNumber, 1);
 	// Reset Update event
 		pointOpenProject.getWhereWhenHandler().resetUpdateEvent(pointOpenProject);
@@ -3580,14 +3579,48 @@ class EditEventRecord extends HBBusinessLayer {
 		}
 		newEventPID = pointCreateEventRecord.createEventRecord(selectedEventType, selectedRoleType, eventLocationChanges,
 												  eventHdatePID, sortHdatePID, nextHREMemoPID);
+		
+		if (selectedEventType == birthEventType) 
+			updateParentTableEvnt(pointOpenProject.getSelectedPersonPID(),newEventPID );
 
 	// Reload Result Set for person and names
 		pointOpenProject.reloadT401Persons();
 		pointOpenProject.reloadT402Names();
 
-	// Reset Person Select
-		//pointOpenProject.getPersonHandler().resetPersonSelect();
 		return newEventPID;
+	}
+	
+/**
+ * updateParentTableEvnt(long electedPersonPID,long newEventPID ) 	
+ * @param electedPersonPID
+ * @param newEventPID
+ * @throws HBException
+ */
+	private void updateParentTableEvnt(long selectedPersonPID,long newEventPID ) throws HBException {
+		ResultSet parentTableRS = null;
+		String selectString;
+		long eventRPID;
+		selectString = setSelectSQL("*", personParentTable, "PERSON_RPID = " + selectedPersonPID);
+		parentTableRS = requestTableData(selectString, dataBaseIndex);
+	//Start transaction
+		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+		try {
+			parentTableRS.beforeFirst();
+			while (parentTableRS.next()) {
+				eventRPID = parentTableRS.getLong("EVNT_RPID");
+				if (eventRPID == null_RPID)
+					parentTableRS.updateLong("EVNT_RPID", newEventPID);
+				parentTableRS.updateRow();	
+			}
+	//End transaction
+			updateTableData("COMMIT", dataBaseIndex);
+		} catch (SQLException sqle) {
+	//Roll back transaction
+			updateTableData("ROLLBACK", dataBaseIndex);
+			System.out.println(" updateParentTableEvntTable error: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException(" updateParentTableEvnt error: " + sqle.getMessage());
+		}
 	}
 
 /**

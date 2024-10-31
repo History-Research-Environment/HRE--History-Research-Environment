@@ -5,6 +5,7 @@ package hre.gui;
  * 			  2024-06-27 Activated edit name (N Tolleshaug)
  * 			  2024-08-16 NLS conversion (D Ferguson)
  * 			  2024-10-05 Updated for reset PM/PS (N Tolleshaug)
+ * 			  2024-11-29 Fixed reset PM/PS (N Tolleshaug)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE02 load/edit/save/move of Citation data
@@ -147,12 +148,14 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 						// Save the new citation in the DB - NOTE02
 						citationChanged = false;
 					}
-				// Reset personSelector and PersonManager(if running)
-					pointOpenProject.reloadT401Persons();
-					pointOpenProject.reloadT402Names();
-					pointPersonHandler.resetPersonManager();
-					pointPersonHandler.resetPersonSelect();
-				}
+				}	
+				
+			// Reset personSelector and PersonManager(if running)
+				pointOpenProject.reloadT401Persons();
+				pointOpenProject.reloadT402Names();
+				pointPersonHandler.resetPersonManager();
+				pointPersonHandler.resetPersonSelect();
+				
 			} catch (HBException hbe) {
 				System.out.println("HG0509EditPersonName - Save error: " + hbe.getMessage());	//$NON-NLS-1$
 				hbe.printStackTrace();

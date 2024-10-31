@@ -17,6 +17,7 @@ package hre.gui;
  * 			  2024-08-07 Updated to handle BC dates correctly (D Ferguson)
  * 			  2024-08-11 At startup, set mouse to first date entry field (D Ferguson)
  * 			  2024-10-01 Organize imports, clean dead code (D Ferguson)
+ * 			  2024-10-28 Add test for date being cleared as a valid entry (D Ferguson)
  * *************************************************************************************
  * Notes on incomplete functionality:
  * Does not yet support different calendar types
@@ -554,7 +555,6 @@ public class HG0590EditDate extends JDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				returnDate = "Cancelled";		//$NON-NLS-1$
 				dispose();
 			}
 		});
@@ -771,8 +771,10 @@ public class HG0590EditDate extends JDialog {
 			else dateMSec = 0;
 
 	// Start tests for validity
-		// Test for year = 0, or month = 0 when day > 0
-		if (dateYear == 0 || (dateMonth == 0 && dateDay > 0)) errorCode = errorCode + "O";	//$NON-NLS-1$
+		// Test for year = 0 and month or day > 0
+		if (dateYear == 0 && (dateMonth > 0 || dateDay > 0)) errorCode = errorCode + "O";	//$NON-NLS-1$
+		// or day > 0 but month = 0
+		if (dateDay > 0 && dateMonth == 0) errorCode = errorCode + "O";	//$NON-NLS-1$
 		// If year greater than current year, flag a problem
 		if (dateYear > Year.now().getValue()) errorCode = errorCode + "Y";	//$NON-NLS-1$
 		// Test month value
@@ -812,8 +814,10 @@ public class HG0590EditDate extends JDialog {
 			if (txt_mSec2.getText().length() > 0) date2MSec = Integer.valueOf(txt_mSec2.getText());
 				else date2MSec = 0;
 
-			// Test for year = 0, or month = 0 when day > 0
-			if (date2Year == 0 || (date2Month == 0 && date2Day > 0)) errorCode = errorCode + "O";	//$NON-NLS-1$
+			// Test for year = 0 and month or day > 0
+			if (date2Year == 0 && (date2Month > 0 || date2Day > 0)) errorCode = errorCode + "O";	//$NON-NLS-1$
+			// or day > 0 but month = 0
+			if (date2Day > 0 && date2Month == 0) errorCode = errorCode + "O";	//$NON-NLS-1$
 			// If year2 greater than current year, flag a problem
 			if (date2Year > Year.now().getValue()) errorCode = errorCode + "Y";	//$NON-NLS-1$
 			// Test month value
@@ -854,6 +858,23 @@ public class HG0590EditDate extends JDialog {
 			if (later) errorCode = errorCode + "Z";	//$NON-NLS-1$
 		}
 
+	// Final test - if all date/time & date2/time2 fields are both 0, user is removing the date, so is OK, but
+	// if the first date is empty and the 2nd date NOT empty, then we have a new date error
+		// first, test date/time and date2/time2 fields
+		boolean dateEmpty = false;
+		boolean date2Empty = false;
+		if (dateYear ==0 && dateMonth == 0 && dateDay == 0 && dateHr == 0 && dateMin == 0 && dateSec == 0 && dateMSec == 0)
+			dateEmpty = true;
+		if (selectedQualifier >= 6 && date2Year==0 && date2Month==0 && date2Day==0 && date2Hr==0 && date2Min==0 && date2Sec==0 && date2MSec==0)
+			date2Empty = true;
+		// Now test the results
+		if (dateEmpty && date2Empty) {		// all fields 0, no error, but remove qualifier
+			selectedQualifier = 0;
+			return;
+			}
+		if (dateEmpty && selectedQualifier < 6) return;		// date fields empty and no 2nd date, so also OK
+		if (dateEmpty && selectedQualifier >= 6 && !date2Empty) errorCode = errorCode + "O";	// date empty and date2 NOT empty = error
+
 	// Test errorCode content and show error msg(s) if needed
 		if (errorCode.length() > 0) {
 			String errorMsg = HG0590Msgs.Text_19;	// Invalid data entered:
@@ -869,7 +890,7 @@ public class HG0590EditDate extends JDialog {
 			if (errorCode.contains("I")) errorMsg = errorMsg + HG0590Msgs.Text_31;	//$NON-NLS-1$ // - Minute value greater than 60
 			if (errorCode.contains("S")) errorMsg = errorMsg + HG0590Msgs.Text_32;	//$NON-NLS-1$ // - Second value greater than 60
 			// Now show errormsg, anchored over Save button
-			JOptionPane.showMessageDialog(btn_Save, errorMsg, HG0590Msgs.Text_33, // Date/Time Input Error
+			JOptionPane.showMessageDialog(btn_Save, errorMsg, HG0590Msgs.Text_33, // Date/Time Input Error \n
 					JOptionPane.ERROR_MESSAGE);
 		}
 	}		// End of validateInput
