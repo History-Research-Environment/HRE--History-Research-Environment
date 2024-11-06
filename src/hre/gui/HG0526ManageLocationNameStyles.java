@@ -18,6 +18,7 @@ package hre.gui;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
 
@@ -31,7 +32,7 @@ import hre.nls.HG0524Msgs;
  * Admin Location Name Styles
  * @author D Ferguson
  * @version v0.01.0029
- * @param <NameStyleData>						 
+ * @param <NameStyleData>
  * @since 2022-08-14
  */
 
@@ -39,10 +40,10 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 
 	private static final long serialVersionUID = 001L;
 	public static final String screenID = "52600"; //$NON-NLS-1$
-	
+
 	long null_RPID  = 1999999999999999L;
 	HBNameStyleManager pointClass;
-	
+
 	HG0527ConvertNameStyle convertStyle;
 /**
  * Finish tailoring the Dialog
@@ -70,7 +71,7 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 
 		// This data loaded from list of all name style T160 records
 		pointStyleHandler.getNameStyles(namestyleModel);
-		
+
 		list_Styles.setSelectedIndex(pointStyleHandler.getDefaultStyleIndex());	// set default as selected
 
 		// Display list for Name Style from a T160 record
@@ -78,18 +79,18 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
     	chosenCodesModel.clear();
     	pointStyleHandler.getChosenElements(chosenElementsModel);
     	pointStyleHandler.getChosenCodes(chosenCodesModel);
-		
+
 		// Display list for Name Style from a T162 record
        	chosenOutElementsModel.clear();
     	chosenOutCodesModel.clear();
- 	
+
 		// Load Name Style description from T160 contents
     	txtpnDesc.setText(pointStyleHandler.getNameStyleText(0));
 
-    	btn_NameSave.setEnabled(false); 
+    	btn_Save.setEnabled(false);
     	btn_OutSave.setEnabled(false);
     	pack();
-    	
+
 /**
  * SETUP LISTENERS SPECIFIC TO THIS METHOD
  */
@@ -98,26 +99,26 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// If NOT in Save mode, just Close the screen
-				if (!btn_NameSave.isEnabled() & !btn_OutSave.isEnabled()) {
+				if (!btn_Save.isEnabled() & !btn_OutSave.isEnabled()) {
 					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0526ManageLocationNameStyles"); //$NON-NLS-1$
 					dispose();
 				}
-				// Else confirm exit without Save		  
+				// Else confirm exit without Save
 				else {
-					if (JOptionPane.showConfirmDialog(btn_Close, 
+					if (JOptionPane.showConfirmDialog(btn_Close,
 													HG0524Msgs.Text_162 +		// There are unsaved Name Style changes
 													HG0524Msgs.Text_163,		// Do you still wish to exit this screen?
 													HG0524Msgs.Text_161,		// Administer Location Name Styles
 						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-							 if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling HG0526ManageLocationNameStyles"); //$NON-NLS-1$				  
-							 dispose();	
+							 if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling HG0526ManageLocationNameStyles"); //$NON-NLS-1$
+							 dispose();
 						}
 				}
 			}
 		});
 
-		// Listener for btn_NameSave (save all Name Style changes to database)
-		btn_NameSave.addActionListener(new ActionListener() {
+		// Listener for btn_Save (save all Style changes to database)
+		btn_Save.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (list_Styles.getSelectedIndex() != -1) {
@@ -125,32 +126,32 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 						dumpElementCodes(chosenElementsModel);
 						dumpElementCodes(chosenCodesModel);
 					}
-					
-					try {	
-			   // Update Default Style Setting in T162	
-						pointStyleHandler.updateDefaultStyle();						
+
+					try {
+			   // Update Default Style Setting in T162
+						pointStyleHandler.updateDefaultStyle();
 						String styleName = list_Styles.getSelectedValue();
-						pointStyleHandler.updateNameStyleData(list_Styles.getSelectedIndex(), 
-															  chosenElementsModel, 
+						pointStyleHandler.updateNameStyleData(list_Styles.getSelectedIndex(),
+															  chosenElementsModel,
 															  chosenCodesModel);
 					// Update name and description
 						pointStyleHandler.updateStyleName(list_Styles.getSelectedIndex(), styleName, txtpnDesc.getText());
-						
+
 					// If TMG style the allElementsModel is cleared
 						if (!pointStyleHandler.isTmgNameStyle[list_Styles.getSelectedIndex()]) {
 							pointStyleHandler.updateNameElementDescription(nameType, allElementsModel);
-							pointStyleHandler.updateAllElementTable(nameType, allElementsModel, allCodesModel);	
+							pointStyleHandler.updateAllElementTable(nameType, allElementsModel, allCodesModel);
 						}
-						
-					// Reset elements lists when changing HRE name element description								
+
+					// Reset elements lists when changing HRE name element description
 						resetElementLists();
 					} catch (HBException hbe) {
 						System.out.println("Save all name style changes error: " + hbe.getMessage()); //$NON-NLS-1$
 						errorMessage("HBE00","Save all name style changes error: \n" + hbe.getMessage(), 0, nameType); //$NON-NLS-1$ //$NON-NLS-2$
 						hbe.printStackTrace();
-					}					
+					}
 				}
-				btn_NameSave.setEnabled(false);
+				btn_Save.setEnabled(false);
 			}
 		});
 
@@ -164,13 +165,13 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 						dumpElementCodes(chosenOutCodesModel);
 					}
 					String styleName = list_OutStyles.getSelectedValue();
-						
+
 			// Update output code String
-					try {	
+					try {
 						pointStyleHandler.updateOutputStyleData(list_OutStyles.getSelectedIndex(), chosenOutCodesModel);
-						pointStyleHandler.updateOutputStyleName(list_OutStyles.getSelectedIndex(), 
+						pointStyleHandler.updateOutputStyleName(list_OutStyles.getSelectedIndex(),
 															styleName, txtpnOutDesc.getText());
-			// Reset output elements lists when changing element list						
+			// Reset output elements lists when changing element list
 						pointStyleHandler.setOutputStyleTable(nameType);
 						resetElementLists();
 					} catch (HBException hbe) {
@@ -181,7 +182,7 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 				btn_OutSave.setEnabled(false);
 			}
 		});
-		
+
 		// Listener for Convert button - call HG0527 and exit this screen
 		btn_Convert.addActionListener(new ActionListener() {
 			@Override
@@ -195,10 +196,10 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 					convertStyle.setLocation(xy.x-100, xy.y);
 					convertStyle.setAlwaysOnTop(true);
 					// and dispose of one-self
-					dispose();				
+					dispose();
 				}
 			}
-		});	
-		
+		});
+
 	}	// End HG0526ManageLocationNameStyles constructor
 }

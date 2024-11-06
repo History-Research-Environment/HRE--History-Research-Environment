@@ -19,6 +19,7 @@ package hre.gui;
  * 			  2024-06-28 Removed sort date fields (N Tolleshaug)
  * 			  2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
  * 			  2024-10-25 Make date fields non-editable by keyboard (D Ferguson)
+ * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE01 load/edit/save of Citation data
@@ -58,7 +59,6 @@ import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
@@ -307,13 +307,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				    if (e != null && e instanceof MouseEvent) {
 				        btn_Save.setEnabled(true);	// turn on Save button as soon as edit starts
 				        nameChanged = true;
-				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -561,15 +556,17 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				if (!(tablePerson.getSelectedRow() == -1)) {
 					TableModel nameModel = (TableModel) e.getSource();
 					int selectedRow = tablePerson.getSelectedRow();
-					String nameElementData = ((String) nameModel.getValueAt(selectedRow, 1)).trim();
+					String nameElementData = ((String) nameModel.getValueAt(selectedRow, 1));
 					if (HGlobal.DEBUG) {
 						String element = (String) nameModel.getValueAt(tablePerson.getSelectedRow(), 0);
 						System.out.println("HG0509ManagePersonName - table changed: " + tablePerson.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + "/" + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-					btn_Save.setEnabled(true);
-					nameChanged = true;
-					pointPersonHandler.addToNameChangeList(selectedRow, nameElementData);
+					if (nameElementData != null) {
+						btn_Save.setEnabled(true);
+						nameChanged = true;
+						pointPersonHandler.addToNameChangeList(selectedRow, nameElementData);
+					}
 				}
 			}
 		};

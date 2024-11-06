@@ -40,6 +40,7 @@ package hre.gui;
  * 			  2024-10-24 ignore null data entry in name, location fields (D Ferguson)
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  * 			  2024-10-31 Reduce Memo/Citation area size and make consistent (D Ferguson)
+ * 			  2024-11-03 Removed SwingUtility from table cell edit focus (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
@@ -89,7 +90,6 @@ import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
@@ -492,12 +492,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				    	((JTextField)editor).requestFocus();
+		        		((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -896,12 +892,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -1155,12 +1147,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -1416,12 +1404,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -1676,12 +1660,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -1920,12 +1900,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -2752,14 +2728,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			// Process name data
 				if (!(tableName.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableName.getSelectedRow(), 1)).trim();
+					String nameElementData = ((String) model.getValueAt(tableName.getSelectedRow(), 1));
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableName.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - name table changed: " + tableName.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-				// Ignore entry of null data in a name field
-					if (nameElementData.length() > 0) {
+					if (nameElementData != null) {
 						pointPersonHandler.addToPersonNameChangeList(tableName.getSelectedRow(), nameElementData);
 						btn_Save.setEnabled(true);
 						nameElementUpdates++;
@@ -2775,14 +2750,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			// Process birth location data
 				if (!(tableBirthLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 1)).trim();
+					String nameElementData = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 1));
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - birth locn table changed: " + tableBirthLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-				// Ignore entry of null data in a location field
-					if (nameElementData.length() > 0) {
+					if (nameElementData != null) {
 						pointPersonHandler.addToLocationChangeList( 1, tableBirthLocn.getSelectedRow(), nameElementData);
 						btn_Save.setEnabled(true);
 						eventLocationUpdates[0]++;
@@ -2798,14 +2772,14 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			// Process baptism location data
 				if (!(tableBaptLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 1)).trim();
+					String nameElementData = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 1));
+					if (nameElementData != null) nameElementData = nameElementData.trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - baptism locn table changed: " + tableBaptLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-				// Ignore entry of null data in a location field
-					if (nameElementData.length() > 0) {
+					if (nameElementData != null) {
 						pointPersonHandler.addToLocationChangeList(2, tableBaptLocn.getSelectedRow(), nameElementData);
 						btn_Save.setEnabled(true);
 						eventLocationUpdates[1]++;
@@ -2821,14 +2795,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			// Process death location data
 				if (!(tableDeathLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 1)).trim();
+					String nameElementData = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 1));
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - death locn table changed: " + tableDeathLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-				// Ignore entry of null data in a location field
-					if (nameElementData.length() > 0) {
+					if (nameElementData != null) {
 						pointPersonHandler.addToLocationChangeList(3, tableDeathLocn.getSelectedRow(), nameElementData);
 						btn_Save.setEnabled(true);
 						eventLocationUpdates[2]++;
@@ -2844,14 +2817,14 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			// Process burial location data
 				if (!(tableBurialLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 1)).trim();
+					String nameElementData = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 1));
+					if (nameElementData != null) nameElementData = nameElementData.trim();
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - burial locntable changed: " + tableBurialLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-				// Ignore entry of null data in a location field
-					if (nameElementData.length() > 0) {
+					if (nameElementData != null) {
 						pointPersonHandler.addToLocationChangeList(4, tableBurialLocn.getSelectedRow(), nameElementData);
 						btn_Save.setEnabled(true);
 						eventLocationUpdates[3]++;
@@ -2867,14 +2840,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			// Process partner location data
 				if (!(tablePartnerLocn.getSelectedRow() == -1)) {
 					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 1)).trim();
+					String nameElementData = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 1));
 					if (HGlobal.DEBUG) {
 						String element = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 0)).trim();
 						System.out.println("HG0505AddPerson - partner locn table changed: " + tablePartnerLocn.getSelectedRow() 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
 					}
-				// Ignore entry of null data in a location field
-					if (nameElementData.length() > 0) {
+					if (nameElementData != null) {
 						pointPersonHandler.addToLocationChangeList(5, tablePartnerLocn.getSelectedRow(), nameElementData);
 						btn_Save.setEnabled(true);
 						eventLocationUpdates[4]++;

@@ -21,6 +21,7 @@ package hre.gui;
  * 			  2024-08-29 After Event type change, force Save action (D Ferguson)
  * 			  2024-10-05 Removed console output (N Tolleshaug)
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
+ * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
@@ -71,7 +72,6 @@ import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
@@ -467,13 +467,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}

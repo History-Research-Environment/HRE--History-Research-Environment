@@ -23,6 +23,8 @@ package hre.gui;
  * v0.01.0028 2023-01-08 Translated table headers collected from T204 (N. Tolleshaug)
  * v0.03.0030 2023-06-30 Activated witness on/off for event table (N. Tolleshaug)
  * 			  2023-09-24 If frame is full-screen don't do special size control code (D Ferguson)
+ * 			  2024-11-04 Ensure all data non-editable (D Ferguson)
+ * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  *************** ***********************************************************************************/
 
 import java.awt.Color;
@@ -86,7 +88,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for Location with collapsing panels for Location Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0030
+ * @version v0.03.0031
  * @since 2020-05-10
  */
 
@@ -98,7 +100,7 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 	public String tableScreenID = "53030";  //$NON-NLS-1$
 	final static int maxEventVPIs = HGlobal.maxEventVPIs;
 	final static int maxPersonVPIs = HGlobal.maxPersonVPIs;
-	
+
 	String[] eventTableHeader;
 	Object[][] objEventData;
 	int allEvents = 0;
@@ -237,12 +239,12 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 												+ maxEventVPIs,
 					HG05303Msgs.Text_89, JOptionPane.INFORMATION_MESSAGE);	// Event Viewpoint Creation
 			return;
-		} else
+		}
 		if (errorCode == 2) {
 			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_83,		// Create Location ViewPoint error
 					HG05303Msgs.Text_82, JOptionPane.ERROR_MESSAGE);		// Location Viewpoint Creation
 			return;
-		} else
+		}
 		if (errorCode == 3) {
 			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_84			// Image Thumbnail Error
 												+ HG05303Msgs.Text_85		// From TMG Exhibit Log, perform a
@@ -250,8 +252,7 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 												+ HG05303Msgs.Text_87,		// then re-import the TMG file.
 						HG05303Msgs.Text_82, JOptionPane.ERROR_MESSAGE);	// Location Viewpoint Creation
 			return;
-		} else
-
+		}
 		if (errorCode == 4) {
 			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_90 		//Too many Person Viewpoints
 												+ HG05303Msgs.Text_81 		//Maximum allowed is
@@ -301,6 +302,7 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
         JPanel p0 = new JPanel(new MigLayout("insets 10", "[]10[grow][]", "[]"));  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         JLabel label01 = new JLabel(HG05303Msgs.Text_26);		// Location
         JTextField text01 = new JTextField(pointViewpointHandler.getLocationName(locationVPindex));
+        text01.setEditable(false);
         text01.setPreferredSize(new Dimension(530, 16));
  		p0.add(label01, "cell 0 0"); //$NON-NLS-1$
 		p0.add(text01, "cell 1 0, growx");  //$NON-NLS-1$
@@ -313,33 +315,33 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
     private JPanel locnEvents() {
 		JPanel p1 = new JPanel(new MigLayout("insets 10", "[]10[grow]10[]", "[]10[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JCheckBox checkWitness = new JCheckBox(HG05303Msgs.Text_34);  // Includes Witnessed Events	
+		JCheckBox checkWitness = new JCheckBox(HG05303Msgs.Text_34);  // Includes Witnessed Events
 		checkWitness.setSelected(true);
 		checkWitness.setHorizontalTextPosition(SwingConstants.TRAILING);
 		checkWitness.setHorizontalAlignment(SwingConstants.RIGHT);
-		
+
 		JButton button11 = new JButton("+"); //$NON-NLS-1$
 		button11.setMargin(new java.awt.Insets(1, 1, 1, 1));
 		button11.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
 		JButton button12 = new JButton("-"); //$NON-NLS-1$
 		button12.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button12.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
-		
-		if (HGlobal.DEBUG) 
+
+		if (HGlobal.DEBUG)
 			System.out.println("Location VP Initial Location:  1-" 	//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "1", false)));	//$NON-NLS-1$
 
 		JTable table11 = new JTable() { private static final long serialVersionUID = 1L;
 		 								@Override
 		 								public boolean isCellEditable(int row, int column) {return false;}};
-		// Get event data, table header and event count 								
-		objEventData = pointViewpointHandler.getEventTable(locationVPindex); 
+		// Get event data, table header and event count
+		objEventData = pointViewpointHandler.getEventTable(locationVPindex);
 		eventTableHeader = pointViewpointHandler.setTranslatedData(tableScreenID, "1", false); //$NON-NLS-1$	// get Event Tag, Date, Summary
 		allEvents = pointViewpointHandler.getNumberEvents(locationVPindex);
 		// Build table
 		table11.setModel(new DefaultTableModel(
-				objEventData,	
-				eventTableHeader));								
+				objEventData,
+				eventTableHeader));
 		table11.getColumnModel().getColumn(0).setPreferredWidth(120);
 		table11.getColumnModel().getColumn(0).setMinWidth(70);
 		table11.getColumnModel().getColumn(1).setPreferredWidth(120);
@@ -364,14 +366,14 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 		p1.add(button12, "cell 2 0"); 				//$NON-NLS-1$
 		p1.add(scroll11, "cell 0 1 3, span, growx, growy");    //$NON-NLS-1$
 
-		// Listener for 'Show witnessed events' CheckBox   
+		// Listener for 'Show witnessed events' CheckBox
 		checkWitness.addActionListener(new ActionListener() {
 		    @Override
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {
 		        boolean state;
-		        if (checkWitness.isSelected()) state = true; 
+		        if (checkWitness.isSelected()) state = true;
 		        	else state = false;
-		        
+
 		      	try {
 				// Set up witness state prompt and recreate table
 		      		pointViewpointHandler.setLocationWitnessState(locationVPindex, state);
@@ -380,7 +382,7 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 		      				  checkWitness.setText(HG05303Msgs.Text_35 + witnessEvents + HG05303Msgs.Text_36); // Include xx Witnessed Events
 		      				}
 				// Recreate table data
-		      		objEventData = pointViewpointHandler.getEventTable(locationVPindex);										
+		      		objEventData = pointViewpointHandler.getEventTable(locationVPindex);
 					DefaultTableModel eventModel = (DefaultTableModel) table11.getModel();
 					eventModel.setDataVector(objEventData, eventTableHeader);
 				// Reset table renderers
@@ -390,14 +392,14 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 					table11.getColumnModel().getColumn(1).setMinWidth(70);
 					table11.getColumnModel().getColumn(2).setPreferredWidth(400);
 					table11.getColumnModel().getColumn(2).setMinWidth(200);
-					
+
 				} catch (Exception hbe) {
 					System.out.println(" HG0530ViewLocation - setWitnessState error: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 		      }
-		});		
-				
+		});
+
 		// Listener to action selection of row in event table - create EventVP
 		pcellSelectionModel.addListSelectionListener(new ListSelectionListener() {
 			@Override
@@ -515,8 +517,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 		JButton button23 = new JButton("-"); //$NON-NLS-1$
 		button23.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button23.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
-		
-		if (HGlobal.DEBUG) 
+
+		if (HGlobal.DEBUG)
 			System.out.println("Location VP Superior location:  2-" 		//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "2", false)));	//$NON-NLS-1$
 
@@ -588,15 +590,15 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 // Define panel P3 for Associated People of this location
     private JPanel locnPeople() {
  		JPanel p3 = new JPanel(new MigLayout("insets 10", "[]10[grow]10[]10[]", "[]10[grow]"));		 //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 		JButton button31 = new JButton("+"); //$NON-NLS-1$
 		button31.setMargin(new java.awt.Insets(1, 1, 1, 1));
 		button31.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
 		JButton button32 = new JButton("-"); //$NON-NLS-1$
 		button32.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button32.setFont(new Font("Arial", Font.BOLD, 15));		 //$NON-NLS-1$
-		
-		if (HGlobal.DEBUG) 
+
+		if (HGlobal.DEBUG)
 			System.out.println("Location VP Associated People:  3-" 	//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "3", false)));	//$NON-NLS-1$
 
@@ -836,23 +838,23 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
  * opening an ActionPanel or use of +/- buttons, when a pack() is required
  */
     private void correctPanelSize() {
-    	// if frame is maximised, don't do anything
-    	if (locnFrame.isMaximum()) return;
-        // Save the current width of the Frame
-        widthFrame = locnFrame.getWidth();
-		dividerLocation = locationPanel.getDividerLocation();
-		// Get the mainPane height again as user may have re-sized it
-    	maxHeight = HG0401HREMain.mainPane.getHeight();
-        scrollPanel.setMaximumSize(new Dimension(5000, maxHeight - 60));  // allow huge width but control height
+       	// if frame was maximised, make sure we retain that height
+    	if (locnFrame.isMaximum()) maxHeight = locnFrame.getHeight();
+    	else maxHeight = HG0401HREMain.mainPane.getHeight() - 60;
+    	// Get Frame width and splitpane divider location
+    	widthFrame = locnFrame.getWidth();
+    	dividerLocation = locationPanel.getDividerLocation();
+        scrollPanel.setMaximumSize(new Dimension(5000, maxHeight));  // allow huge width but control height
     	// Reload the scrollPanel
     	locnFrame.revalidate();
 		contents.add(scrollPanel);
-        locnFrame.pack();
+		// Do pack only if frame not maximised
+        if (!locnFrame.isMaximum()) locnFrame.pack();
         // Reset the divider (which creeps right unless you do this)
         locationPanel.setDividerLocation(dividerLocation);
-        // Now get the new frame height
+        // Now get the frame height
         heightFrame = locnFrame.getHeight();
-        // Restore the Frame to original width with new height (otherwise perRight grows as well!)
+        // Restore the Frame to original width with this height (otherwise right panels grow as well!)
         this.setSize(widthFrame, heightFrame);
     }	// End correctPanelSize
 
@@ -901,7 +903,7 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
                 return j;
         return -1;
     }	// End getPanelIndex
-    
+
 }	// End LocPanels class
 
 /**
@@ -915,7 +917,7 @@ class ActionLPanel extends JPanel  {
     BufferedImage open, closed;
     Rectangle target;
     final int offset = 30, pad = 5;
-    
+
 /**
  * Defines the ActionPanel layout
  * @param text is used for the panel's title

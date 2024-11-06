@@ -138,7 +138,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 	JButton btn_Copy = new JButton(HG0524Msgs.Text_20);			// Copy
 	JButton btn_Rename = new JButton(HG0524Msgs.Text_22);		// Rename
 	JButton btn_Delete = new JButton(HG0524Msgs.Text_24);		// Delete
-	JButton btn_NameSave = new JButton(HG0524Msgs.Text_0);		// Save Name Style Changes
+	JButton btn_Save = new JButton(HG0524Msgs.Text_0);			// Save Style Changes
 	JButton btn_OutSave = new JButton(HG0524Msgs.Text_1);		// Save Output Changes
 	JButton btn_Close = new JButton(HG0524Msgs.Text_2);			// Close
 	JButton btn_Convert = new JButton(HG0524Msgs.Text_3);		// Convert
@@ -296,7 +296,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 		scroll_Chosen.setPreferredSize(new Dimension(200, 275));
 		contents.add(scroll_Chosen, "flowy,cell 2 6"); //$NON-NLS-1$
 
-		contents.add(btn_NameSave, "cell 2 7,alignx center"); //$NON-NLS-1$
+		contents.add(btn_Save, "cell 2 7,alignx center"); //$NON-NLS-1$
 
 		// Setup Column 3 layout - control buttons
 		JButton btn_OutCopy = new JButton(HG0524Msgs.Text_52);		// Copy
@@ -427,7 +427,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 		nameDescChange = new CaretListener() {
 			@Override
 			public void caretUpdate(CaretEvent e) {
-				btn_NameSave.setEnabled(true);
+				btn_Save.setEnabled(true);
 			}
 		};
 		txtpnDesc.addCaretListener(nameDescChange);
@@ -449,7 +449,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
           		if (HGlobal.DEBUG) System.out.println(styleIndex + " Default Selected!"); //$NON-NLS-1$
             		pointStyleHandler.setNameStyleIsDefault(styleIndex);
             		btn_Delete.setEnabled(false);
-            		btn_NameSave.setEnabled(true);
+            		btn_Save.setEnabled(true);
             	}
             }
         };
@@ -824,7 +824,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 		            chosenCodesModel.remove(indexC);						// remove related code
 		            chosenCodesModel.add(indexC - 1, selectedCode);			// add the code up 1 in the list
 		        }
-				btn_NameSave.setEnabled(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -841,7 +841,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 				// insert entry name into Chosen models for Elements and Codes
 				chosenElementsModel.addElement(listEntry);
 				chosenCodesModel.addElement(codeEntry);
-				btn_NameSave.setEnabled(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -860,7 +860,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 			    				btn_Up.setEnabled(false);
 			    				btn_Down.setEnabled(false);
 			    			}
-			    btn_NameSave.setEnabled(true);
+			    btn_Save.setEnabled(true);
 			}
 		});
 
@@ -880,7 +880,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					chosenCodesModel.remove(indexC);						// remove related code
 					chosenCodesModel.add(indexC + 1, selectedCode);			// add the code down 1 in the list
 		        }
-				btn_NameSave.setEnabled(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -898,7 +898,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					allElementsModel.set(indexA, renameElemnt);
 		        }
 				// Set Save button on, as DB update required
-			    btn_NameSave.setEnabled(true);
+			    btn_Save.setEnabled(true);
 			}
 		});
 
@@ -958,7 +958,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 				// Now insert the new Name Element Code into the code List
 					allCodesModel.add(indexA+1, newCodeElemnt);
 
-					btn_NameSave.setEnabled(true);
+					btn_Save.setEnabled(true);
 				}
 			}
 		});
@@ -1033,7 +1033,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					nameOutstyleModel.clear();
 					pointStyleHandler.getOutputStyles(nameOutstyleModel);
 					chosenOutElementsModel.clear();
-				// Reload Name Style 0 from T163 contents and select it
+				// Reload Style 0 from T163 contents and select it
 					pointStyleHandler.getChosenElements(chosenOutElementsModel);
 					list_OutStyles.setSelectedIndex(0);
 				// If only 1 entry left, disable delete button
@@ -1197,10 +1197,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 	protected void resetElementLists() throws HBException {
 		pointStyleHandler.resetStyleTable(nameType, styleIndex);
 
-	// Set changed name style in WhereWhenHandler
+	// Set changed style in WhereWhenHandler
 		pointWhereWhenhandler.setlocationStyleChanged(true);
 
-	// Load list of ALL Name Style Elements from T163
+	// Load list of ALL Style Elements from T163
 		allElementsModel.clear();
 		allCodesModel.clear();
 

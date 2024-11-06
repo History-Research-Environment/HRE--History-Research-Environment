@@ -60,7 +60,7 @@ package hre.bila;
  * 			  2023-01-29 - Setting NS for location name in locationVP (N. Tolleshaug)
  * 			  2023-02-22 - Moved all exhibit image processing to HBMediaHandler (N. Tolleshaug)
  * 			  2023-04-10 - Support for 3 open projects (N. Tolleshaug)
- * v0.01.0030 2023-06-28 - Person VP updated processing of event table (N. Tolleshaug)
+ * v0.03.0030 2023-06-28 - Person VP updated processing of event table (N. Tolleshaug)
  * 			  2023-06-29 - Use of HDATE sort for sorting event table (N. Tolleshaug)
  * 			  2023-06-29 - Activated witness on/off for person event table (N. Tolleshaug)
  * 			  2023-07-14 - Activated all partners in Gen(0) table (N. Tolleshaug)
@@ -70,7 +70,7 @@ package hre.bila;
  * 			  2023-09-18 - Handle flagindex = -1 and set F-ERR for flag value (N. Tolleshaug)
  * 			  2023-09-19 - Also for TMG flags flagindex = -1 and set F-ERR  (N. Tolleshaug)
  * 			  2023-09-20 - Fix for missing translated parent role in T460 (N. Tolleshaug)
- * v0.01.0031 2023-11-06 - Updated Person VP for DDL 22b (N. Tolleshaug)
+ * v0.03.0031 2023-11-06 - Updated Person VP for DDL 22b (N. Tolleshaug)
  * 			  2023-11-22 - Swapped date and role in Person VP eventlist (N. Tolleshaug)
  * 			  2024-01-14 - Updated processing of eventlist without associate (N. Tolleshaug)
  * 			  2024-02-07 - Updated processing of associate list with partner (N. Tolleshaug)
@@ -79,6 +79,7 @@ package hre.bila;
  * 			  2024-09-22 - Set for eventVP partner event correct type and name (N. Tolleshaug)
  *			  2024-10-21 - In addPartnerAssocToAssoc() removed self assoc (N. Tolleshaug)
  *			  2024-10-24 - Added more tests for self assocs Person VP (N. Tolleshaug)
+ *			  2024-11-05 - Change literal " for" in Event info to ":" (D Ferguson)
  *********************************************************************************
  * NOTE 1 - Not implemented handling of missing birth date line 1023
  * NOTE 2 - line 2996 findLocationWithImage() always return false???
@@ -107,7 +108,7 @@ import hre.gui.HGlobal;
 /**
  * class ViewpointHandler
  * @author Nils Tolleshaug
- * @version v0.01.0027
+ * @version v0.03.0031
  * @since 2019-12-20
  */
 public class HBViewPointHandler extends HBBusinessLayer {
@@ -499,13 +500,12 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				screenID = "53004";
 			}
 	    	return screenID;
-    	} else {
-    		if (HGlobal.DEBUG) {
-				System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
-    					+ personVPnr);
-			}
-    		return "";
     	}
+		if (HGlobal.DEBUG) {
+			System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
+					+ personVPnr);
+		}
+		return "";
 	}
 
 /**
@@ -532,13 +532,12 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				screenID = "53034";
 			}
 	    	return screenID;
-    	} else {
-    		if (HGlobal.DEBUG) {
-				System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
-    					+ locationVPnr);
-			}
-    		return "";
     	}
+		if (HGlobal.DEBUG) {
+			System.out.println("HBViewpointHandler - getPersonScreenID ERROR personVPnr: "
+					+ locationVPnr);
+		}
+		return "";
 	}
 
 /**
@@ -565,13 +564,12 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				screenID = "53064";
 			}
 	    	return screenID;
-    	} else {
-    		if (HGlobal.DEBUG) {
-				System.out.println("HBViewpointHandler - getEventScreenID ERROR personVPnr: "
-    					+ eventVPnr);
-			}
-    		return "";
     	}
+		if (HGlobal.DEBUG) {
+			System.out.println("HBViewpointHandler - getEventScreenID ERROR personVPnr: "
+					+ eventVPnr);
+		}
+		return "";
 	}
 
 /**
@@ -873,12 +871,11 @@ public class HBViewPointHandler extends HBBusinessLayer {
 	    // return errorCode to HG0507PersonSelect/Main
 			  		//System.out.println("HBViewPointHandler - initiateViewPeople - errorCode: " + errorCode);
 		  		return errorCode;
-			} else {
-				if (HGlobal.DEBUG) {
-					System.out.println("initiateViewPeople - Max number of ViewPoints! vpnr: " + personVPindex);
-				}
-				errorCode = 1;
 			}
+			if (HGlobal.DEBUG) {
+				System.out.println("initiateViewPeople - Max number of ViewPoints! vpnr: " + personVPindex);
+			}
+			errorCode = 1;
 			return errorCode;
 		} catch (HBException hbe) {
 			if (HGlobal.DEBUG) {
@@ -1043,7 +1040,12 @@ public class HBViewPointHandler extends HBBusinessLayer {
 		int locationVPnr = pointOpenProject.getLocationVP();
 
 		try {
-			if (locationVPnr < maxLocationVPIs) {
+			if (locationVPnr >= maxLocationVPIs) {
+				if (HGlobal.DEBUG) {
+					System.out.println("Max number of ViewPoints! vpnr: " + locationVPindex);
+				}
+				return 1;
+			}
 			// Check and handle duplicate PID
 				for (int i = 0; i <  maxLocationVPIs; i++) {
 					if (pointLocationData[i] != null) {
@@ -1144,12 +1146,6 @@ public class HBViewPointHandler extends HBBusinessLayer {
 
 			//return errorcode;
 				return 0;
-			} else {
-				if (HGlobal.DEBUG) {
-					System.out.println("Max number of ViewPoints! vpnr: " + locationVPindex);
-				}
-				return 1;
-			}
 
 		} catch (HBException hbe) {
 			if (HGlobal.DEBUG) {
@@ -1318,14 +1314,13 @@ public class HBViewPointHandler extends HBBusinessLayer {
 										pointOpenProject.toFrontOpenScreen(screenIDtest);
 									return errorCode;
 
-								} else {
-									eventVPindex = i;
-									screenID = screenIDtest;
-									if (HGlobal.DEBUG) {
-										System.out.println(" Event VP for PID reopen indexVP: "
-												+ eventVPindex + " ScreenID: " + screenIDtest
-												+ " eventVP-PID: " + eventTablePID);
-									}
+								}
+								eventVPindex = i;
+								screenID = screenIDtest;
+								if (HGlobal.DEBUG) {
+									System.out.println(" Event VP for PID reopen indexVP: "
+											+ eventVPindex + " ScreenID: " + screenIDtest
+											+ " eventVP-PID: " + eventTablePID);
 								}
 						}
 					}
@@ -1601,9 +1596,8 @@ class ViewPeopleData extends HBBusinessLayer {
 	public int getNumberOfImages() {
 		if (listOfImages == null) {
 			return 0;
-		} else {
-			return listOfImages.size();
 		}
+		return listOfImages.size();
 	}
 
 	public Object[][] getEventTable() {
@@ -2055,11 +2049,10 @@ class ViewPeopleData extends HBBusinessLayer {
 		ResultSet parentsSelected = requestTableData(birthSelect, dataBaseIndex);
 		parentsSelected.last();
 		tableSize = parentsSelected.getRow();
-		if (tableSize > 0) {
-			parentTable = new Object[tableSize][3];
-		} else {
+		if (tableSize <= 0) {
 			return 1;
 		}
+		parentTable = new Object[tableSize][3];
 		row = 0;
 		parentsSelected.beforeFirst();
 		while (parentsSelected.next()) {
@@ -2408,7 +2401,7 @@ class ViewPeopleData extends HBBusinessLayer {
 				} else {
 					System.out.println(" Not found: " + selectedPersonPID);
 				}
-				
+
 				// Duplicated self assoc fix - 24.10.2024
 				if (selectedPersonPID == partnerPersonPID) continue; // Self assoc detected
 
@@ -2483,7 +2476,7 @@ class ViewPeopleData extends HBBusinessLayer {
 			while (eventAssocSelected.next()) {
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
 				// Duplicated self assoc fix - 24.10.2024
-				if (focusPersonPID == assocPersonPID || selectedPersonPID == assocPersonPID) continue; 
+				if (focusPersonPID == assocPersonPID || selectedPersonPID == assocPersonPID) continue;
 				//if (focusPersonPID == assocPersonPID) continue; // Self assoc detected
 				assocRoleCode = eventAssocSelected.getInt("ROLE_NUM");
 				eventRole = pointLibraryResultSet.getRoleName(assocRoleCode,
@@ -2560,8 +2553,8 @@ class ViewPeopleData extends HBBusinessLayer {
 						assocRoleCode = secRole;
 					}
 				}
-				
-				// Detect self assoc - fix 24.10.2024	
+
+				// Detect self assoc - fix 24.10.2024
 				if (focusPersonPID == assocPersonPID) return 0; // Self assoc detected
 				eventRoleName = pointLibraryResultSet.getRoleName(assocRoleCode,
 			  			eventType,
@@ -2763,7 +2756,7 @@ class ViewPeopleData extends HBBusinessLayer {
 		personPIDhash = new HashMap<>();
 
 	// Add partners to Assocs
-		if (HGlobal.DEBUG) 
+		if (HGlobal.DEBUG)
 			System.out.println(" Imported project: " + pointOpenProject.getImportedProject());
 
 		asociateRows = addPartnersToAssocs(selectedPersonPID, asociateList);
@@ -3266,9 +3259,8 @@ class ViewLocationData extends HBBusinessLayer {
 	public int getNumberOfImages() {
 		if (listOfImages == null) {
 			return 0;
-		} else {
-			return listOfImages.size();
 		}
+		return listOfImages.size();
 	}
 
 /**
@@ -3893,7 +3885,7 @@ class ViewEventData extends HBBusinessLayer {
 				personName = pointLibraryResultSet.exstractPersonName(personTablePID, personNameStyle, dataBaseIndex);
 			}
 			eventName = " " + pointLibraryResultSet.getEventName(eventNumber, langCode, dataBaseIndex).trim();
-			eventInfo = " " + eventName + " for" + personName;
+			eventInfo = " " + eventName + ":" + personName;
 
 		// Find location for event
 			locationNameRPID = eventSelected.getLong("EVNT_LOCN_RPID");
@@ -4097,9 +4089,8 @@ class ViewEventData extends HBBusinessLayer {
 	public int getNumberOfImages() {
 		if (listOfImages == null) {
 			return 0;
-		} else {
-			return listOfImages.size();
 		}
+		return listOfImages.size();
 	}
 
 } // End Class ViewEventData

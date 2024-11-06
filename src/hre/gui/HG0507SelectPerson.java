@@ -8,14 +8,15 @@ package hre.gui;
  * 			  2024-03-16 Added GUI Title parameter (D Ferguson)
  * 			  2024-03-29 Add 2nd screen layout (relationship/memo/cite) (D Ferguson)
  *			  2024-03-30 Remove ability to select more than 1 person (D Ferguson)
- *			  2024-04-02 Fix method of selecting row in person table (D Ferguson)	
+ *			  2024-04-02 Fix method of selecting row in person table (D Ferguson)
  *			  2024-05-08 Setting up edit select person (N. Tolleshaug)
  *			  2024-07-31 Revised  HG0507SelectPerson buttons (N. Tolleshaug)
+ *			  2024-11-05 Fix filter crashing issue (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
  * NOTE04 need to pass in the initial person (focusPersIDX)	as a new parameter
- * NOTE06 need to get memo/citation data if updating 
+ * NOTE06 need to get memo/citation data if updating
  ************************************************************************************/
 
 import java.awt.Cursor;
@@ -88,7 +89,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	public static final String screenID = "50700"; //$NON-NLS-1$
 	public String selectTitle, newTitle, addTitle;
 	HG0507SelectPerson thisSelectPerson = this;
-	
+
 	private JPanel contents;
 	JPanel persRolePanel;
 	JPanel findPanel;
@@ -98,7 +99,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	JPanel citePanel;
 	JPanel control2Panel;
 	boolean addRelation;
-	
+
 	private String selectString = ""; //$NON-NLS-1$
 	private JCheckBox chkbox_Filter;
 	private int focusPersIDX = 1;	// default start person	// see NOTE04
@@ -113,34 +114,34 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	HG0507SelectPerson personFrame = this;
     JScrollPane scrollTable;
 	JComboBox<String> comboBox_Subset;
-	
+
     JTextArea memoText; 				// accessed by update
 	DocumentListener memoTextChange;	// accessed by update
     boolean memoEdited = false; 		// Signals memo is edited
-	
-// Added for partner select	
+
+// Added for partner select
 	JComboBox<String> comboPartRole1, comboPartRole2;
 	int[] partnerEventType = null;
 	String[] partnerRoleList = null;
 	int[] partnerRoleType = null;
-	
+
 	String[] partnerEventList;
-	String newSelectedName; 
+	String newSelectedName;
 	JLabel lbl_nRole1, lbl_nRole2, lbl_ParentName;
-	
+
 	public JButton btn_SaveEvent;
 	public JButton btn_Save;
 
 	private Object[][] tablePersData;
 	private JTable tablePersons;
 	DefaultTableModel myTableModel = null;
-	
+
     Object[][] tableCiteData;
-	
+
 	JLabel lbl_Relate;
 	JComboBox<String> comboBox_Relationships;
 	int[] eventRoleTypes;
-	
+
     // For Text area font setting
     Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 
@@ -151,7 +152,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
  * @param titleType for use in setting dialog title
  * @throws HBException
  */
-	public HG0507SelectPerson(HBPersonHandler pointPersonHandler, 
+	public HG0507SelectPerson(HBPersonHandler pointPersonHandler,
 								 HBProjectOpenData pointOpenProject, boolean addRela) throws HBException {
 
 		this.pointOpenProject = pointOpenProject;
@@ -174,14 +175,14 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
 		// Collect static GUI text from T204 for Person table
 		String[] tableHeaders = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-		
+
 		// Setup final table column headers - just use ID, Name, Birth data, Death date
-		String[] tablePersColHeads = new String[4];					
+		tablePersColHeads = new String[4];
 		tablePersColHeads[0] = (String) tableHeaders[0];
-		tablePersColHeads[1] = (String) tableHeaders[1];	
-		tablePersColHeads[2] = (String) tableHeaders[2];			
-		tablePersColHeads[3] = (String) tableHeaders[4];	
-		
+		tablePersColHeads[1] = (String) tableHeaders[1];
+		tablePersColHeads[2] = (String) tableHeaders[2];
+		tablePersColHeads[3] = (String) tableHeaders[4];
+
 		// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507SelectPerson");	//$NON-NLS-1$
@@ -217,8 +218,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		chkbox_ignoreDiacriticFind.setHorizontalTextPosition(SwingConstants.LEADING);
 		chkbox_ignoreDiacriticFind.setHorizontalAlignment(SwingConstants.LEFT);
 		chkbox_ignoreDiacriticFind.setToolTipText(HG05070Msgs.Text_22);				// If ticked, diacritics are ignored during Find
-		findPanel.add(chkbox_ignoreDiacriticFind, "cell 1 1, gapx 10"); //$NON-NLS-1$	
-		
+		findPanel.add(chkbox_ignoreDiacriticFind, "cell 1 1, gapx 10"); //$NON-NLS-1$
+
 		JLabel lbl_TxtFilter = new JLabel(HG05070Msgs.Text_33);		// Text to filter for:
 		findPanel.add(lbl_TxtFilter, "cell 0 2, alignx right"); //$NON-NLS-1$
 
@@ -241,14 +242,14 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		comboBox_Subset.setToolTipText(HG05070Msgs.Text_43);	// List of saved filter and subset names
 
 		for (int i = 1; i < tablePersColHeads.length; i++) {
-			comboBox_Subset.addItem(tablePersColHeads[i]);		//$NON-NLS-1$
+			comboBox_Subset.addItem(tablePersColHeads[i]);
 		}
-		comboBox_Subset.addItem(idText);					// ID 				//$NON-NLS-1$
-		comboBox_Subset.addItem(allColumnsText1);			// All Columns		//$NON-NLS-1$
+		comboBox_Subset.addItem(idText);					// ID
+		comboBox_Subset.addItem(allColumnsText1);			// All Columns
 		findPanel.add(comboBox_Subset, "cell 1 2"); //$NON-NLS-1$
 
-		contents.add(findPanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$	
-		
+		contents.add(findPanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$
+
 	// Define panel for Person list
 		personPanel = new JPanel();
 		personPanel.setLayout(new MigLayout("insets 0", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -268,52 +269,52 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		// Setup tabbing within table against all rows but only column 1-3
 		if (tablePersons.getRowCount() > 0)
 					JTableCellTabbing.setTabMapping(tablePersons, 0, tablePersons.getRowCount(), 1, 3);
-		personPanel.add(scrollTable, "cell 0 0"); //$NON-NLS-1$			
-		contents.add(personPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$	
-		
+		personPanel.add(scrollTable, "cell 0 0"); //$NON-NLS-1$
+		contents.add(personPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$
+
 	// Define panel for first control button set
 		control1Panel = new JPanel();
 		control1Panel.setLayout(new MigLayout("insets 5", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JButton btn_Cancel1 = new JButton(HG05070Msgs.Text_131);		// Cancel
 		btn_Cancel1.setEnabled(true);
 		control1Panel.add(btn_Cancel1, "cell 0 0, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		
+
 		JButton btn_Select = new JButton(HG05070Msgs.Text_132);		// Select
 		btn_Select.setEnabled(false);
 		control1Panel.add(btn_Select, "cell 0 0, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
-		contents.add(control1Panel, "cell 0 3, align right, hidemode 3"); //$NON-NLS-1$	
-		
+		contents.add(control1Panel, "cell 0 3, align right, hidemode 3"); //$NON-NLS-1$
+
 	// Define Alternate panels for use after Select button clicked
 	// Define panel for Person name and role
 		persRolePanel = new JPanel();
 		persRolePanel.setVisible(false);
-		persRolePanel.setLayout(new MigLayout("insets 5", "[]50[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$	
+		persRolePanel.setLayout(new MigLayout("insets 5", "[]50[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_Parent = new JLabel();
 		lbl_Parent.setText(newTitle); // Set new title for window
 		lbl_Parent.setFont(lbl_Parent.getFont().deriveFont(lbl_Parent.getFont().getStyle() | Font.BOLD));
-		persRolePanel.add(lbl_Parent, "cell 0 0, alignx left"); //$NON-NLS-1$	
-		
-		lbl_Relate = new JLabel();		
+		persRolePanel.add(lbl_Parent, "cell 0 0, alignx left"); //$NON-NLS-1$
+
+		lbl_Relate = new JLabel();
 		lbl_Relate.setFont(lbl_Relate.getFont().deriveFont(lbl_Relate.getFont().getStyle() | Font.BOLD));
 		persRolePanel.add(lbl_Relate, "cell 1 0, alignx left,"); //$NON-NLS-1$
-		
-		lbl_ParentName = new JLabel(HG05070Msgs.Text_133);	// Parent dummy		
-		persRolePanel.add(lbl_ParentName, "cell 0 1, alignx left"); //$NON-NLS-1$	
-		
+
+		lbl_ParentName = new JLabel(HG05070Msgs.Text_133);	// Parent dummy
+		persRolePanel.add(lbl_ParentName, "cell 0 1, alignx left"); //$NON-NLS-1$
+
 		comboBox_Relationships = new JComboBox<>();
 		persRolePanel.add(comboBox_Relationships, "cell 1 1, alignx left"); //$NON-NLS-1$
-		contents.add(persRolePanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$	
-		
+		contents.add(persRolePanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$
+
 	// Define panel for Memo
 		memoPanel = new JPanel();
 		memoPanel.setVisible(false);
 		memoPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		memoPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$	
+		memoPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_Memo = new JLabel(HG05070Msgs.Text_134);		// Memo:
 		lbl_Memo.setFont(lbl_Memo.getFont().deriveFont(lbl_Memo.getFont().getStyle() | Font.BOLD));
-		memoPanel.add(lbl_Memo, "cell 0 0, alignx left"); //$NON-NLS-1$	
-		
-		memoText = new JTextArea();		
+		memoPanel.add(lbl_Memo, "cell 0 0, alignx left"); //$NON-NLS-1$
+
+		memoText = new JTextArea();
 		memoText.setWrapStyleWord(true);
 		memoText.setLineWrap(true);
 		memoText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
@@ -327,18 +328,18 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		memoTextScroll.setMinimumSize(new Dimension(570, 100));
 		memoTextScroll.getViewport().setOpaque(false);
 		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
-		memoText.setCaretPosition(0);	// set scrollbar to top	
+		memoText.setCaretPosition(0);	// set scrollbar to top
 		memoPanel.add(memoTextScroll, "cell 0 1, aligny top"); //$NON-NLS-1$
-		contents.add(memoPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$	
-		
+		contents.add(memoPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$
+
 	// Define panel for Citations
 		citePanel = new JPanel();
 		citePanel.setVisible(false);
 		citePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		citePanel.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]5[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$	
+		citePanel.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]5[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_Citation = new JLabel(HG05070Msgs.Text_135);		// Citations:
 		lbl_Citation.setFont(lbl_Citation.getFont().deriveFont(lbl_Citation.getFont().getStyle() | Font.BOLD));
-		citePanel.add(lbl_Citation, "cell 0 0, alignx left"); //$NON-NLS-1$	
+		citePanel.add(lbl_Citation, "cell 0 0, alignx left"); //$NON-NLS-1$
 
 		JButton btn_AddL = new JButton("+"); //$NON-NLS-1$
 		btn_AddL.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
@@ -366,11 +367,11 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_DownL.setToolTipText(HG05070Msgs.Text_137);	// Moves Citation down the list
 		btn_DownL.setMaximumSize(new Dimension(20, 20));
 		btn_DownL.setEnabled(false);
-		citePanel.add(btn_DownL, "cell 1 0, aligny top"); //$NON-NLS-1$			
+		citePanel.add(btn_DownL, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		JLabel lbl_Surety = new JLabel(HG05070Msgs.Text_138);	// Surety
-		citePanel.add(lbl_Surety, "cell 2 0");		//$NON-NLS-1$		
-		
+		citePanel.add(lbl_Surety, "cell 2 0");		//$NON-NLS-1$
+
 		// Create scrollpane and table for the Citations
 		JTable tableCite = new JTable() {
 			private static final long serialVersionUID = 1L;
@@ -385,17 +386,17 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				@Override
 				public boolean isCellEditable(int row, int col) {
 						return false;
-				}	
+				}
 			};
 //		tableCiteData = pointxxxxxxxxxxx							// NOTE06 get citation data if updating
-		String[] tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$	
+		String[] tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 		tableCite.setModel(new DefaultTableModel(tableCiteData,tableCiteHeader));
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(70);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
 		tableCite.getColumnModel().getColumn(1).setPreferredWidth(400);
 		tableCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableCite.getColumnModel().getColumn(2).setPreferredWidth(100);		
+		tableCite.getColumnModel().getColumn(2).setPreferredWidth(100);
 		tableCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
 		JTableHeader citeHeader = tableCite.getTableHeader();
 		citeHeader.setOpaque(false);
@@ -407,7 +408,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		citeScrollPane.setFocusTraversalKeysEnabled(false);
 		citeScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		citeScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source#, Surety to be center-aligned	
+	// Set Source#, Surety to be center-aligned
 		DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
 		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
 		tableCite.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
@@ -418,12 +419,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		// Add to citePanel
 		citePanel.add(citeScrollPane, "cell 0 1 3 1, alignx left, aligny top");	//$NON-NLS-1$
 		contents.add(citePanel, "cell 0 2, grow, hidemode 3"); //$NON-NLS-1$
-		
+
 	// Define panel for second control button set
 		control2Panel = new JPanel();
 		control2Panel.setVisible(false);
 		control2Panel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		btn_SaveEvent = new JButton(HG05070Msgs.Text_139);		// Partner & Event		
+		btn_SaveEvent = new JButton(HG05070Msgs.Text_139);		// Partner & Event
 		btn_SaveEvent.setEnabled(false);
 		if (addRelation)
 			control2Panel.add(btn_SaveEvent, "cell 0 0, align right, gapx 10, tag ok"); //$NON-NLS-1$
@@ -432,20 +433,20 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		JButton btn_Cancel2 = new JButton(HG05070Msgs.Text_141);	// Cancel
 		btn_Cancel2.setEnabled(true);
 		control2Panel.add(btn_Cancel2, "cell 0 0, align right, gapx 10, tag cancel"); //$NON-NLS-1$
-		contents.add(control2Panel, "cell 0 3, align right, hidemode 3"); //$NON-NLS-1$		
+		contents.add(control2Panel, "cell 0 3, align right, hidemode 3"); //$NON-NLS-1$
 	// End of Panel Definitions
-		
+
  	// Set project Name Display Index
  		int nameDisplayIndex = pointOpenProject.getNameDisplayIndex();
  		pointPersonHandler.setNameDisplayIndex(nameDisplayIndex);
 
- 	// turn off progress bar	
+ 	// turn off progress bar
  		pointPersonHandler.enableUpdateMonitor(false);
- 		
+
  	// Get person data
  		pointPersonHandler.initiatePersonDataMin(tablePersColHeads.length, pointOpenProject);
 		tablePersData = pointPersonHandler.createSelectPersonList(tablePersColHeads.length, pointOpenProject);
-		
+
  	// Setup tablePersData, model and renderer
 		if (tablePersData == null ) {
 			JOptionPane.showMessageDialog(scrollTable, HG05070Msgs.Text_109		// No data found in HRE database\n
@@ -475,7 +476,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		tablePersons.getColumnModel().getColumn(2).setMinWidth(90);
 		tablePersons.getColumnModel().getColumn(2).setPreferredWidth(120);
 		tablePersons.getColumnModel().getColumn(3).setMinWidth(90);
-		tablePersons.getColumnModel().getColumn(3).setPreferredWidth(120);		
+		tablePersons.getColumnModel().getColumn(3).setPreferredWidth(120);
 		tablePersons.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
 		// Set the ability to sort on columns
@@ -497,7 +498,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		JLabel pheaderLabel = (JLabel) prendererFromHeader;
 		pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-		// Set row selection action - allow multiple selections 
+		// Set row selection action - allow multiple selections
 		ListSelectionModel rowSelectionModel = tablePersons.getSelectionModel();
 		rowSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
@@ -527,7 +528,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
 		    	btn_Cancel1.doClick();
-			} 
+			}
 		});
 
 		// btn_Cancel1 listener
@@ -537,7 +538,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 1st phase"); //$NON-NLS-1$
 		    	dispose();
 			}
-		});				
+		});
 		// btn_Cancel2 listener
 		btn_Cancel2.addActionListener(new ActionListener() {
 			@Override
@@ -545,8 +546,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 2nd phase"); //$NON-NLS-1$
 		    	dispose();
 			}
-		});	
-		
+		});
+
 		// Listener for edits of memoText
 		memoTextChange = new DocumentListener() {
 	        @Override
@@ -566,7 +567,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	        }
 	    };
 	    memoText.getDocument().addDocumentListener(memoTextChange);
-		
+
 		// Find within Name field listener
 	    searchField.addActionListener(new ActionListener() {
 	        @Override
@@ -712,15 +713,15 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					setTableFilter(selectString, filterTextField.getText());
 				}
 			}
-		});		
-		
+		});
+
 		// Listener for tablePersons row selection
 		tablePersons.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent selectPer) {
-				if (!selectPer.getValueIsAdjusting()) {				
+				if (!selectPer.getValueIsAdjusting()) {
 				// Return if filter location triggers select in table
 					if (tablePersons.getSelectedRow() == -1) return;
-				// Otherwise, find personPID clicked	
+				// Otherwise, find personPID clicked
 					clickedRow = tablePersons.getSelectedRow();
 					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
@@ -732,7 +733,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				}
 			}
         });
-		
+
 		// Listener for Select button
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
@@ -741,12 +742,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				findPanel.setVisible(false);
 				personPanel.setVisible(false);
 				control1Panel.setVisible(false);
-				
+
 			// Display the Relationship/memo/Citation panels instead
 				persRolePanel.setVisible(true);
-				memoPanel.setVisible(true);			
+				memoPanel.setVisible(true);
 				// but don't show citation panel for associates
-				if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);									
+				if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
 				control2Panel.setVisible(true);
 
 			// Change the title from Select to Add
@@ -755,27 +756,27 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 	}	// End HG0507SelectPerson constructor
-	
+
 	public void setEditMode() {
 	// Hide the Find/Filter & Person panels
 		findPanel.setVisible(false);
 		personPanel.setVisible(false);
 		control1Panel.setVisible(false);
 		//addRelation = false;
-		
-		if (thisSelectPerson instanceof HG0507SelectParent) 
+
+		if (thisSelectPerson instanceof HG0507SelectParent)
 			if (!addRelation) addTitle = HG05070Msgs.Text_142;		// Edit Parent
-		
-		if (thisSelectPerson instanceof HG0507SelectPartner) 
+
+		if (thisSelectPerson instanceof HG0507SelectPartner)
 			if (!addRelation) addTitle = HG05070Msgs.Text_143;		// Edit Partner
-		
-		if (thisSelectPerson instanceof HG0507SelectAssociate) 
+
+		if (thisSelectPerson instanceof HG0507SelectAssociate)
 			if (!addRelation) addTitle = HG05070Msgs.Text_144;		// Edit Associate
-		
+
 	// Display the Relationship/memo/Citation panels instead
 		persRolePanel.setVisible(true);
 		memoPanel.setVisible(true);
-		
+
 		// but don't show citation panel for associates
 		if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
 		control2Panel.setVisible(true);

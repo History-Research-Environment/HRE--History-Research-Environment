@@ -20,6 +20,8 @@ package hre.gui;
  * v0.03.0030 2023-06-30 Activated on/off for associate table (N. Tolleshaug)
  * 			  2023-09-24 If frame is full-screen don't do special size control code (D Ferguson)
  * v0.03.0031 2024-04-28 Fix Assoc table column sizes (D Ferguson)
+ * 			  2024-11-04 Ensure all data non-editable (D Ferguson)
+ * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  ***************************************************************************************************/
 
 import java.awt.Color;
@@ -80,7 +82,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for Events with collapsing panels for Event Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0030
+ * @version v0.03.0031
  * @since 2020-05-29
  */
 
@@ -93,14 +95,16 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 	public String tableScreenID = "53060";		//$NON-NLS-1$
 	private String className;
 	private int eventVPindex = 0;
-	
+
 	String[] eventTableHeader;
 	Object[][] objAssocData;
 	int allEvents = 0;
 	int witnessEvents = 0;
-	
+
+	int maxHeight, widthFrame, heightFrame, dividerLocation;	// see correctPanelSize
     JInternalFrame eventFrame = this;
 	private JPanel contents;
+	JSplitPane eventPanel;
     ActionEPanel[] actPanels;
     JPanel[] dataPanels;
     private String vpProject;		// to save Project name of this Viewpoint
@@ -215,14 +219,14 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 												+ maxEventVPIs,
 					HG05306Msgs.Text_89, JOptionPane.INFORMATION_MESSAGE);	// Event Viewpoint Creation
 			return;
-		}	else
-	// intiate VP error
+		}
+		// intiate VP error
 		if (errorCode == 2) {
 			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_83,		// Create Event ViewPoint error
 					HG05306Msgs.Text_89, JOptionPane.ERROR_MESSAGE);		// Event Viewpoint Creation
 			return;
-		}	else
-	// Thumbnail error
+		}
+		// Thumbnail error
 		if (errorCode == 3) {
 			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_84			// Image Thumbnail Error
 												+ HG05306Msgs.Text_85		// From TMG Exhibit Log, perform a
@@ -230,15 +234,16 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 												+ HG05306Msgs.Text_87,		// then re-import the TMG file.
 												HG05306Msgs.Text_89, JOptionPane.ERROR_MESSAGE);	// Event Viewpoint Creation
 			return;
-		}	else
-	// Person VP's
+		}
+		// Person VP's
 		if (errorCode == 4) {
 			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_80 		// Too many Person Viewpoints
 												+ HG05306Msgs.Text_81 		// Maximum allowed is
 												+ maxPersonVPIs,
 					HG05306Msgs.Text_82, JOptionPane.INFORMATION_MESSAGE);	// Person Viewpoint Creation
 			return;
-		} else System.out.println(" HG0530ViewEvent - Not identified errorcode: " + errorCode);		//$NON-NLS-1$
+		}
+		System.out.println(" HG0530ViewEvent - Not identified errorcode: " + errorCode);		//$NON-NLS-1$
 	}	// End userInfoInitVP
 
 /**
@@ -251,9 +256,9 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
     	String imagesTitle = HG05306Msgs.Text_20
     			+ " (" + pointViewpointHandler.getEventNumberOfImages(eventVPindex) + ")"; 	//$NON-NLS-1$ //$NON-NLS-2$
     	String flagsTitle = HG05306Msgs.Text_21
-    			+ " (" + "0" + ")"; // Flags (0)      //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ 	
+    			+ " (" + "0" + ")"; // Flags (0)      //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     	String notepadTitle = HG05306Msgs.Text_22
-    			+ " (" + pointViewpointHandler.getEventNumberOfTexts(eventVPindex) + ")";   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+    			+ " (" + pointViewpointHandler.getEventNumberOfTexts(eventVPindex) + ")";   //$NON-NLS-1$ //$NON-NLS-2$
     	String[] titles = { "not used", associateTitle, imagesTitle, flagsTitle, notepadTitle}; //$NON-NLS-1$
 
         actPanels = new ActionEPanel[titles.length];
@@ -282,6 +287,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         JLabel label01 = new JLabel(HG05306Msgs.Text_26);		// Event
        	p0.add(label01, "cell 0 0");  //$NON-NLS-1$
        	JTextField text01 = new JTextField();
+       	text01.setEditable(false);
        	text01.setText(pointViewpointHandler.getEventIdentInfo(eventVPindex));
        	//System.out.println(" Event description: " + pointViewpointHandler.getEventIdentInfo(eventVPindex));
         text01.setPreferredSize(new Dimension(530, 16));
@@ -293,6 +299,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         JLabel label02 = new JLabel(HG05306Msgs.Text_31);		// Location
       	p0.add(label02, "cell 0 1");      	 //$NON-NLS-1$
       	JTextField text02 = new JTextField();
+      	text02.setEditable(false);
       	text02.setText(pointViewpointHandler.getEventPlaceInfo(eventVPindex));
         text02.setPreferredSize(new Dimension(530, 16));
         p0.add(text02, "cell 1 1, growx");        //$NON-NLS-1$
@@ -301,6 +308,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         JLabel label03 = new JLabel(HG05306Msgs.Text_34);		// Date
      	p0.add(label03, "cell 0 2");  //$NON-NLS-1$
         JTextField text03 = new JTextField();
+        text03.setEditable(false);
         text03.setText(pointViewpointHandler.getEventDateInfo(eventVPindex));
         text03.setPreferredSize(new Dimension(530, 16));
         p0.add(text03, "cell 1 2, growx");  //$NON-NLS-1$
@@ -310,13 +318,13 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 
 // Define panel for Associates
     private JPanel eventAssocs() {
-    	JPanel p1 = new JPanel(new MigLayout("insets 5", "[]10[grow][][]", "[]5[grow]"));   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$	
+    	JPanel p1 = new JPanel(new MigLayout("insets 5", "[]10[grow][][]", "[]5[grow]"));   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JCheckBox checkWitness = new JCheckBox(HG05306Msgs.Text_40); // Includes Witnessed Events		
+		JCheckBox checkWitness = new JCheckBox(HG05306Msgs.Text_40); // Includes Witnessed Events
 		checkWitness.setSelected(true);
 		checkWitness.setHorizontalTextPosition(SwingConstants.TRAILING);
 		checkWitness.setHorizontalAlignment(SwingConstants.RIGHT);
-		p1.add(checkWitness, "cell 0 0");	//$NON-NLS-1$ 	
+		p1.add(checkWitness, "cell 0 0");	//$NON-NLS-1$
 		JButton button11 = new JButton("+"); //$NON-NLS-1$
 		button11.setMargin(new java.awt.Insets(1, 1, 1, 1));
 		button11.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
@@ -325,20 +333,20 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 		button12.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button12.setFont(new Font("Arial", Font.BOLD, 15));	 //$NON-NLS-1$
 		p1.add(button12, "cell 4 0"); //$NON-NLS-1$
-		
-		if (HGlobal.DEBUG) 
+
+		if (HGlobal.DEBUG)
 			System.out.println("Event VP Initial event:  1-" 	//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "1", false)));		//$NON-NLS-1$
 
 		JTable table11 = new JTable() { private static final long serialVersionUID = 1L;
 		 								@Override
 		 								public boolean isCellEditable(int row, int column) {return false;}};
-		 // Get assoc data, table header and event count 		 								
+		 // Get assoc data, table header and event count
 		objAssocData = pointViewpointHandler.getAssociateEventTable(eventVPindex);
 		eventTableHeader = pointViewpointHandler.setTranslatedData(tableScreenID, "1", false); //$NON-NLS-1$
 		allEvents = pointViewpointHandler.getEventAssociateNumber(eventVPindex);
 		// Build table
-		table11.setModel(new DefaultTableModel(objAssocData, eventTableHeader));			
+		table11.setModel(new DefaultTableModel(objAssocData, eventTableHeader));
 		table11.getColumnModel().getColumn(0).setPreferredWidth(250);
 		table11.getColumnModel().getColumn(0).setMinWidth(250);
 		table11.getColumnModel().getColumn(1).setPreferredWidth(70);
@@ -362,22 +370,22 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 		JScrollPane scroll11 = new JScrollPane(table11);
 		p1.add(scroll11, "cell 0 1 2, span, growx, growy");  //$NON-NLS-1$
 
-		// Listener for 'Show witnessed events' CheckBox   
+		// Listener for 'Show witnessed events' CheckBox
 		checkWitness.addActionListener(new ActionListener() {
 		    @Override
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {
 		        boolean state;
-		        if (checkWitness.isSelected()) state = true; 
+		        if (checkWitness.isSelected()) state = true;
 		        	else state = false;
-		      	try {		      				      				      		
+		      	try {
 				// Set up witness state and recreate table
 		      		pointViewpointHandler.setEventWitnessState(eventVPindex, state);
 		      		if (state) checkWitness.setText(HG05306Msgs.Text_40); // Includes Witnessed Events
 	      			else {witnessEvents = allEvents - pointViewpointHandler.getEventAssociateNumber(eventVPindex);
 	      				  checkWitness.setText(HG05306Msgs.Text_42 + witnessEvents + HG05306Msgs.Text_44); // Include xx Witnessed Events
-	      				}		      				      				      				      		
+	      				}
 				// Reset table data
-		      		objAssocData = pointViewpointHandler.getAssociateEventTable(eventVPindex);										
+		      		objAssocData = pointViewpointHandler.getAssociateEventTable(eventVPindex);
 					DefaultTableModel eventModel = (DefaultTableModel) table11.getModel();
 					eventModel.setDataVector(objAssocData, eventTableHeader);
 				// Reset table renderers
@@ -389,14 +397,14 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 					table11.getColumnModel().getColumn(2).setMinWidth(200);
 					table11.getColumnModel().getColumn(3).setPreferredWidth(80);
 					table11.getColumnModel().getColumn(3).setMinWidth(50);
-									
+
 				} catch (Exception hbe) {
 					System.out.println(" HBViewEvent - setWitnessState error: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 		      }
-		});				
-		
+		});
+
 		// These buttons allow the scrollpane height to be made bigger/smaller as it has no edge to resize with
 		button11.addActionListener(new ActionListener() {
 			@Override
@@ -539,7 +547,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         ArrayList<String> exhibitTextList = pointViewpointHandler.gettextImageList(eventVPindex);
         if (exhibitTextList.size() > 0)
         	for (int i = 0; i < exhibitTextList.size(); i++)
-        	text4.setText(exhibitTextList.get(i) + "\n");	//$NON-NLS-1$	
+        	text4.setText(exhibitTextList.get(i) + "\n");	//$NON-NLS-1$
         else text4.setText("Notepads not yet implemented"); //$NON-NLS-1$
         p4.add(new JScrollPane(text4));
         return p4;
@@ -573,7 +581,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         	}
 
 		UIManager.put("SplitPane.centerOneTouchButtons", false);	// ensure buttons are at divider top, not centre //$NON-NLS-1$
-    	JSplitPane eventPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, eveLeft, eveRight);
+    	eventPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, eveLeft, eveRight);
        	eventPanel.setOneTouchExpandable(true);
        	eventPanel.setDividerSize(10);
        	eventPanel.setResizeWeight(0.9);		// Screen growth goes mostly to left panel
@@ -589,16 +597,24 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
  * opening an ActionPanel or use of +/- buttons, when a pack() is required
  */
     private void correctPanelSize() {
-    	// if frame is maximised, don't do anything
-    	if (eventFrame.isMaximum()) return;
-        // Save the current width of the Frame
-        int widthFrame = eventFrame.getWidth();
-        // To handle Action Panel opening or use of +/- buttons, do a pack()
-        eventFrame.pack();
-        // Now get the new frame height
-        int heightFrame = eventFrame.getHeight();
-        //Restore the Frame to original width with new height
-        eventFrame.setSize(widthFrame, heightFrame);
+       	// if frame was maximised, make sure we retain that height
+    	if (eventFrame.isMaximum()) maxHeight = eventFrame.getHeight();
+    	else maxHeight = HG0401HREMain.mainPane.getHeight() - 60;
+    	// Get Frame width and splitpane divider location
+    	widthFrame = eventFrame.getWidth();
+    	dividerLocation =eventPanel.getDividerLocation();
+        eventPanel.setMaximumSize(new Dimension(5000, maxHeight));  // allow huge width but control height
+    	// Reload the scrollPanel
+    	eventFrame.revalidate();
+		contents.add(eventPanel);
+		// Do pack only if frame not maximised
+        if (!eventFrame.isMaximum()) eventFrame.pack();
+        // Reset the divider (which creeps right unless you do this)
+        eventPanel.setDividerLocation(dividerLocation);
+        // Now get the frame height
+        heightFrame = eventFrame.getHeight();
+        // Restore the Frame to original width with this height (otherwise right panels grow as well!)
+        this.setSize(widthFrame, heightFrame);
     }	// End correctPanelSize
 
 /**
@@ -646,7 +662,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
                 return j;
         return -1;
     }	// End getPanelIndex
-    
+
 }	// End HG0530ViewEvent class
 
 /**
@@ -660,7 +676,7 @@ class ActionEPanel extends JPanel  {
     BufferedImage open, closed;
     Rectangle target;
     final int offset = 30, pad = 5;
-    
+
 /**
  * Defines the ActionPanel layout
  * @param text is used for the panel's title

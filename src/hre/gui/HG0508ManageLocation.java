@@ -13,6 +13,7 @@ package hre.gui;
  * v0.03.0030 2023-09-13 Add scroll and image/text icons to media card (D Ferguson)
  * v0.03.0031 2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
+ * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
  ********************************************************************************
  * NB: cannot execute 'externalize strings' check without temporarily commenting
  *     out the statement: txt_Text = new JTextArea("\""+listText+" ...\"");
@@ -325,13 +326,8 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
 				        btn_SaveNameDate.setEnabled(true);	// turn on Save button as soon as edit starts
-				        SwingUtilities.invokeLater(new Runnable() {
-				        	@Override
-							public void run() {
-				        		((JTextField)editor).requestFocus();
-				        		((JTextField)editor).getCaret().setVisible(true);
-				             }
-				        });
+				        ((JTextField)editor).requestFocus();
+				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
 				    return result;
 				}
@@ -653,7 +649,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0508ManageLocation: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-					JOptionPane.showMessageDialog(null, HG0508Msgs.Text_23 +  hbe.getMessage(), 	// Date format error: \n
+					JOptionPane.showMessageDialog(btn_SaveNameDate, HG0508Msgs.Text_23 +  hbe.getMessage(), 	// Date format error: \n
 											HG0508Msgs.Text_24, JOptionPane.ERROR_MESSAGE);			// Date input checker
 					if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR Date format: " + hbe.getMessage());	//$NON-NLS-1$
 					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
