@@ -1,10 +1,11 @@
 package hre.tmgjava;
 /****************************************************************************
  * File Chooser - Specification 05.77 GUI_FileChooser 2019-04-13
- * v0.00.007 2019-04-13 initial code (D Ferguson)
- * v0.00.016 2019-12-14 increased with of window (N.Tolleshaug)
- * v0.00.016 2019-12-20 implemented alternative constructor (N.Tolleshaug)
- * v0.01.027 2022-01-30 set JFileChooser to fast start mode (D Ferguson)
+ * v0.00.0007 2019-04-13 initial HG0577FileChooser code (D Ferguson)
+ * v0.00.0016 2019-12-14 increased with of window (N.Tolleshaug)
+ *			  2019-12-20 implemented alternative constructor (N.Tolleshaug)
+ * v0.01.0027 2022-01-30 set JFileChooser to fast start mode (D Ferguson)
+ * v0.03.0031 2024-11-25 Convert "\\" usage to File.separator (D Ferguson)
  *****************************************************************************/
 
 import java.awt.BorderLayout;
@@ -47,7 +48,7 @@ public class TMGfolderChooser extends JDialog {
  */
 	public TMGfolderChooser (String[] fileChooserParams) {
     	this (fileChooserParams[0],fileChooserParams[1],fileChooserParams[2],
-    		fileChooserParams[3],fileChooserParams[4],Integer.parseInt(fileChooserParams[5]));
+    		  fileChooserParams[3],fileChooserParams[4],Integer.parseInt(fileChooserParams[5]));
 	}
 
 /**
@@ -76,10 +77,11 @@ public class TMGfolderChooser extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 
 		// File chooser construct
-		// Set start folder, if passed in parameter-5, else default to user's home directory, plus /hre
+		// Set start folder, if passed in parameter-5, else default to user's home directory, plus /hre/
 		if (folderStart == null) { userDir = System.getProperty("user.home");
-								   userDir = userDir + "\\hre\\";               }
-			else { userDir = folderStart; }
+								   userDir = userDir + File.separator +"hre"+ File.separator;
+								 }
+			else userDir = folderStart;
 		JFileChooser fileChooser = new JFileChooser(userDir);
 
 		// Setup FileChooser in fast start mode
@@ -92,13 +94,13 @@ public class TMGfolderChooser extends JDialog {
 		if (dialogType == "Open") fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
 		if (dialogType == "Save") fileChooser.setDialogType(JFileChooser.SAVE_DIALOG);
 		if (dialogType == "Select") {
-			fileChooser.setDialogType(JFileChooser.CUSTOM_DIALOG);
-									 fileChooser.setApproveButtonText("Select");
-									 fileChooser.setApproveButtonToolTipText("Select database");
+				fileChooser.setDialogType(JFileChooser.CUSTOM_DIALOG);
+				fileChooser.setApproveButtonText("Select");
+				fileChooser.setApproveButtonToolTipText("Select database");
 		}
 		if (dialogType == "Delete") {
-			fileChooser.setDialogType(JFileChooser.CUSTOM_DIALOG);
-									 fileChooser.setApproveButtonText("Delete");
+				fileChooser.setDialogType(JFileChooser.CUSTOM_DIALOG);
+				fileChooser.setApproveButtonText("Delete");
 		}
 
 		fileChooser.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));

@@ -22,6 +22,7 @@ package hre.gui;
  * v0.03.0031 2024-04-28 Fix Assoc table column sizes (D Ferguson)
  * 			  2024-11-04 Ensure all data non-editable (D Ferguson)
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
+ * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ***************************************************************************************************/
 
 import java.awt.Color;
@@ -214,7 +215,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 	private void userInfoInitVP(int errorCode) {
 	// Max event VP's
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_88 		// Too many Event Viewpoints
+			JOptionPane.showMessageDialog(contents,  HG05306Msgs.Text_88 		// Too many Event Viewpoints
 												+ HG05306Msgs.Text_81 		// Maximum allowed is
 												+ maxEventVPIs,
 					HG05306Msgs.Text_89, JOptionPane.INFORMATION_MESSAGE);	// Event Viewpoint Creation
@@ -222,13 +223,13 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 		}
 		// intiate VP error
 		if (errorCode == 2) {
-			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_83,		// Create Event ViewPoint error
+			JOptionPane.showMessageDialog(contents,  HG05306Msgs.Text_83,		// Create Event ViewPoint error
 					HG05306Msgs.Text_89, JOptionPane.ERROR_MESSAGE);		// Event Viewpoint Creation
 			return;
 		}
 		// Thumbnail error
 		if (errorCode == 3) {
-			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_84			// Image Thumbnail Error
+			JOptionPane.showMessageDialog(contents,  HG05306Msgs.Text_84			// Image Thumbnail Error
 												+ HG05306Msgs.Text_85		// From TMG Exhibit Log, perform a
 												+ HG05306Msgs.Text_86		// 'Refresh all thumbnails' command,
 												+ HG05306Msgs.Text_87,		// then re-import the TMG file.
@@ -237,7 +238,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 		}
 		// Person VP's
 		if (errorCode == 4) {
-			JOptionPane.showMessageDialog(null, HG05306Msgs.Text_80 		// Too many Person Viewpoints
+			JOptionPane.showMessageDialog(contents,  HG05306Msgs.Text_80 		// Too many Person Viewpoints
 												+ HG05306Msgs.Text_81 		// Maximum allowed is
 												+ maxPersonVPIs,
 					HG05306Msgs.Text_82, JOptionPane.INFORMATION_MESSAGE);	// Person Viewpoint Creation

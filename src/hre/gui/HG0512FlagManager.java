@@ -10,6 +10,7 @@ package hre.gui;
  *			  2023-08-19 Add confirmation of Flag deletion (D Ferguson)
  *			  2023-09-08 Changed to HBPersonFlagManager (N. Tolleshaug)
  *			  2023-10-11 Convert to NLS (D Ferguson)
+ * v0.03.0031 2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  *******************************************************************************/
 
 import java.awt.Dimension;
@@ -57,7 +58,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Flag Manager
  * @author D Ferguson
- * @version v0.03.0030
+ * @version v0.03.0031
  * @since 2021-02-14
  */
 public class HG0512FlagManager extends HG0450SuperDialog {
@@ -112,10 +113,10 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 		contents = new JPanel();
 		setContentPane(contents);
 		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 	// Get the Table Headings, which are: Flag Name, System?, Language, Active?, All Possible Settings
-		tableColHeads = pointManagePersonFlag.setTranslatedData(screenID, "1", false); //$NON-NLS-1$ 
-		
+		tableColHeads = pointManagePersonFlag.setTranslatedData(screenID, "1", false); //$NON-NLS-1$
+
 	// Define toolBar in NORTH dock area
 		JToolBar toolBar = new JToolBar();
 		toolBar.setFloatable(false);
@@ -126,7 +127,7 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
 	// Row 0 central area
-		JLabel lbl_TxtFilter = new JLabel(HG0512Msgs.Text_1);	// Text to filter for: 
+		JLabel lbl_TxtFilter = new JLabel(HG0512Msgs.Text_1);	// Text to filter for:
 		contents.add(lbl_TxtFilter, "cell 1 0, align left");	//$NON-NLS-1$
 
 		JTextField textField = new JTextField();
@@ -134,13 +135,13 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 		textField.setToolTipText(HG0512Msgs.Text_2);	// Name of stored filter
 		contents.add(textField, "flowx,cell 1 0");		//$NON-NLS-1$
 
-		chkbox_Filter = new JCheckBox(HG0512Msgs.Text_3);	// Filter    
+		chkbox_Filter = new JCheckBox(HG0512Msgs.Text_3);	// Filter
 		chkbox_Filter.setHorizontalTextPosition(SwingConstants.LEADING);
 		chkbox_Filter.setHorizontalAlignment(SwingConstants.LEFT);
 		chkbox_Filter.setToolTipText(HG0512Msgs.Text_4);	// On if a filter is in use
 		contents.add(chkbox_Filter, "cell 1 0, gapx 15");	//$NON-NLS-1$
 
-		JLabel lbl_Subsets = new JLabel(HG0512Msgs.Text_5);	// Select: 
+		JLabel lbl_Subsets = new JLabel(HG0512Msgs.Text_5);	// Select:
 		lbl_Subsets.setToolTipText(HG0512Msgs.Text_6);	// Select filter or Subset name
 		contents.add(lbl_Subsets, "cell 1 0, gapx 15");	//$NON-NLS-1$
 
@@ -232,7 +233,7 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 			@Override
 			public Class<?> getColumnClass(int col) {
 			     if (col == 1 || col ==3) return Boolean.class;
-			        else return String.class;
+				return String.class;
 			}
 		};
 
@@ -435,19 +436,17 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 	               try {
 	            	// check if System flag
 	            	   if ((boolean) objReqFlagData[delRow][1]) {
-	           				JOptionPane.showMessageDialog(null,	HG0512Msgs.Text_18,		// You cannot delete a System-defined flag
-	           						HG0512Msgs.Text_0, JOptionPane.ERROR_MESSAGE);		// Flag Manager
+	           				JOptionPane.showMessageDialog(contents,	HG0512Msgs.Text_18,		// You cannot delete a System-defined flag
+	           							HG0512Msgs.Text_0, JOptionPane.ERROR_MESSAGE);		// Flag Manager
 	           				return;
 	            	   }
 	            	// confirm deletion
 	            	   if (JOptionPane.showConfirmDialog(btn_Save,
-								HG0512Msgs.Text_20,		// Are you sure you want to delete this Flag? 
+								HG0512Msgs.Text_20,		// Are you sure you want to delete this Flag?
 								HG0512Msgs.Text_17,		// Administer Person Flags
-								JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-									pointManagePersonFlag.deleteFlagDescriprion(flagIdent);
-				            		resetFlagDescription(true);
-								}
-	            	   		else return;
+								JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+					pointManagePersonFlag.deleteFlagDescriprion(flagIdent);
+					resetFlagDescription(true);
 			           madeChanges = false;
 				       btn_Save.setEnabled(false);
 	               } catch (HBException hbe) {

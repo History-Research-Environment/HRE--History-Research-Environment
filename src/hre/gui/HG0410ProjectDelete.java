@@ -25,6 +25,7 @@ package hre.gui;
  * v0.01.0027 2021-10-25 delete Server entry if delete last project on server (D Ferguson)
  *			  2022-02-26 Modified to use the NLS version of HGlobal (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
+ * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -213,7 +214,7 @@ public class HG0410ProjectDelete extends HG0450SuperDialog {
 					try {
 						summaryData = pointProHand.getSummaryUserProjectAction(selectedProjectName);
 					} catch (HBException hbe) {
-						JOptionPane.showMessageDialog(null, HG0410Msgs.Text_32
+						JOptionPane.showMessageDialog(contents, HG0410Msgs.Text_32
 								+  hbe.getMessage(), HG0410Msgs.Text_33,JOptionPane.ERROR_MESSAGE);
 					}
 				}
@@ -345,7 +346,7 @@ public class HG0410ProjectDelete extends HG0450SuperDialog {
  * @return
  */
 	public boolean keepDatabaseFile(String deleteFilePath) {
-		return JOptionPane.showConfirmDialog(null, HG0410Msgs.Text_42 + deleteFilePath, HG0410Msgs.Text_43,
+		return JOptionPane.showConfirmDialog(contents, HG0410Msgs.Text_42 + deleteFilePath, HG0410Msgs.Text_43,
 				JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION;
 	}	// End keepDatabaseFile
 
@@ -359,7 +360,7 @@ public class HG0410ProjectDelete extends HG0450SuperDialog {
 		String errorTitle = HG0410Msgs.Text_45;
 		if (errorCode == 0) {
 			errorMess = HG0410Msgs.Text_46;
-			JOptionPane.showMessageDialog(null, errorMess + projectName, errorTitle,
+			JOptionPane.showMessageDialog(contents, errorMess + projectName, errorTitle,
 					JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode > 0) {
@@ -368,7 +369,7 @@ public class HG0410ProjectDelete extends HG0450SuperDialog {
 			if (errorCode == 1)  errorMess = HG0410Msgs.Text_48 + projectName + HG0410Msgs.Text_49;
 			if (errorCode == 2)  errorMess = HG0410Msgs.Text_50 + projectName + HG0410Msgs.Text_51;
 			if (errorCode == 3)  errorMess = HG0410Msgs.Text_52 + projectName;
-			JOptionPane.showMessageDialog(null, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoDeleteProject
 

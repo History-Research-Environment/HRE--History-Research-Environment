@@ -20,6 +20,9 @@ package hre.gui;
  * 			  2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
  * 			  2024-10-25 Make date fields non-editable by keyboard (D Ferguson)
  * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
+ * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * 			  2024-12-08 Updated listener tablePerson name changes (N Tolleshaug)
+ * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE01 load/edit/save of Citation data
@@ -69,7 +72,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
@@ -108,7 +110,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	public JTable tablePerson;
 	JToggleButton btn_Primary;
 
-	boolean eventChanged = false;
+	boolean eventTypeChanged = false;
 	boolean nameChanged = false;
 	boolean styleChanged = false;
 	boolean citationChanged = false;
@@ -187,7 +189,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	 // Get Name style and start/end dates i exist for edit
 	    if (!(this instanceof HG0509AddPersonName)) {
 	    	nameData = pointPersonHandler.getNameData();
-			String selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.personNameTable,"PID = " + personNameTablePID); //$NON-NLS-1$ //$NON-NLS-2$
+			String selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.personNameTable, "PID = " + personNameTablePID); //$NON-NLS-1$ //$NON-NLS-2$
 			ResultSet personNameTable = pointPersonHandler.requestTableData(selectString, dataBaseIndex);
 			try {
 				personNameTable.first();
@@ -230,27 +232,35 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		// Now lookup the Event type list and set the combobox to the current Name event type
 	    // For AddName, we'd need to set it to the 1037 event type (Name-Var) as a default
 	    comboEvents.setSelectedIndex(1);
-	   for (int i = 0; i < nameTypes.length; i++)
-	    	if (nameData[3].equals("" + nameTypes[i])) comboEvents.setSelectedIndex(i);	//$NON-NLS-1$
+	    for (int i = 0; i < nameTypes.length; i++)
+	    	if (nameData[3].equals("" + nameTypes[i])) {
+	    		comboEvents.setSelectedIndex(i);	//$NON-NLS-1$
+	    		nameEventType = nameTypes[i];
+	    	}
 
 	// Load Name Styles combo box
 		DefaultComboBoxModel<String> nameStyles =
 				new DefaultComboBoxModel<>(pointPersonHandler.getAvailableStyles());
 		comboStyles = new JComboBox<>(nameStyles);
 		comboStyles.setSelectedIndex(pointPersonHandler.getDefaultIndex());
+		pointPersonHandler.setNameStyleIndex(pointPersonHandler.getDefaultIndex());
 
 	// Match the currently stored Style against the combo-box entries
 	// to be able to show the correct current values
-		int ii = 0;
-		for (ii = 0; ii < comboStyles.getItemCount(); ii++) {
-			comboStyles.setSelectedIndex(ii);
-			if (nameData[0].trim().equals(comboStyles.getSelectedItem().toString().trim())) break;
-		}
-	// Make sure we haven't got to loop end with no match
-		if (ii == comboStyles.getItemCount()) ii = 0;
+		
+		if (!(this instanceof HG0509AddPersonName)) {
+			int ii = 0;
+			for (ii = 0; ii < comboStyles.getItemCount(); ii++) {
+				comboStyles.setSelectedIndex(ii);
+				if (nameData[0].trim().equals(comboStyles.getSelectedItem().toString().trim())) break;
+			}
+		// Make sure we haven't got to loop end with no match
+			if (ii == comboStyles.getItemCount()) ii = 0;
+			// Get data for the Person elements and values
+			pointPersonHandler.setNameStyleIndex(ii);
+		} 
+		
 	// Get data for the Person elements and values
-		pointPersonHandler.setNameStyleIndex(ii);
-
 	// Load the name data
 		pointPersonHandler.updateManagePersonNameTable(personNameTablePID);
 		persHeaderData = pointPersonHandler.getPersonTableHeader();
@@ -551,22 +561,21 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		// Listener for changes made in tablePerson (name fields)
 		TableModelListener persListener = new TableModelListener() {
 			@Override
-			public void tableChanged(TableModelEvent e) {
-				// Process name data
-				if (!(tablePerson.getSelectedRow() == -1)) {
-					TableModel nameModel = (TableModel) e.getSource();
-					int selectedRow = tablePerson.getSelectedRow();
-					String nameElementData = ((String) nameModel.getValueAt(selectedRow, 1));
-					if (HGlobal.DEBUG) {
-						String element = (String) nameModel.getValueAt(tablePerson.getSelectedRow(), 0);
-						System.out.println("HG0509ManagePersonName - table changed: " + tablePerson.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + "/" + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						btn_Save.setEnabled(true);
-						nameChanged = true;
-						pointPersonHandler.addToNameChangeList(selectedRow, nameElementData);
-					}
+            public void tableChanged(TableModelEvent tme) {
+                if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+		                    String nameElementData = (String) tablePerson.getValueAt(row, 1);
+							String element = (String) tablePerson.getValueAt(row, 0);
+							if (HGlobal.DEBUG)
+								System.out.println(" HG0509ManagePersonName - person table changed: " + row //$NON-NLS-1$
+										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
+						if (nameElementData != null) {
+							btn_Save.setEnabled(true);
+							nameChanged = true;
+							pointPersonHandler.addToNameChangeList(row, nameElementData);
+						}
+                    }
 				}
 			}
 		};
@@ -720,8 +729,9 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int selectedNmaeTypeIndex = comboEvents.getSelectedIndex();
 				nameEventType = nameTypes[selectedNmaeTypeIndex];
+				//System.out.println(" HG0509ManagePersonName changed event type: " + nameEventType);
 				btn_Save.setEnabled(true);
-				eventChanged = true;
+				eventTypeChanged = true;
 			}
 		});
 
@@ -731,7 +741,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int index = comboStyles.getSelectedIndex();
 				DefaultTableModel persModel = (DefaultTableModel) tablePerson.getModel();
-				// Temporarily disable tablePerson listener while Style changes
+			// Temporarily disable tablePerson listener while Style changes
 				persModel.removeTableModelListener(persListener);
 				persModel.setNumRows(0);	// clear table
 
@@ -748,13 +758,14 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			  		} else btn_Hidden.setVisible(false);
 					btn_Save.setEnabled(true);
 					styleChanged = true;
+					clearPersonTableData();
 				} catch (HBException hbe) {
 					System.out.println("HG0509ManagePersonName style error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 				persModel.setRowCount(tablePersData.length);	// reset # table rows
 				pack();	// reset screen size
-				// re-enable tablePerson listener
+			// re-enable tablePerson listener
 				persModel.addTableModelListener(persListener);
 			}
 		});
@@ -873,7 +884,19 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
  * @param errorMess
  */
 	public void errorJOptionMessage(String title, String errorMess) {
-		JOptionPane.showMessageDialog(null, errorMess, title, JOptionPane.ERROR_MESSAGE);
+		JOptionPane.showMessageDialog(contents, errorMess, title, JOptionPane.ERROR_MESSAGE);
+	}
+	
+/**
+ * clearPersonTableData() - clear name data in JTable tablePerson for add new name
+ */
+	protected void clearPersonTableData() {
+		for (int i = 0; i < tablePersData.length; i++) 
+			tablePersData[i][1] = "";	//$NON-NLS-1$
+		
+		DefaultTableModel persModel = (DefaultTableModel) tablePerson.getModel();
+		persModel.setDataVector(tablePersData, persHeaderData);
+		pack();
 	}
 
 }  // End of HG0509ManagePersonName

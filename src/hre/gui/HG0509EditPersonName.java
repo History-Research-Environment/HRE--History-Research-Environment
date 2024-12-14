@@ -6,6 +6,7 @@ package hre.gui;
  * 			  2024-08-16 NLS conversion (D Ferguson)
  * 			  2024-10-05 Updated for reset PM/PS (N Tolleshaug)
  * 			  2024-11-29 Fixed reset PM/PS (N Tolleshaug)
+ * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE02 load/edit/save/move of Citation data
@@ -13,11 +14,7 @@ package hre.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
-//import javax.swing.DefaultComboBoxModel;
-//import javax.swing.JComboBox;
 import javax.swing.WindowConstants;
-import javax.swing.event.TableModelEvent;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
@@ -50,9 +47,8 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 		super(pointPersonHandler, pointOpenProject, personNameTablePID);
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		if (HGlobal.DEBUG)
-		 {
 			System.out.println("HG0509EditPersonName initated");	//$NON-NLS-1$
-		}
+		
     	this.setResizable(true);
     // Setup screenID and helpName for 50600 as Help for this dialog is part of
     // managePerson Help and F1 has to select that (also this screen does not save to T302)
@@ -108,19 +104,17 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 				}
 
 				if (startDateOK)
-				 {
 					pointPersonHandler.createNameDates(true, personNameTablePID, "START_HDATE_RPID", startHREDate);	//$NON-NLS-1$
-				}
-				if (endDateOK)
-				 {
+				
+				if (endDateOK)	 
 					pointPersonHandler.createNameDates(true, personNameTablePID, "END_HDATE_RPID", endHREDate);			//$NON-NLS-1$
-				}
-
-				if (nameChanged || eventChanged || memoChanged || citationChanged) {
-					if (nameChanged || eventChanged) {
-							new TableModelEvent(tablePerson.getModel());
+				
+				if (nameChanged || eventTypeChanged || memoChanged || citationChanged) {
+					if (nameChanged || eventTypeChanged) {
+							//new TableModelEvent(tablePerson.getModel());
 						// Update best name in T401
 							if (setPrimary) {
+								pointPersonHandler.setNameEventType(nameEventType);
 								pointPersonHandler.updatePersonBestName(personNameTablePID);
 								if (btn_Primary.isSelected()) {
 									btn_Primary.setEnabled(false);
@@ -132,11 +126,14 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 							}
 						// Update name element table T403
 							pointPersonHandler.updateElementData(nameEventType);
+							
 						// Update all names table in manage person
 							pointPersonHandler.updateAllNameTable();
 							pointPersonHandler.managePersonScreen.resetAllNametable(pointOpenProject);
 							nameChanged = false;
+							eventTypeChanged = false;
 					}
+					
 					if (memoChanged) {
 						pointPersonHandler.updateSelectGUIMemo(memoNameText.getText(),
 																personNameTablePID,

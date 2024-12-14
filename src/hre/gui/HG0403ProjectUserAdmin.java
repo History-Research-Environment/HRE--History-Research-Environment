@@ -31,6 +31,8 @@ package hre.gui;
  *			  2022-02-26 Modified to use the NLS version of HGlobal (D Ferguson)
  * v0.01.0028 2023-03-06 Converted to NLS (D Ferguson)
  * v0.03.0031 2024-10-01 Revise complex IFs (D Ferguson)
+ * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * 			  2024-11-30 Fix crash if cancel out of Browse action (D Ferguson)
  ******************************************************************************************
 */
 
@@ -290,6 +292,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 				HGlobal.projectFilename = HGlobal.projectFilename.trim();
 				lbl_FilenameData.setText(HGlobal.projectFilename);   	// set filename
 				lbl_FolderNameData.setText(HGlobal.projectFolder); 		// set path
+				if (HGlobal.projectFilename.equals("")) return;	// retutn if cancelled out of folderchooser
 
 				try {
 				// Check if editor active and stop editing
@@ -309,7 +312,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 					btn_DeleteUser.setEnabled(true);
 
 				} catch (HBException | HDException hbe) {
-					JOptionPane.showMessageDialog(null, "HBToolHandler load User table error:\n" //$NON-NLS-1$
+					JOptionPane.showMessageDialog(contents, "HBToolHandler load User table error:\n" //$NON-NLS-1$
 							+  hbe.getMessage(),"Admin Tools",JOptionPane.ERROR_MESSAGE); 		//$NON-NLS-1$
 					hbe.printStackTrace();
 				}
@@ -343,7 +346,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 					try {
 						 pointToolHand.closeDatabaseConnection();
 					 } catch (HBException hbe) {
-							JOptionPane.showMessageDialog(null, "HBToolHandler - error closing DB\n"  //$NON-NLS-1$
+							JOptionPane.showMessageDialog(contents, "HBToolHandler - error closing DB\n"  //$NON-NLS-1$
 									+  hbe.getMessage(),"Admin Tools",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 					 }
 					dispose();
@@ -367,7 +370,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 				// Close database
 					pointToolHand.closeDatabaseConnection();
 				} catch (HBException hbe) {
-					JOptionPane.showMessageDialog(null, "HBToolHandler error!\n" //$NON-NLS-1$
+					JOptionPane.showMessageDialog(contents, "HBToolHandler error!\n" //$NON-NLS-1$
 							+  hbe.getMessage(),"Tools",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 				}
 				dispose();
@@ -425,7 +428,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 						btn_DeleteUser.setEnabled(true);
 						btn_PassWord.setEnabled(true);
 					} catch (HBException | HDException hbe) {
-						JOptionPane.showMessageDialog(null, "HBToolHandler select table error:\n" //$NON-NLS-1$
+						JOptionPane.showMessageDialog(contents, "HBToolHandler select table error:\n" //$NON-NLS-1$
 								+  hbe.getMessage(),"Admin Tools",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 						hbe.printStackTrace();
 					}
@@ -506,11 +509,11 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 
 					} catch (HBException hbe) {
 						if (HGlobal.DEBUG) System.out.println("HBToolHandler error adding user to table: \n" + hbe.getMessage()); //$NON-NLS-1$
-						JOptionPane.showMessageDialog(null, "HBToolHandler error.\n" //$NON-NLS-1$
+						JOptionPane.showMessageDialog(contents, "HBToolHandler error.\n" //$NON-NLS-1$
 								+  hbe.getMessage(),"Admin Tools",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 						if (HGlobal.DEBUG) hbe.printStackTrace();
 					}
-				} else JOptionPane.showMessageDialog(null, HG0403Msgs.Text_90		// Add user error.\n
+				} else JOptionPane.showMessageDialog(contents, HG0403Msgs.Text_90		// Add user error.\n
 													+ HG0403Msgs.Text_91,			// No data entered.
 													HG0403Msgs.Text_92, JOptionPane.ERROR_MESSAGE);	// Admin Tools
 			}
@@ -529,11 +532,11 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 								(String)table_Users.getModel().getValueAt(tableUserRowSelected, 0))) {
 							userModel.removeRow(tableUserRowSelected);
 						}
-					} else JOptionPane.showMessageDialog(null, HG0403Msgs.Text_94,		// Select user first
+					} else JOptionPane.showMessageDialog(contents, HG0403Msgs.Text_94,		// Select user first
 														HG0403Msgs.Text_92,JOptionPane.ERROR_MESSAGE);  // Admin Tools
 
 				} catch (HBException hbe) {
-					JOptionPane.showMessageDialog(null, "HBToolHandler delete User error.\n" //$NON-NLS-1$
+					JOptionPane.showMessageDialog(contents, "HBToolHandler delete User error.\n" //$NON-NLS-1$
 							+  hbe.getMessage(),"Admin Tools",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 					if (HGlobal.DEBUG) hbe.printStackTrace();
 				}
@@ -548,7 +551,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 					passWord = setNewPassWord(btn_PassWord);
 					if (passWord != null) if (passWord.length() < 8) passWord = null;
 					saveUsedData(pointToolHand, tableUserRowSelected);
-				} else JOptionPane.showMessageDialog(null, HG0403Msgs.Text_94,		// Select user first
+				} else JOptionPane.showMessageDialog(contents, HG0403Msgs.Text_94,		// Select user first
 													HG0403Msgs.Text_92,JOptionPane.ERROR_MESSAGE);  // Admin Tools
 			}
 		});
@@ -651,7 +654,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 				} // do not dispose (as user may want to do more actions)
 			} catch (HBException hbe) {
 				if (HGlobal.DEBUG) System.out.println("HBToolHandler - update UserTable: \n" + hbe.getMessage()); //$NON-NLS-1$
-				JOptionPane.showMessageDialog(null, "HBToolHandler error!\n" //$NON-NLS-1$
+				JOptionPane.showMessageDialog(contents, "HBToolHandler error!\n" //$NON-NLS-1$
 						+  hbe.getMessage(),"Tools",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 				if (HGlobal.DEBUG) hbe.printStackTrace();
 			}

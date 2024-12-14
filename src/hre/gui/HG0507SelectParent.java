@@ -124,18 +124,17 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 					pointPersonHandler.setParentRole(selectedParentRole);
 					if (addRelation) {
 						pointPersonHandler.addNewParent(personPID);
-						if (memoEdited) {
+						if (memoEdited) 
 							pointPersonHandler.createSelectGUIMemo(memoText.getText(),
-									pointPersonHandler.personParentTable);
-						}
+									pointPersonHandler.personParentTable);		
 					} else {
-						if (memoEdited) {
+						if (memoEdited) 
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 								(long)parentRelationData[0], pointPersonHandler.personParentTable);
-						}
+						
 						pointPersonHandler.setParentRole(selectedParentRole);
 						pointPersonHandler.updateParentRelationTableRow((long)parentRelationData[0]);
-						}
+					}
 					
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();

@@ -1,5 +1,4 @@
 package hre.tmgjava;
-
 /***************************************************************************************
  * Uses library com.linuxense.javadbf
  * Java library for reading and writing Xbase (dBase/DBF) files
@@ -11,15 +10,18 @@ package hre.tmgjava;
  * TMGloader loads the TMG tables and create TMGtabledata object for each table
  * v0.00.0018 2020-03-05 - First version (N. Tolleshaug)
  * v0.00.0021 2020-04-08 - Open TMG folder and choose .pcj file
- * v0.00.0021 2020-05-01 - Included monitoring of TMG table load
- * v0.00.0022 2020-06-30 - Substitute \\ with / (N. Tolleshaug)
- * v0.00.0025 2020-11-15 - Removed DDL19a (N. Tolleshaug)
+ * 			  2020-05-01 - Included monitoring of TMG table load
+ * v0.02.0022 2020-06-30 - Substitute \\ with / (N. Tolleshaug)
+ * v0.02.0025 2020-11-15 - Removed DDL19a (N. Tolleshaug)
  * 			  2020-11-22 - File separator updated for file path strings (N. Tolleshaug)
- * v0.00.0027 2022-02-27 - Implemented handling event tags, witness and roles(N. Tolleshaug)
+ * v0.03.0027 2022-02-27 - Implemented handling event tags, witness and roles(N. Tolleshaug)
  * 			  2022-05-17 - Implemented progress monitor for load TMG tables(N. Tolleshaug)
  * 			  2022-07-24 - For Exhibit processing removed TMGtableSingleData(tmgReader)
- * v0.01.0031 2023-10-20 - Updated for v22b database  
+ * v0.03.0031 2023-10-20 - Updated for v22b database
+ * 			  2024-11-23 - Changed to multi table processing for E.dbf (N. Tolleshaug)
+ *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  *****************************************************************************************/
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -30,6 +32,7 @@ import java.util.Vector;
 import com.linuxense.javadbf.DBFException;
 import com.linuxense.javadbf.DBFReader;
 import com.linuxense.javadbf.DBFRow;
+
 /**
  * class TMGloader
  * @author NTo
@@ -123,7 +126,7 @@ public class TMGloader {
 		TMGglobal.tmg_ST_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.STYLE , TMGglobal.tmg_ST_table);
 		resetProgress();
-		
+
 		//STYLE TYPE TABLE
 		loadFileTMG(TMGtypes.FLAG);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.FLAG + ".dbf");
@@ -193,8 +196,8 @@ public class TMGloader {
 		TMGglobal.tmg_ND_table = new TMGtableData(tmgReader,"UID", pointConvert);
 		TMGglobal.tmg_ND_table.TMGtableSingleData(tmgReader,false);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME_DICTIONARY, TMGglobal.tmg_ND_table);
-		resetProgress();	
-		
+		resetProgress();
+
 	//TAG TYPE TABLE
 		loadFileTMG(TMGtypes.TAG_TYPE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".dbf");
@@ -204,8 +207,8 @@ public class TMGloader {
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.TAG_TYPE , TMGglobal.tmg_T_table);
 		resetProgress();
 	} // Name loading
-	
-	
+
+
 	public void loadTmgPlaceTables() throws HCException {
 		resetProgress();
 		//PLACE FILE
@@ -244,7 +247,7 @@ public class TMGloader {
 	}
 
 /**
- * 
+ *
  * @param all - load all tables or only E table
  * @throws HCException
  */
@@ -252,12 +255,12 @@ public class TMGloader {
 		resetProgress();
 
 	// WITNESS TABLE
-		
 		loadFileTMG(TMGtypes.EVENT_WITNESS);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".dbf");
 		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".fpt");
 		TMGglobal.tmg_E_table = new TMGtableData(tmgReader,"GNUM", pointConvert);
-		TMGglobal.tmg_E_table.TMGtableSingleData(tmgReader);
+		//TMGglobal.tmg_E_table.TMGtableSingleData(tmgReader);
+		TMGglobal.tmg_E_table.TMGtableMultiData(tmgReader); // New 22.11.2024
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.EVENT_WITNESS, TMGglobal.tmg_E_table);
 		resetProgress();
 
@@ -270,7 +273,7 @@ public class TMGloader {
 			TMGglobal.tmg_G_table.TMGtableSingleData(tmgReader);
 			if (TMGglobal.DUMP) statusUpdate(TMGtypes.EVENT, TMGglobal.tmg_G_table);
 			resetProgress();
-	
+
 		//TAG TYPE TABLE
 			loadFileTMG(TMGtypes.TAG_TYPE);
 			tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".dbf");
@@ -281,9 +284,9 @@ public class TMGloader {
 			resetProgress();
 		}
 	}
-	
+
 	public void loadTmgSourceTables() throws HCException {
-		
+
 	// Source type
 		loadFileTMG(TMGtypes.SOURCE_TYPE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".dbf");
@@ -292,7 +295,7 @@ public class TMGloader {
 		TMGglobal.tmg_A_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_TYPE, TMGglobal.tmg_A_table);
 		resetProgress();
-		
+
 	// Source file
 		loadFileTMG(TMGtypes.SOURCE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE + ".dbf");
@@ -301,7 +304,7 @@ public class TMGloader {
 		TMGglobal.tmg_M_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE, TMGglobal.tmg_M_table);
 		resetProgress();
-		
+
 	// Repository file
 		loadFileTMG(TMGtypes.REPOSITORY);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.REPOSITORY + ".dbf");
@@ -310,7 +313,7 @@ public class TMGloader {
 		TMGglobal.tmg_R_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.REPOSITORY, TMGglobal.tmg_R_table);
 		resetProgress();
-		
+
 	// Source Citations file
 		loadFileTMG(TMGtypes.SOURCE_CITATION);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_CITATION + ".dbf");
@@ -319,7 +322,7 @@ public class TMGloader {
 		TMGglobal.tmg_S_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_CITATION, TMGglobal.tmg_S_table);
 		resetProgress();
-		
+
 	// Source Element file
 		loadFileTMG(TMGtypes.SOURCE_ELEMENT);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_ELEMENT + ".dbf");
@@ -328,7 +331,7 @@ public class TMGloader {
 		TMGglobal.tmg_U_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_ELEMENT, TMGglobal.tmg_U_table);
 		resetProgress();
-		
+
 		// Source Citations file
 		loadFileTMG(TMGtypes.REPOSITORY_LINK);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.REPOSITORY_LINK + ".dbf");
@@ -336,7 +339,7 @@ public class TMGloader {
 		TMGglobal.tmg_W_table = new TMGtableData(tmgReader,"RNUMBER", pointConvert);
 		TMGglobal.tmg_W_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.REPOSITORY_LINK, TMGglobal.tmg_W_table);
-		resetProgress();	
+		resetProgress();
 	}
 
 /**
@@ -454,7 +457,7 @@ public class TMGloader {
  * @throws HCException
  */
 	private DBFReader tableLoader(String fileName) throws HCException  {
-		String dbfFile = tmgBaseFolder + "\\" + fileName;
+		String dbfFile = tmgBaseFolder + File.separator + fileName;
 
 		DBFReader tmgTable = null;
 		try {
@@ -475,7 +478,7 @@ public class TMGloader {
  */
 	private void setMemoFile(DBFReader tmgPDreader, String fileName) {
 		try {
-		String fptFile = tmgBaseFolder + "\\" + fileName;
+		String fptFile = tmgBaseFolder + File.separator + fileName;
 		tmgPDreader.setMemoFile(new File(fptFile),true);
 		if (TMGglobal.DEBUG) System.out.println("Memory FTP file opened: " + fptFile);
 		} catch (DBFException dbfe) {

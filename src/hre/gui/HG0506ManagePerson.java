@@ -59,6 +59,8 @@ package hre.gui;
  * 			  2024-10-05 Modified add partner event and reset PS (N. Tolleshaug)
  * 			  2024-10-06 NLS cleanup (D Ferguson)
  * 			  2024-10-29 Modified public static final String screenID = "50600"; (N. Tolleshaug)
+ * 			  2024-11-10 Add confirmation prompts for delete of partner, parent (D Ferguson)
+ * 			  2024-11-15 Removed 'null' positioning of all JOptionPane msgs (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE01 need code to action Surety input
@@ -1108,7 +1110,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE15 need code here to perform DB updates for Person copy
 				// then switch the screen to show the copied entry (for editing)
-				JOptionPane.showMessageDialog(null, "Copy is not yet implemented",			//$NON-NLS-1$ (temporary code)
+				JOptionPane.showMessageDialog(contents, "Copy is not yet implemented",		//$NON-NLS-1$ (temporary code)
 						"Copy Person", JOptionPane.INFORMATION_MESSAGE);					//$NON-NLS-1$ (temporary code)
 			}
 		});
@@ -1117,7 +1119,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		btn_DeleteIcon.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-	       		if (JOptionPane.showConfirmDialog(null, HG0506Msgs.Text_59	// Are you sure you want to delete \nperson:
+	       		if (JOptionPane.showConfirmDialog(contents, HG0506Msgs.Text_59	// Are you sure you want to delete \nperson:
 							  + persName.getText() +" ?",	//$NON-NLS-1$
 							    HG0506Msgs.Text_49,			// Delete Person
 							   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
@@ -1125,12 +1127,12 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				}
 				try {
 					pointPersonHandler.deletePersonInTable(personPID, pointOpenProject);
-					JOptionPane.showMessageDialog(null, HG0506Msgs.Text_48 + persName.getText(),		// Deleted Person:
+					JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_48 + persName.getText(),	// Deleted Person:
 							HG0506Msgs.Text_49, JOptionPane.INFORMATION_MESSAGE);						// Delete Person
-				
+
 				// Indicate we are closing this screen after a Person delete
 					closeAfterDelete = true;
-					
+
 				// Delete person from Person menu Recents list
 					HG0401HREMain.mainFrame.deleteRecentPerson(personPID);
 
@@ -1156,15 +1158,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 				} catch (HBException hbe) {
 					if (HGlobal.DEBUG)
-					 {
 						System.out.println(" ERROR in PersonHandler deletePersonInTable: " + hbe.getMessage());	//$NON-NLS-1$
-					}
-					JOptionPane.showMessageDialog(null, HG0506Msgs.Text_60 + persName.getText()		// ERROR: failed to delete
+					
+					JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_60 + persName.getText()		// ERROR: failed to delete
 					 			+ hbe.getMessage(),
 								HG0506Msgs.Text_49, JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG) {
+					if (HGlobal.DEBUG) 
 						hbe.printStackTrace();
-					}
+					
 				}
 			}
 		});
@@ -1174,7 +1175,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE15 need code here to perform the Person renumber and save to DB
-				JOptionPane.showMessageDialog(null, "Renumber is not yet implemented",		//$NON-NLS-1$ (temporary code)
+				JOptionPane.showMessageDialog(contents, "Renumber is not yet implemented",		//$NON-NLS-1$ (temporary code)
 						"Renumber Person", JOptionPane.INFORMATION_MESSAGE);					//$NON-NLS-1$ (temporary code)
 			}
 		});
@@ -1187,19 +1188,17 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        	if (enteredNum > 0) {
 	        		long personPID = pointOpenProject.getPersonPIDfromVisID(enteredNum);
 	        		if (HGlobal.DEBUG)
-					 {
 						System.out.println("Entered:" + enteredNum + "  PID: "+ personPID); //$NON-NLS-1$ //$NON-NLS-2$
-					}
+					
 	        		if (personPID != null_RPID) {
 	    				if (HGlobal.writeLogs)
-						 {
 							HB0711Logging.logWrite("Action: reset HG0506ManagePerson"); //$NON-NLS-1$
-						}
+						
 
     				// close reminder display
-    					if (reminderDisplay != null) {
+    					if (reminderDisplay != null) 
 							reminderDisplay.dispose();
-						}
+						
 
     			    // Set frame size in GUI data
     					Dimension frameSize = getSize();
@@ -1387,18 +1386,20 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    ActionListener popAL5 = new ActionListener() {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
-	        	String eventName = " - ";	//$NON-NLS-1$
-	        	int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-	        	int rowInTable = tableEvents.getSelectedRow();
-	        	if (rowInTable < 0) {
-					return;
-				}
-	        	long eventPID = pointPersonHandler.getEventPID(rowInTable);
+	        	String eventName = " - ", selectString;	//$NON-NLS-1$
+	        	int eventType, dataBaseIndex, rowInTable, eventGroup;
+	        	long eventPID;
+	        	ResultSet eventTableRS;
+	        	dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+	        	rowInTable = tableEvents.getSelectedRow();
+	        	eventPID = pointPersonHandler.getEventPID(rowInTable);
+	        	if (rowInTable < 0) return;
+				
 	        	try {
-		    		String selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.eventTable, "PID = " + eventPID); //$NON-NLS-1$ //$NON-NLS-2$
-		    		ResultSet eventTableRS = pointPersonHandler.requestTableData(selectString, dataBaseIndex);
+		    		selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.eventTable, "PID = " + eventPID); //$NON-NLS-1$ //$NON-NLS-2$
+		    		eventTableRS = pointPersonHandler.requestTableData(selectString, dataBaseIndex);
 		    		eventTableRS.first();
-		    		int eventType = eventTableRS.getInt("EVNT_TYPE");	//$NON-NLS-1$
+		    		eventType = eventTableRS.getInt("EVNT_TYPE");	//$NON-NLS-1$
 		        	eventName = tableEvents.getModel().getValueAt(rowInTable, 0).toString();
 		       		if (JOptionPane.showConfirmDialog(tableEvents, HG0506Msgs.Text_62	// Are you sure you want to delete \nevent '
 								    + eventName.trim() +"'?",		//$NON-NLS-1$
@@ -1406,7 +1407,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 								   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 						return;
 					}
-		       		int eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
+		       		eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 		       		if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
 						pointPersonHandler.deletePartnerEvent(eventPID);
 					} else {
@@ -1436,7 +1437,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		// The right-clicked row is passed here in rowClicked
         		int rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
 	        	HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable);
+				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable, true);
 				if (editEventScreen != null) {
 					editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyShow = persName.getLocationOnScreen();
@@ -1561,6 +1562,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent e) {
 		// The right-clicked row is passed here in rowClicked
         		int rowInTable = tableParents.convertRowIndexToModel(rowClicked);
+        		String parentName = (String) tableParents.getModel().getValueAt(rowInTable, 1);
+	       		if (JOptionPane.showConfirmDialog(contents, HG0506Msgs.Text_59	// Are you sure you want to delete \nperson:
+							  + parentName +" ?",	//$NON-NLS-1$
+							    HG0506Msgs.Text_49,			// Delete Person
+							   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+					return;
+				}
 	        	try {
 					pointPersonHandler.deleteParent(pointOpenProject, rowInTable);
 				} catch (HBException hbe) {
@@ -1645,6 +1653,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
         		int rowInTable = tablePartners.convertRowIndexToModel(rowClicked);
+        		String partnerName = (String) tablePartners.getModel().getValueAt(rowInTable, 0);
+	       		if (JOptionPane.showConfirmDialog(contents, HG0506Msgs.Text_59	// Are you sure you want to delete \nperson:
+							  + partnerName +" ?",	//$NON-NLS-1$
+							    HG0506Msgs.Text_49,			// Delete Person
+							   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+					return;
+				}
 	        	try {
 					pointPersonHandler.deletePartner(pointOpenProject, rowInTable);
 				} catch (HBException hbe) {

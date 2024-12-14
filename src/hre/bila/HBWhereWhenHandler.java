@@ -66,6 +66,12 @@ package hre.bila;
   *			   2024-08-17 - Fix for add partner event from main add partner (N Tolleshaug)
   *			   2024-10-05 - Fix for add partner event - double PS (N Tolleshaug)
   *			   2024-10-19 - Added updateParentTableEvnt() to update parent relation (N Tolleshaug)
+  *			   2024-11-08 - Remove duplicate assocs in Edit Event (N. Tolleshaug)
+  *			   2024-11-19 - Updated location style handling (N. Tolleshaug)
+  *			   2024-11-19 - Updated location name element handling (N. Tolleshaug)
+  *			   2024-11-20 - Updated findLocationNameTablePID to return null_RPID (N. Tolleshaug)
+  *			   2024-11-23 - Updated event update for witnessed events (N. Tolleshaug)
+  *			   2024-11-28 - Updated event location style handling (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -78,6 +84,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Vector;
 
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
@@ -139,7 +146,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 	public ManageLocationNameData pointManageLocationData;
 	private HBProjectOpenData pointOpenProject;
-	public HBNameStyleManager pointStyleData;
+	public HBNameStyleManager pointNameStyleManager;
 	public HG0507LocationSelect locationScreen = null;
 	private HBPersonHandler pointPersonMannager;
 	public EditEventRecord pointEditEventRecord = null;
@@ -148,7 +155,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	HG0547EditEvent pointEditEvent = null;
 	HG0551DefineEvent pointDefineEvent = null;
 
-	int selecteEventTableRow;
+	int selectedEventTableRow;
 /**
  * 	Constructor HBWhereWhenHandler
  */
@@ -210,6 +217,10 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 	public int getDefaultLocationStyleIndex() {
 		return pointEditEventRecord.getDefaultLocationStyleIndex();
+	}
+	
+	public long getLocationNameRecordPID() {
+		return pointEditEventRecord.getLocationNameRecordPID();
 	}
 
 	public String[] getEventTypeList(int eventGroup) throws HBException {
@@ -388,7 +399,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				// Mod 28.2.2023 - NTo
 				return locationDataList.get(placeIndex).getLocationTablePID();
 		} catch (IndexOutOfBoundsException iobe) {
-			return 0L;
+			return null_RPID;
 		}
 	}
 
@@ -519,15 +530,18 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @param pointOpenProject
  */
 	public void resetUpdateEvent(HBProjectOpenData pointOpenProject) {
+			
 		if (pointEditEvent != null) {
-			Point xyShow = pointEditEvent.getLocationOnScreen();
+			//Point xyShow = pointEditEvent.getLocationOnScreen();
+			Point xyShow = pointEditEvent.getLocation();
 			pointEditEvent.dispose();
 			pointEditEvent = null;
-			pointEditEvent = activateUpdateEvent(pointOpenProject, selecteEventTableRow);
+			//System.out.println(" resetUpdateEvent selectedEventTableRow: " + selectedEventTableRow);
+			pointEditEvent = activateUpdateEvent(pointOpenProject, selectedEventTableRow, false);
 			pointEditEvent.setModalityType(ModalityType.APPLICATION_MODAL);
 			pointEditEvent.setLocation(xyShow.x, xyShow.y);
 			pointEditEvent.setVisible(true);
-		}
+		} else System.out.println(" resetUpdateEvent pointEditEvent = null! ");
 	}
 
 /**
@@ -553,7 +567,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			}
 			assocTableRS.close();
 	// Update Update edit event
-			resetUpdateEvent(pointOpenProject);
+			//resetUpdateEvent(pointOpenProject);
 
 		} catch (SQLException sqle) {
 			throw new HBException(" HBWhereWhenHandler - deleteAssocPerson : " + sqle.getMessage());
@@ -583,7 +597,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			assocTableRS.close();
 
 	// Update Update edit event
-			resetUpdateEvent(pointOpenProject);
+			//resetUpdateEvent(pointOpenProject);
 
 		} catch (SQLException sqle) {
 			throw new HBException(" HBWhereWhenHandler - deleteAssocEvents : " + sqle.getMessage());
@@ -1018,26 +1032,34 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @param eventPerson
  * @return
  */
-	public HG0547EditEvent activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow) {
+	public HG0547EditEvent activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow, boolean updateEvent) {
 		ResultSet selectedEventTable, partnerTableRS;
-		long priPartnerPID, secPartnerPID, locationNamePID, eventTablePID, hdateDate, hdateSort;
-		String selectString, personPartners = " - ";
+		long priPartnerPID, secPartnerPID, primAssocPID = null_RPID, locationTablePID, locationNamePID, eventTablePID, hdateDate, hdateSort;
+		String selectString, personPartners = " - ", primAssocName;
 		int eventGroup, eventNumber = 0, roleNumber = 0;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-
-		selecteEventTableRow = tableRow;
+		selectedEventTableRow = tableRow;
 		pointPersonMannager = pointOpenProject.getPersonHandler();
-		eventTablePID = pointPersonMannager.getEventPID(tableRow);
+		
+	// Mod 2.12.2024		
+		if (updateEvent)
+			eventTablePID = pointPersonMannager.getEventPID(tableRow);
+		else
+			eventTablePID = pointEditEventRecord.eventTablePID;
+		
+		//System.out.println(" activateUpdateEvent - Clicked event PID: " + eventTablePID);
 		dateFormatSelect();
 		try {
 			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
 			selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
 			selectedEventTable = requestTableData(selectString, dataBaseIndex);
+		// Collect the event record
 			selectedEventTable.first();
 			eventNumber = selectedEventTable.getInt("EVNT_TYPE");
+			
 			eventGroup = pointLibraryResultSet.getEventGroup(eventNumber, dataBaseIndex);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
-				//personTablePID = pointOpenProject.getSelectedPersonPID(); // Selected person
+
 				selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
 				partnerTableRS = requestTableData(selectString, dataBaseIndex);
 				partnerTableRS.first();
@@ -1046,32 +1068,30 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				eventNumber = partnerTableRS.getInt("PARTNER_TYPE");
 				partnerTableRS.close();
 				personPartners = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex)
-						+ " & " + pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex);
-				//System.out.println( " Marr: " + personPartners);
-			} else {
-		// Collect the event record
-				//selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
-				//selectedEventTable = requestTableData(selectString, dataBaseIndex);
-				//selectedEventTable.first();
+						+ " & " + pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex);	
+			} else {	
 				eventNumber = selectedEventTable.getInt("EVNT_TYPE");
 				roleNumber = selectedEventTable.getInt("PRIM_ASSOC_ROLE_NUM");
+				primAssocPID = selectedEventTable.getLong("PRIM_ASSOC_RPID");
 			}
 			hdateDate = selectedEventTable.getLong("START_HDATE_RPID");
 			hdateSort = selectedEventTable.getLong("SORT_HDATE_RPID");
 
-		// NOTE we assume location PID and lcation name PID are idetical ********************************
-			locationNamePID = selectedEventTable.getLong("EVNT_LOCN_RPID");
+		// Location processing moddified 17.11.2024
+			locationTablePID = selectedEventTable.getLong("EVNT_LOCN_RPID");
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
-		// NOTE Error when no location name data
-		//System.out.println(" location name PID: " + locationNamePID);
+		
+		// NOTE null_RPID if no location name data
+			locationNamePID = pointManageLocationData.findLocationNameTablePID(locationTablePID);
+			//System.out.println(" Check - location name PID: " + locationNamePID);
 			int error = pointManageLocationData.updateManageLocationNameTable(locationNamePID);
 
 		// Temp error report
-			if (error > 0) {
+			if (error > 0) 
 				System.out.println(" HBWhereWhenHandler - activateUpdateEvent error: " + error );
-			}
+			
 			pointCreateEventRecord = new CreateEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject);
-			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventTablePID);
+			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventTablePID, primAssocPID);
 			pointEditEventRecord.setDatesForEdit(hdateDate, hdateSort);
 			pointEditEventRecord.setPartnerNames(personPartners);
 		// Check if date and sort exist
@@ -1081,12 +1101,19 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				addHdate = false;
 			}
 
-		// Start update event
-				pointEditEvent = new HG0547UpdateEvent(pointOpenProject, eventNumber, roleNumber, eventTablePID, addHdate, locationNamePID);
-
+	// Start update event
+			pointEditEvent = new HG0547UpdateEvent(pointOpenProject, eventNumber, roleNumber, 
+					eventTablePID, addHdate, locationNamePID);
+			
+	// If witnessed event set primary assoc name for update event		
+			if (primAssocPID != null_RPID) {
+				primAssocName = pointLibraryResultSet.exstractPersonName(primAssocPID, personNameStyle, dataBaseIndex);
+				((HG0547UpdateEvent) pointEditEvent).setUpdateEventTitle(primAssocName);
+			}
+				
 			return pointEditEvent;
 		} catch (HBException | SQLException hbe) {
-			System.out.println("HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
+			System.out.println(" HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
 		return null;
@@ -1103,13 +1130,14 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  */
 	public HG0547EditEvent activateEditEvent(HBProjectOpenData pointOpenProject,
 											int eventNumber, int roleNumber, long eventPersonPID, int tableRow) {
-
+		long eventPID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		dateFormatSelect();
 		try {
 			pointPersonMannager = pointOpenProject.getPersonHandler();
-			long eventPID = pointPersonMannager.getEventPID(tableRow);
-			//pointCreateEventRecord = new CreateEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject);
+			eventPID = pointPersonMannager.getEventPID(tableRow);
+			
+			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID);
 			return pointEditEvent;
@@ -1126,11 +1154,12 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @return
  */
 	public HG0552ManageEvent activateAddSelectedEvent(HBProjectOpenData pointOpenProject, int selectedPartnerTableRow) {
-		pointManageEvent = null;
+		//pointManageEvent = null;
 		String namePerson = " No person";
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		long eventPID = null_RPID;
 		try {
+			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointManageEvent = new HG0552ManageEvent(pointOpenProject, namePerson);
 			pointManageEvent.setPartnerTableSelectedRow(selectedPartnerTableRow);
@@ -1152,11 +1181,13 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  */
 	public HG0547EditEvent activateAddFixedEvent(HBProjectOpenData pointOpenProject,
 								int eventNumber, int roleNumber, long eventPersonPID, int tableRow) {
-		HG0547EditEvent pointEditEvent = null;
+
+		//HG0547EditEvent pointEditEvent = null;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointPersonMannager = pointOpenProject.getPersonHandler();
 		long eventPID = null_RPID;
 		try {
+			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID);
 			return pointEditEvent;
@@ -1200,13 +1231,14 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			partnerNames = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex)
 					+ " & " + pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex);
 
+			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, null_RPID);
 			pointEditEventRecord.setPartnerNames(partnerNames);
 			pointEditEvent = new HG0547PartnerEvent(pointOpenProject, partnerTableRow, eventType,
 													roleNumber, partnerTablePID);
 			return pointEditEvent;
 		} catch (HBException | SQLException hbe) {
-			System.out.println(" HBWhereWhenHandler - activateAddDefinedEvent error: " + hbe.getMessage());
+			System.out.println(" HBWhereWhenHandler - activateAddPartnerEvent: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
 		return null;
@@ -1432,9 +1464,8 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		HG0508ManageLocation manageLocationScreen;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 
-		if (HGlobal.DEBUG) {
+		if (HGlobal.DEBUG) 
 			System.out.println(" InitiateManageLocation - Location table PID: " + locationTablePID);
-		}
 
 	// find pointer to Location Manager for each project
 		manageLocationScreen = pointOpenProject.getManageLocationPointer();
@@ -1443,12 +1474,6 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		if (manageLocationScreen != null) {
 			pointOpenProject.closeStatusScreen(screenID);
 
-/** Commented out becoause of change to Super dislog
-		// close reminder display
-			if (manageLocationScreen.reminderDisplay != null) {
-				manageLocationScreen.reminderDisplay.dispose();
-			}
-*/
 	    // Set frame size in GUI data
 			Dimension frameSize = manageLocationScreen.getSize();
 			pointOpenProject.setSizeScreen(screenID,frameSize);
@@ -1480,7 +1505,11 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		// Load data from database(dataBaseIndex) for location data
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointManageLocationData.setNameStyleIndex(getDefaultIndex());
-			errorCode = pointManageLocationData.updateManageLocationNameTable(locationTablePID);
+			
+		// Mod 17.11.2024
+			long locationNamePID = pointManageLocationData.findLocationNameTablePID(locationTablePID);
+			//errorCode = pointManageLocationData.updateManageLocationNameTable(locationTablePID);
+			errorCode = pointManageLocationData.updateManageLocationNameTable(locationNamePID);
 			errorCode = pointManageLocationData.initiateImageExhibits(locationTablePID);
 
 		// Select date format
@@ -1567,10 +1596,10 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public HG0526ManageLocationNameStyles  activateLocationNameStyle(HBProjectOpenData pointOpenProject) {
 		HG0526ManageLocationNameStyles locnStyleScreen;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		pointStyleData =  new HBNameStyleManager(pointDBlayer, dataBaseIndex, "Location ");
+		pointNameStyleManager =  new HBNameStyleManager(pointDBlayer, dataBaseIndex, "Location ");
 		try {
-			pointStyleData.updateStyleTable("P", nameStyles, nameElementsDefined);
-			locnStyleScreen = new HG0526ManageLocationNameStyles(pointOpenProject, pointStyleData);
+			pointNameStyleManager.updateStyleTable("P", nameStyles, nameElementsDefined);
+			locnStyleScreen = new HG0526ManageLocationNameStyles(pointOpenProject, pointNameStyleManager);
 			return locnStyleScreen;
 		} catch (HBException hbe) {
 			System.out.println("HBWhereWhen - activateLocationNameStyle: " + hbe.getMessage());
@@ -1777,7 +1806,7 @@ class ManageLocationNameData extends HBBusinessLayer {
 
 	Object[][] nameElementTable;
 	String[] locationHeaderData;
-	long locationNamePID = null_RPID; // Sores the current location Name PID
+	long locationNamePID = null_RPID; // Stores the current location Name PID
 	String[] locnHeaderData;
 
 	boolean allElements = true;
@@ -1857,7 +1886,7 @@ class ManageLocationNameData extends HBBusinessLayer {
 		setNameStyleTable();
 		getAllNameStyleElements(HGlobal.dataLanguage);
 		locationHeaderData = setTranslatedData("50800","1", false);
-		locationNameChanges = new HashMap<>();
+		locationNameChanges = new HashMap<String,String>();
 		pointMediaHandler = pointOpenProject.getMediaHandler();
 	}
 
@@ -1966,23 +1995,44 @@ class ManageLocationNameData extends HBBusinessLayer {
 
 
 /**
+ * findLocationNameTablePID(long locationTablePID)
+ * @param locationTablePID
+ * @return
+ * @throws HBException
+ */
+	public long findLocationNameTablePID(long locationTablePID) throws HBException  {
+		long locationNamePID;
+		String selectString = setSelectSQL("*", locationNameTable, "OWNER_RPID = " + locationTablePID);
+		ResultSet locationNameResultSet = requestTableData(selectString, dataBaseIndex);
+		try {
+			if (isResultSetEmpty(locationNameResultSet)) return null_RPID;
+			locationNameResultSet.first();
+			locationNamePID = locationNameResultSet.getLong("PID");
+			return locationNamePID;
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException(" HBWhereWhenHandler - findLocationNameTablePID: " + sqle.getMessage());		
+		}
+	}
+	 
+/**
  * updateManagePersonNameTable() called from Location Name Manager Show hidden
  * @return
  * @throws HBException
+ * @throws  
  */
 	public int updateManageLocationNameTable() throws HBException  {
 		hiddenElements = true;
 		return updateManageLocationNameTable(locationNamePID);
 	}
-
 /**
  * updateManagePersonNameTable
  * @param locationNamePID
  * @return
  * @throws HBException
  */
-	public int updateManageLocationNameTable(long locationPID) throws HBException  {
-		locationNamePID = locationPID;
+	public int updateManageLocationNameTable(long locNamePID) throws HBException  {
+		this.locationNamePID = locNamePID;
 		int errorCode = 0;
 		String[] personNameStyleDestriptions;
     	nameStyleElementCodes = nameStyleCodeString[nameStyleIndex].split("\\|");
@@ -1994,9 +2044,9 @@ class ManageLocationNameData extends HBBusinessLayer {
 		      	personNameStyleDestriptions = nameStyleDescriptionString[nameStyleIndex].split("\\|");
 		    // Set up list of descriptions for TMG US standard Name style - second style in list
 		      	String [] standardUSstyleDestriptions = nameStyleDescriptionString[1].split("\\|");
-		      	for (int i = 0; i < personNameStyleDestriptions.length; i++) {
+		      	for (int i = 0; i < personNameStyleDestriptions.length; i++) 
 					tmgCodeMap.put(nameStyleElementCodes[i], standardUSstyleDestriptions[i]);
-				}
+				
 		} else {
 			personNameStyleDestriptions = new String[personNameElementsData.length];
 			for (int i = 0; i < personNameElementsData.length; i++) {
@@ -2037,25 +2087,28 @@ class ManageLocationNameData extends HBBusinessLayer {
  * @throws HBException
  */
 	private void exstractStyleAndDates(long locationNamePID) throws HBException {
-		long nameStyleVP = null_RPID, startRPID, endRPID;
+		long nameStyleRPID = null_RPID, startRPID, endRPID;
+		//System.out.println(" exstractStyleAndDates location name PID: " + locationNamePID);
 		String selectString = setSelectSQL("*", locationNameTable, "PID = " + locationNamePID);
 		locationNameResultSet = requestTableData(selectString, dataBaseIndex);
-		nameStyleAndDates[0] = "  ";
-		nameStyleAndDates[1] = "  ";
-		nameStyleAndDates[2] = "  ";
+		nameStyleAndDates[0] = "  No selection!"; // Name style
+		nameStyleAndDates[1] = "  "; // Start HDate
+		nameStyleAndDates[2] = "  "; // End Hdate
 		try {
-			if (locationNameResultSet.getRow() == 0) {
-				return;
-			}
+			locationNameResultSet.last();
+			//System.out.println(" Location name table rows: " + locationNameResultSet.getRow());
+			if (locationNameResultSet.getRow() == 0) return;	
 			locationNameResultSet.first();
-			nameStyleVP = locationNameResultSet.getLong("NAME_STYLE_RPID");
+			nameStyleRPID = locationNameResultSet.getLong("NAME_STYLE_RPID");
+			nameStyleTable.last();
+			//System.out.println(" Name style table rows: " + nameStyleTable.getRow());
 			nameStyleTable.beforeFirst();
 			while (nameStyleTable.next()) {
-				if (nameStyleVP == nameStyleTable.getLong("PID")) {
-					nameStyleAndDates[0] = nameStyleTable.getString("NAME_STYLE");
+				if (nameStyleRPID == nameStyleTable.getLong("PID")) {
+					nameStyleAndDates[0] = nameStyleTable.getString("NAME_STYLE").trim();
 				}
 			}
-			nameStyleTable.beforeFirst();
+			//System.out.println(" Location name style PID: " + nameStyleRPID + "/" + nameStyleAndDates[0] + "/");
 			startRPID = locationNameResultSet.getLong("START_HDATE_RPID");
 			endRPID = locationNameResultSet.getLong("END_HDATE_RPID");
 
@@ -2160,12 +2213,12 @@ class ManageLocationNameData extends HBBusinessLayer {
 /**
  * updateStoredNameStyle(int selectIndex, long personNamePID)
  * @param selectIndex
- * @param personNamePID
+ * @param locationNamePID
  * @throws HBException
  */
-	public void updateStoredNameStyle(int selectIndex, long personNamePID) throws HBException {
+	public void updateStoredNameStyle(int selectIndex, long locationNamePID) throws HBException {
 		long selectedNameStylePID = nameStylePID[selectIndex];
-		String selectString = setSelectSQL("*", locationNameTable,"PID = " + personNamePID);
+		String selectString = setSelectSQL("*", locationNameTable, "PID = " + locationNamePID);
 		ResultSet personNameTable = requestTableData(selectString, dataBaseIndex);
 		try {
 			personNameTable.first();
@@ -2275,7 +2328,7 @@ class ManageLocationNameData extends HBBusinessLayer {
  */
 	public void addToNameChangeList(int selectedIndex, String nameData) {
 		String nameElementCode = nameStyleElementCodes[selectedIndex];
-		//System.out.println("addToNameChangList(): " +  nameElementCode + "/" + nameData);
+		//System.out.println(" addToLocationNameChangList(): " +  nameElementCode + "/" + nameData);
 		locationNameChanges.put(nameElementCode, nameData);
 	}
 
@@ -2287,19 +2340,19 @@ class ManageLocationNameData extends HBBusinessLayer {
 		String elementCode,selectString;
 		long ownerRPID = 0;
 		String locationNameData = "";
-		boolean contin;
-	// Start transaction
-		if (locationNameChanges.size() == 0) {
-			return;
-		}
+		boolean updated;
+		
+		if (locationNameChanges.size() == 0) return;
+	// Start transaction	
 		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
 		try {
 			selectString = setSelectSQL("*", locationNameElementTable, "OWNER_RPID = " + locationNamePID);
 			nameElementRSet = requestTableData(selectString, dataBaseIndex);
 			ownerRPID = locationNamePID;
 			for (String styleElementCode : nameStyleElementCodes) {
-				contin = true;
-				if (locationNameChanges.get(styleElementCode) != null) {
+				updated = false;
+				if (locationNameChanges.containsKey(styleElementCode)) {
+					//System.out.println(" updateLocationElementData: " + styleElementCode + "/" + locationNameChanges.get(styleElementCode));
 					locationNameData = locationNameChanges.get(styleElementCode).trim();
 					nameElementRSet.beforeFirst();
 					while (nameElementRSet.next()) {
@@ -2312,12 +2365,11 @@ class ManageLocationNameData extends HBBusinessLayer {
 								nameElementRSet.updateString("NAME_DATA", locationNameData);
 								nameElementRSet.updateRow();
 							}
-							contin = false;
+							updated = true;
 						}
 					}
-					if (!contin || locationNameData.length() == 0) {
-						break;
-					}
+					if (updated || locationNameData.length() == 0) continue;
+					
 					long newPID = lastRowPID(locationNameElementTable, dataBaseIndex) + 1;
 				// moves cursor to the insert row
 					nameElementRSet.moveToInsertRow();
@@ -2331,14 +2383,14 @@ class ManageLocationNameData extends HBBusinessLayer {
 				}
 			}
 			locationNameChanges = new HashMap<>();
-		// End transaction
+	// End transaction
 			 updateTableData("COMMIT", dataBaseIndex);
 		} catch (SQLException sqle) {
-		// Roll back transaction
+	// Roll back transaction
 			updateTableData("ROLLBACK", dataBaseIndex);
-			System.out.println("HBPersonHandler - updateElementData(): " + sqle.getMessage());
+			System.out.println("HBWhereWhenHandler - updateLocationElementData(): " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HBException("HBPersonHandler - updateElementData(): " + sqle.getMessage());
+			throw new HBException("HBWhereWhenHandler - updateLocationElementData(): " + sqle.getMessage());
 		}
 	}
 /**
@@ -2407,10 +2459,14 @@ class CreateEventRecord extends HBBusinessLayer {
 	public long editEventData() {
 		System.out.println("editEventData() activated");
 		return 0;
-	}
+	} 
 
 	public long getLocationRecordPID() {
 		return nextLocationRecordPID;
+	}
+	
+	public long getLocationNameRecordPID() {
+		return nextLocationNameRecordPID;
 	}
 
 /**
@@ -2465,15 +2521,13 @@ class CreateEventRecord extends HBBusinessLayer {
 		// Iterating HashMap locationNameChanges for all entries
 	        long elementNamePID = nextLocNameElementRecordPID;
 			for (HashMap.Entry<String, String> mapset : locationNameChanges.entrySet()) {
-				if (HGlobal.DEBUG) {
+				if (HGlobal.DEBUG) 
 					System.out.println( " Name elements code: " + mapset.getKey()
-																+ " = " + mapset.getValue());
-				}
-				if (mapset.getValue().length() != 0) {
+																+ " = " + mapset.getValue());	
+				if (mapset.getValue().length() != 0) 
 					addToT553_LOCATION_NAME_ELEMENTS(locationNameElementTableRS, elementNamePID,
 												mapset.getKey(),
 												mapset.getValue());
-				}
 	            elementNamePID++;
 	        }
 
@@ -2799,6 +2853,7 @@ class EditEventRecord extends HBBusinessLayer {
     long eventHdatePID = null_RPID, deathHdatePID = null_RPID, nextHdatePID = null_RPID,
     		nextHREMemoPID = null_RPID, sortHdatePID = null_RPID;
     long birthPlaceRPID = null_RPID, deathPlaceRPID = null_RPID;
+    
     String[] eventDates = new String[2];
     String startTMGdate = "", sortTMGdate = "";
     String personPartnerNames;
@@ -2815,6 +2870,8 @@ class EditEventRecord extends HBBusinessLayer {
 // Assoc handling
 	long assocPersonPID;
 	long assocEventPID;
+	long primAssocPID;
+	long locationNamePID = null_RPID;
 
 	HashMap<Integer, Object[]> assocDataHash;
 	ArrayList<Object[]> asociateList;
@@ -2823,7 +2880,7 @@ class EditEventRecord extends HBBusinessLayer {
 	long eventTablePID;
 
 	String[] locationHeaderData;
-	HashMap<String,String> eventLocationChanges = new HashMap<>();
+	HashMap<String,String> eventLocationChanges = new HashMap<String,String>();
 
 	public int getDefaultLocationStyleIndex() {
 		return pointLocationStyleData.getDefaultStyleIndex();
@@ -2836,6 +2893,10 @@ class EditEventRecord extends HBBusinessLayer {
 
 	public int[] getEventTypes() {
 		return eventTypeNumber;
+	}
+	
+	public long getLocationNameRecordPID() {
+		return locationNamePID;
 	}
 
 	public String[] getRolesForEvent(int eventType, String selectRoles) throws HBException {
@@ -2889,12 +2950,33 @@ class EditEventRecord extends HBBusinessLayer {
  * @param pointOpenProject
  * @throws HBException
  */
-	public EditEventRecord(HDDatabaseLayer pointDBlayer, int dataBaseIndex, HBProjectOpenData pointOpenProject, long eventTablePID) throws HBException {
+	public EditEventRecord(HDDatabaseLayer pointDBlayer, int dataBaseIndex, HBProjectOpenData pointOpenProject, 
+			long eventTablePID, long primAssocPID) throws HBException {
+			super();
+		this.primAssocPID = primAssocPID;
+		this.pointDBlayer = pointDBlayer;
+		this.dataBaseIndex = dataBaseIndex;
+		this.pointOpenProject = pointOpenProject;
+		this.eventTablePID = eventTablePID;
+		createEditEventRecord();
+	}
+	
+	public EditEventRecord(HDDatabaseLayer pointDBlayer, int dataBaseIndex, HBProjectOpenData pointOpenProject, 
+			long eventTablePID) throws HBException {
 		super();
 		this.pointDBlayer = pointDBlayer;
 		this.dataBaseIndex = dataBaseIndex;
 		this.pointOpenProject = pointOpenProject;
 		this.eventTablePID = eventTablePID;
+		createEditEventRecord();
+	}
+	
+/**
+ * 
+ * @throcreateEditEventRecord()ws HBException
+ */
+		
+	private void createEditEventRecord() throws HBException {
 
 		pointLocationStyleData =  new HBNameStyleManager(pointDBlayer, dataBaseIndex, "Location ");
 		pointLocationStyleData.updateStyleTable("P", nameStyles, nameElementsDefined);
@@ -2940,17 +3022,17 @@ class EditEventRecord extends HBBusinessLayer {
 	}
 
 /**
- * void addToLocationChangeList(int eventIndex, int selectedIndex, String nameData)
+ * void addToLocationChangeList(int selectedIndex, String nameData)
  * @param selectedIndex
  * @param nameData
  */
 	public void addToLocationChangeList(int selectedIndex, String nameData) {
 		// ** Note: if test edited out for remove space in element table? **
+		//if (nameData != null) {
 		//if (nameData.length() > 0) {
 			String nameElementCode = pointLocationStyleData.getNameStyleElementCodes(selectedNameStyle)[selectedIndex];
-			if (HGlobal.DEBUG) {
-				System.out.println(" CreateEventRecord - addToLocationChangeList(): " +  nameElementCode + " / " + nameData);
-			}
+			if (HGlobal.DEBUG) 
+				System.out.println(" Edit EventRecord - addToLocationChangeList(): " +  nameElementCode + " / " + nameData);
 			eventLocationChanges.put(nameElementCode, nameData);
 		//}
 	}
@@ -2978,7 +3060,7 @@ class EditEventRecord extends HBBusinessLayer {
  * @throws HBException
  */
 	public String readFromGUIMemo(long eventPID) throws HBException {
-		//long memoElementPID = null_RPID;
+	
 		String selectString = setSelectSQL("*", eventTable, " PID = " + eventPID);
 		eventResultSet = requestTableData(selectString, dataBaseIndex);
 		try {
@@ -3356,13 +3438,19 @@ class EditEventRecord extends HBBusinessLayer {
 		ResultSet eventSelected, eventAssocSelected;
 		String langCode = HGlobal.dataLanguage;
 		Object[] assocRelationData;
+		
 		assocDataHash = new HashMap<>();
 		asociateList = new ArrayList<>();
 		String personName = "", eventRole = "";
 		int assocRows = 0, eventNumber = 0, eventRoleCode, selfAssocCount = 0;
-		long eventPID, assocPersonPID, assocTablePID;
-		//assocTablePIDMap = new HashMap<Integer,Long>();
-		long selectedPersonPID = pointOpenProject.getSelectedPersonPID();
+		long eventPID, assocPersonPID, assocTablePID, selectedPersonPID;
+		
+/**
+ * Test for duplicate assoc person - 5-11-2024
+ */
+		Vector<Long> assocPersonDuplicateList = new Vector<>(100,10);
+		
+		selectedPersonPID = pointOpenProject.getSelectedPersonPID();
 		try {
 
 		// Get associate persons with the events in list
@@ -3375,9 +3463,16 @@ class EditEventRecord extends HBBusinessLayer {
 				eventPID = eventAssocSelected.getLong("EVNT_RPID");
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
 				eventRoleCode = eventAssocSelected.getInt("ROLE_NUM");
-
+				
+			// Test for duplicate assoc person - 5-11-2024
+				if (assocPersonDuplicateList.contains(assocPersonPID)) continue;
+				assocPersonDuplicateList.add(assocPersonPID);
+				
 			// The focus person can also be a witness to another event
-				if (assocPersonPID != selectedPersonPID) {
+			// if edit vitnessed event check primary assoc from event table	
+				if (primAssocPID != null_RPID) selectedPersonPID = primAssocPID;
+				
+				if (assocPersonPID != selectedPersonPID) {	
 			// Get event data
 					selectString = setSelectSQL("*", eventTable, "PID = " + eventPID);
 					eventSelected = requestTableData(selectString, dataBaseIndex);
@@ -3388,23 +3483,21 @@ class EditEventRecord extends HBBusinessLayer {
 				 * 0 = assocTablePID, 1 = assocRole, 2 = assocName
 				 */
 						assocRelationData = new Object[3];
-						//long eventHDatePID = eventSelected.getLong("START_HDATE_RPID");
-						//eventDate = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex);
 						eventNumber = eventSelected.getInt("EVNT_TYPE");
-						//eventName = pointLibraryResultSet.getEventName(eventNumber, langCode, dataBaseIndex);
+						//String eventName = pointLibraryResultSet.getEventName(eventNumber, langCode, dataBaseIndex).trim();
 						eventRole = pointLibraryResultSet.getRoleName(eventRoleCode,
 							  			eventNumber,
 							  			langCode,
 							  			dataBaseIndex);
 						personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
-						//System.out.println(" Associate: " + witness + " Event PID: " + eventPID + " Type: " + eventNumber
+						//System.out.println(" Associate: " + assocTablePID + " Event PID: " + eventPID + " Type: " + eventNumber
 						//					+ " Event: " + eventName + " Name: " + personName + " Role: " + eventRole);
-						//Object[] asociates = new String[4];
+
 						Object[] asociates = new String[2];
 						asociates[0] = " " + personName.trim();
 						asociates[1] = " " + eventRole.trim();
 						asociateList.add(asociates);
-						//assocTablePIDMap.put(assocRows, assocTablePID);
+						
 					// **********
 						assocRelationData[0] = assocTablePID;
 						assocRelationData[1] = eventRoleCode;
@@ -3457,8 +3550,9 @@ class EditEventRecord extends HBBusinessLayer {
 		assocPersonPID = personPID;
 		assocEventPID = eventTablePID;
 		addToT451_EVNT_ASSOC(assocTableRS, nextAssocTablePID, roleNumber);
+		
 	// Reset Update event
-		pointOpenProject.getWhereWhenHandler().resetUpdateEvent(pointOpenProject);
+		//pointOpenProject.getWhereWhenHandler().resetUpdateEvent(pointOpenProject);
 		return nextAssocTablePID;
 	}
 
@@ -3521,8 +3615,9 @@ class EditEventRecord extends HBBusinessLayer {
 		selectString = setSelectSQL("*", eventAssocTable, "PID = " + assocTablePID);
 		assocTableRS = requestTableData(selectString, dataBaseIndex);
 		updateT451_EVNT_ASSOC(assocTableRS, roleNumber, 1);
+		
 	// Reset Update event
-		pointOpenProject.getWhereWhenHandler().resetUpdateEvent(pointOpenProject);
+		//pointOpenProject.getWhereWhenHandler().resetUpdateEvent(pointOpenProject);
 		return assocTablePID;
 	}
 /**
@@ -3568,7 +3663,7 @@ class EditEventRecord extends HBBusinessLayer {
  * @throws HBException
  */
 	public long createNewEvent(int selectedEventType, int selectedRoleType) throws HBException {
-		long newEventPID;
+		//long newEventPID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointCreateEventRecord = new CreateEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject);
 	// Temp solution that need to be upgradeg for marriage group = 6
@@ -3577,17 +3672,22 @@ class EditEventRecord extends HBBusinessLayer {
 		} else {
 			pointCreateEventRecord.assocPersonRPID = null_RPID;
 		}
-		newEventPID = pointCreateEventRecord.createEventRecord(selectedEventType, selectedRoleType, eventLocationChanges,
-												  eventHdatePID, sortHdatePID, nextHREMemoPID);
+		//newEventPID = pointCreateEventRecord.createEventRecord(selectedEventType, selectedRoleType, eventLocationChanges,
+		//										  eventHdatePID, sortHdatePID, nextHREMemoPID);
+		
+		eventTablePID = pointCreateEventRecord.createEventRecord(selectedEventType, selectedRoleType, eventLocationChanges,
+				  eventHdatePID, sortHdatePID, nextHREMemoPID);
+		
+		locationNamePID = pointCreateEventRecord.getLocationNameRecordPID();
 		
 		if (selectedEventType == birthEventType) 
-			updateParentTableEvnt(pointOpenProject.getSelectedPersonPID(),newEventPID );
+			updateParentTableEvnt(pointOpenProject.getSelectedPersonPID(), eventTablePID );
 
 	// Reload Result Set for person and names
 		pointOpenProject.reloadT401Persons();
 		pointOpenProject.reloadT402Names();
 
-		return newEventPID;
+		return eventTablePID;
 	}
 	
 /**

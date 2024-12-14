@@ -29,7 +29,6 @@ import hre.dbla.HDException;
  * @author NTo
  *
  */
-
 public class HREserverH2tcp {
 
     Server server; //the server's instance variable
@@ -46,10 +45,10 @@ public class HREserverH2tcp {
  * Certificate fingerprint (SHA-256): ED:52:84:F7:22:E4:D1:74:63:EC:F7:23:8A:20:57:DC:99:0C:30:59:B8:A7:CB:C9:90:4D:56:D6:D5:90:6C:BD
  */
 		String pathUserHRE = System.getProperty("user.home") + File.separator + "HRE" + File.separator;
-		System.setProperty("javax.net.ssl.keyStore", pathUserHRE + "KeyStore\\serverKeystore.jks");
+		System.setProperty("javax.net.ssl.keyStore", pathUserHRE + "KeyStore" + File.separator + "serverKeystore.jks");
 		System.setProperty("javax.net.ssl.keyStorePassword", "servStore");
 		System.setProperty("javax.net.ssl.keyPassword", "servStore");
-		System.setProperty("javax.net.ssl.trustStore", pathUserHRE + "KeyStore\\serverKeystore.jks");
+		System.setProperty("javax.net.ssl.trustStore", pathUserHRE + "KeyStore" + File.separator + "serverKeystore.jks");
 		System.setProperty("javax.net.ssl.trustStorePassword","servStore");
 		System.setProperty("javax.net.ssl.keyStoreType", "JKS");
 		System.setProperty("javax.net.ssl.trustStoreType", "JKS");
@@ -61,13 +60,8 @@ public class HREserverH2tcp {
  * @throws HCException
  */
     public void tcpServer() throws HCException {
-
- //catches any server related errors, if the connection is broken etc.
-
+    	//catches any server related errors, if the connection is broken etc.
         try {
-        	//org.h2.tools.
-        	//Server.shutdownTcpServer("tcp://localhost:9094","",true, true);
-        	//Server.shutdownTcpServer();
  /**
   * server uses the IP and port defined earlier,
   * allows other computers in the LAN to connect and
@@ -104,11 +98,8 @@ public class HREserverH2tcp {
     public Connection remoteConnect(String urlH2loc, String iPA_port) throws HDException {
 
 	    Connection connt = null;        //connection variable
-	    //ServerSocket toServer = null; // port for connect to server
-
 	// String which will hold important messages
         String outputConn = null;
-
 
 /** Metadata variable which include methods such as the following:
  * 1) Database Product Name
@@ -132,13 +123,8 @@ public class HREserverH2tcp {
  *  6) DB_CLOSE_DELAY=1 for update of database before close
  *  7) Port number of the server is also defined
  */
-
-            //String url = "jdbc:h2:tcp://" + iPA_port + "/" + urlH2loc
-            //		+ ";IFEXISTS=TRUE;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=1";
-
             String url = "jdbc:h2:ssl://"  + iPA_port + "/" + urlH2loc
             		+ ";IFEXISTS=TRUE;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=1";
-
 
 	        if (TMGglobal.DEBUG) System.out.println(" H2 connect to URL: " + url); //prints out the url the database files are located as well as the h2 features used (SSL)
 	        connt = DriverManager.getConnection(url, "sa", ""); //Driver Manager defines the username & password of the database
@@ -156,9 +142,6 @@ public class HREserverH2tcp {
 	     //outputs the message on the system (NetBeans compiler)
 	        System.out.println(" " + outputConn);
 
-	     //outputs the message on top of the frame
-	        //JOptionPane.showMessageDialog(null,outputConn);
-
 	     //In case there is an error for creating the class for the Driver to be used
 	    } catch (ClassNotFoundException clnf){
 	        System.out.println(" Error creating class: " + clnf.getMessage());
@@ -174,4 +157,3 @@ public class HREserverH2tcp {
 	    return connt;
 	}
 }
-

@@ -47,6 +47,7 @@ package hre.gui;
  *			  2024-10-11 Edited indented {} block paranthesis (N Tolleshaug)
  *			  2024-10-12 Add 'PS reload' User option (D Ferguson)
  *			  2024-10-12 Removed resetPersonSelect() from change dataformat (N Tolleshaug)
+ *			  2024-11-15 Add 'prompt for Married Name' User option (D Ferguson)
  ***********************************************************************************/
 
 import java.awt.Color;
@@ -503,6 +504,12 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		chkbx_reloadPS.setHorizontalTextPosition(SwingConstants.LEFT);
 		chkbx_reloadPS.setHorizontalAlignment(SwingConstants.TRAILING);
 		panelOpt.add(chkbx_reloadPS, "cell 0 5,alignx right"); //$NON-NLS-1$
+
+		JCheckBox chkbx_promptMarried = new JCheckBox(HG0501Msgs.Text_154);	// Prompt for Married Name
+		chkbx_promptMarried.setToolTipText(HG0501Msgs.Text_155);			// If set, Prompt for a Married Name when saving a Marriage event
+		chkbx_promptMarried.setHorizontalTextPosition(SwingConstants.LEFT);
+		chkbx_promptMarried.setHorizontalAlignment(SwingConstants.TRAILING);
+		panelOpt.add(chkbx_promptMarried, "cell 0 6,alignx right"); //$NON-NLS-1$
 
      // *********** Define Accent Colour settings panel ***********
         JPanel panelAccent = new JPanel();
@@ -999,6 +1006,15 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		      }
 		    });
 
+		// Listener for 'prompt Married Name' CheckBox
+		chkbx_promptMarried.addActionListener(new ActionListener() {
+		      @Override
+			public void actionPerformed(ActionEvent e) {
+		        if (chkbx_promptMarried.isSelected()) {HGlobal.promptMarrName = true; }
+		        	else {HGlobal.promptMarrName = false;}
+		      }
+		    });
+
 	 // *********** Listener for 'Write log files' CheckBox ***********
         chkbx_WriteLogs.addActionListener(new ActionListener() {
               @Override
@@ -1475,7 +1491,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 							HG0401HREMain.mainFrame.setStatusAction(8);
 						} else {
 							if (HGlobal.DEBUG) System.out.println(" Cannot stop TCP server - need to close projects first"); //$NON-NLS-1$
-					    	JOptionPane.showMessageDialog(null, HG0501Msgs.Text_139,
+					    	JOptionPane.showMessageDialog(contents, HG0501Msgs.Text_139,
 									HG0501Msgs.Text_140,JOptionPane.ERROR_MESSAGE);
 					    	HGlobal.tcpServerOn = true;
 						}
@@ -1550,6 +1566,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		if (HGlobal.backupActivProject) chkbx_BkupActProj.setSelected(true);
 		if (HGlobal.pluginEnabled) chkbx_EnablePlugins.setSelected(true);
 		if (HGlobal.reloadPS) chkbx_reloadPS.setSelected(true);
+		if (HGlobal.promptMarrName) chkbx_promptMarried.setSelected(true);
 		if (HGlobal.writeLogs) chkbx_WriteLogs.setSelected(true);
 		if (HGlobal.DEBUG) chkbxSetDebugOn.setSelected(true);
 		if (HGlobal.TIME) chkbxTime.setSelected(true);
@@ -1802,10 +1819,10 @@ public class HG0501AppSettings extends HG0450SuperDialog {
  * Check if user wants to create the designated new Folder
  * @param location is the full folder path
  */
-    private static boolean confirmNewFolder (String location) {
+    private boolean confirmNewFolder (String location) {
     	// Message reads 'Folder xxxx does not exist. Do you want to create it?'
     	// Answer of No allows user to edit the entry, answer Yes means we create the folder
-  		if(JOptionPane.showConfirmDialog(null, HG0501Msgs.Text_141 + location + HG0501Msgs.Text_142 +
+  		if(JOptionPane.showConfirmDialog(contents, HG0501Msgs.Text_141 + location + HG0501Msgs.Text_142 +
   				 								HG0501Msgs.Text_143, HG0501Msgs.Text_144,
 					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
   			 			File dir = new File(location);

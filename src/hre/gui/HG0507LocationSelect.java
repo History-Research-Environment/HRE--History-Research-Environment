@@ -38,6 +38,8 @@ package hre.gui;
  * 			  2023-01-26 Modified column with for Location (N. Tolleshaug)
  * 			  2023-01-29 Added catch block for PSE on filter (D Ferguson)
  * 			  2023-02-28 Modified lookup of Location table (N. Tolleshaug)
+ * 			  2024-11-17 Code sync (N. Tolleshaug)
+ * v0.03.0031 2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ****************************************************************************************
  * NOTES for incomplete functionality
  * NOTE03 No code for importing saved filters
@@ -97,13 +99,12 @@ import hre.bila.HBProjectOpenData;
 import hre.bila.HBViewPointHandler;
 import hre.bila.HBWhereWhenHandler;
 import hre.nls.HG05075Msgs;
-
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Location Select
  * @author D Ferguson
- * @version v0.01.0028
+ * @version v0.03.0031
  * @since 2019-09-16
  */
 public class HG0507LocationSelect extends HG0451SuperIntFrame  {
@@ -112,6 +113,7 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 	final static int maxLocationVPIs = 5;
 
 	private HBViewPointHandler pointViewPointHandler = null;
+	//private HBWhereWhenHandler pointWhereWhenHandler;
 	private JPanel contents;
 	private String selectString = ""; //$NON-NLS-1$
 	private JCheckBox chkbox_Filter;
@@ -120,13 +122,13 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 	private int foundRow;
 	private int selectedRow;
 	private boolean findActivated = false;
-	
+
 	 private String idText, allColumnsText1, allColumnsText2;
 
 	String[] tableColHeads = null;
 	private Object [][] tableControlData;
 	Object[][] tableData;
-	
+
 	HBProjectOpenData pointOpenProject;
 	JInternalFrame locationFrame = this;
 	private JTable table_Entity;
@@ -145,12 +147,12 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
  * Create the dialog.
  * @throws HBException
  */
-		public HG0507LocationSelect(HBWhereWhenHandler pointPlaceHand,
+		public HG0507LocationSelect(HBWhereWhenHandler pointWhereWhenHandler,
 								    HBProjectOpenData pointOpenProject,
 								    Object [][] tableControl) throws HBException {
-		super(pointPlaceHand,"Location Select",true,true,true,true, tableControl);	 //$NON-NLS-1$
+		super(pointWhereWhenHandler,"Location Select",true,true,true,true, tableControl);	 //$NON-NLS-1$
 		this.pointOpenProject = pointOpenProject;
-		
+		//this.pointWhereWhenHandler = pointWhereWhenHandler;
 		pointViewPointHandler = pointOpenProject.getViewPointHandler();
 
 		// Setup references for HG0451
@@ -161,22 +163,25 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		tableControlData = pointOpenProject.pointGuiData.getTableControl(screenID);
 		tableColHeads = setColumnHeaders(tableControlData);
 		String projectName = pointOpenProject.getProjectName();
-		
-		// test translated data from T204		
-		if (HGlobal.DEBUG) 
+
+		// test translated data from T204
+		if (HGlobal.DEBUG)
 			System.out.println("Translated texts:  0-" 			//$NON-NLS-1$
-					+ Arrays.toString(pointPlaceHand.setTranslatedData(screenID, "0", false)));		//$NON-NLS-1$
-			
-		// Collect static gui texts from T204 
-		String[] translatedTexts = pointPlaceHand.setTranslatedData(screenID, "0", false);			//$NON-NLS-1$
+					+ Arrays.toString(pointWhereWhenHandler.setTranslatedData(screenID, "0", false)));		//$NON-NLS-1$
+
+		// Collect static gui texts from T204
+		String[] translatedTexts = pointWhereWhenHandler.setTranslatedData(screenID, "0", false);			//$NON-NLS-1$
 		idText = " " + translatedTexts[0]; 				//$NON-NLS-1$
 		allColumnsText1 = " " + translatedTexts[1];		//$NON-NLS-1$
 		allColumnsText2 = translatedTexts[2];
 
 		// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507LocationSelect");																	   																					  		  //$NON-NLS-1$
-		if (HGlobal.TIME) HGlobalCode.timeReport("start of HG0507LocSel on thread "+Thread.currentThread().getName());		 //$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: entering HG0507LocationSelect");																	   																					  		  //$NON-NLS-1$
+
+		if (HGlobal.TIME)
+			HGlobalCode.timeReport("start of HG0507LocSel on thread "+Thread.currentThread().getName());		 //$NON-NLS-1$
 
 		// Create and Show Progress Bar
 		JFrame progFrame = new JFrame(HG05075Msgs.Text_6);
@@ -190,9 +195,11 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		progFrame.add(progBar);
 
 	// Set pointer to progbar in Handler
-		pointPlaceHand.setPointProgBar(progBar);
+		pointWhereWhenHandler.setPointProgBar(progBar);
 
-		if (HGlobal.TIME) HGlobalCode.timeReport("show HG0507LocSel progress bar on thread "+Thread.currentThread().getName());	//$NON-NLS-1$
+		if (HGlobal.TIME)
+			HGlobalCode.timeReport("show HG0507LocSel progress bar on thread "+Thread.currentThread().getName());	//$NON-NLS-1$
+
 		progFrame.setVisible(true);
 
 		// Setup Location List panel
@@ -250,15 +257,15 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		lbl_Subsets.setToolTipText(HG05075Msgs.Text_31);
 		contents.add(lbl_Subsets, "cell 2 1, gapx 20"); //$NON-NLS-1$
 
-		comboBox_Subset = new JComboBox<String>();
+		comboBox_Subset = new JComboBox<>();
 		comboBox_Subset.setPreferredSize(new Dimension(170, 20));
 		comboBox_Subset.setToolTipText(HG05075Msgs.Text_33);
 		for (int i = 1; i < tableColHeads.length; i++) {
 			comboBox_Subset.addItem(tableColHeads[i]);
 		}
-		comboBox_Subset.addItem(idText);					// ID 
+		comboBox_Subset.addItem(idText);					// ID
 		comboBox_Subset.addItem(allColumnsText1);			// All Columns
-		contents.add(comboBox_Subset, "cell 2 1"); //$NON-NLS-1$ - 
+		contents.add(comboBox_Subset, "cell 2 1"); //$NON-NLS-1$ -
 
 	// Row 2
 		scrollPane = new JScrollPane();
@@ -276,20 +283,24 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		table_Entity.setFillsViewportHeight(true);
 
 	    // Define SwingWorker task to build Location Picklist as a background task on worker thread.
-	    SwingWorker<Void, Integer> buildLocList = new SwingWorker<Void, Integer>() {
+	    SwingWorker<Void, Integer> buildLocList = new SwingWorker<>() {
 	         @Override
 	         protected Void doInBackground() throws Exception {
-	        	 if (HGlobal.TIME) HGlobalCode.timeReport("start of HG0507LocSel background on thread "+Thread.currentThread().getName()); //$NON-NLS-1$
+	        	 if (HGlobal.TIME)
+				 {
+					HGlobalCode.timeReport("start of HG0507LocSel background on thread "+Thread.currentThread().getName()); //$NON-NLS-1$
+				}
 	        // Get the actual picklist data
-	        	 tableData = pointPlaceHand.convertHRLocationData(tableColHeads.length, tableControlData, pointOpenProject);
+	        	 tableData = pointWhereWhenHandler.convertHRLocationData(tableColHeads.length, tableControlData, pointOpenProject);
 				 if (tableData == null ) {
 					userInfoConvertData(1);
 					progFrame.dispose();
 					errorCloseAction();
 				 }
-	        	 if (HGlobal.TIME) 
-	        		 HGlobalCode.timeReport("end of HG0507LocSel background on thread " 		//$NON-NLS-1$
-	        			 								+ Thread.currentThread().getName());  
+	        	 if (HGlobal.TIME) {
+					HGlobalCode.timeReport("end of HG0507LocSel background on thread " 		//$NON-NLS-1$
+	        			 								+ Thread.currentThread().getName());
+				}
 	     		 return null;
 	         }
 
@@ -302,18 +313,24 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 	     // All code to be executed AFTER background thread is done now follows
 	         @Override
 	         protected void done() {
-	        	 if (HGlobal.TIME) 
-	        		 HGlobalCode.timeReport("start of HG0507LocSel 'done' component on thread "+Thread.currentThread().getName());  //$NON-NLS-1$
+	        	 if (HGlobal.TIME)
+				 {
+					HGlobalCode.timeReport("start of HG0507LocSel 'done' component on thread "+Thread.currentThread().getName());  //$NON-NLS-1$
+				}
 				// No table data ??
-				if (tableData == null) return;
+				if (tableData == null) {
+					return;
+				}
 				// Setup table and renderer
 				DefaultTableModel myTableModel = new DefaultTableModel(
 						tableData, tableColHeads) {
 						private static final long serialVersionUID = 1L;
 						@Override
 						public Class<? extends Object> getColumnClass(int column) {
-							if (HGlobal.DEBUG) 
+							if (HGlobal.DEBUG)
+							 {
 								System.out.println("Column class: " + column + "/" + getValueAt(0, column).getClass());	//$NON-NLS-1$ //$NON-NLS-2$
+							}
 							return getValueAt(0, column).getClass();
 						}
 		        };
@@ -367,9 +384,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 
 				// Show the table
 				scrollPane.setViewportView(table_Entity);
-				
-				// Do update of T302	
-				pointPlaceHand.finalActionT302(pointOpenProject); 
+
+				// Do update of T302
+				pointWhereWhenHandler.finalActionT302(pointOpenProject);
 
 				// Set the frame visible
 				locationFrame.pack();
@@ -379,8 +396,10 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 
 				// Remove the Progress Bar panel
 			    progFrame.dispose();
-			    if (HGlobal.TIME) 
-			    	HGlobalCode.timeReport("complete HG0507LocSel on thread "+Thread.currentThread().getName()); //$NON-NLS-1$
+			    if (HGlobal.TIME)
+				 {
+					HGlobalCode.timeReport("complete HG0507LocSel on thread "+Thread.currentThread().getName()); //$NON-NLS-1$
+				}
 
 			/*****************************
 			 * CREATE All ACTION LISTENERS
@@ -389,9 +408,14 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 			     locationFrame.addInternalFrameListener(new InternalFrameAdapter() {
 			    	 @Override
 					public void internalFrameClosing(InternalFrameEvent e)  {
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG00507 Location Select"); //$NON-NLS-1$
+						if (HGlobal.writeLogs)
+						 {
+							HB0711Logging.logWrite("Action: exiting HG00507 Location Select"); //$NON-NLS-1$
+						}
 					// close reminder display
-						if (reminderDisplay != null) reminderDisplay.dispose();
+						if (reminderDisplay != null) {
+							reminderDisplay.dispose();
+						}
 				    // Set frame size in GUI data
 						Dimension frameSize = getSize();
 						pointOpenProject.setSizeScreen(screenID,frameSize);
@@ -402,9 +426,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 						pointOpenProject.setClassName(screenID,"HG0507LocationSelect"); //$NON-NLS-1$
 					// Mark the screen as closed in T302
 						pointOpenProject.closeStatusScreen(screenID);
-						dispose();	
+						dispose();
 					// Remove pointer to LS window
-						pointPlaceHand.locationScreen = null;
+						pointWhereWhenHandler.locationScreen = null;
 					}		// return to main menu
 				});
 
@@ -427,7 +451,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 			   	                    if (tabValue.toLowerCase().contains(searchValue.toLowerCase())) {
 			   	                    	// set the found table row to show in the middle of the scrollpane; adjusted for scroll-up or down
 			   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-			   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
+			   	                    	if (first > row) {
+											halfVisibleRows = -halfVisibleRows;
+										}
 			   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 			   	                    	// set the 'found' row as selected, clear any other selection, save it
 			   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -464,7 +490,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 			   	                    if (tabValue.toLowerCase().contains(searchValue.toLowerCase())) {
 			   	                    	// set the found table row to show in the middle of the scrollpane; adjusted for scroll-up or down
 			   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-			   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
+			   	                    	if (first > row) {
+											halfVisibleRows = -halfVisibleRows;
+										}
 			   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 			   	                    	// set the 'found' row as selected, clear any other selection, save it
 			   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -501,7 +529,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 			   	                    if (tabValue.toLowerCase().contains(searchValue.toLowerCase())) {
 			   	                    	// set the found table row to show in the middle of the scrollpane; adjusted for scroll-up or down
 			   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-			   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
+			   	                    	if (first > row) {
+											halfVisibleRows = -halfVisibleRows;
+										}
 			   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 			   	                    	// set the 'found' row as selected, clear any other selection, save it
 			   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -516,7 +546,7 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		   	            											JOptionPane.INFORMATION_MESSAGE);
 			        }
 			    });
-			    
+
 				// Filter Text field listener
 				filterTextField.addActionListener(new ActionListener() {
 					@Override
@@ -529,7 +559,7 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 				chkbox_Filter.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						// Reset filter for whole table when unselected, sorted as before 
+						// Reset filter for whole table when unselected, sorted as before
 						if (!chkbox_Filter.isSelected()) {
 								setTableFilter(allColumnsText2, ""); 		// All Columns  //$NON-NLS-1$
 								comboBox_Subset.setSelectedIndex(0);
@@ -566,20 +596,25 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 						// Find next open eventVP
 								viewRow = table_Entity.getSelectedRow();
 								selectedRowInTable = table_Entity.convertRowIndexToModel(viewRow);
-								if (selectedRowInTable < 0) return;				//exit if listener call was caused by emptying table_User
-								locationTablePID = pointPlaceHand.getLocationTablePID(selectedRowInTable + 1);
+								if (selectedRowInTable < 0)
+								 {
+									return;				//exit if listener call was caused by emptying table_User
+								}
+								locationTablePID = pointWhereWhenHandler.getLocationTablePID(selectedRowInTable + 1);
 								locationVPindex = pointViewPointHandler.findClosedVP("5303", pointOpenProject);	//$NON-NLS-1$
 								String locationVPident = pointViewPointHandler.getLocationScreenID(locationVPindex);
 
 								if (HGlobal.DEBUG)
+								 {
 									System.out.println(" HG0507LocationSelect row: " + selectedRowInTable 	//$NON-NLS-1$
 												+ " locationVPindex: "	+ locationVPindex	//$NON-NLS-1$
 												+ " locationVPident: " + locationVPident	//$NON-NLS-1$
 												+ " LocationPID: " + locationTablePID);		//$NON-NLS-1$
+								}
 						// Set PID for event from event list
-								if (locationVPindex >= 0)
+								if (locationVPindex >= 0) {
 									pointOpenProject.pointGuiData.setTableViewPointPID(locationVPident, locationTablePID);
-								else {
+								} else {
 									userInfoInitVP(1);
 									if (HGlobal.DEBUG)
 										System.out.println(" HG0507LocationSelect valueChanged - personVPindex: "	//$NON-NLS-1$
@@ -589,7 +624,8 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 							} catch (HBException hbe) {
 								if (HGlobal.DEBUG)
 									System.out.println("HG0507LocationSelect - Not able to set location: " + hbe.getMessage());  //$NON-NLS-1$
-								JOptionPane.showMessageDialog(null, HG05075Msgs.Text_59 + hbe.getMessage(),
+
+								JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_59 + hbe.getMessage(),
 										HG05075Msgs.Text_63,JOptionPane.ERROR_MESSAGE);
 							}
 						}
@@ -609,14 +645,19 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 						//int visibleId = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
 						//System.out.println(" Selected row: " + selectedRow + "/" + selectedRowInTable + " - " + visibleId);
 	                	//int focusLocation = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
-	                	if (selectedRowInTable < 0) return;		// exit if listener call caused by emptying table_Entity
-	                
+	                	if (selectedRowInTable < 0)
+						 {
+							return;		// exit if listener call caused by emptying table_Entity
+						}
+
 	                // Collect location data and show VP
 	        			//long locationTablePID = pointPlaceHand.getLocationTablePID (focusLocation);
-	        			long locationTablePID = pointPlaceHand.getLocationTablePID (selectedRowInTable);
-	        			
+	        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
+
 						errorCode = pointViewPointHandler.initiateLocationVP(pointOpenProject, locationTablePID);
-						if (errorCode > 0) userInfoInitVP(errorCode);
+						if (errorCode > 0) {
+							userInfoInitVP(errorCode);
+						}
 			        }
 			      };
 
@@ -627,16 +668,16 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 				        // Display manage location for the selected Location
 				        //	The right-clicked row is passed here in selectedRow
 				        	int errorCode = 0;
-				        	//selectedRow = table_Entity.getSelectedRow();
 		                	int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
-		                	//int focusLocation = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
-		                	if (selectedRowInTable < 0) return;		// exit if listener call caused by emptying table_Entity
+		                	if (selectedRowInTable < 0)
+								return;		// exit if listener call caused by emptying table_Entity
+
 		                // Collect location data and show manage location
-		        			//long locationTablePID = pointPlaceHand.getLocationTablePID (focusLocation);
-		        			long locationTablePID = pointPlaceHand.getLocationTablePID (selectedRowInTable);
-							errorCode = pointPlaceHand.initiateManageLocation(pointOpenProject, locationTablePID,"50800");	//$NON-NLS-1$
+		        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
+							errorCode = pointWhereWhenHandler.initiateManageLocation(pointOpenProject, locationTablePID,"50800");	//$NON-NLS-1$
 							if (errorCode > 1)
-								System.out.println("HG0507LocationSelect - show Manage Location errorCode = " + errorCode);	//$NON-NLS-1$
+								System.out.println("HG0507LocationSelect - show Manage Location errorCode = "
+										+ errorCode);
 			        }
 			      };
 				// Define a right-click popup menu to use below
@@ -659,16 +700,20 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		            		int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
 		            		//int focusLocation = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
 		            	// Collect location data
-		        			//long locationTablePID = pointPlaceHand.getLocationTablePID (focusLocation);
-		        			long locationTablePID = pointPlaceHand.getLocationTablePID (selectedRowInTable);
+		        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
 		        			errorCode = pointViewPointHandler.initiateLocationVP(pointOpenProject, locationTablePID);
-							if (errorCode > 0) userInfoInitVP(errorCode);
+							if (errorCode > 0) {
+								userInfoInitVP(errorCode);
+							}
 		                }
 		                if (me.getButton() == MouseEvent.BUTTON3) {
 		                // right-click
 		                	selectedRow = table_Entity.rowAtPoint(me.getPoint());
 		                	int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
-		                	if (selectedRowInTable < 0) return;		// exit if listener call was caused by emptying table_Entity
+		                	if (selectedRowInTable < 0)
+							 {
+								return;		// exit if listener call was caused by emptying table_Entity
+							}
 		                // Show popup menu of all possible actions
 		                	popupMenu.show(me.getComponent(), me.getX(), me.getY());
 		                }
@@ -689,7 +734,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
  */
 	private void errorCloseAction() {
 		// close reminder display
-		if (reminderDisplay != null) reminderDisplay.dispose();
+		if (reminderDisplay != null) {
+			reminderDisplay.dispose();
+		}
 		// Set frame size in GUI data
 		Dimension frameSize = getSize();
 		pointOpenProject.setSizeScreen(screenID,frameSize);
@@ -710,7 +757,11 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
  */
 	private String[] setColumnHeaders(Object[][] tableControl) {
 		int rows = 2;
-		for (int i = 2; i < tableControl.length; i++) if (((boolean)tableControl[i][1])) rows++;
+		for (int i = 2; i < tableControl.length; i++) {
+			if (((boolean)tableControl[i][1])) {
+				rows++;
+			}
+		}
 		String [] tableHeads = new String[rows];
 		tableHeads[0] = (String) tableControl[0][0];
 		tableHeads[1] = (String) tableControl[1][0];
@@ -723,7 +774,7 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		}
 		return tableHeads;
 	}	// End setColumnHeaders
-	
+
 /**
  * Action setup and/or change of filter settings
  * @param selectString (table column name) and filterText
@@ -737,28 +788,30 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		filterText = filterText.replaceAll("\\*", "\\\\*");		//$NON-NLS-1$	//$NON-NLS-2$
 		// Setup sorter
 		TableModel myModel = table_Entity.getModel();
-		TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);		
+		TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
 		try {
 			if (selectString.trim().equals(allColumnsText2.trim())) {				// All Columns
 				// For whole table
 				sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText));	// case-insensitive unicode filter //$NON-NLS-1$
-			} else for (int i = 0; i < tableColHeads.length; i++) {
-					if (selectString.trim().equals(tableColHeads[i].trim())) {	
-						// For only one column
-						sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText, i));	// case-insensitive unicode filter //$NON-NLS-1$
-						break;
-					}
+			} else { // All Columns
+				for (int i = 0; i < tableColHeads.length; i++) {
+									if (selectString.trim().equals(tableColHeads[i].trim())) {
+										// For only one column
+										sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText, i));	// case-insensitive unicode filter //$NON-NLS-1$
+										break;
+									}
+							}
 			}
 		} catch (PatternSyntaxException pse) {
 			JOptionPane.showMessageDialog(chkbox_Filter, HG05075Msgs.Text_121 						// Cannot use
 												+ filterText + HG05075Msgs.Text_122,				// as a filter
 												HG05075Msgs.Text_123, JOptionPane.ERROR_MESSAGE);	// Filter Text Error
-		}		
+		}
 	    table_Entity.setRowSorter(sorter);
 	    // Set scroll bar to top of filter results
 	    scrollPane.getViewport().setViewPosition(new Point(0,0));
-	}	// End setTableFilter	
-	
+	}	// End setTableFilter
+
 /**
  * GUI user messages
  * @param errorCode
@@ -767,18 +820,18 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		String errorMess = ""; //$NON-NLS-1$
 		if (errorCode == 1) {
 			errorMess = HG05075Msgs.Text_59;
-			JOptionPane.showMessageDialog(null, HG05075Msgs.Text_60 +  errorMess,
+			JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_60 +  errorMess,
 										HG05075Msgs.Text_61, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoConvertData
 
 	private void userInfoInitVP(int errorCode) {
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05075Msgs.Text_62 + maxLocationVPIs,
+			JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_62 + maxLocationVPIs,
 										HG05075Msgs.Text_63, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode == 2) {
-			JOptionPane.showMessageDialog(null, HG05075Msgs.Text_64,
+			JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_64,
 										HG05075Msgs.Text_65, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoInitVP

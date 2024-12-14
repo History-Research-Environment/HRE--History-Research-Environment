@@ -23,8 +23,9 @@ package hre.gui;
  * v0.01.0028 2023-01-08 Translated table headers collected from T204 (N. Tolleshaug)
  * v0.03.0030 2023-06-30 Activated witness on/off for event table (N. Tolleshaug)
  * 			  2023-09-24 If frame is full-screen don't do special size control code (D Ferguson)
- * 			  2024-11-04 Ensure all data non-editable (D Ferguson)
+ * v0.03.0031 2024-11-04 Ensure all data non-editable (D Ferguson)
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
+ *			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  *************** ***********************************************************************************/
 
 import java.awt.Color;
@@ -234,19 +235,19 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
  */
 	private void userInfoInitVP(int errorCode) {
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_88 		//Too many Event Viewpoints
+			JOptionPane.showMessageDialog(contents,  HG05303Msgs.Text_88 		//Too many Event Viewpoints
 												+ HG05303Msgs.Text_81		//Maximum allowed is
 												+ maxEventVPIs,
 					HG05303Msgs.Text_89, JOptionPane.INFORMATION_MESSAGE);	// Event Viewpoint Creation
 			return;
 		}
 		if (errorCode == 2) {
-			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_83,		// Create Location ViewPoint error
+			JOptionPane.showMessageDialog(contents,  HG05303Msgs.Text_83,		// Create Location ViewPoint error
 					HG05303Msgs.Text_82, JOptionPane.ERROR_MESSAGE);		// Location Viewpoint Creation
 			return;
 		}
 		if (errorCode == 3) {
-			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_84			// Image Thumbnail Error
+			JOptionPane.showMessageDialog(contents,  HG05303Msgs.Text_84			// Image Thumbnail Error
 												+ HG05303Msgs.Text_85		// From TMG Exhibit Log, perform a
 												+ HG05303Msgs.Text_86		// 'Refresh all thumbnails' command,
 												+ HG05303Msgs.Text_87,		// then re-import the TMG file.
@@ -254,12 +255,13 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 			return;
 		}
 		if (errorCode == 4) {
-			JOptionPane.showMessageDialog(null, HG05303Msgs.Text_90 		//Too many Person Viewpoints
+			JOptionPane.showMessageDialog(contents,  HG05303Msgs.Text_90 		//Too many Person Viewpoints
 												+ HG05303Msgs.Text_81 		//Maximum allowed is
 												+ maxPersonVPIs,
 					HG05303Msgs.Text_91, JOptionPane.INFORMATION_MESSAGE);	// Person Viewpoint Creation
 			return;
-		} else  System.out.println(" HG0530ViewLocation - Not identified errorcode: " + errorCode);	//$NON-NLS-1$
+		}
+		System.out.println(" HG0530ViewLocation - Not identified errorcode: " + errorCode);	//$NON-NLS-1$
 	}	// End userInfoInitVP
 
 /**

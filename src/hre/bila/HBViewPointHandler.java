@@ -80,6 +80,8 @@ package hre.bila;
  *			  2024-10-21 - In addPartnerAssocToAssoc() removed self assoc (N. Tolleshaug)
  *			  2024-10-24 - Added more tests for self assocs Person VP (N. Tolleshaug)
  *			  2024-11-05 - Change literal " for" in Event info to ":" (D Ferguson)
+ *			  2024-12-06 - line 3689 - if (isResultSetEmpty(partnerRelationRS)) (N. Tolleshaug);
+ *			  2024-12-10 - Updated name table for Person VP (N. Tolleshaug)
  *********************************************************************************
  * NOTE 1 - Not implemented handling of missing birth date line 1023
  * NOTE 2 - line 2996 findLocationWithImage() always return false???
@@ -1977,33 +1979,9 @@ class ViewPeopleData extends HBBusinessLayer {
 				relativesGC2Table[i][3] = grandChilds[3];
 				relativesGC2Table[i][4] = grandChilds[4];
 			}
-
-		// Name table
-			selectString = setSelectSQL("*", personNameTable, ownerRecordField + " = " + personTablePID);
-			nameSelected = requestTableData(selectString, dataBaseIndex);
-			nameSelected.last();
-			nrRows = nameSelected.getRow();
-			nameTable = new Object[nrRows][3];
-			nameSelected.beforeFirst();
-			row = 0;
-			while (nameSelected.next()) {
-				if (row > 0 ) {
-					nameTable[row][0] = " Other ";
-				}
-
-				if (dBbuild.startsWith("v22b")) {
-					long name_RPID = nameSelected.getLong("PID");
-					nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,
-							dataBaseIndex, personStyle);
-				} else {
-					System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
-				}
-
-				long hdatePID = nameSelected.getLong("START_HDATE_RPID");
-				nameTable[row][2] = pointLibraryResultSet.exstractDate(hdatePID, dataBaseIndex);
-				row++;
-			}
-			nameRows = row;
+			
+		// Se up nametable	
+			preparePersonNameTable(personTablePID);
 
 		// set up all images
 			int imageErrorCode = pointMediaHandler.getAllExhibitImage(personTablePID, personImage, dataBaseIndex);
@@ -2027,6 +2005,62 @@ class ViewPeopleData extends HBBusinessLayer {
 				+ "\nSQL string: " + selectString);
 		}
 		return errorCode;
+	}
+	
+/**
+ * allNameTable(long selectPersonPID)	Name table initia
+ * @param selectPersonPID
+ * @throws HBException
+ */
+	private void preparePersonNameTable(long selectPersonPID) throws HBException {
+		String selectString;
+		boolean primaryName;
+		ResultSet personNameTableRS, personTableRS;
+		long name_RPID = null_RPID, nameStylePID = null_RPID;
+		int nameType;
+		String langCode = HGlobal.dataLanguage;
+		try {
+		// Find best name for selected person
+			selectString = setSelectSQL("*", personTable, " PID = " + selectPersonPID);
+			personTableRS = requestTableData(selectString, dataBaseIndex);
+			personTableRS.first();
+			
+		// Set up table
+			selectString = setSelectSQL("*", personNameTable, ownerRecordField + " = " + selectPersonPID);
+			personNameTableRS = requestTableData(selectString, dataBaseIndex);
+			personNameTableRS.last();
+			nrRows = personNameTableRS.getRow();
+			nameTable = new Object[nrRows][3];
+			personNameTableRS.beforeFirst();
+			int row = 0;
+			while (personNameTableRS.next()) {
+				if (dBbuild.startsWith("v22b")) {
+					name_RPID = personNameTableRS.getLong("PID");
+					nameStylePID = personNameTableRS.getLong("NAME_STYLE_RPID");
+					nameType = personNameTableRS.getInt("NAME_EVNT_TYPE");
+					nameTable[row][0] = " " + pointLibraryResultSet.getEventName(nameType, langCode, dataBaseIndex).trim();
+
+				// Set type of name
+					primaryName = personNameTableRS.getBoolean("NAME_PRIMARY");
+				// set up personal name style
+					personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStylePID, "N", dataBaseIndex);
+				// Find name according to name style
+					nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,dataBaseIndex, personStyle);
+				// Mark primary
+					if (primaryName) {
+						nameTable[row][1] = nameTable[row][1] + "(Primary)";
+					}
+				} else {
+					System.out.println("HBPersonHandler selected DataBase not found - " + dBbuild);
+				}
+				long hdatePID = personNameTableRS.getLong("START_HDATE_RPID");
+				nameTable[row][2] = pointLibraryResultSet.exstractDate(hdatePID, dataBaseIndex);
+				row++;
+			}
+			nameRows = row;
+		} catch (SQLException sqle) {
+			throw new HBException("HBPersonHandler - allNameTable: " + sqle.getMessage());
+		}
 	}
 
 /**
@@ -3685,6 +3719,7 @@ class ViewLocationData extends HBBusinessLayer {
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
 				selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
 				partnerRelationRS = requestTableData(selectString, dataBaseIndex);
+				if (isResultSetEmpty(partnerRelationRS)) return witness;
 				partnerRelationRS.first();
 				priRole = partnerRelationRS.getInt("PRI_ROLE");
 				secRole = partnerRelationRS.getInt("SEC_ROLE");

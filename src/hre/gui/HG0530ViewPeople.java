@@ -32,8 +32,10 @@ package hre.gui;
  * 			  2023-06-29 Activated witness on/off for event table (N. Tolleshaug)
  * 			  2023-07-15 Activated translated table header flags (N. Tolleshaug)
  * 			  2023-09-24 If frame is full-screen don't do special size control code (D Ferguson)
- * 			  2024-11-04 Ensure all data non-editable (D Ferguson)
+ * v0.03.0031 2024-11-04 Ensure all data non-editable (D Ferguson)
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
+ * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * 			  2024-12-12 Make Names Alt.Type column biggger (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Color;
@@ -195,13 +197,14 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         maxHeight = HG0401HREMain.mainPane.getHeight();
         scrollPanel.setMaximumSize(new Dimension(5000, maxHeight - 60));  // allow huge width but control height
 		contents.add(scrollPanel);
-      	pack();
+		pack();
 
 		// Store initial frame height
         frameHeight = peopleFrame.getHeight();
 
         // Add the Viewpoint to the Main menu pane and make it visible
      	HG0401HREMain.mainPane.add(peopleFrame);
+
      	if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: displaying People Viewpoint from HG0530 ViewPeople");  //$NON-NLS-1$
 		if (HGlobal.TIME) HGlobalCode.timeReport("end of HG0530ViewPers on thread "+Thread.currentThread().getName());	 //$NON-NLS-1$
 
@@ -248,18 +251,18 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
  */
 	private void userInfoInitVP(int errorCode) {
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05300Msgs.Text_88 		// Too many Event Viewpoints
+			JOptionPane.showMessageDialog(contents,  HG05300Msgs.Text_88 		// Too many Event Viewpoints
 												+ HG05300Msgs.Text_81 + maxEventVPIs,	 //Maximum allowed is
 					HG05300Msgs.Text_89, JOptionPane.INFORMATION_MESSAGE);	// Event Viewpoint Creation
 			return;
 		}
 		if (errorCode == 2) {
-			JOptionPane.showMessageDialog(null, HG05300Msgs.Text_83,		// Create Person ViewPoint error
+			JOptionPane.showMessageDialog(contents,  HG05300Msgs.Text_83,		// Create Person ViewPoint error
 					HG05300Msgs.Text_82, JOptionPane.ERROR_MESSAGE);		// Person Viewpoint Creation
 			return;
 		}
 		if (errorCode == 3) {
-			JOptionPane.showMessageDialog(null, HG05300Msgs.Text_84			// Image Thumbnail Error
+			JOptionPane.showMessageDialog(contents,  HG05300Msgs.Text_84			// Image Thumbnail Error
 												+ HG05300Msgs.Text_85		// From TMG Exhibit Log, perform a
 												+ HG05300Msgs.Text_86		// 'Refresh all thumbnails' command,
 												+ HG05300Msgs.Text_87,		// then re-import the TMG file.
@@ -267,7 +270,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 			return;
 		}
 		if (errorCode == 4) {
-			JOptionPane.showMessageDialog(null, HG05300Msgs.Text_80						// Too many Person Viewpoints
+			JOptionPane.showMessageDialog(contents,  HG05300Msgs.Text_80						// Too many Person Viewpoints
 												+ HG05300Msgs.Text_81 + maxPersonVPIs,	// Maximum allowed is
 												HG05300Msgs.Text_82, JOptionPane.INFORMATION_MESSAGE);	// Person Viewpoint Creation
 			return;
@@ -1083,9 +1086,9 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 				 pointViewpointHandler.setTranslatedData(tableScreenID, "6", false)		//$NON-NLS-1$	// get Alt.Type, Alternate Name, Date
 				));
 		table41.getColumnModel().getColumn(0).setMinWidth(80);
-		table41.getColumnModel().getColumn(0).setPreferredWidth(80);
+		table41.getColumnModel().getColumn(0).setPreferredWidth(120);
 		table41.getColumnModel().getColumn(1).setMinWidth(200);
-		table41.getColumnModel().getColumn(1).setPreferredWidth(440);
+		table41.getColumnModel().getColumn(1).setPreferredWidth(400);
 		table41.getColumnModel().getColumn(2).setMinWidth(80);
 		table41.getColumnModel().getColumn(2).setPreferredWidth(120);
 		JTableHeader tHd41 = table41.getTableHeader();

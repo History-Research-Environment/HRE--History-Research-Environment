@@ -7,9 +7,11 @@ package hre.gui;
  * v0.01.0025 2020-11-18 Implemented name display options DISP/SORT (N. Tolleshaug)
  * 			  2021-02-28 NLS implemented (D Ferguson)
  * v0.01.0026 2021-09-15 Apply tag codes to screen control buttons (D Ferguson)
- * v0.01.0030 2023-08-05 - Enable update status bar - on/off (N. Tolleshaug)
+ * v0.03.0030 2023-08-05 Enable update status bar - on/off (N. Tolleshaug)
+ * v0.03.0031 2024-11-11 Fix enable/disable of header/footer and sizing (D Ferguson)
  ***************************************************************************************/
 
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
@@ -49,7 +51,7 @@ import net.miginfocom.swing.MigLayout;
 
 /**
  * Class HG0660AncestorDescendant
- * @version 0.01.0026
+ * @version 0.03.0031
  * @since 2020-09-02
  */
 public class HG0660AncestorDescendant extends HG0450SuperDialog implements ActionListener {
@@ -69,6 +71,7 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 
     HBTreeCreator pointTree;
 	GenealogyTree tree;
+	JScrollPane scrollTree;
 	int focusPerson = 1;
 
 /**
@@ -82,14 +85,13 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		windowID = screenID;
 		helpName = "ancestdescendtree"; //$NON-NLS-1$
 
-		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0660 Anc-Dec Tree Report");} //$NON-NLS-1$
+		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0660AncestorDescendant");} //$NON-NLS-1$
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 
 		// Set pointer to HBProjectOpenData
 		String projectName = openProject.getProjectName();
 		setTitle(HG0660Msgs.Text_0 + projectName);
 
-		setBounds(100, 100, 650, 650);
 		// Setup contents
 		contents = new JPanel();
 		setContentPane(contents);
@@ -102,7 +104,6 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		toolBar.add(treeTitle);
 		toolBar.add(Box.createHorizontalGlue());
 		// Add icons defined in HG0450
-		toolBar.add(btn_Remindericon);
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north"); //$NON-NLS-1$
 
@@ -120,11 +121,10 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 	    leftPane = new JPanel();
 	    leftPane.setBorder(UIManager.getBorder("FileChooser.listViewBorder")); //$NON-NLS-1$
 		leftPane.setLayout(new MigLayout("insets 10", "[]", "[]10[]10[]10[]10[]10[]10[]10[]10[]10[]10[]10")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		contents.add(leftPane, "cell 0 0, top"); //$NON-NLS-1$
+
 	    rightPane = new JPanel();
 	    rightPane.setBorder(UIManager.getBorder("ScrollPane.border")); //$NON-NLS-1$
-		rightPane.setLayout(new MigLayout("insets 10", "[grow]", "[]10[grow]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		contents.add(rightPane, "cell 1 0, top"); //$NON-NLS-1$
+		rightPane.setLayout(new MigLayout("insets 10", "[grow, fill]", "[]10[grow]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		// Leftpane contents
 		JLabel leftTitle = new JLabel(HG0660Msgs.Text_29);
@@ -132,7 +132,6 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		leftPane.add(leftTitle, "cell 0 0, center"); //$NON-NLS-1$
 
 		JLabel getPerson = new JLabel(HG0660Msgs.Text_31);
-
 		leftPane.add(getPerson, "cell 0 1"); //$NON-NLS-1$
 
 	    NumberFormat format = NumberFormat.getInstance();
@@ -141,7 +140,7 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 	    formatter.setMinimum(1);
 	    formatter.setMaximum(1000000);			// << needs setting to max personID
 	    JFormattedTextField inputPerson = new JFormattedTextField(formatter);
-	    inputPerson.setColumns(7);
+	    inputPerson.setColumns(6);
 	    leftPane.add(inputPerson, "cell 0 1");  	    	     //$NON-NLS-1$
 
 		JCheckBox headerBox = new JCheckBox(HG0660Msgs.Text_34);
@@ -195,10 +194,11 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		JTextArea reportNote = new JTextArea(HG0660Msgs.Text_52);
 		reportNote.setFont(reportNote.getFont().deriveFont(reportNote.getFont().getStyle() | Font.ITALIC));
 		reportNote.setEditable(false);
-		reportNote.setColumns(20);
+		reportNote.setColumns(15);
 		reportNote.setLineWrap(true);
 		reportNote.setWrapStyleWord(true);
 		leftPane.add(reportNote, "cell 0 10"); //$NON-NLS-1$
+		contents.add(leftPane, "cell 0 0, top"); //$NON-NLS-1$
 
 	    // Rightpane contents
 		JTextField headerField = new JTextField();
@@ -206,12 +206,11 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		headerField.setVisible(false);
 		headerField.setText(null);
 		headerField.setColumns(30);
-		rightPane.add(headerField, "cell 0 0, center"); //$NON-NLS-1$
+		rightPane.add(headerField, "cell 0 0, center, hidemode 3"); //$NON-NLS-1$
 
 		// Do not create a tree yet - need to select a person first
-        JScrollPane scrollTree = new JScrollPane(tree);
-        scrollTree.setMinimumSize(new Dimension(250, 200));
-        scrollTree.setPreferredSize(new Dimension(2000, 2000));
+        scrollTree = new JScrollPane(tree);
+        scrollTree.setPreferredSize(new Dimension(400, 450));
 		rightPane.add(scrollTree, "cell 0 1,grow"); //$NON-NLS-1$
 
 		JTextField footerField = new JTextField();
@@ -219,7 +218,10 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		footerField.setVisible(false);
 		footerField.setText(null);
 		footerField.setColumns(30);
-		rightPane.add(footerField, "cell 0 2, center"); //$NON-NLS-1$
+		rightPane.add(footerField, "cell 0 2, center, hidemode 3"); //$NON-NLS-1$
+		contents.add(rightPane, "cell 1 0, top, grow"); //$NON-NLS-1$
+
+		pack();
 
 /**
  * CREATE ACTION BUTTON LISTENERS
@@ -228,7 +230,7 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		btn_Close.addActionListener(new ActionListener() {
 		    @Override
 		    public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0660 Anc-Dec Tree Report"); //$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0660AncestorDescendant"); //$NON-NLS-1$
 			// close reminder display
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				dispose();
@@ -247,12 +249,12 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		btn_Print.addActionListener(new ActionListener() {
 		    @Override
 		    public void actionPerformed(ActionEvent arg0) {
-		    	// If Header or Footer are used, print the whole panel; else just the tree
+		    	// If Header or Footer are used, print the panel; else print the tree
 		    	try {
 		    	if (headerField.getText().isEmpty() && footerField.getText().isEmpty()) new HB0631OutputComponent(tree);
 		    		else new HB0631OutputComponent(rightPane);
 		    	} catch (HBException hbe) {
-					  JOptionPane.showMessageDialog(null, "Printer error: " + hbe.getMessage(),  //$NON-NLS-1$
+					  JOptionPane.showMessageDialog(btn_Print, "Printer error: " + hbe.getMessage(),  //$NON-NLS-1$
 							  						"Print Error", JOptionPane.ERROR_MESSAGE);  //$NON-NLS-1$
 		    	}
 		    }
@@ -262,55 +264,80 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		inputPerson.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-			// Set (or reset) Tree for the selected person
-			focusPerson = ((Integer) inputPerson.getValue()).intValue();
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				// Set (or reset) Tree for the selected person
+				focusPerson = ((Integer) inputPerson.getValue()).intValue();
 
-			// Set name Display index for this instance of HBTreeCreator
-			int nameDisplayIndex = openProject.getNameDisplayIndex();
+				// Set name Display index for this instance of HBTreeCreator
+				int nameDisplayIndex = openProject.getNameDisplayIndex();
 
-			try {
-	     		//pointPersonHandler.processPartnerList(pointOpenProject);
-				pointPersonHandler.enableUpdateMonitor(false);
-	     		pointPersonHandler.initiatePersonData(5, pointOpenProject);
-				pointTree = new HBTreeCreator(openProject, focusPerson, nameDisplayIndex, null);
-			} catch (HBException hbe) {
-				System.out.println("HBTreeCreator call error");  //$NON-NLS-1$
-				hbe.printStackTrace();
-			}
-			int errorCode = pointTree.initateTree();
+				try {
+					pointPersonHandler.enableUpdateMonitor(false);
+		     		pointPersonHandler.initiatePersonData(5, pointOpenProject);
+					pointTree = new HBTreeCreator(openProject, focusPerson, nameDisplayIndex, null);
+					setCursor(Cursor.getDefaultCursor());
+				} catch (HBException hbe) {
+					System.out.println("HBTreeCreator call error");  //$NON-NLS-1$
+					hbe.printStackTrace();
+				}
+				int errorCode = pointTree.initateTree();
 
-			if (errorCode > 0) {
-				userInfoTreeCreator(errorCode);
-				return;
-			}
-			tree = pointTree.getTree();
-			scrollTree.setViewportView(tree);
-			// Now enable all buttons
-			headerBox.setEnabled(true);
-			footerBox.setEnabled(true);
-			showAncestor.setEnabled(true);
-			showDescendant.setEnabled(true);
-			expandAll.setEnabled(true);
-			expandOne.setEnabled(true);
-			collapseAll.setEnabled(true);
-			collapseOne.setEnabled(true);
-			btn_Print.setEnabled(true);
+				if (errorCode > 0) {
+					userInfoTreeCreator(errorCode);
+					return;
+				}
+				tree = pointTree.getTree();
+				scrollTree.setViewportView(tree);
+				// Now enable all buttons
+				headerBox.setEnabled(true);
+				footerBox.setEnabled(true);
+				showAncestor.setEnabled(true);
+				showDescendant.setEnabled(true);
+				expandAll.setEnabled(true);
+				expandOne.setEnabled(true);
+				collapseAll.setEnabled(true);
+				collapseOne.setEnabled(true);
+				btn_Print.setEnabled(true);
 			}
 		});
 
-		// Checkbox listeners for selecting header/footer
+		// Checkbox listeners for selecting header/footer on/off
 		headerBox.addActionListener(new ActionListener() {
             @Override
 			public void actionPerformed(ActionEvent ae) {
-            	headerField.setVisible(true);
-                headerField.setEnabled(headerBox.isSelected());
+            	if (headerBox.isSelected()) {
+            		headerField.setVisible(true);
+            		headerField.setEnabled(true);
+            		// Reset preferred size to current size,so pack retains size
+                    scrollTree.setPreferredSize(new Dimension(scrollTree.getSize().width, scrollTree.getSize().height));
+            		pack();
+            	}
+            	else {
+            		headerField.setVisible(false);
+            		headerField.setEnabled(false);
+            		// Reset preferred size to current size,so pack retains size
+                    scrollTree.setPreferredSize(new Dimension(scrollTree.getSize().width, scrollTree.getSize().height));
+            		pack();
+            	}
             }
         });
 		footerBox.addActionListener(new ActionListener() {
             @Override
 			public void actionPerformed(ActionEvent ae) {
-            	footerField.setVisible(true);
-                footerField.setEnabled(footerBox.isSelected());
+            	if (footerBox.isSelected()) {
+            		footerField.setVisible(true);
+            		footerField.setEnabled(true);
+            		// Reset preferred size to current size,so pack retains size
+                    scrollTree.setPreferredSize(new Dimension(scrollTree.getSize().width, scrollTree.getSize().height));
+            		pack();
+            	}
+            	else {
+               		footerField.setVisible(false);
+            		footerField.setEnabled(false);
+            		// Reset preferred size to current size,so pack retains size
+                    scrollTree.setPreferredSize(new Dimension(scrollTree.getSize().width, scrollTree.getSize().height));
+            		pack();
+            	}
             }
         });
 
@@ -348,9 +375,9 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		String errorTitle = HG0660Msgs.Text_53;
 		if (errorCode > 0) {
 			if (HGlobal.writeLogs)
-				HB0711Logging.logWrite("Action: failed in HG0660 TreeCreation");	 //$NON-NLS-1$
+				HB0711Logging.logWrite("Action: tree create failed in HG0660AncestorDescendant");	 //$NON-NLS-1$
 			if (errorCode == 1)  errorMess = HG0660Msgs.Text_54 +  HG0660Msgs.Text_55;
-			JOptionPane.showMessageDialog(null, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(scrollTree, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoTreeCreator
 

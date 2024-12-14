@@ -63,10 +63,11 @@ package hre.gui;
  * 			  2023-01-15 Translated texts collected from T204 (N. Tolleshaug)
  * 			  2023-01-16 Corrected ID - noNB error filter from T204 (N. Tolleshaug)
  * 			  2023-01-29 Added catch block for PSE on filter (D Ferguson)
- * v0.01.0030 2023-07-01 - Revision of Person Select table processing (N. Tolleshaug)
- * 			  2023-08-05 - Enable update status bar - on/off (N. Tolleshaug)
- * v0.01.0031 2024-03-24 - Removed right click error line 957 (N. Tolleshaug)
- * v0.01.0031 2024-10-29 - Modified public static final String screenID = "50700" (N. Tolleshaug)
+ * v0.03.0030 2023-07-01 Revision of Person Select table processing (N. Tolleshaug)
+ * 			  2023-08-05 Enable update status bar - on/off (N. Tolleshaug)
+ * v0.03.0031 2024-03-24 Removed right click error line 957 (N. Tolleshaug)
+ * 			  2024-10-29 Modified public static final String screenID = "50700" (N. Tolleshaug)
+ * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ***************************************************************************************
  * NOTES for incomplete functionality
  * NOTE02 No code for importing saved filters
@@ -143,7 +144,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Person Select
  * @author D Ferguson
- * @version v0.01.0028
+ * @version v0.03.0031
  * @since 2019-09-16
  */
 
@@ -614,8 +615,8 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 				personFrame.setVisible(true);
 				// Set frame position relative to other frames
 				if (position == "F") {
-					personFrame.toFront();		//$NON-NLS-1$
-				} else { //$NON-NLS-1$
+					personFrame.toFront();
+				} else {
 					personFrame.toBack();
 				}
 
@@ -965,7 +966,7 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 									 {
 										System.out.println("HG0507PersonSelect - Not able to set focus person: " + hbe.getMessage());  //$NON-NLS-1$
 									}
-									JOptionPane.showMessageDialog(null, HG05070Msgs.Text_93 + hbe.getMessage(),
+									JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_93 + hbe.getMessage(),
 											HG05070Msgs.Text_94,JOptionPane.INFORMATION_MESSAGE);
 								}
 								scrollTree.setViewportView(tree);
@@ -1218,7 +1219,7 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
  */
 	public void userInfoTreeCreator(int errorCode, String message) {
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05070Msgs.Text_105 + HG05070Msgs.Text_106,
+			JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_105 + HG05070Msgs.Text_106,
 										HG05070Msgs.Text_107, JOptionPane.ERROR_MESSAGE);
 		}
 	// Show partner list error message
@@ -1226,11 +1227,11 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 			String errorText = HG05070Msgs.Text_102;						// no error
 			if (message.equals("ERR1"))
 			 {
-				errorText = HG05070Msgs.Text_103;	// No partner recorded  //$NON-NLS-1$
+				errorText = HG05070Msgs.Text_103;	// No partner recorded
 			}
 			if (message.equals("ERR2"))
 			 {
-				errorText = HG05070Msgs.Text_104;	// Select a person in the tree first  //$NON-NLS-1$
+				errorText = HG05070Msgs.Text_104;	// Select a person in the tree first
 			}
 			JOptionPane.showMessageDialog(tree, errorText, HG05070Msgs.Text_108, JOptionPane.INFORMATION_MESSAGE);  // Partner/Spouse:
 		}
@@ -1238,24 +1239,24 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 
 	private void userInfoConvertData(int errorCode) {
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05070Msgs.Text_109 + HG05070Msgs.Text_110,
+			JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_109 + HG05070Msgs.Text_110,
 										HG05070Msgs.Text_111, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoConvertData
 
 	private void userInfoInitVP(int errorCode) {
 		if (errorCode == 1) {
-			JOptionPane.showMessageDialog(null, HG05070Msgs.Text_112 + maxPersonVPIs,
+			JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_112 + maxPersonVPIs,
 										HG05070Msgs.Text_113, JOptionPane.INFORMATION_MESSAGE);
 			return;
-		} else
+		}
 		if (errorCode == 2) {
-			JOptionPane.showMessageDialog(null, HG05070Msgs.Text_114,
+			JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_114,
 										HG05070Msgs.Text_115, JOptionPane.ERROR_MESSAGE);
 			return;
-		} else
+		}
 		if (errorCode == 3) {
-			JOptionPane.showMessageDialog(null, HG05070Msgs.Text_116
+			JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_116
 												+ HG05070Msgs.Text_117
 												+ HG05070Msgs.Text_118
 												+ HG05070Msgs.Text_119,

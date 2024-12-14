@@ -41,6 +41,8 @@ package hre.gui;
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  * 			  2024-10-31 Reduce Memo/Citation area size and make consistent (D Ferguson)
  * 			  2024-11-03 Removed SwingUtility from table cell edit focus (D Ferguson)
+ * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * 			  2024-12-09 Update TAB handling for åerson and location names (N Tolleshaug)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
@@ -102,7 +104,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
@@ -2722,23 +2723,24 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             }
         });
 
-		// Listener for changes made in tableName
+	// Listener for changes made in tableName
 		TableModelListener persListener = new TableModelListener() {
-			public void tableChanged(TableModelEvent e) {
-			// Process name data
-				if (!(tableName.getSelectedRow() == -1)) {
-					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableName.getSelectedRow(), 1));
-					if (HGlobal.DEBUG) {
-						String element = ((String) model.getValueAt(tableName.getSelectedRow(), 0)).trim();
-						System.out.println("HG0505AddPerson - name table changed: " + tableName.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						pointPersonHandler.addToPersonNameChangeList(tableName.getSelectedRow(), nameElementData);
-						btn_Save.setEnabled(true);
-						nameElementUpdates++;
-					}
+            public void tableChanged(TableModelEvent tme) {
+                if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+	                    String nameElementData = (String) tableName.getValueAt(row, 1);
+						String element = (String) tableName.getValueAt(row, 0);
+						if (HGlobal.DEBUG) {
+							System.out.println("HG0505AddPerson - name table changed: " + row 	//$NON-NLS-1$
+												+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
+						}
+						if (nameElementData != null) {
+							pointPersonHandler.addToPersonNameChangeList(row, nameElementData);
+							btn_Save.setEnabled(true);
+							nameElementUpdates++;
+						}
+                    }
 				}
 			}
 		};
@@ -2746,21 +2748,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Birth location
 		TableModelListener birthEventListener = new TableModelListener() {
-			public void tableChanged(TableModelEvent e) {
-			// Process birth location data
-				if (!(tableBirthLocn.getSelectedRow() == -1)) {
-					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 1));
-					if (HGlobal.DEBUG) {
-						String element = ((String) model.getValueAt(tableBirthLocn.getSelectedRow(), 0)).trim();
-						System.out.println("HG0505AddPerson - birth locn table changed: " + tableBirthLocn.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						pointPersonHandler.addToLocationChangeList( 1, tableBirthLocn.getSelectedRow(), nameElementData);
-						btn_Save.setEnabled(true);
-						eventLocationUpdates[0]++;
-					}
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+						String nameElementData =  (String) tableBirthLocn.getValueAt(row, 1);
+						String element = (String) tableBirthLocn.getValueAt(row, 0);
+						if (HGlobal.DEBUG) 	
+							System.out.println("HG0505AddPerson - birth locn table changed: " + row 	//$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$
+						
+						if (nameElementData != null) {
+							pointPersonHandler.addToLocationChangeList( 1, row, nameElementData);
+							btn_Save.setEnabled(true);
+							eventLocationUpdates[0]++;
+						}
+                    }
 				}
 			}
 		};
@@ -2768,22 +2771,21 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// Listener for changes made in person Bapt location
 		TableModelListener baptEventListener = new TableModelListener() {
-			public void tableChanged(TableModelEvent e) {
-			// Process baptism location data
-				if (!(tableBaptLocn.getSelectedRow() == -1)) {
-					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 1));
-					if (nameElementData != null) nameElementData = nameElementData.trim();
-					if (HGlobal.DEBUG) {
-						String element = ((String) model.getValueAt(tableBaptLocn.getSelectedRow(), 0)).trim();
-						System.out.println("HG0505AddPerson - baptism locn table changed: " + tableBaptLocn.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						pointPersonHandler.addToLocationChangeList(2, tableBaptLocn.getSelectedRow(), nameElementData);
-						btn_Save.setEnabled(true);
-						eventLocationUpdates[1]++;
-					}
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+						String nameElementData =  (String) tableBaptLocn.getValueAt(row, 1);
+						String element = (String) tableBaptLocn.getValueAt(row, 0);
+						if (HGlobal.DEBUG) 	
+							System.out.println("HG0505AddPerson - bapt locn table changed: " + row 	//$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$/$NON-NLS-2$
+						if (nameElementData != null) {
+							pointPersonHandler.addToLocationChangeList(2, row, nameElementData);
+							btn_Save.setEnabled(true);
+							eventLocationUpdates[1]++;
+						}
+                    }
 				}
 			}
 		};
@@ -2791,21 +2793,21 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Death location
 		TableModelListener deathEventListener = new TableModelListener() {
-			public void tableChanged(TableModelEvent e) {
-			// Process death location data
-				if (!(tableDeathLocn.getSelectedRow() == -1)) {
-					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 1));
-					if (HGlobal.DEBUG) {
-						String element = ((String) model.getValueAt(tableDeathLocn.getSelectedRow(), 0)).trim();
-						System.out.println("HG0505AddPerson - death locn table changed: " + tableDeathLocn.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						pointPersonHandler.addToLocationChangeList(3, tableDeathLocn.getSelectedRow(), nameElementData);
-						btn_Save.setEnabled(true);
-						eventLocationUpdates[2]++;
-					}
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+						String nameElementData =  (String) tableDeathLocn.getValueAt(row, 1);
+						String element = (String) tableDeathLocn.getValueAt(row, 0);
+						if (HGlobal.DEBUG) 	
+							System.out.println("HG0505AddPerson - death locn table changed: " + row 	//$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$/$NON-NLS-2$
+						if (nameElementData != null) {
+							pointPersonHandler.addToLocationChangeList(3, row, nameElementData);
+							btn_Save.setEnabled(true);
+							eventLocationUpdates[2]++;
+						}
+                    }
 				}
 			}
 		};
@@ -2813,22 +2815,21 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Burial location
 		TableModelListener burialEventListener = new TableModelListener() {
-			public void tableChanged(TableModelEvent e) {
-			// Process burial location data
-				if (!(tableBurialLocn.getSelectedRow() == -1)) {
-					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 1));
-					if (nameElementData != null) nameElementData = nameElementData.trim();
-					if (HGlobal.DEBUG) {
-						String element = ((String) model.getValueAt(tableBurialLocn.getSelectedRow(), 0)).trim();
-						System.out.println("HG0505AddPerson - burial locntable changed: " + tableBurialLocn.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						pointPersonHandler.addToLocationChangeList(4, tableBurialLocn.getSelectedRow(), nameElementData);
-						btn_Save.setEnabled(true);
-						eventLocationUpdates[3]++;
-					}
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+						String nameElementData =  (String) tableBurialLocn.getValueAt(row, 1);
+						String element = (String) tableBurialLocn.getValueAt(row, 0);
+						if (HGlobal.DEBUG) 	
+							System.out.println("HG0505AddPerson - burial locn table changed: " + row
+											+ " Element: " + element + " / " + nameElementData);							
+						if (nameElementData != null) {
+							pointPersonHandler.addToLocationChangeList(4, row, nameElementData);
+							btn_Save.setEnabled(true);
+							eventLocationUpdates[3]++;
+						}
+                    }
 				}
 			}
 		};
@@ -2836,21 +2837,21 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 		// Listener for changes made in person Partner location
 		TableModelListener partnerEventListener = new TableModelListener() {
-			public void tableChanged(TableModelEvent e) {
-			// Process partner location data
-				if (!(tablePartnerLocn.getSelectedRow() == -1)) {
-					TableModel model = (TableModel) e.getSource();
-					String nameElementData = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 1));
-					if (HGlobal.DEBUG) {
-						String element = ((String) model.getValueAt(tablePartnerLocn.getSelectedRow(), 0)).trim();
-						System.out.println("HG0505AddPerson - partner locn table changed: " + tablePartnerLocn.getSelectedRow() 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-					}
-					if (nameElementData != null) {
-						pointPersonHandler.addToLocationChangeList(5, tablePartnerLocn.getSelectedRow(), nameElementData);
-						btn_Save.setEnabled(true);
-						eventLocationUpdates[4]++;
-					}
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+						String nameElementData =  (String) tablePartnerLocn.getValueAt(row, 1);
+						String element = (String) tablePartnerLocn.getValueAt(row, 0);
+						if (HGlobal.DEBUG) 	
+							System.out.println("HG0505AddPerson - partner locn table changed: " + row
+											+ " Element: " + element + " / " + nameElementData);
+						if (nameElementData != null) {
+							pointPersonHandler.addToLocationChangeList(5, row, nameElementData);
+							btn_Save.setEnabled(true);
+							eventLocationUpdates[4]++;
+						}
+                    }
 				}
 			}
 		};
@@ -2885,7 +2886,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		ActionListener sentenceListener = new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE02 need code here to allow sentence editing
-				JOptionPane.showMessageDialog(null, "This function is not yet implemented"); //$NON-NLS-1$
+				JOptionPane.showMessageDialog(contents, "This function is not yet implemented"); //$NON-NLS-1$
 			}
 		};
 		btn_SentenceBirth.addActionListener(sentenceListener);

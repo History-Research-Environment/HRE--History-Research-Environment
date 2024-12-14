@@ -20,6 +20,7 @@ package hre.gui;
  * 			  2024-06-14 Remove Name radio-button selection (D Ferguson)
  * 			  2024-06-16 Place Partner user msg properly (D Ferguson)
  * 			  2024-07-21 NLS conversion (D Ferguson)
+ * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE04 need code to load disabled events
@@ -68,7 +69,7 @@ import net.miginfocom.swing.MigLayout;
  * @since 2022-04-07
  */
 
-/**  
+/**
  * NOTE the standard TMG event group numbers are:
  *	1 - Name related
  *	2 - Father-relationship pseudo events
@@ -92,18 +93,18 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0552ManageEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
-	
+
 	public String screenID = "55200";	//$NON-NLS-1$
-	private String className; 
+	private String className;
 	private JPanel contents;
-	
+
 	long null_RPID  = 1999999999999999L;
-	
+
 	HBWhereWhenHandler pointHBWhereWhenHandler;
 
 	// Lists for holding event/role data
 	private JList<String> eventList;
-	private JList<String> roleList;	
+	private JList<String> roleList;
     private String selectedEvent = "";		//$NON-NLS-1$
     private int indexSelectedEvent;
     private String selectedRole = "";		//$NON-NLS-1$
@@ -117,59 +118,59 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     DefaultListModel<String> eventListmodel;
     DefaultListModel<String> roleListmodel;
     int[] marrTypes;
-    
+
 	JButton btn_Add;
 	JButton btn_AddSet;
 	JButton btn_Edit;
 	JButton btn_Delete;
 	JButton btn_Copy;
 	JButton btn_Disable;
-    
+
 /**
- * String getClassName()    
+ * String getClassName()
  * @return className
  */
     public String getClassName() {
     	return className;
     }
-    
+
     public void setPartnerTableSelectedRow(int selectedPartnerTableIndex) {
     	selectedPartnerTableRow = selectedPartnerTableIndex;
     }
-    
+
 /**
  * Create the dialog
- * @throws HBException 
+ * @throws HBException
  */
 	public HG0552ManageEvent(HBProjectOpenData pointOpenProject, String forPerson) throws HBException {
-	// Setup references 
+	// Setup references
 		windowID = screenID;
-		helpName = "manageevent";	//$NON-NLS-1$	
+		helpName = "manageevent";	//$NON-NLS-1$
     	className = getClass().getSimpleName();
     	this.setResizable(true);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0552ManageEvent");}	//$NON-NLS-1$
-	    setTitle(HG0552Msgs.Text_0);	// Manage Events	    
+	    setTitle(HG0552Msgs.Text_0);	// Manage Events
 	    pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 
 	 // Get all partner event type codes
     	pointHBWhereWhenHandler.getEventTypeList(6);
     	marrTypes = pointHBWhereWhenHandler.getEventTypes();
-    	
-	// Setup initial All Events event/role lists	
+
+	// Setup initial All Events event/role lists
 	    DefaultListModel<String> eventListmodel = new DefaultListModel<String>();
 	    eventList = new JList<String>(eventListmodel);
 	    resetEventList(eventGroup);
 	    DefaultListModel<String> roleListmodel = new DefaultListModel<String>();
-	    roleList = new JList<String>(roleListmodel);	    
-		
+	    roleList = new JList<String>(roleListmodel);
+
 /***********************************
  * Setup main panel and its contents
  ***********************************/
-		contents = new JPanel(); 
+		contents = new JPanel();
 		setContentPane(contents);
 		contents.setLayout(new MigLayout("insets 10", "[]10[]10[grow]10[grow]", "[grow]5[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-    		
+
     	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);
     	toolBar.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -178,7 +179,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     	toolBar.add(Box.createHorizontalGlue());
     	// Add HG0450 icons
 		toolBar.add(btn_Remindericon);
-		toolBar.add(btn_Helpicon);			
+		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
 /****************************************************
@@ -188,38 +189,38 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		leftPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(leftPanel, "cell 0 0, growx, aligny top");	//$NON-NLS-1$
 		leftPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]5[]5[]5[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 		JLabel lbl_EventEdit = new JLabel(HG0552Msgs.Text_2);		// Control Buttons
 		leftPanel.add(lbl_EventEdit, "cell 0 0, alignx center");	//$NON-NLS-1$
-		
+
 		btn_Add = new JButton(HG0552Msgs.Text_3);					// Define New Event
 		btn_Add.setToolTipText(HG0552Msgs.Text_4);					// Add a New Event
 		leftPanel.add(btn_Add, "cell 0 1, growx, alignx center"); 	//$NON-NLS-1$
-		
+
 		btn_AddSet = new JButton(HG0552Msgs.Text_5);				// Define Event Set
 		btn_AddSet.setToolTipText(HG0552Msgs.Text_6);				// Add a new Event Set
 		leftPanel.add(btn_AddSet, "cell 0 2, growx, alignx center"); //$NON-NLS-1$
-				
+
 		btn_Edit = new JButton(HG0552Msgs.Text_7);					// Edit Event
 		btn_Edit.setToolTipText(HG0552Msgs.Text_8);					// Edit the Chosen Event
 		btn_Edit.setEnabled(false);
 		leftPanel.add(btn_Edit, "cell 0 3, growx, alignx center"); //$NON-NLS-1$
-		
+
 		btn_Delete = new JButton(HG0552Msgs.Text_9);				// Delete Event
 		btn_Delete.setToolTipText(HG0552Msgs.Text_10);				// Delete the Chosen Event
 		btn_Delete.setEnabled(false);
 		leftPanel.add(btn_Delete, "cell 0 4, growx, alignx center"); //$NON-NLS-1$
-		
+
 		btn_Copy = new JButton(HG0552Msgs.Text_11);					// Copy Event
 		btn_Copy.setToolTipText(HG0552Msgs.Text_12);				// Copy the Chosen Event
 		btn_Copy.setEnabled(false);
 		leftPanel.add(btn_Copy, "cell 0 5, growx, alignx center"); //$NON-NLS-1$
-		
+
 		btn_Disable = new JButton(HG0552Msgs.Text_13);				// Disable Event
 		btn_Disable.setToolTipText(HG0552Msgs.Text_14);				// Disable or Re-enable the chosen Event
 		btn_Disable.setEnabled(false);
-		leftPanel.add(btn_Disable, "cell 0 6, growx, alignx center"); //$NON-NLS-1$				
-		
+		leftPanel.add(btn_Disable, "cell 0 6, growx, alignx center"); //$NON-NLS-1$
+
 /**************************************************
  * Setup 2nd column Panel and radio-button contents
  *************************************************/
@@ -227,7 +228,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		secondPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(secondPanel, "cell 1 0, aligny top");	//$NON-NLS-1$
 		secondPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]5[]5[]5[]5[]5[]5[]5[]5[]5[]5[]10[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 		JLabel lbl_EventGrps = new JLabel(HG0552Msgs.Text_15);		// Select Event Group
 		secondPanel.add(lbl_EventGrps, "cell 0 0, alignx center");	//$NON-NLS-1$
 
@@ -235,26 +236,26 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		// Also a button to switch to the alternate (user-defined) groups of Events
 		JRadioButton radio_All = new JRadioButton(HG0552Msgs.Text_16);			// All Events
 		radio_All.setSelected(true);
-		secondPanel.add(radio_All, "cell 0 1, alignx left, hidemode 3");		//$NON-NLS-1$	
-		JRadioButton radio_Birth = new JRadioButton(HG0552Msgs.Text_17);		// Birth		
+		secondPanel.add(radio_All, "cell 0 1, alignx left, hidemode 3");		//$NON-NLS-1$
+		JRadioButton radio_Birth = new JRadioButton(HG0552Msgs.Text_17);		// Birth
 		secondPanel.add(radio_Birth, "cell 0 2, alignx left, hidemode 3");		//$NON-NLS-1$
-		JRadioButton radio_Marriage = new JRadioButton(HG0552Msgs.Text_18);		// Marriage		
-		secondPanel.add(radio_Marriage, "cell 0 3, alignx left, hidemode 3");	//$NON-NLS-1$		
+		JRadioButton radio_Marriage = new JRadioButton(HG0552Msgs.Text_18);		// Marriage
+		secondPanel.add(radio_Marriage, "cell 0 3, alignx left, hidemode 3");	//$NON-NLS-1$
 		JRadioButton radio_Death = new JRadioButton(HG0552Msgs.Text_19);		// Death
 		secondPanel.add(radio_Death, "cell 0 4, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_Burial = new JRadioButton(HG0552Msgs.Text_20);		// Burial
-		secondPanel.add(radio_Burial, "cell 0 5, alignx left, hidemode 3");		//$NON-NLS-1$	
+		secondPanel.add(radio_Burial, "cell 0 5, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_History = new JRadioButton(HG0552Msgs.Text_21);		// History
 		secondPanel.add(radio_History, "cell 0 6, alignx left, hidemode 3");	//$NON-NLS-1$
 		JRadioButton radio_Address = new JRadioButton(HG0552Msgs.Text_22);		// Address
-		secondPanel.add(radio_Address, "cell 0 7, alignx left, hidemode 3");	//$NON-NLS-1$		
+		secondPanel.add(radio_Address, "cell 0 7, alignx left, hidemode 3");	//$NON-NLS-1$
 		JRadioButton radio_User = new JRadioButton(HG0552Msgs.Text_23);			// Your Event Groups
-		secondPanel.add(radio_User, "cell 0 8, alignx left, hidemode 3");		//$NON-NLS-1$		
+		secondPanel.add(radio_User, "cell 0 8, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_Other = new JRadioButton(HG0552Msgs.Text_24);		// Other Events
-		secondPanel.add(radio_Other, "cell 0 9, alignx left, hidemode 3");		//$NON-NLS-1$		
+		secondPanel.add(radio_Other, "cell 0 9, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_InActive = new JRadioButton(HG0552Msgs.Text_25);		// Disabled Events
 		secondPanel.add(radio_InActive, "cell 0 10, alignx left, hidemode 3");	//$NON-NLS-1$
-		
+
 		ButtonGroup radioGroup = new ButtonGroup();
 		radioGroup.add(radio_All);
 		radioGroup.add(radio_Birth);
@@ -272,46 +273,46 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		JRadioButton radio_User11 = new JRadioButton(HG0552Msgs.Text_26);		// Census
 		secondPanel.add(radio_User11, "cell 0 1, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_User14 = new JRadioButton(HG0552Msgs.Text_27);		// Travel
-		secondPanel.add(radio_User14, "cell 0 2, alignx left, hidemode 3");		//$NON-NLS-1$	
-		JRadioButton radio_User15 = new JRadioButton(HG0552Msgs.Text_28);		// Military	
+		secondPanel.add(radio_User14, "cell 0 2, alignx left, hidemode 3");		//$NON-NLS-1$
+		JRadioButton radio_User15 = new JRadioButton(HG0552Msgs.Text_28);		// Military
 		secondPanel.add(radio_User15, "cell 0 3, alignx left, hidemode 3");		//$NON-NLS-1$
-		JRadioButton radio_User16 = new JRadioButton(HG0552Msgs.Text_29);		// Your Event Group 1	
-		secondPanel.add(radio_User16, "cell 0 4, alignx left, hidemode 3");		//$NON-NLS-1$		
+		JRadioButton radio_User16 = new JRadioButton(HG0552Msgs.Text_29);		// Your Event Group 1
+		secondPanel.add(radio_User16, "cell 0 4, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_User17 = new JRadioButton(HG0552Msgs.Text_30);		// Your Event Group 2
 		secondPanel.add(radio_User17, "cell 0 5, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_User18 = new JRadioButton(HG0552Msgs.Text_31);		// Your Event Group 3
-		secondPanel.add(radio_User18, "cell 0 6, alignx left, hidemode 3");		//$NON-NLS-1$	
+		secondPanel.add(radio_User18, "cell 0 6, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_User19 = new JRadioButton(HG0552Msgs.Text_32);		// Your Event Group 4
 		secondPanel.add(radio_User19, "cell 0 7, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_Std = new JRadioButton(HG0552Msgs.Text_33);			// Standard Events
-		secondPanel.add(radio_Std, "cell 0 8, alignx left, hidemode 3");		//$NON-NLS-1$			
+		secondPanel.add(radio_Std, "cell 0 8, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_Other2 = new JRadioButton(HG0552Msgs.Text_34);		// Other Events
-		secondPanel.add(radio_Other2, "cell 0 9, alignx left, hidemode 3");		//$NON-NLS-1$	
+		secondPanel.add(radio_Other2, "cell 0 9, alignx left, hidemode 3");		//$NON-NLS-1$
 		JRadioButton radio_InActive2 = new JRadioButton(HG0552Msgs.Text_25);	// Disabled Events
 		secondPanel.add(radio_InActive2, "cell 0 10, alignx left, hidemode 3");	//$NON-NLS-1$
-		
+
 		// Disable and hide this set of radio-buttons for now
 		radio_User11.setVisible(false);
-		radio_User14.setVisible(false);			
+		radio_User14.setVisible(false);
 		radio_User15.setVisible(false);
-		radio_User16.setVisible(false);		
-		radio_User17.setVisible(false);		
-		radio_User18.setVisible(false);		
-		radio_User19.setVisible(false);	
-		radio_Std.setVisible(false);		
-		radio_Other2.setVisible(false);				
+		radio_User16.setVisible(false);
+		radio_User17.setVisible(false);
+		radio_User18.setVisible(false);
+		radio_User19.setVisible(false);
+		radio_Std.setVisible(false);
+		radio_Other2.setVisible(false);
 		radio_InActive2.setVisible(false);
 		radio_User11.setEnabled(false);
-		radio_User14.setEnabled(false);			
+		radio_User14.setEnabled(false);
 		radio_User15.setEnabled(false);
-		radio_User16.setEnabled(false);		
-		radio_User17.setEnabled(false);		
-		radio_User18.setEnabled(false);		
-		radio_User19.setEnabled(false);	
-		radio_Std.setEnabled(false);		
-		radio_Other2.setEnabled(false);				
+		radio_User16.setEnabled(false);
+		radio_User17.setEnabled(false);
+		radio_User18.setEnabled(false);
+		radio_User19.setEnabled(false);
+		radio_Std.setEnabled(false);
+		radio_Other2.setEnabled(false);
 		radio_InActive2.setEnabled(false);
-		
+
 		ButtonGroup radioGroup2 = new ButtonGroup();
 		radioGroup2.add(radio_User11);
 		radioGroup2.add(radio_User14);
@@ -322,14 +323,14 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		radioGroup2.add(radio_User19);
 		radioGroup2.add(radio_Std);
 		radioGroup2.add(radio_Other2);
-		radioGroup2.add(radio_InActive2);	
-				
+		radioGroup2.add(radio_InActive2);
+
 		JLabel lbl_Find = new JLabel(HG0552Msgs.Text_36);		// Find Event
-		secondPanel.add(lbl_Find, "cell 0 11, alignx center"); //$NON-NLS-1$	
-		
+		secondPanel.add(lbl_Find, "cell 0 11, alignx center"); //$NON-NLS-1$
+
 		JTextField textToFind = new JTextField();
-		secondPanel.add(textToFind, "cell 0 12, growx"); //$NON-NLS-1$	
-	
+		secondPanel.add(textToFind, "cell 0 12, growx"); //$NON-NLS-1$
+
 /**************************************
  * Setup Event Panel and its contents
  **************************************/
@@ -337,7 +338,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		eventPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(eventPanel, "cell 2 0 1 2, aligny top");	//$NON-NLS-1$
 		eventPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 		JLabel lblEventList = new JLabel(HG0552Msgs.Text_37);		// Events
 		eventPanel.add(lblEventList, "cell 0 0, alignx center");	//$NON-NLS-1$
 
@@ -351,12 +352,12 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 
 /************************************
  * Setup Role Panel and its contents
- ***********************************/	
+ ***********************************/
 		JPanel rolePanel = new JPanel();
 		rolePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(rolePanel, "cell 3 0 1 2, aligny top");	//$NON-NLS-1$
 		rolePanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 		JLabel lblRoles = new JLabel(HG0552Msgs.Text_38);	// Roles of the Event
 		rolePanel.add(lblRoles, "cell 0 0, alignx center");	//$NON-NLS-1$
 
@@ -367,21 +368,21 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		JScrollPane roleScrollPane = new JScrollPane();
 		roleScrollPane.setMinimumSize(new Dimension(180, 300));
 		rolePanel.add(roleScrollPane, "cell 0 1");	//$NON-NLS-1$
-		
+
 /****************************************************
  * Setup control buttons at bottom and display screen
- ****************************************************/			
+ ****************************************************/
 		JButton btn_Select = new JButton(HG0552Msgs.Text_39);	// Select
-		btn_Select.setToolTipText(HG0552Msgs.Text_40);			// Select the chosen Event for use 
+		btn_Select.setToolTipText(HG0552Msgs.Text_40);			// Select the chosen Event for use
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 3 2, align right, gapx 20, tag ok"); //$NON-NLS-1$
-		
+
 		JButton btn_Cancel = new JButton(HG0552Msgs.Text_41);	// Cancel
 		btn_Cancel.setToolTipText(HG0552Msgs.Text_42);			// Close and Exit
-		contents.add(btn_Cancel, "cell 3 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$		
-		
+		contents.add(btn_Cancel, "cell 3 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$
+
 		// Size the screen - pass #1
-		pack();	
+		pack();
 		// Get the height of the secondPanel, less heading row and insets
 		int height = secondPanel.getHeight() - lblEventList.getHeight() - 20;
 		// Use it to resize the Event and Role scrollpanes
@@ -401,7 +402,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
 	    		 btn_Cancel.doClick();
-			} // return 
+			} // return
 		});
 
 	// Listeners for std radio-button group items, to show event and rolePanel data
@@ -416,84 +417,84 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - All events: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
-		};	
-		    
-		 // Load events for Birth group (T460_EVNT_GROUP=4)   
+		};
+
+		 // Load events for Birth group (T460_EVNT_GROUP=4)
 		 ActionListener actionRadioBirth = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 4;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group birth: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
 				 }
 			 }
-		 };	
-		    
-		 // Load events for Marriage+divorce groups (T460_EVNT_GROUP=6 & 7)  
+		 };
+
+		 // Load events for Marriage+divorce groups (T460_EVNT_GROUP=6 & 7)
 		 ActionListener actionRadioMarriage = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 6;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group marriage: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
-				 }    	  
+				 }
 			 }
-		 };		
-		    
-		// Load events for Death group (T460_EVNT_GROUP=5)   
+		 };
+
+		// Load events for Death group (T460_EVNT_GROUP=5)
 		 ActionListener actionRadioDeath = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 5;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group death: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
-				 }		    	  
+				 }
 			 }
-		 };	
-		    
+		 };
+
 		 // Load events for Burial group (T460_EVNT_GROUP=9)
 		 ActionListener actionRadioBurial = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 9;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group burial: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
-				 }  
+				 }
 			 }
-		 };	
-		    
+		 };
+
 		 // Load events for History group (T460_EVNT_GROUP=8)
 		 ActionListener actionRadioHistory = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 8;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group history: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
-				 } 
+				 }
 			 }
-		 };	
+		 };
 
 		 // Load events for Address group (T460_EVNT_GROUP=10)
 		 ActionListener actionRadioAddress = new ActionListener() {
@@ -501,108 +502,108 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 10;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group address: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
-				 }  
+				 }
 			 }
-		 };	
-		    
-		 // Switch to User-defined radio-buttons 
+		 };
+
+		 // Switch to User-defined radio-buttons
 		 ActionListener actionRadioUser = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 			 // Disable and hide THIS set of buttons
 				 radio_All.setVisible(false);
-				 radio_Birth.setVisible(false);		
+				 radio_Birth.setVisible(false);
 				 radio_Death.setVisible(false);
 				 radio_Burial.setVisible(false);
 				 radio_Marriage.setVisible(false);
 				 radio_History.setVisible(false);
-				 radio_Address.setVisible(false);		
-				 radio_User.setVisible(false);		
+				 radio_Address.setVisible(false);
+				 radio_User.setVisible(false);
 				 radio_Other.setVisible(false);
-				 radio_InActive.setVisible(false);		    	  
+				 radio_InActive.setVisible(false);
 				 radio_All.setEnabled(false);
-				 radio_Birth.setEnabled(false);		
+				 radio_Birth.setEnabled(false);
 				 radio_Death.setEnabled(false);
 				 radio_Burial.setEnabled(false);
 				 radio_Marriage.setEnabled(false);
 				 radio_History.setEnabled(false);
-				 radio_Address.setEnabled(false);		
-				 radio_User.setEnabled(false);		
+				 radio_Address.setEnabled(false);
+				 radio_User.setEnabled(false);
 				 radio_Other.setEnabled(false);
-				 radio_InActive.setEnabled(false);	
+				 radio_InActive.setEnabled(false);
 			// Enable and show the other set
 				 radio_User11.setVisible(true);
-				 radio_User14.setVisible(true);			
+				 radio_User14.setVisible(true);
 				 radio_User15.setVisible(true);
-				 radio_User16.setVisible(true);		
-				 radio_User17.setVisible(true);		
-				 radio_User18.setVisible(true);		
-				 radio_User19.setVisible(true);			
-				 radio_Std.setVisible(true);		
-				 radio_Other2.setVisible(true);				
+				 radio_User16.setVisible(true);
+				 radio_User17.setVisible(true);
+				 radio_User18.setVisible(true);
+				 radio_User19.setVisible(true);
+				 radio_Std.setVisible(true);
+				 radio_Other2.setVisible(true);
 				 radio_InActive2.setVisible(true);
 				 radio_User11.setEnabled(true);
-				 radio_User14.setEnabled(true);			
+				 radio_User14.setEnabled(true);
 				 radio_User15.setEnabled(true);
-				 radio_User16.setEnabled(true);		
-				 radio_User17.setEnabled(true);		
-				 radio_User18.setEnabled(true);		
-				 radio_User19.setEnabled(true);			
-				 radio_Std.setEnabled(true);		
-				 radio_Other2.setEnabled(true);				
-				 radio_InActive2.setEnabled(true);	
+				 radio_User16.setEnabled(true);
+				 radio_User17.setEnabled(true);
+				 radio_User18.setEnabled(true);
+				 radio_User19.setEnabled(true);
+				 radio_Std.setEnabled(true);
+				 radio_Other2.setEnabled(true);
+				 radio_InActive2.setEnabled(true);
 
 				 clearBothLists();
 				 radio_User11.setSelected(true);
 				 radio_User11.doClick();
 				 pack();
 			 }
-		 };	
-		    
-		 // Load events for Misc group (T460_EVNT_GROUP=99)   
+		 };
+
+		 // Load events for Misc group (T460_EVNT_GROUP=99)
 		 ActionListener actionRadioOther = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				 btn_Select.setEnabled(false);
 				 eventGroup = 99;
-				 try { 
+				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
 					 System.out.println(" HG0552ManageEvent - event group misc: " + hbe.getMessage());	//$NON-NLS-1$
 					 hbe.printStackTrace();
-				 } 
+				 }
 			 }
-		 };	
+		 };
 
-		 // Load disabled events (T460_IS_ACTIVE=FALSE)   
+		 // Load disabled events (T460_IS_ACTIVE=FALSE)
 		 ActionListener actionInActive = new ActionListener() {
 			 public void actionPerformed(ActionEvent actionEvent) {
 				 btn_Disable.setText(HG0552Msgs.Text_51);	// Enable Event
 				 btn_Select.setEnabled(false);
 				 clearBothLists();
 
-				 // NOTE04 - need code to get disabled event list loaded	    	  
+				 // NOTE04 - need code to get disabled event list loaded
 
 			 }
-		 };	
+		 };
 		// Link the listeners above to the radio buttons
 		radio_All.addActionListener(actionRadioAll);
-		radio_Birth.addActionListener(actionRadioBirth);		
+		radio_Birth.addActionListener(actionRadioBirth);
 		radio_Death.addActionListener(actionRadioDeath);
 		radio_Burial.addActionListener(actionRadioBurial);
 		radio_Marriage.addActionListener(actionRadioMarriage);
 		radio_History.addActionListener(actionRadioHistory);
-		radio_Address.addActionListener(actionRadioAddress);		
-		radio_User.addActionListener(actionRadioUser);		
+		radio_Address.addActionListener(actionRadioAddress);
+		radio_User.addActionListener(actionRadioUser);
 		radio_Other.addActionListener(actionRadioOther);
 		radio_InActive.addActionListener(actionInActive);
 
 	// Listeners for User radio-button group items, to show event and rolePanel data
-		// Load User11 events to the Events list (T460_EVNT_GROUP=11) 
+		// Load User11 events to the Events list (T460_EVNT_GROUP=11)
 		ActionListener actionRadioUser11 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				int eventGroup = 11;
@@ -613,11 +614,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 11: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
-		};	
+		};
 
-		// Load User14 events to the Events list (T460_EVNT_GROUP=14)    
+		// Load User14 events to the Events list (T460_EVNT_GROUP=14)
 		ActionListener actionRadioUser14 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
@@ -628,11 +629,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 14: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
-		};	
+		};
 
-		// Load User15 events to the Events list (T460_EVNT_GROUP=15)    
+		// Load User15 events to the Events list (T460_EVNT_GROUP=15)
 		ActionListener actionRadioUser15 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
@@ -643,11 +644,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 15: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}	    	  
+				}
 			}
-		};	
+		};
 
-		// Load User16 events to the Events list (T460_EVNT_GROUP=16)    
+		// Load User16 events to the Events list (T460_EVNT_GROUP=16)
 		ActionListener actionRadioUser16 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
@@ -658,11 +659,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 16: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
-		};		    
+		};
 
-		// Load User17 events to the Events list (T460_EVNT_GROUP=17)    
+		// Load User17 events to the Events list (T460_EVNT_GROUP=17)
 		ActionListener actionRadioUser17 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
@@ -673,11 +674,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 17: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
-		};		    
+		};
 
-		// Load User18 events to the Events list (T460_EVNT_GROUP=18)    
+		// Load User18 events to the Events list (T460_EVNT_GROUP=18)
 		ActionListener actionRadioUser18 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
@@ -688,11 +689,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 18: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
-		};		    
+		};
 
-		// Load User19 events to the Events list (T460_EVNT_GROUP=19)    
+		// Load User19 events to the Events list (T460_EVNT_GROUP=19)
 		ActionListener actionRadioUser19 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
@@ -703,104 +704,104 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - User 19: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				}		    	  
+				}
 			}
 		};
-		    
-		 // Switch to Standard radio-buttons 
+
+		 // Switch to Standard radio-buttons
 		ActionListener actionRadioStd = new ActionListener() {
-			public void actionPerformed(ActionEvent actionEvent) {	
+			public void actionPerformed(ActionEvent actionEvent) {
 			// Disable and hide THIS set of buttons
 				radio_User11.setVisible(false);
-				radio_User14.setVisible(false);			
+				radio_User14.setVisible(false);
 				radio_User15.setVisible(false);
-				radio_User16.setVisible(false);		
-				radio_User17.setVisible(false);		
-				radio_User18.setVisible(false);		
-				radio_User19.setVisible(false);			
-				radio_Std.setVisible(false);		
-				radio_Other2.setVisible(false);				
+				radio_User16.setVisible(false);
+				radio_User17.setVisible(false);
+				radio_User18.setVisible(false);
+				radio_User19.setVisible(false);
+				radio_Std.setVisible(false);
+				radio_Other2.setVisible(false);
 				radio_InActive2.setVisible(false);
 				radio_User11.setEnabled(false);
-				radio_User14.setEnabled(false);			
+				radio_User14.setEnabled(false);
 				radio_User15.setEnabled(false);
-				radio_User16.setEnabled(false);		
-				radio_User17.setEnabled(false);		
-				radio_User18.setEnabled(false);		
-				radio_User19.setEnabled(false);			
-				radio_Std.setEnabled(false);		
-				radio_Other2.setEnabled(false);				
-				radio_InActive2.setEnabled(false);	
+				radio_User16.setEnabled(false);
+				radio_User17.setEnabled(false);
+				radio_User18.setEnabled(false);
+				radio_User19.setEnabled(false);
+				radio_Std.setEnabled(false);
+				radio_Other2.setEnabled(false);
+				radio_InActive2.setEnabled(false);
 			// Enable and show the std set of buttons
 				radio_All.setVisible(true);
-				radio_Birth.setVisible(true);		
+				radio_Birth.setVisible(true);
 				radio_Death.setVisible(true);
 				radio_Burial.setVisible(true);
 				radio_Marriage.setVisible(true);
 				radio_History.setVisible(true);
-				radio_Address.setVisible(true);		
-				radio_User.setVisible(true);		
+				radio_Address.setVisible(true);
+				radio_User.setVisible(true);
 				radio_Other.setVisible(true);
-				radio_InActive.setVisible(true);		    	  
+				radio_InActive.setVisible(true);
 				radio_All.setEnabled(true);
-				radio_Birth.setEnabled(true);		
+				radio_Birth.setEnabled(true);
 				radio_Death.setEnabled(true);
 				radio_Burial.setEnabled(true);
 				radio_Marriage.setEnabled(true);
 				radio_History.setEnabled(true);
-				radio_Address.setEnabled(true);		
-				radio_User.setEnabled(true);		
+				radio_Address.setEnabled(true);
+				radio_User.setEnabled(true);
 				radio_Other.setEnabled(true);
 				radio_InActive.setEnabled(true);
 
 				clearBothLists();
-				radio_All.setSelected(true);				
+				radio_All.setSelected(true);
 				radio_All.doClick();
 				pack();
 			}
-		};	
+		};
 
-		 // Load events for Misc group (T460_EVNT_GROUP=99)   
+		 // Load events for Misc group (T460_EVNT_GROUP=99)
 		ActionListener actionRadioOther2 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_13);	// Disable Event
 				btn_Select.setEnabled(false);
 				eventGroup = 99;
-				try { 
+				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
 					System.out.println(" HG0552ManageEvent - event group 99: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
-				} 
+				}
 			}
-		};	
+		};
 
-		// Load disabled events (T460_IS_ACTIVE=FALSE)   
+		// Load disabled events (T460_IS_ACTIVE=FALSE)
 		ActionListener actionInActive2 = new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
 				btn_Disable.setText(HG0552Msgs.Text_51);	// Enable Event
 				btn_Select.setEnabled(false);
 				clearBothLists();
 
-				// NOTE04 - need code to get disabled event list loaded	    	  
+				// NOTE04 - need code to get disabled event list loaded
 
 			}
-		};				    
+		};
 		// Link the listeners above to the radio buttons
 		radio_User11.addActionListener(actionRadioUser11);
 		radio_User14.addActionListener(actionRadioUser14);
-		radio_User15.addActionListener(actionRadioUser15);		
+		radio_User15.addActionListener(actionRadioUser15);
 		radio_User16.addActionListener(actionRadioUser16);
 		radio_User17.addActionListener(actionRadioUser17);
 		radio_User18.addActionListener(actionRadioUser18);
-		radio_User19.addActionListener(actionRadioUser19);		
-		radio_Std.addActionListener(actionRadioStd);		
+		radio_User19.addActionListener(actionRadioUser19);
+		radio_Std.addActionListener(actionRadioStd);
 		radio_Other2.addActionListener(actionRadioOther2);
-		radio_InActive2.addActionListener(actionInActive2);		    	
-		
+		radio_InActive2.addActionListener(actionInActive2);
+
 		// Listener to action selection of row in Event list
 		ListSelectionListener eventListener = new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent selectEvent) {		        
+			public void valueChanged(ListSelectionEvent selectEvent) {
 				if (!eventList.getValueIsAdjusting()) {
 					// Save the eventList index and selected value for use
 					indexSelectedEvent = eventList.getSelectedIndex();
@@ -810,12 +811,12 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					selectedEventType = eventTypes[indexSelectedEvent];
 					try {
 						if (testForPartnerEvent(selectedEventType)) {
-							if (HGlobal.DEBUG) 
+							if (HGlobal.DEBUG)
 								System.out.println(" Partner event detected: " + selectedEventType);	//$NON-NLS-1$
 							if (selectedPartnerTableRow < 0) {
-								JOptionPane.showMessageDialog(radio_Address, 
+								JOptionPane.showMessageDialog(radio_Address,
 															HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
-															HG0552Msgs.Text_62, // Add Partner Event 
+															HG0552Msgs.Text_62, // Add Partner Event
 															JOptionPane.INFORMATION_MESSAGE);
 								dispose();
 							} else {
@@ -826,7 +827,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 							resetRoleList(selectedEventType);
 							btn_Select.setEnabled(false);
 						}
-						 
+
 					} catch (HBException hbe) {
 						System.out.println(" HG0552ManageEvent - eventlist: " + hbe.getMessage());	//$NON-NLS-1$
 						hbe.printStackTrace();
@@ -834,7 +835,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					// Enable all the relevant action buttons
 					btn_Edit.setEnabled(true);
 					btn_Delete.setEnabled(true);
-					btn_Copy.setEnabled(true);	
+					btn_Copy.setEnabled(true);
 					btn_Disable.setEnabled(true);
 					// Disable irrelevant buttons
 					btn_Add.setEnabled(false);
@@ -846,8 +847,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 
 		// Listener to action selection of row in Roles list
 	    ListSelectionListener roleListener = new ListSelectionListener() {
-	    	public void valueChanged(ListSelectionEvent selectRole) {	
-	    		if (roleListenOn) { 
+	    	public void valueChanged(ListSelectionEvent selectRole) {
+	    		if (roleListenOn) {
 	    			if (!roleList.getValueIsAdjusting()) {
 	    				// Save the roleList index and selected value for use
 	    				indexSelectedRole = roleList.getSelectedIndex();
@@ -859,24 +860,24 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    				// Disable all action buttons (no longer needed)
 	    				btn_Edit.setEnabled(false);
 	    				btn_Delete.setEnabled(false);
-	    				btn_Copy.setEnabled(false);	
-	    				btn_Disable.setEnabled(false);		    	    		
+	    				btn_Copy.setEnabled(false);
+	    				btn_Disable.setEnabled(false);
 	    			}
 	    		}
 	    	}
 	    };
 		roleList.addListSelectionListener(roleListener);
-			    
+
 		// Listener for Add new eventtype button
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// load HG0551DefineEvent screen (no Event Name/role) to create new Event type
 				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0551DefineEvent newEventType = pointHBWhereWhenHandler.activateDefineEvent(pointOpenProject, "", "");  //$NON-NLS-1$ //$NON-NLS-2$				
+				HG0551DefineEvent newEventType = pointHBWhereWhenHandler.activateDefineEvent(pointOpenProject, "", "");  //$NON-NLS-1$ //$NON-NLS-2$
 				newEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
-				Point xymainPane = lbl_EventGrps.getLocationOnScreen();                
-				newEventType.setLocation(xymainPane.x, xymainPane.y); 
+				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
+				newEventType.setLocation(xymainPane.x, xymainPane.y);
 				dispose();
 				newEventType.setVisible(true);
 			}
@@ -886,60 +887,60 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		btn_AddSet.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				
+
 			// NOTE05 need code here to show screen for adding an Event composed of Events
-				
+
 			}
 		});
-		
+
 		// Listener for Edit Event button
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// load HG0551DefineEvent screen (passing Event Name/role) to edit Event type	
+				// load HG0551DefineEvent screen (passing Event Name/role) to edit Event type
 				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0551DefineEvent editEventType = pointHBWhereWhenHandler.activateDefineEvent(pointOpenProject, selectedEvent, selectedRole);					
+				HG0551DefineEvent editEventType = pointHBWhereWhenHandler.activateDefineEvent(pointOpenProject, selectedEvent, selectedRole);
 				editEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
-				Point xymainPane = lbl_EventGrps.getLocationOnScreen();                
-				editEventType.setLocation(xymainPane.x, xymainPane.y); 
+				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
+				editEventType.setLocation(xymainPane.x, xymainPane.y);
 				dispose();
 				editEventType.setVisible(true);
 			}
 		});
-		
+
 		// Listener for Copy button
 		btn_Copy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				
+
 				// NOTE05 need code here to get new name, copy, then load HG0551DefineEvent to Edit it (passing new name)
-				
+
 			}
 		});
-		
+
 		// Listener for Delete button
 		btn_Delete.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				
+
 				// NOTE05 need code here to delete the Event type, but ONLY IF NOT IN USE IN PROJECT!
-				
-				dispose();				   
+
+				dispose();
 			}
 		});
-		
+
 		// Listener for Disable (or Enable) button
 		btn_Disable.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				
+
 				// NOTE05 need code here to reverse T460 IS_ACTIVE true/false setting
-				
-				dispose();				   
+
+				dispose();
 			}
 		});
-		
-		// Listener for an entry in TextField textToFind (Event Search)	
+
+		// Listener for an entry in TextField textToFind (Event Search)
 		textToFind.getDocument().addDocumentListener(new DocumentListener() {
 	          @Override
 	          public void insertUpdate(DocumentEvent e) {
@@ -962,26 +963,26 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	      	      int textIndex = eventList.getNextMatch(text, 0, javax.swing.text.Position.Bias.Forward);
 	    	      if (textIndex < 0) return;			// return if index has no matches
 	    	      eventList.ensureIndexIsVisible(textIndex);		// make sure selected item visible in scrollpane
-	    	      eventList.setSelectedIndex(textIndex);	 		// highlight it         
-	          }          
+	    	      eventList.setSelectedIndex(textIndex);	 		// highlight it
+	          }
 		});
-		
+
 		// Listener for Select button - pass the selected Event & Role and exit
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent arg0) {	
+			public void actionPerformed(ActionEvent arg0) {
 				HG0547EditEvent editEventScreen = null;
 				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 				long eventPersonPID = null_RPID;
-				if (partnerEventDetected) 
+				if (partnerEventDetected)
 				// Add partner event to existing partner relation
 					editEventScreen = pointHBWhereWhenHandler.activateAddPartnerEvent(pointOpenProject,
 											selectedEventType, selectedRoleType, eventPersonPID, selectedPartnerTableRow);
-				else 
+				else
 				// Add any other event
-					editEventScreen = pointHBWhereWhenHandler.activateEditEvent(pointOpenProject, 
+					editEventScreen = pointHBWhereWhenHandler.activateEditEvent(pointOpenProject,
 											selectedEventType, selectedRoleType, eventPersonPID, -1);
-				
+
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = secondPanel.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
@@ -995,18 +996,18 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent"); //$NON-NLS-1$
-				dispose();	
+				dispose();
 			}
 		});
-		
+
 	}	// End HG0552ManageEvent constructor
 
 /**
- * resetEventList(int eventGroup)- reload Event List    
+ * resetEventList(int eventGroup)- reload Event List
  * @param eventGroup
  * @throws HBException
  */
-    public void resetEventList(int eventGroup) throws HBException {	
+    public void resetEventList(int eventGroup) throws HBException {
    	// Clean out existing event/role lists first
     	clearBothLists();
     // then reload event list
@@ -1014,16 +1015,16 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     	String[] newEventList = pointHBWhereWhenHandler.getEventTypeList(eventGroup);
     	for (int i = 0; i < newEventList.length; i++)  eventListmodel.addElement(newEventList[i]);
     }
-    
+
 /**
- * resetRoleList(int selectedEvent) - reload Role List    
+ * resetRoleList(int selectedEvent) - reload Role List
  * @param selectedEvent
  * @throws HBException
  */
-    public void resetRoleList(int selectedEvent) throws HBException {	
+    public void resetRoleList(int selectedEvent) throws HBException {
     	roleListmodel = (DefaultListModel<String>) roleList.getModel();
     	String[] newRoleList = pointHBWhereWhenHandler.getEventRoleList(selectedEvent, ""); //$NON-NLS-1$
-    	
+
     // Turn off RoleListener and clear role list
     	roleListenOn = false;
     	if(roleListmodel.size() > 0) {
@@ -1035,18 +1036,18 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     // reload role list
     	if (newRoleList.length > 0)
     		for (int i = 0; i < newRoleList.length; i++)  roleListmodel.addElement(newRoleList[i]);
-    	else JOptionPane.showMessageDialog(null,
-    			HG0552Msgs.Text_63,	// No Event Roles found. Are you using the correct \n HRE Data Presentation Language setting? 
-    			HG0552Msgs.Text_64, // Event Roles 
+    	else JOptionPane.showMessageDialog(contents,
+    			HG0552Msgs.Text_63,	// No Event Roles found. Are you using the correct \n HRE Data Presentation Language setting?
+    			HG0552Msgs.Text_64, // Event Roles
     			JOptionPane.ERROR_MESSAGE);
     // turn on rolelistener again
     	roleListenOn = true;
     }
-	
+
 /**
- * clearBothLists() - clear Event and Role Lists   
+ * clearBothLists() - clear Event and Role Lists
  */
-    public void clearBothLists() {	
+    public void clearBothLists() {
    	// Turn off RoleListener and clear role list
       	roleListenOn = false;
         if (roleListmodel != null && roleListmodel.size() > 0) {
@@ -1056,7 +1057,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
             roleList.removeAll();
         }
         roleListenOn = true;
-     // Clean out existing event list 
+     // Clean out existing event list
         if (eventListmodel != null && eventListmodel.size() > 0) {
         	selectedEvent = "";		//$NON-NLS-1$
             eventListmodel.removeAllElements();
@@ -1069,8 +1070,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
             btn_Delete.setEnabled(false);
             btn_Copy.setEnabled(false);
             btn_Disable.setEnabled(false);
-        } 
-    }    	
+        }
+    }
 
 /**
  * private boolean testForPartnerEvent(int selectedEventType)
@@ -1078,9 +1079,9 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  * @return
  */
     private boolean testForPartnerEvent(int selectedEventType) throws HBException {
-		for (int i = 0; i < marrTypes.length; i++)	
+		for (int i = 0; i < marrTypes.length; i++)
 			if (marrTypes[i] == selectedEventType) return true;
     	return false;
     }
-		
+
 }  // End of HG0552ManageEvent

@@ -22,6 +22,8 @@ package hre.gui;
  * 			  2024-10-05 Removed console output (N Tolleshaug)
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
+ * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
+ * 			  2024-12-08 Updated location name TAB handling (N. Tolleshaug, D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
@@ -83,7 +85,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
@@ -108,6 +109,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	public HBWhereWhenHandler pointWhereWhenHandler;
 	public HBPersonHandler pointPersonHandler;
 	HG0547EditEvent pointEditEvent = this;
+	long null_RPID  = 1999999999999999L;
 
 	String eventName, roleName = " not set", eventPersonName;
 
@@ -131,9 +133,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	DocumentListener sortTextChange;	// accessed by update
 
     JButton btn_Save; 					// added for update
+    boolean notAddAssoc = true;
     JTextArea memoText; 				// accessed by update
 	DocumentListener memoTextChange;	// accessed by update
     boolean memoEdited = false; 		// Signals memo is edited
+    boolean changedLocationNameStyle = false;   // Signals nane style changed
+    int selectedStyleIndex;
 
     JLabel actualEvent;
     JTable tableLocation;
@@ -146,12 +151,14 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     boolean changeEventType = false;
 
     Object[][] tableLocationData;
+    String [] nameData;
     Object[][] tableEventCiteData;
     public Object[][] tableAssocsData;
     String[] tableAssocsHeader;
     String[] tableCiteHeader;
    	Object[][] roleData;	// Contains Role Name, Role Number, Role Seq.
-    int locationElementUpdate = 0;
+    boolean locationElementUpdate = false;
+    public long locationNamePID = null_RPID;
 
     public int selectedEventNum;
     public int selectedRoleNum;
@@ -166,6 +173,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	Object[] startHREDate;
 	boolean startDateOK = false;
 	long startHDatePID;
+	long newEventPID;
 
 	HG0590EditDate sortEndDate;
 	long sortMainYear = 0L;
@@ -192,9 +200,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  */
 	public HG0547EditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber, long eventPID) throws HBException {
 		if (HGlobal.DEBUG)
-		 {
 			System.out.println(" EditEvent: " + eventNumber + "/" + roleNumber);	//$NON-NLS-1$ //$NON-NLS-2$
-		}
+
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
 		this.eventRoleNum = roleNumber;
@@ -266,6 +273,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    	}
 	     }
 	    eventName = pointWhereWhenHandler.getEventName(eventNumber);
+
 	    if (this instanceof HG0547PartnerEvent) {
 	    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup)
 				roleName = pointWhereWhenHandler.getPartnerNames();
@@ -276,15 +284,13 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    }
 
 	    try {
-			//eventName = pointWhereWhenHandler.getEventName(eventNumber);
-			//roleName = pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber);
 			eventPersonName = pointPersonHandler.getManagedPersonName();
 			roleData = pointWhereWhenHandler.getEventRoleData(eventNumber, "");		//$NON-NLS-1$
 		} catch (HBException hbe) {
 			System.out.println(" HG0547EditEvent find eventname/rolename error"); 	//$NON-NLS-1$
 			hbe.printStackTrace();
 		}
-	    setTitle(HG0547Msgs.Text_0 + eventName + HG0547Msgs.Text_1 + eventPersonName);	//   Event for
+	    setTitle(HG0547Msgs.Text_0 + eventName + HG0547Msgs.Text_1 + eventPersonName);	// Event for
 
 	    // load ALL current Assocs and their current roles
 		tableAssocsData = pointWhereWhenHandler.getAssociateTabl();
@@ -898,6 +904,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				try {
 					pointWhereWhenHandler.deleteAssocPerson(rowInTable);
 					btn_Save.setEnabled(true);
+			// Reset Edit Event
+					pointWhereWhenHandler.resetUpdateEvent(pointOpenProject);
 				} catch (HBException hbe) {
 					System.out.println(" Delete assoc error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
@@ -910,6 +918,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
 				try {
+					notAddAssoc = false;
+					btn_Save.doClick(); // Save before adding associates
+
 					setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				// Activate  HG0507SelectPerson code with event number, to load selected person to Assoc table
 					HG0507SelectPerson personSelectScreen = pointPersonHandler.activateAssociateAdd(pointOpenProject, eventNumber);
@@ -970,7 +981,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				eventTypeScreen.setLocation(xyShow.x, xyShow.y);
 				eventTypeScreen.setVisible(true);
 				// When exit HG0547, do Save so that incorrect roles not shown for other Associates
-				btn_Save.doClick();
+				btn_Save.doClick(); // update 25.11.2024
 			}
 		});
 
@@ -1051,26 +1062,29 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		if (!(this instanceof HG0547UpdateEvent)) {
 			eventLocationListener = new TableModelListener() {
 				@Override
-				public void tableChanged(TableModelEvent e) {
-				// Process location data
-					if (!(tableLocation.getSelectedRow() == -1)) {
-						TableModel model = (TableModel) e.getSource();
-						String nameElementData = (String) model.getValueAt(tableLocation.getSelectedRow(), 1);
-						if (HGlobal.DEBUG) {
-							String element = ((String) model.getValueAt(tableLocation.getSelectedRow(), 0)).trim();
-							System.out.println("HG0547EditEvent - location table changed: " + tableLocation.getSelectedRow() 	//$NON-NLS-1$
-												+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-						}
-						pointWhereWhenHandler.addToLocationChangeList( tableLocation.getSelectedRow(), nameElementData);
-						locationElementUpdate++;
-						btn_Save.setEnabled(true);
-					}
-				}
+	           public void tableChanged(TableModelEvent tme) {
+	                if (tme.getType() == TableModelEvent.UPDATE) {
+	                    int row = tme.getFirstRow();
+	                    if (row > -1) {
+		                    String nameElementData = (String) tableLocation.getValueAt(row, 1);
+							if (HGlobal.DEBUG) {
+									String element = (String) tableLocation.getValueAt(row, 0);
+									System.out.println(" HG0547EditEvent - location table changed: " + row //$NON-NLS-1$
+											 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
+							}
+							if (nameElementData != null) {
+								pointWhereWhenHandler.addToLocationChangeList(tableLocation.getSelectedRow(), nameElementData);
+								locationElementUpdate = true;
+								btn_Save.setEnabled(true);
+							}
+	                    }
+	                }
+	            }
 			};
 		}
 		tableLocation.getModel().addTableModelListener(eventLocationListener);
 
-		// On selection of a locn style update the Location table
+	// On selection of a locn style update the Location table
 		if (!(this instanceof HG0547UpdateEvent)) {
 			locationNameStyles.addActionListener (new ActionListener() {
 				@Override
@@ -1082,6 +1096,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						tableModel.setDataVector(tableLocationData, tableBirthHeader);
 					// reset table rows
 						tableModel.setRowCount(tableLocationData.length);
+						changedLocationNameStyle = true;
+						btn_Save.setEnabled(true);
 					// reset screen size
 						pack();
 					}
@@ -1089,7 +1105,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			});
 		}
 
-		// Listener for Save button
+	// Listener for Save button
 		if (!(this instanceof HG0547PartnerEvent)) {
 			if (!(this instanceof HG0547UpdateEvent)) {
 				btn_Save.addActionListener(new ActionListener() {
@@ -1102,28 +1118,41 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 							System.out.println(" Edit event save button: " + selectedEventNum + "/" + selectedRoleNum); //$NON-NLS-1$ //$NON-NLS-2$
 						try {
 						// Check if data updated
-							if (locationElementUpdate > 0 || startDateOK || sortDateOK || memoEdited) {
-								//if update memo text
+							if (locationElementUpdate || startDateOK || sortDateOK || memoEdited || changedLocationNameStyle) {
+
+							// Create new event
+								newEventPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
+
+							//if update memo text
 								if (memoEdited)
 									pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
-								// Create new event
-								long newEventPID =
-										pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
-								// Create a new set of HDATE records
+
+							// Create a new set of HDATE records
 								if (startDateOK)
 									pointWhereWhenHandler.createEventDates(false, newEventPID, "START_HDATE_RPID", startHREDate);  //$NON-NLS-1$
 
 								if (sortDateOK)
 									pointWhereWhenHandler.createEventDates(false, newEventPID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
-							}
-							else System.out.println(" HG0547EditEvent - No edited data for event!");	//$NON-NLS-1$
 
-					// Reload Person windows
-							pointOpenProject.reloadT401Persons();
-							pointOpenProject.reloadT402Names();
-							pointOpenProject.getPersonHandler().resetPersonSelect();
-							pointOpenProject.getPersonHandler().resetPersonManager();
-							pointEditEvent.dispose();
+							// Update location name style
+								if (changedLocationNameStyle && locationElementUpdate) {
+								//if (changedLocationNameStyle) {
+									selectedStyleIndex = locationNameStyles.getSelectedIndex();
+									locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
+									//System.out.println(" Edit event - location name PID: " + locationNamePID);
+									pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
+								}
+
+							} else System.out.println(" HG0547EditEvent - No edited data for event!"); //$NON-NLS-1$
+
+							if (notAddAssoc) {
+						// Reload Person windows
+								pointOpenProject.reloadT401Persons();
+								pointOpenProject.reloadT402Names();
+								pointOpenProject.getPersonHandler().resetPersonSelect();
+								pointOpenProject.getPersonHandler().resetPersonManager();
+								pointEditEvent.dispose();
+							}
 
 						} catch (HBException hbe) {
 							System.out.println("HG0547EditEvent - Failed to edit event: " + hbe.getMessage());		//$NON-NLS-1$
@@ -1137,7 +1166,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			}
 		}
 
-		// Listener for Close button
+	// Listener for Close button
 		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -1156,13 +1185,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 								reminderDisplay.dispose();
 							dispose();
 						}
-				}
-			else {
-				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("Action: exiting HG0547EditEvent"); //$NON-NLS-1$
-				if (reminderDisplay != null)
-					reminderDisplay.dispose();
-				dispose();
+				} else {
+					if (HGlobal.writeLogs)
+						HB0711Logging.logWrite("Action: exiting HG0547EditEvent"); //$NON-NLS-1$
+					if (reminderDisplay != null)
+						reminderDisplay.dispose();
+					dispose();
 				}
 			}
 		});

@@ -19,7 +19,8 @@ package hre.gui;
  * 			  2023-09-03 Option message create project removed for DEBUG = false (N.Tolleshaug)
  * 			  2023-09-03 Implemented monitor flags and redirect console output (N.Tolleshaug)
  * 			  2023-09-08 Changed to DEBUG flag for console output (N.Tolleshaug)
-* 		 	  2023-09-28 Implement NLS of new debug area (D Ferguson)
+ * 		 	  2023-09-28 Implement NLS of new debug area (D Ferguson)
+ * v0.03.0031 2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ***************************************************************************************************/
 
 import java.awt.Color;
@@ -63,7 +64,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * TMGProject Import
  * @author R Thompson originally
- * @version v0.03.0030
+ * @version v0.03.0031
  * @since 2019-07-21
  */
 
@@ -161,23 +162,23 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 		contents.add(switchPanel, "cell 0 4 2, growx, hidemode 3"); 	//$NON-NLS-1$
 		switchPanel.setLayout(new MigLayout("insets 10", "[]20[]20[]", "[]10[]10[]10[]"));		//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		trace = new JCheckBox(HG0417Msgs.Text_71);		// Console to file		
+		trace = new JCheckBox(HG0417Msgs.Text_71);		// Console to file
 		trace.setToolTipText(HG0417Msgs.Text_72);		// To write Java stack trace to an external file
 		switchPanel.add(trace, "cell 0 0"); 	//$NON-NLS-1$
 		tmgTrace = new JCheckBox(HG0417Msgs.Text_73);	// TMG Monitor
 		tmgTrace.setToolTipText(HG0417Msgs.Text_74);	// To write TMG table load messages
 		switchPanel.add(tmgTrace, "cell 1 0"); 	//$NON-NLS-1$
-		hreTrace = new JCheckBox(HG0417Msgs.Text_75);	// HRE Monitor	
+		hreTrace = new JCheckBox(HG0417Msgs.Text_75);	// HRE Monitor
 		hreTrace.setToolTipText(HG0417Msgs.Text_76);	// To write HRE table load and index messages
 		switchPanel.add(hreTrace, "cell 2 0"); 	//$NON-NLS-1$
 
 		flagCheck = new JCheckBox(HG0417Msgs.Text_77);	// 	Flag Check
 		flagCheck.setToolTipText(HG0417Msgs.Text_78);	// To write Flag import processing and errors
 		switchPanel.add(flagCheck, "cell 0 1"); 	//$NON-NLS-1$
-		exhCheck = new JCheckBox(HG0417Msgs.Text_79);	// Exhibit Check	
+		exhCheck = new JCheckBox(HG0417Msgs.Text_79);	// Exhibit Check
 		exhCheck.setToolTipText(HG0417Msgs.Text_80);	// To write statistics from exhibit processing
 		switchPanel.add(exhCheck, "cell 1 1"); 	//$NON-NLS-1$
-		debug = new JCheckBox(HG0417Msgs.Text_81);		// Import Debug		
+		debug = new JCheckBox(HG0417Msgs.Text_81);		// Import Debug
 		debug.setToolTipText(HG0417Msgs.Text_82);  		// To write Debug data to System.out.println
 		switchPanel.add(debug, "cell 2 1"); 	//$NON-NLS-1$
 
@@ -365,7 +366,7 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 		if (errorCode == 0) {
 			errorMess = HG0417Msgs.Text_62 + newProjectName + HG0417Msgs.Text_63;	// Project ...... created for TMG import
 			if (HGlobal.DEBUG)
-				JOptionPane.showMessageDialog(null, errorMess  + projectName, errorTitle,
+				JOptionPane.showMessageDialog(contents, errorMess  + projectName, errorTitle,
 											 JOptionPane.INFORMATION_MESSAGE);
 			else System.out.println(" INFORMATION: " + errorTitle + " - " + errorMess);		//$NON-NLS-1$ //$NON-NLS-2$
 			if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: " + errorTitle + " - " + errorMess);   //$NON-NLS-1$ //$NON-NLS-2$
@@ -374,7 +375,7 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 			if (errorCode == 1)  errorMess = HG0417Msgs.Text_64 + projectName;	// Project name in use
 			if (errorCode == 2)  errorMess = HG0417Msgs.Text_65 + projectName;	// Failed, not able to set new project name:
 			if (errorCode == 3)  errorMess = HG0417Msgs.Text_66 + projectName;	// New project creation failed:
-			JOptionPane.showMessageDialog(null, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
 			if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: " + errorMess); //$NON-NLS-1$
 		}
 	}	// End userInfoOpenProject

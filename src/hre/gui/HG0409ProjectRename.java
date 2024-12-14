@@ -22,6 +22,7 @@ package hre.gui;
  * 			  2021-09-27 Removed code for server login; disallowed remote rename (D Ferguson)
  * v0.01.0027 2022-02-26 Modified to use the NLS version of HGlobal (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
+ * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -222,7 +223,7 @@ public class HG0409ProjectRename extends HG0450SuperDialog {
 					try {
 						summaryData = pointProHand.getSummaryUserProjectAction(selectedProjectName);
 					} catch (HBException hbe) {
-						JOptionPane.showMessageDialog(null, HG0409Msgs.Text_36
+						JOptionPane.showMessageDialog(contents, HG0409Msgs.Text_36
 								+  hbe.getMessage(), HG0409Msgs.Text_37,JOptionPane.ERROR_MESSAGE);
 					}
 				}
@@ -363,13 +364,13 @@ public class HG0409ProjectRename extends HG0450SuperDialog {
 		String errorTitle = HG0409Msgs.Text_55;
 		if (errorCode == 0) {
 			errorMessage = HG0409Msgs.Text_56;
-			JOptionPane.showMessageDialog(null, errorMessage + projectName, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage + projectName, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode > 0) {
 			if (errorCode == 1)  errorMessage = HG0409Msgs.Text_57 + projectName + HG0409Msgs.Text_58;
 			if (errorCode == 2)  errorMessage = HG0409Msgs.Text_59 + projectName + HG0409Msgs.Text_60;
 			if (errorCode == 3)  errorMessage = HG0409Msgs.Text_61 +  projectName + HG0409Msgs.Text_62;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoRenameProject
 

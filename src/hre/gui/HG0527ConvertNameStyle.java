@@ -6,6 +6,7 @@ package hre.gui;
 *			 2023-04-18 Modifed initial element match processing (D Ferguson)
 * 			 2023-04-19 All NLS entries moved to HG0524Msgs (D Ferguson)
 * v0.03.0031 2024-10-01 Clean whitespace (D Ferguson)
+* 			 2024-12-05 Set JOptionPane dialog so is always inside this (D Ferguson)
 ***********************************************************************************/
 
 import java.awt.Component;
@@ -81,10 +82,6 @@ public class HG0527ConvertNameStyle extends HG0524ManageNameStyles {
 		// Setup references for Help. Although has no Help button, we must handle F1
 		windowID = screenID;
 		helpName = "convertnamestyle";	//$NON-NLS-1$
-
-		// Define user dialog so always on top
-	    JDialog dialog = new JDialog();
-	    dialog.setAlwaysOnTop(true);
 
 		// Setup main panel
 		contents = new JPanel();
@@ -179,6 +176,13 @@ public class HG0527ConvertNameStyle extends HG0524ManageNameStyles {
     	pack();
     	setVisible(true);
 
+		// Define a user dialog so always be on top and set a location (nothing
+		// will show on screen yet as no content is defined until JOptionPane's start)
+	    JDialog dialog = new JDialog();
+	    dialog.setAlwaysOnTop(true);
+	    dialog.setLocationRelativeTo(this.contents);
+	    dialog.setVisible(true);
+
 /**
  * INITIALISE PHASE1: load style data to screen in columns 0, 1, 2
  */
@@ -260,6 +264,7 @@ public class HG0527ConvertNameStyle extends HG0524ManageNameStyles {
 							null,
 							options1,
 							options1[0]);
+
 		    		// if 1st option, let user choose from All list
 		    		if (answer == JOptionPane.YES_OPTION) {
 		    			case1 = true;

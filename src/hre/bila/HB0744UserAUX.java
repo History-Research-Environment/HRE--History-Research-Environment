@@ -36,6 +36,8 @@ package hre.bila;
  * 			  2022-03-21 add support of border cell colors (D Ferguson)
  * v0.03.0031 2023-12-17 add Lifespan setting (D Ferguson)
  *			  2024-10-12 add save/restore of 'PS reload' User option (D Ferguson)
+ *			  2024-11-15 add save/restore of 'prompt Marr Name' User option (D Ferguson)
+ *			  2024-11-24 improve log messages written by this code (D Ferguson)
  ************************************************************************************************************
  * Structure of HB0744UserAUX consists of 3 methods, namely:
  * 	(i)  initUserAUXfile: if the /username/HRE/ folder doesn't exist, this
@@ -95,7 +97,11 @@ public class HB0744UserAUX {
 
 		// Now check if the HRE directory exists in the User's home directory
 		File folder = new File(userDir);
-		if (!folder.exists()) { folder.mkdir(); }		// if the folder does not exist, then create it
+		if (!folder.exists()) {
+			folder.mkdir(); 		// if the folder does not exist, then create it
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("Action: HB0744UserAUX created HRE directory");
+			}
 
 		// Now check if UserAUX file exists (as might not be present even if folder existed)
 		File auxFile = new File(auxName);
@@ -205,6 +211,11 @@ public class HB0744UserAUX {
 		         		if (HGlobal.reloadPS) {reloadPS.appendChild(doc.createTextNode("true"));}
 		         			else {reloadPS.appendChild(doc.createTextNode("false"));}
 		         		preferences.appendChild(reloadPS);
+		         		// enable prompt Married Name setting
+		         		Element promptMarrName = doc.createElement("promptMarrName");
+		         		if (HGlobal.promptMarrName) {promptMarrName.appendChild(doc.createTextNode("true"));}
+		         			else {promptMarrName.appendChild(doc.createTextNode("false"));}
+		         		preferences.appendChild(promptMarrName);
 		         		// write logs setting
 		         		Element writelogs = doc.createElement("writelogs");
 		         		if (HGlobal.writeLogs) {writelogs.appendChild(doc.createTextNode("true"));}
@@ -403,18 +414,18 @@ public class HB0744UserAUX {
 	         StreamResult result = new StreamResult(new File(auxName));
 	         transformer.transform(source, result);
 	         if (HGlobal.writeLogs)
-	        	 HB0711Logging.logWrite("Action: writing UserAux file Build " + HGlobal.buildNo);
+	        	 HB0711Logging.logWrite("Action: HG0744UserAUX writing UserAux file Build " + HGlobal.buildNo);
 
          } catch (Exception ex) {
         	 if (HGlobal.writeLogs)
-        			HB0711Logging.logWrite("Error: User Auxiliary file Build " + HGlobal.buildNo + " write error in HB0744 "+ex.getMessage());
+        			HB0711Logging.logWrite("Error: User Auxiliary file Build " + HGlobal.buildNo + " write error in HB0744UserAUX "+ex.getMessage());
 			 if (HGlobal.DEBUG)
-				 System.out.println("ERROR: AUX file write: \n" + ex.toString());
+				 System.out.println("ERROR: HG0744UserAUX file write: \n" + ex.toString());
         	 HGlobalCode.loguserAuxMessage(1,ex.getMessage());
 			 ex.printStackTrace();
          }
-	         if (HGlobal.writeLogs)
-	        	 HB0711Logging.logWrite("Action: exiting HB0744 UserAux");
+	     if (HGlobal.writeLogs)
+	        	 HB0711Logging.logWrite("Action: exiting HB0744UserAUX after Write file");
 	}	// End writeUserAUXfile
 
 
@@ -436,17 +447,17 @@ public class HB0744UserAUX {
 	         	HGlobalCode.loguserAuxMessage(2,"");
 	         	inputFile.delete();				// delete the invalid file
 	         	if (HGlobal.writeLogs)
-		         		HB0711Logging.logWrite("Action: deleted invalid UserAUX file in HB0744; exited HRE");
+		         		HB0711Logging.logWrite("Action: HG0744UserAUX deleted invalid UserAUX file; exited HRE");
 	         	System.exit(0);					// kill HRE
 	         }
 
 	        // Check this userAUX file matches this User
 	        if (doc.getElementsByTagName("userid").item(0).getTextContent().equals(HGlobal.userID)) {   }
 	         	else {
-	         		HGlobalCode.loguserAuxMessage(3,"");
+	         		HGlobalCode.loguserAuxMessage(3, "");
 	         		inputFile.delete();				// delete the invalid file
 		         	if (HGlobal.writeLogs)
-		         		HB0711Logging.logWrite("Action: deleted invalid UserID in UserAUX file in HB0744; exited HRE");
+		         		HB0711Logging.logWrite("Action: HG0744UserAUX deleted invalid UserID in UserAUX file; exited HRE");
 		         	System.exit(0);					// kill HRE
 	         	}
 
@@ -497,6 +508,12 @@ public class HB0744UserAUX {
 		        	HGlobal.reloadPS=true;
 		        	}
 	         		else {HGlobal.reloadPS=false;}
+	        }
+	        if (doc.getElementsByTagName("promptMarrName").getLength() > 0) {
+		        if (doc.getElementsByTagName("promptMarrName").item(0).getTextContent().equals("true")) {
+		        	HGlobal.promptMarrName=true;
+		        	}
+	         		else {HGlobal.promptMarrName=false;}
 	        }
 	        if (doc.getElementsByTagName("writelogs").getLength() > 0) {
 		        if (doc.getElementsByTagName("writelogs").item(0).getTextContent().equals("true")) {
@@ -688,15 +705,14 @@ public class HB0744UserAUX {
 
 		} catch (Exception ex) {
 			 if (HGlobal.writeLogs)
-				 HB0711Logging.logWrite("Error: User AUX file read error: " + ex.toString());
+				 HB0711Logging.logWrite("Error: HG0744UserAUX User AUX file read error: " + ex.toString());
 			 if (HGlobal.DEBUG)
-				 System.out.println("ERROR:  AUX file read: \n" + ex.toString());
+				 System.out.println("ERROR:  HG0744UserAUX file read: \n" + ex.toString());
 			 HGlobalCode.loguserAuxMessage(4,ex.getMessage());
-
 			 ex.printStackTrace();
 	      }
-			if (HGlobal.writeLogs)
-				HB0711Logging.logWrite("Action: exiting HB0744 UserAux");
+		if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("Action: exiting HB0744UserAUX after file read");
 	}   // End of readUserAUXfile
 
 }	// End of HB0744UserAUX

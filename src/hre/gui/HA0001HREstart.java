@@ -30,6 +30,7 @@ package hre.gui;
  * v0.03.0030 2023-09-04 Implement Dutch NLS support (D Ferguson)
  * 			  2023-09-04 Added new Log messsage with Build no. at startup (D Ferguson)
  * 			  2023-09-28 Added all known GUI to the setGUILanguage list (D Ferguson)
+ * v0.03.0031 2024-11-23 Stop 1st write to logfile being before HRE directory created (D Ferguson)
  **********************************************************************************************
  * NOTE - Special setting for user NTo for seed/sample files and help folders
  *********************************************************************************************/
@@ -239,8 +240,8 @@ public class HA0001HREstart {
  *       write a new UserAUX file (if it doesn't exist);
  *    OR, if it exists, read UserAUX file to populate HGlobal
  */
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: HRE Build " + HGlobal.buildNo + " startup - initialising UserAUX");
 		HB0744UserAUX.initUserAUXfile();
+		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: HRE Build " + HGlobal.buildNo + " startup - initialising UserAUX");
 	    if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: loaded UserAUX settings");
 		// Now that User settings are loaded, if the User's GUI language setting is different from
 		// the language we guessed from the System Locale, then reset the GUIlanguage

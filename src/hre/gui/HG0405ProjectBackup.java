@@ -25,6 +25,7 @@ package hre.gui;
  * v0.01.0027 2022-02-26 Modified to use the NLS version of HGlobal (D Ferguson)
  * 			  2022-06-16 Add progressbar (indeterminate) during backup action (D Ferguson)
  * v0.03.0031 2023-11-17 Adjust error action if file open b4 backup - allow Cancel (D Ferguson)
+ * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  *********************************************************************************************************/
 
 import java.awt.Component;
@@ -453,7 +454,7 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 				try {
 					summaryData = pointProHand.getSummaryUserProjectAction(selectedProjectName);
 				} catch (HBException hbe) {
-					JOptionPane.showMessageDialog(null, "Backup project summary error\n"  //$NON-NLS-1$
+					JOptionPane.showMessageDialog(contents, "Backup project summary error\n"  //$NON-NLS-1$
 							+  hbe.getMessage(), "Project Backup",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
 				}
 				if (summaryData != null) {
@@ -526,7 +527,7 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 						String msg =  HG0405Msgs.Text_117 	// Cannot backup an open project (newline) Project '
 										+ selectedProjectName
 										+ HG0405Msgs.Text_118;	// ' will be closed
-						int reply = JOptionPane.showConfirmDialog(null, msg, HG0405Msgs.Text_111,
+						int reply = JOptionPane.showConfirmDialog(contents, msg, HG0405Msgs.Text_111,
 																	JOptionPane.OK_CANCEL_OPTION);
 						// If user hits Cancel or 'X' on JoptionPane then stop; else must be OK, so proceed
 						if (reply == JOptionPane.CANCEL_OPTION || reply == JOptionPane.CLOSED_OPTION) return;
@@ -640,14 +641,14 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 								+ backupFolderName
 								+ HG0405Msgs.Text_107 // To file:
 								+ zipFileCreate;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode == 1) {
 			errorMessage = HG0405Msgs.Text_108 			// External folder backup failed
 								+ backupFolderName
 								+ HG0405Msgs.Text_109 	// To file:
 								+ zipFileCreate;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoBackupExternal
 
@@ -659,7 +660,7 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 								+ selectedProjectName
 								+ HG0405Msgs.Text_113 	// To file
 								+ fileBackupPath;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 			HG0401HREMain.mainFrame.setStatusAction(HG0405Msgs.Text_114 + selectedProjectName + HG0405Msgs.Text_115);
 			if (HGlobal.numOpenProjects == 0)
 				HG0401HREMain.mainFrame.setStatusProject(HG0405Msgs.Text_116);	// none
@@ -671,7 +672,7 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 		if (errorCode == 2) {
 			errorMessage = HG0405Msgs.Text_119 	// Backup failed for project
 											+ selectedProjectName;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
 			}
 
 	}	// End userInfoBackupProject

@@ -7,6 +7,7 @@ package hre.gui;
  *			  2023-08-05 Set new validity checks on flag values (D Ferguson)
  *			  2023-10-11 Convert to NLS (D Ferguson)
  * v0.03.0031 2024-10-01 Clean whitespaces (D Ferguson)
+ *			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  *******************************************************************************/
 
 import java.awt.Font;
@@ -210,8 +211,8 @@ public class HG0513FlagEditor extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					btn_Save.setEnabled(false);
 					if(HGlobal.DEBUG) System.out.println("Reset Flag Error: " + hbe.getMessage());	//$NON-NLS-1$
-       				JOptionPane.showMessageDialog(null,	HG0513Msgs.Text_15 + hbe.getMessage(),	// Error:
-       										HG0513Msgs.Text_14, JOptionPane.ERROR_MESSAGE);		// Flag Editor
+       				JOptionPane.showMessageDialog(contents, HG0513Msgs.Text_15 + hbe.getMessage(),	// Error:
+       											HG0513Msgs.Text_14, JOptionPane.ERROR_MESSAGE);		// Flag Editor
 				}
 			}
 		});

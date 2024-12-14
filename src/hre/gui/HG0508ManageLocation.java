@@ -14,6 +14,9 @@ package hre.gui;
  * v0.03.0031 2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
+ * 			  2024-11-17 Updated location style hendling (N. Tolleshaug)
+ * 			  2024-12-09 Updated location name TAB handling (D Ferguson)
+ * 			  2024-12-09 Location name change list update line 680 (N. Tolleshaug)
  ********************************************************************************
  * NB: cannot execute 'externalize strings' check without temporarily commenting
  *     out the statement: txt_Text = new JTextArea("\""+listText+" ...\"");
@@ -70,7 +73,6 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
@@ -152,7 +154,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	public HG0508ManageLocation(HBWhereWhenHandler pointWhereWhenHandler
 							, HBProjectOpenData pointOpenProject
 							, String screenID
-							, long locationNamePID) throws HBException {
+							, long locationTablePID) throws HBException {
 		this.pointWhereWhenHandler = pointWhereWhenHandler;
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
@@ -166,7 +168,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
     	this.setResizable(true);
     	int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
     	String selectString =
-    			pointWhereWhenHandler.setSelectSQL("*", pointWhereWhenHandler.locationNameTable,"PID = " + locationNamePID); //$NON-NLS-1$ //$NON-NLS-2$
+    			pointWhereWhenHandler.setSelectSQL("*", pointWhereWhenHandler.locationNameTable,"PID = " + locationTablePID); //$NON-NLS-1$ //$NON-NLS-2$
     	ResultSet personNameTable = pointWhereWhenHandler.requestTableData(selectString, dataBaseIndex);
 		try {
 			personNameTable.first();
@@ -299,6 +301,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				new DefaultComboBoxModel<>(pointWhereWhenHandler.getAvailableStyles());
 
 		JComboBox<String> locnStyles = new JComboBox<>(comboNStyles);
+
 		// Load all styles available
 		locnStyles.setSelectedIndex(pointWhereWhenHandler.getDefaultIndex());
 		cardLocn.add(locnStyles, "cell 1 2");	//$NON-NLS-1$
@@ -343,23 +346,24 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			};
 		tableLocation.setFillsViewportHeight(true);
 
-		// Match the currently stored Style against the combo-box entries
-		// to be able to show the correct current values
+	// Match the currently stored Style against the combo-box entries
+	// to be able to show the correct current values
 		int ii = 0;
 		for (ii = 0; ii < locnStyles.getItemCount(); ii++) {
 			locnStyles.setSelectedIndex(ii);
 			if (nameData[0].trim().equals(locnStyles.getSelectedItem().toString().trim())) break;
 		}
-		// Make sure we haven't got to loop end with no match
+	// Make sure we haven't got to loop end with no match
 		if (ii == locnStyles.getItemCount()) ii = 0;
-		// Get data for the Location elements and values
+
+	// Get data for the Location elements and values
 		pointWhereWhenHandler.setNameStyleIndex(ii);
-		pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID);
+		pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
 		locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
 		tableLocnData = pointWhereWhenHandler.getLocationNameTable();
 
-		// Test the location data against the Name style used - if there are elements
-		// not showing due to the Name Style ignoring them, show the 'Show Hidden' button
+	// Test the location data against the Name style used - if there are elements
+	// not showing due to the Name Style ignoring them, show the 'Show Hidden' button
 		if (pointWhereWhenHandler.detectHiddenElements()) {
  						btn_Hidden.setVisible(true);
  						btn_Hidden.setEnabled(true);
@@ -394,7 +398,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		locnScrollPane.setFocusTraversalKeysEnabled(false);
 		locnScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		locnScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-		// Setup tabbing within table against all rows but only column 1
+	// Setup tabbing within table against all rows but only column 1
 		JTableCellTabbing.setTabMapping(tableLocation, 0, tableLocation.getRowCount(), 1, 1);
    // Add to panel
 		cardLocn.add(locnScrollPane, "cell 0 3 2, grow");	//$NON-NLS-1$
@@ -618,7 +622,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			// Save the new name style in DB
 				int selectIndex = locnStyles.getSelectedIndex();
 				try {
-					pointWhereWhenHandler.updateStoredNameStyle(selectIndex, locationNamePID);
+					pointWhereWhenHandler.updateStoredNameStyle(selectIndex, locationTablePID);
 				} catch (HBException hbe) {
 					System.out.println("HG0508ManageLocation Save stored name style error: " + hbe.getMessage());	//$NON-NLS-1$
 					if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR Stored Name Style : " + hbe.getMessage());	//$NON-NLS-1$
@@ -639,12 +643,12 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				try {
 					if (locationChanged) {
 					// Update name element table T403
-						pointWhereWhenHandler.updateLocationElementData(locationNamePID);
+						pointWhereWhenHandler.updateLocationElementData(locationTablePID);
 						locationChanged = false;
 					}
 				// Save Start/End Dates if they changed
-					if (startDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationNamePID, "START_HDATE_RPID", startHREDate); //$NON-NLS-1$
-					if (endDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationNamePID, "END_HDATE_RPID", endHREDate);		 //$NON-NLS-1$
+					if (startDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "START_HDATE_RPID", startHREDate); //$NON-NLS-1$
+					if (endDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "END_HDATE_RPID", endHREDate);		 //$NON-NLS-1$
 
 				} catch (HBException hbe) {
 					System.out.println(" HG0508ManageLocation: " + hbe.getMessage());	//$NON-NLS-1$
@@ -663,16 +667,23 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		// Listener for changes made in tableLocation
 		TableModelListener locnListener = new TableModelListener() {
 			@Override
-			public void tableChanged(TableModelEvent e) {
-				TableModel model = (TableModel)e.getSource();
-				String nameElementData = (String) model.getValueAt(tableLocation.getSelectedRow(), 1);
-				String element = (String) model.getValueAt(tableLocation.getSelectedRow(), 0);
-				if (HGlobal.DEBUG)
-						System.out.println("HG0508ManageLocation - table changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
-								 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
-				pointWhereWhenHandler.addToNameChangeList(tableLocation.getSelectedRow(), nameElementData);
-				locationChanged = true;
-				btn_SaveNameDate.setEnabled(true);
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
+                    int row = tme.getFirstRow();
+                    if (row > -1) {
+						String nameElementData =  (String) tableLocation.getValueAt(row, 1);
+						if (HGlobal.DEBUG) {
+								String element = (String) tableLocation.getValueAt(row, 0);
+								System.out.println("HG0508ManageLocation - table changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
+										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
+						}
+						if (nameElementData != null) {
+							pointWhereWhenHandler.addToNameChangeList(row, nameElementData);
+							locationChanged = true;
+							btn_SaveNameDate.setEnabled(true);
+						}
+                    }
+				}
 			}
 		};
 		tableLocation.getModel().addTableModelListener(locnListener);
@@ -740,7 +751,8 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 					// else if 2nd click, go back to previous item list
 					else {
 							showHiddenClicked = false;
-							pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID);
+							pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
+
 						}
 					locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
 					tableLocnData = pointWhereWhenHandler.getLocationNameTable();
@@ -766,7 +778,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				locnModel.setNumRows(0);	// clear table
 				try {
 					pointWhereWhenHandler.setNameStyleIndex(index);
-					pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID);
+					pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
 					locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
 					tableLocnData = pointWhereWhenHandler.getLocationNameTable();
 					locnModel.setDataVector(tableLocnData, locnHeaderData);

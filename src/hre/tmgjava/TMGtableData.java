@@ -1,7 +1,4 @@
 package hre.tmgjava;
-
-
-import java.util.ArrayList;
 /***************************************************************************************
  * Uses library com.linuxense.javadbf
  * Java library for reading and writing Xbase (dBase/DBF) files
@@ -22,6 +19,7 @@ import java.util.ArrayList;
  * The HashMap for access to PID_Number handles only the first occurrence of the ID_Numner
  * Introduced a Vector for multiple occurrence of PID's in the table
  *****************************************************************************************/
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Vector;
@@ -43,7 +41,7 @@ import hre.bila.HB0711Logging;
 public class TMGtableData {
 
 	private HashMap<Integer, DBFRow> PIDmap = new HashMap<>();
-	private HashMap<Integer,Vector<DBFRow>> multiPidMap = new HashMap<>();
+	private HashMap<Integer, Vector<DBFRow>> multiPidMap = new HashMap<>();
 	private ArrayList<DBFRow> PIDlist = new ArrayList<>();
 	private int nrOFRows,rowMultiRows;
 	DBFReader dbfReader;

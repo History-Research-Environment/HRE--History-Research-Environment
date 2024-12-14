@@ -251,8 +251,8 @@ public class HREdatabaseHandler {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database delete error!");
-			throw new HCException("Delete table SQL error: \n" + exc.getMessage());
+			if (TMGglobal.DEBUG) System.out.println("Database update error!");
+			throw new HCException("Update table SQL error: \n" + exc.getMessage());
 		}
 	}
 

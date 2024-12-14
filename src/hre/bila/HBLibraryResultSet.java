@@ -38,6 +38,7 @@ package hre.bila;
  * 			  2024-03-31 - Updated getEventTypeList for event group selection (N. Tolleshaug)
  * 			  2024-10-19 - getPersonBirthEventPID() returns null_RPID if no birth event(N. Tolleshaug)
  * 			  2024-10-21 - getEventGroup() checks only em-US for eventGroup
+ * 			  2024-11-11 - exstractPersonName - updated with "No name found"
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -59,7 +60,7 @@ import hre.dbla.HDException;
 import hre.gui.HGlobal;
 
 /**
- * ProcessRSet contains ResultSet processing methods
+ * HBLibraryResultSet contains ResultSet processing methods
  * @author Nils Tolleshaug
  * @version v0.03.0031
  * @since 2019-12-09
@@ -864,9 +865,8 @@ public class HBLibraryResultSet {
 					selectSQL = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.personTable,"PID = " + personPID);
 					nameSelected = pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex);
 					nameSelected.last();
-					if (nameSelected.getRow() == 0) {
-						return " --- ";
-					}
+					if (nameSelected.getRow() == 0) return " --- ";
+					
 					nameSelected.first();
 					personNamePID = nameSelected.getLong("BEST_NAME_RPID");
 					visibleID = nameSelected.getInt("VISIBLE_ID");
@@ -878,10 +878,8 @@ public class HBLibraryResultSet {
  *  WARNING Name element not always == 1 - must be selected
  */
 					personName = personName + " ("+ visibleID + ")";
-				} else {
-					personName  = " --- ";
-				}
-			}
+				} else personName  = " No name pointer ";		
+			} else personName  = " No name found";
 			return " " + personName;
 		} catch (SQLException sqle) {
 			throw new HBException("SQL exception: " + sqle.getMessage() + "\nPersonPID: " + personPID);

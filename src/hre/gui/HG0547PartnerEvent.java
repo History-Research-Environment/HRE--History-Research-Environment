@@ -9,6 +9,7 @@ package hre.gui;
  * 			  2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
  * 			  2024-10-05 Updated save partner (N Tolleshaug)
  * 			  2024-10-06 Removed reset PS for partner event (N Tolleshaug)
+ * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -80,7 +81,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 				long newEventRecordPID;
 				try {
 				// Check if data updated
-					if (locationElementUpdate > 0 || startDateOK ||sortDateOK || memoEdited) {
+					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited) {
 				//if update memo text
 						if (memoEdited) 
 							pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
@@ -97,6 +98,14 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 						
 				// Update partner table
 						pointWhereWhenHandler.updateEventPartnerTable(partnerTablePID, newEventRecordPID);
+						
+				// Update location name style	
+						if (changedLocationNameStyle && locationElementUpdate) {
+							selectedStyleIndex = locationNameStyles.getSelectedIndex();
+							locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
+							System.out.println(" Partner event - location name PID: " + locationNamePID);
+							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID); 
+						}
 
 					} else System.out.println(" HG0547PartnerEvent - No edited data for event!");	//$NON-NLS-1$
 					
@@ -106,7 +115,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
 					pointOpenProject.getPersonHandler().resetPersonManager();
-					//pointOpenProject.getPersonHandler().resetPersonSelect(); // 6.10.2024 No reset PS
+					pointOpenProject.getPersonHandler().resetPersonSelect(); // 6.10.2024 No reset PS
 					dispose();
 
 				} catch (HBException hbe) {

@@ -7,8 +7,6 @@ package hre.tmgjava;
  * GNU Lesser General Public License v3.0
  * Written by Alberto Fern�ndez
  * *******************************************************************************
- * TEST version for import of witness table E.dbf - 2024-9-03
- **********************************************************************************************
  * Process Event tables in HRE
  * v0.00.0018 2020-04-25 - First version (N. Tolleshaug)
  * v0.00.0021 2020-04-30 - Added update of temp fields in T404
@@ -62,13 +60,18 @@ package hre.tmgjava;
  * 			  2024-08-06 - Added alterColumnInTable("T450_EVNT","IMP_TMG","BOOLEAN");
  * 			  2024-08-11 - Updated processing E.dbf partner roles (N. Tolleshaug)
  * 		  	  2024-09-04 - Removed alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
+ *  		  2024-11-11 - Included PER1 == 0 and PER2 != as primary assoc (N. Tolleshaug)
+ *   		  2024-11-23 - Added PER1 == 0 and PER2 != 0 role prosessing (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Vector;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.linuxense.javadbf.DBFRow;
 
 import hre.bila.HBException;
 /**
@@ -271,29 +274,14 @@ class TMGpass_Events  {
 					// Set up partner table
 						int eventTypeNr = tmgGtable.getValueInt(indexG_PID, "ETYPE");
 						int adminGroup = getAdminGroup(eventTypeNr);
-						// Check for primary persons in associate table
-						//int recno = tmgGtable.getValueInt(indexG_PID,"RECNO");
-						//int per1 = tmgGtable.getValueInt(indexG_PID,"PER1");
-						//int per2 = tmgGtable.getValueInt(indexG_PID,"PER2");
-						//String eventName = tmgTtable.findValueString(eventTypeNr,"ETYPENAME");
+						
+					// Check for primary persons in associate table
 
 				   // Only record marriages and divorces
 						if (adminGroup == marrGroup || adminGroup == divorceGroup) {
 							primaryIndex++;
 							addToT404_PARTNER(primaryIndex, indexG_PID, tableT404);
-						//} else if (per1 != 0 && per2 != 0) {
-						} /*else if (per2 != 0) {
-							//per2assocs++;
-							if (TMGglobal.TRACE)
-								System.out.println(" " + indexG_PID + " Error G-PER1/PER2 -" 
-										+ " Event: " + eventTypeNr
-										+ "/" + eventName
-										+ " PER1: " + per1
-										+ " PER2: " + per2
-										+ " RECNO: " + recno	
-										+ " Admin: " + adminGroup);
-								
-						}*/
+						} 
 
 				} else System.out.println("Dataset DSID not processed tmgGtable: "
 						+ tmgGtable.getValueInt(indexG_PID,"DSID"));
@@ -340,6 +328,7 @@ class TMGpass_Events  {
  */
 	public void addToT450_EVNT(int rowPID, int etypeNumber, long locationTablePID, ResultSet hreTable) throws HCException {
 		String tmgDate, tmgSort;
+		String roleNumber = "";
 		long sortDate = null_RPID, startDate = null_RPID;
 		if (TMGglobal.DEBUG)
 			System.out.println("** addTo T450_EVENTS row: " + rowPID);
@@ -354,7 +343,6 @@ class TMGpass_Events  {
 			hreTable.updateLong("PID", indexPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateBoolean("HAS_CITATIONS", false);			
-			//hreTable.updateBoolean("IMP_TMG", true); // Mark event as imported from TMG
 			hreTable.updateBoolean("OWNS_EVENTS", false);
 			hreTable.updateInt("VISIBLE_ID", tmgGtable.getValueInt(rowPID,"REF_ID"));
 			hreTable.updateString("SURETY", tmgGtable.getValueString(rowPID,"ENSURE"));
@@ -391,11 +379,32 @@ class TMGpass_Events  {
 			else hreTable.updateLong("MEMO_RPID",
 					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(indexPID, efoot));
 
-		// Set RPID to 	T401_PERS
-			hreTable.updateLong("PRIM_ASSOC_RPID", proOffset + tmgGtable.getValueInt(rowPID,"PER1"));
-
 		// Find the role number from E.dbf table "ROLE"
-			String roleNumber = tmgEtable.findValueString(recNr,"ROLE");
+			int per1 = tmgGtable.getValueInt(rowPID,"PER1");
+			int per2 = tmgGtable.getValueInt(rowPID,"PER2");
+			
+		// check if PER1 == 0 then set PER2 as PRIM_ASSOC_RPID
+			if (per1 != 0) {		
+				hreTable.updateLong("PRIM_ASSOC_RPID", proOffset + per1);
+				roleNumber = tmgEtable.findVectorString(recNr, 0, "ROLE"); // 22.11.2024
+				//roleNumber = tmgEtable.findValueString(recNr,"ROLE");
+			} else {
+				hreTable.updateLong("PRIM_ASSOC_RPID", proOffset + per2);
+				
+		// Find the per2 role on TMG E.table - 22.11.2024
+				Vector<DBFRow> vectorTableE = tmgEtable.findVectorRows(recNr);
+				if (vectorTableE.size() > 1) {
+					//System.out.println(" Per2:  " + per2 + " size: " + vectorTableE.size());
+					for (int i = 0; i < vectorTableE.size() ; i++) {
+						String role = tmgEtable.findVectorString(recNr, i, "ROLE");
+						int eper = tmgEtable.findVectorInt(recNr, i, "EPER");
+						int gnum = tmgEtable.findVectorInt(recNr, i, "GNUM");
+						//System.out.println(" Eper : " + eper + " Gnum: " + gnum + " Role:" + role);
+						if (per2 == eper) roleNumber = role;
+					}
+				} else roleNumber = tmgEtable.findVectorString(recNr, 0, "ROLE");
+			}
+
 			if (HREhdate.isInteger(roleNumber))
 				hreTable.updateInt("PRIM_ASSOC_ROLE_NUM", Integer.parseInt(roleNumber));
 			else hreTable.updateInt("PRIM_ASSOC_ROLE_NUM", 00001);
@@ -826,7 +835,7 @@ class TMGpass_Events  {
 
 	// Abbrev too long:
 		if (abbrev.length() > 10) {
-			System.out.println(" Long T460_EVNT_DEFN - EVNT_ABBREV - Length: "
+			System.out.println(" Long T460_EVNT_DEFN - EVNT_ABBREV: " + abbrev + " - Length: "
 					+ abbrev.length() + "/10");
 			abbrev = abbrev.substring(0,10);
 		}
@@ -1026,22 +1035,24 @@ class TMGpass_Events  {
 						}		
 					} 
 					
-					 //if (eper != per1 && per2 != 0 && primary)
-					 if (eper != per1 && per2 != 0)
+					 if (eper != per1 && per1 != 0 && per2 != 0) // Test 11.11.2024 exclude only PER2 set
+					 //if (eper != per1 && per2 != 0) // The master B31
 						if (!(admin == marrGroup || admin == divorceGroup)) {
-						if (TMGglobal.TRACE)
-							//if (noRole)
+							if (TMGglobal.TRACE)
+							//if (per1 == 0) if (eper != per2)
 								System.out.println(" KEY ASSOC PER2: "
-								+ " Index: " + indexE_ROW
-								+ " EPER: " + eper		// E Person	
+								+ " E.dbf: " + indexE_ROW
+								+ " E-EPER: " + eper		// E Person	
+								+ " E-GNUM: " + gnumIndex // G Event nr
+								+ " E-Role: " + role
+								+ " E-PRIMARY: " + primary
+								+ " Sequen: " + seq
+								+ " - G.dbf:"
 								+ " G-PER1: " + per1
 								+ " G-PER2: " + per2
 								+ " G-Evtyp: " + etype
-								+ " G-Admin: " + admin
-								+ " GNUM: " + gnumIndex
-								+ " Role: " + role
-								+ " PRIMARY: " + primary
-								+ " Sequen: " + seq);
+								+ " G-Admin: " + admin);
+								
 						per2assocs++;
 						addedAssoc++;
 						eventAssocPID++;
@@ -1123,6 +1134,7 @@ class TMGpass_Events  {
 			int per1 = tmgGtable.findValueInt(gnumIndex,"PER1");
 			int per2 = tmgGtable.findValueInt(gnumIndex,"PER2");
 			int eper = tmgEtable.getValueInt(primaryIndex,"EPER");
+			
 			if (eper == per1 || eper == per2) principal = true; else principal = false;
 			hreTable.updateBoolean("KEY_ASSOC", principal);
 
@@ -1140,7 +1152,6 @@ class TMGpass_Events  {
 		// Processing memo to T167_MEMO_SET
 			if (memo.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID",
-					//tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(indexPID, memo));
 					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(eventAssocPID, memo));
 
 			hreTable.updateLong("ASSOC_SENTENCE_RPID", null_RPID);

@@ -45,7 +45,7 @@ package hre.tmgjava;
  * 			  2023-10-20 - Removed all v22a handling
  * 			  2023-11-03 - Updated for new associate event processing
  * 			  2024-10-20 - Removed finally console and status printout (N. Tolleshaug)
- * 
+ *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -82,7 +82,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	protected HREloader_V22b hreLoader;
 	protected HREmemo pointHREmemo;
 	protected TMGpass_Support pointSupportPass;
-	protected TMGpass_Source pointSourcePass; 
+	protected TMGpass_Source pointSourcePass;
 	public TMGpass_Persons  pointPersonPass;
 	private TMGpass_Locations  pointLocationPass;
 	private TMGpass_Events  pointEventPass;
@@ -130,9 +130,9 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	    	closeAllTMGtables("DUMP test");
 	    	System.out.println();
 	}
-	
+
 /**
- * languageTMG() - returns the found native language	
+ * languageTMG() - returns the found native language
  * @return native language
  */
 	public String languageTMG() {
@@ -203,37 +203,6 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	public void setStatusMessage(String message) {
 		processMonitor.setContextOfAction(message);
 	}
-/*
-	private static void testHdateConvert() {
-		String tmg_date;
-		tmg_date = "100000000030000000000";
-		System.out.println("\n## TMG NULL CE" + " TMG value: " + tmg_date + " / " + tmg_date.length());
-		HREhdate.tmgToT170hdate(tmg_date);
-		HREhdate.dumpHdateStrings();
-
-		tmg_date = "119251113030000000000";
-		System.out.println("\n## TMG Exact CE" + " TMG value: " + tmg_date + " / " + tmg_date.length());
-		HREhdate.tmgToT170hdate(tmg_date);
-		HREhdate.dumpHdateStrings();
-		//---------------------
-		tmg_date = "117640000100000000001";
-		System.out.println("\n## TMG Before CO" + " TMG value: " + tmg_date);
-		HREhdate.tmgToT170hdate(tmg_date);
-		HREhdate.dumpHdateStrings();
-		//---------------------
-		tmg_date = "118350000051850000000";
-		System.out.println("\n## TMG Between CE" + " TMG value: " + tmg_date);
-		HREhdate.tmgToT170hdate(tmg_date);
-		HREhdate.dumpHdateStrings();
-		//---------------------
-		tmg_date = "0 - 12.3.1950";
-		System.out.println("\n## TMG Irregular" + " TMG value: " + tmg_date);
-		HREhdate.tmgToT170hdate(tmg_date);
-		HREhdate.dumpHdateStrings();
-		//---------------------
-		System.out.println();
-	}
-*/
 
 /**
  * 	startConvert()
@@ -261,10 +230,9 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			}
 
 			tmgFolderPath = TMGglobal.chosenFolder;
-			if (TMGglobal.DEBUG)
-				System.out.println(" *** TMG - Project path: " + tmgFolderPath + "/" + tmgProjectName);
+			String plcFilePath = tmgFolderPath + File.separator + tmgProjectName + "__" + ".pjc";
+			processMonitor.setContextOfAction(" PJC at: " + plcFilePath);
 
-			String plcFilePath = tmgFolderPath + "/" + "/" + tmgProjectName + "__" + ".pjc";
 			String [] pjcData = readPJCfile(plcFilePath);
 
 			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
@@ -280,10 +248,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					+ tmgVersion);
 
 		// Check TMG database version
-			if (tmgVersion.equals("10") || tmgVersion.equals("11"))
-				processMonitor.setContextOfAction(" Database PJC version accepted! ");
-			else
-				throw new HCException(" Old database - not accepted!!");
+			if (!tmgVersion.equals("10") && !tmgVersion.equals("11")) throw new HCException(" Old TMG database - not accepted!!");
+			processMonitor.setContextOfAction(" Database PJC version accepted! ");
 
 
 	if (TMGglobal.TRACE)
@@ -299,12 +265,12 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			startTime = System.currentTimeMillis();
 			processMonitor.setContextOfAction("\n Start converting TMG to HRE");
 			generateTMGtables();
-			
+
 	// Locate TMG native language
 			tmgNativeLang = locateTMGlanguage();
 			processMonitor.setContextOfAction(" *** TMG native language: " + tmgNativeLang);
 			System.out.println(" TMG language: " + tmgNativeLang);
-			
+
 	// Generate HRE Tables;
 			processMonitor.setContextOfAction(" Loading HRE tables ");
 			generateHREtables();
@@ -314,36 +280,36 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			processMonitor.setContextOfAction(" *** Uses HRE database build: " + databaseBuild);
 
 	// Check database version
-			if (TMGglobal.DEBUG) 
+			if (TMGglobal.DEBUG)
 				System.out.println(" DB version: " + databaseBuild + "/" + TMGglobal.databaseBuild);
-			
+
 			if (!databaseBuild.contains(TMGglobal.databaseBuild))
 				throw new HCException(" Mismatch in HRE database build\n"
 						+ "expected: " + TMGglobal.databaseBuild);
-	
+
 			timeReport("loading HRE tables");
 
 	// Dump of TMG table content based on selected table name
 			if (TMGglobal.DUMP) dumpTMGtable();
-			
-	// Set up memo handler		
+
+	// Set up memo handler
 			pointHREmemo = new HREmemo(hreLoader.getDataBasePointer());
-			
+
 	// SUPPORT pass
 			passSupportData();
 
 	// PERSON passes
 			passPersonData();
-			
+
 	// LOCATION passes
 			passLocationData();
 
 	// EVENT passes
 			passEventData();
-			
-	// SOURCE passes		
+
+	// SOURCE passes
 			passSourceData();
-			
+
 	// Close all HRE tables except Exhibit Table
 			hreLoader.closeHREtables();
 			processMonitor.setContextOfAction(" HRE tables closed");
@@ -486,7 +452,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	public void chooseTMGfolder() {
 		TMGfolderChooser chooseFile = new TMGfolderChooser("Select", "TMG files (*.pjc)", "pjc", null, tmgStartFolder, 1);
 		chooseFile.setModalityType(ModalityType.APPLICATION_MODAL);
-		chooseFile.setLocation(700, 200);  // Sets chooser screen top-left corner relative to that
+		chooseFile.setLocation(600, 200);  // Sets chooser screen top-left corner relative to that
 		chooseFile.setVisible(true);
 	}
 
@@ -494,7 +460,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * readPJCfile(String fileName)
  * @param fileName
  * @throws HCException
- * ******************************************************
+ * *******************Eaxmple PJC content***********************************
  * Name =Nils Tolleshaug
  * MappingCountry=Norway
  * PjcVersion=11
@@ -507,21 +473,27 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  *********************************************************/
 	@SuppressWarnings("resource")
 	public String[] readPJCfile(String filePath) throws HCException {
-		  //String dbfFile = tmgStartFolder + fileName;
-		  if (TMGglobal.DEBUG) System.out.println("PJC file path: " + filePath);
-		  File file = new File(filePath);
 		  String [] data = new String[9];
+		  data[0] = "Researcher's Name not found";
+		  data[1] = "Mapping Country not found";
+		  data[2] = "PJC Version not found";
+		  data[3] = "Restored By not found";
+		  data[4] = "Create Date not found";
+		  data[5] = "Create Time not found";
+		  data[6] = "Last Indexed not found";
+		  data[7] = "Last VFI not found";
+		  data[8] = "Last Optimized not found";
+
+		  File file = new File(filePath);
 		  BufferedReader buffer;
 		  try {
 				buffer = new BufferedReader(new FileReader(file));
 				String string;
 				while ((string = buffer.readLine()) != null)  {
-					//if (TMGglobal.DEBUG) System.out.println(string);
 					if (string.startsWith("Name")) data[0] = string;
 					if (string.startsWith("MappingCountr")) data[1] = string;
 					if (string.startsWith("PjcVersion")) data[2] = string;
 					if (string.startsWith("RestoredByVersion")) data[3] = string;
-					if (data[3] == null ) data[3] = "Restored not available";
 					if (string.startsWith("CreateDate")) data[4] = string;
 					if (string.startsWith("CreateTime")) data[5] = string;
 					if (string.startsWith("LastIndexed")) data[6] = string;
@@ -539,8 +511,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			  throw new HCException("File read error\n" + ioe.getMessage());
 		  }
 	}
-	
-/**	
+
+/**
  * locateTMGlanguage()
  * @return
  */
@@ -549,7 +521,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		try {
 			tmgLoader.loadTmgEventTables(false);
 			TMGtableData tmgEtable = TMGglobal.tmg_E_table;
-			int nrOftmg$Rows = tmgEtable.getNrOfRows();		
+			int nrOftmg$Rows = tmgEtable.getNrOfRows();
 			for (int index = 0; index < nrOftmg$Rows; index++) {
 				wsentance = HREmemo.returnStringContent(tmgEtable.getValueString(index,"WSENTENCE"));
 				if (wsentance.trim().length() > 20) {
@@ -560,8 +532,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					TMGglobal.tmg_E_table.closeTMGtable();
 					return language;
 				}
-			}				
-		
+			}
+
 			System.out.println(" Language: " + language);
 			TMGglobal.tmg_E_table.closeTMGtable();
 			//return language;
@@ -569,7 +541,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			System.out.println(" ERROR - locate TMG native language: " + hce.getMessage());
 			if (TMGglobal.TRACE) hce.printStackTrace();
 		}
-		return language;	
+		return language;
 	}
 
 /**
@@ -605,13 +577,13 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		tmgLoader.loadTmgSupportTables();
 		timeReport("load TMG style tables");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-			
+
 		pointSupportPass = new TMGpass_Support(pointDB);
 
 		setStatusMessage(" Updating HRE T16X_NAME_STYLES");
 		pointSupportPass.addNameStyleToHRE(this);
 		timeReport("updated T160_NAME_STYLES");
-		
+
 		setStatusMessage(" Updating HRE T251_FLAG_DEFN");
 		pointSupportPass.updateFlagFromTMG(this);
 		timeReport("updated T251_FLAG_DEFN");
@@ -627,7 +599,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		tmgLoader.loadTmgNameTables();
 		timeReport("load TMG Name tables");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-		
+
 		pointPersonPass = new TMGpass_Persons(pointDB);
 
 		try {
@@ -641,7 +613,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 				setStatusMessage(" Updating HRE T402_PERS_NAME");
 				pointPersonPass.addNamesToHRE(this);
 				timeReport("updating HRE T402_PERS_NAME");
-				
+
 		// HRE T405_PERSON_BITHS
 				setStatusMessage(" Updating T405_PARENT_RELATION");
 				pointPersonPass.addParentRelationToHRE(this);
@@ -689,7 +661,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			HB0711Logging.printStackTraceToFile(hce);
 		}
 	}
-	
+
 	private void passLocationData() throws HCException {
 		setStatusMessage("*Second pass - HRE place tables processing");
 		setStatusMessage(" Loading TMG place tables");
@@ -701,7 +673,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 */
 		setStatusMessage(" Processing  Places from TMG");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-		
+
 		pointLocationPass = new TMGpass_Locations(pointDB);
 
 		try {
@@ -710,9 +682,9 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			timeReport("HRE place data processing");
 			completedNumberPasses++;
 			processMonitor.setStatus(completedNumberPasses, totalNumberPasses);
-			
+
 			closeAllTMGtables("Place");
-			
+
 		} catch (HCException hce) {
 			System.out.println(" ERROR PassPlaceData: " + hce.getMessage());
 			JOptionPane.showMessageDialog(null, "ERROR PassLocationtData: \n"
@@ -721,7 +693,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			HB0711Logging.logWrite("ERROR Pass Location Data: " + hce.getMessage());
 			HB0711Logging.printStackTraceToFile(hce);
 		}
-		
+
 	}
 
 /**
@@ -734,45 +706,45 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgEventTables(true);
 		timeReport("load TMG Event tables");
-		
+
 /**
  *  Processing Events fromTMG
 */
 		setStatusMessage(" Processing Events from TMG");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-		 
+
 		pointEventPass = new TMGpass_Events(pointDB);
 
 		try {
 
-			pointEventPass.addEventTagTables(this);		
+			pointEventPass.addEventTagTables(this);
 			setStatusMessage(" Completed EVENT TAG table");
-			
+
 			pointEventPass.addEventTable(this);
 			setStatusMessage(" Completed EVENT table");
-			
+
 			pointEventPass.addEventsAssocTable(this);
-			setStatusMessage(" Completed table EVENT_ASSOC");	
-			
+			setStatusMessage(" Completed table EVENT_ASSOC");
+
 			pointEventPass.updatePartnerRoles();
 			setStatusMessage(" Updated table PARTNER WITH ASSOC ROLES");
-			
+
 			pointEventPass.updateBirthEvents();
 			setStatusMessage(" Updated table PARENT_RELATION");
 			processMonitor.setStatus(completedNumberPasses, totalNumberPasses);
-						
+
 		// Data output (no values counted)
 			//pointEventPass.memoData();
 
 /**
  * Release Table objects for TMG tables
-*/		
+*/
 			closeAllTMGtables("Event");
 
 			timeReport("HRE event data processing");
 			completedNumberPasses++;
-			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);	
-		
+			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
+
 		} catch (HCException hce) {
 			System.out.println(" ERROR PassEventData: " + hce.getMessage());
 			JOptionPane.showMessageDialog(null, "ERROR PassEventData: \n"
@@ -780,11 +752,11 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			// Log Stack Trace
 			HB0711Logging.logWrite("ERROR Pass Event Data: " + hce.getMessage());
 			HB0711Logging.printStackTraceToFile(hce);
-		}		
+		}
 	}
-	
+
 /**
- * passSourceData()	
+ * passSourceData()
  * @throws HCException
  */
 	private void passSourceData() throws HCException {
@@ -793,7 +765,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		tmgLoader.loadTmgSourceTables();
 		timeReport("load TMG Source tables");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-		
+
 		pointSourcePass = new TMGpass_Source(pointDB);
 
 		pointSourcePass.testSourceTables();
@@ -839,13 +811,13 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			HB0711Logging.logWrite("ERROR Pass Exhibit Data :  " + hce.getMessage());
 			HB0711Logging.printStackTraceToFile(hce);
 		}
-		
+
 }
-	
+
 /**
  * errorDataBaseVersion(String passName)
  * @param passName
- 
+
 	private void errorDataBaseVersion(String passName) {
 		setStatusMessage(" -> Pass? " + passName + " DB not accepted: " + TMGglobal.databaseVersion);
 	}
@@ -909,7 +881,6 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		}
 	}
 
-
 /**
  * main(String args[])
  * @param args
@@ -922,9 +893,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		// Test HDATE convert
 			//if (TMGglobal.TRACE) testHdateConvert();
 		// Select database
-			if (TMGglobal.databaseVersion.startsWith("v22b"))
-				tmghreDataBase = TMGglobal.tmghreBase22b;  // new seed 22b 
-			else throw new HCException(" MAIN - HRE database version not accepted");
+			if (!TMGglobal.databaseVersion.startsWith("v22b")) throw new HCException(" MAIN - HRE database version not accepted");
+			tmghreDataBase = TMGglobal.tmghreBase22b;
 
 			TMGHREprogressMonitor conv = new TMGHREprogressMonitor();
 			conv.startMonitor();
@@ -942,9 +912,9 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			if (TMGglobal.TRACE) hce.printStackTrace();
 		}
 	}
-	
+
 /**
- * redirectOutput(String fileName)	
+ * redirectOutput(String fileName)
  * @param fileName
  * @throws IOException
  */
@@ -953,7 +923,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	      File file = new File(fileName);
 	   //Instantiating the PrintStream class
 	      PrintStream stream = new PrintStream(file);
-	      System.out.println("Now "+ file.getAbsolutePath() 
+	      System.out.println("Now "+ file.getAbsolutePath()
 	      		+ " receive TMG converter console output");
 	      System.setOut(stream);
 	      System.setErr(stream);

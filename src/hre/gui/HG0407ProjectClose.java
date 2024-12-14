@@ -36,6 +36,7 @@ package hre.gui;
  * v0.01.0027 2022-02-26 Modified to use the NLS version of HGlobal (D Ferguson)
  * 			  2022-05-29 auto-select the project if only 1 project open (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
+ * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  **********************************************************************************************
  * NOTES for incomplete functionality
  ************************************************
@@ -218,7 +219,7 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 					try {
 						summaryData = pointProHand.getSummaryOpenProjectAction(selectedProjectName);
 					} catch (HBException hbe) {
-						JOptionPane.showMessageDialog(null, HG0407Msgs.Text_28
+						JOptionPane.showMessageDialog(contents, HG0407Msgs.Text_28
 								+  hbe.getMessage(), HG0407Msgs.Text_29,JOptionPane.ERROR_MESSAGE);
 					}
 				}
@@ -396,7 +397,7 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 				{   HGlobal.closeType = "N";						// reset the closeType just in case not an exit	 //$NON-NLS-1$
 				    // Check the user REALLY wants to exit (if cancel msgs are shown)
 					if (HGlobal.showCancelmsg) {
-												if (JOptionPane.showConfirmDialog(null, HG0407Msgs.Text_55, HG0407Msgs.Text_56,
+												if (JOptionPane.showConfirmDialog(contents, HG0407Msgs.Text_55, HG0407Msgs.Text_56,
 														JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION)
 													{return;}		// return if answer is NO, else proceed with silent close and exit
 											   }
@@ -421,12 +422,12 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 		String errorTitle = HG0407Msgs.Text_58;
 		if (errorCode == 0) {
 			errorMess = HG0407Msgs.Text_59;
-			JOptionPane.showMessageDialog(null, errorMess + projectName, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMess + projectName, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode > 0) {
 			if (errorCode == 1)  errorMess = HG0407Msgs.Text_60 + projectName + HG0407Msgs.Text_61;
 			if (errorCode == 2)  errorMess = HG0407Msgs.Text_62 + projectName + HG0407Msgs.Text_63;
-			JOptionPane.showMessageDialog(null, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoCloseProject
 

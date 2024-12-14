@@ -24,6 +24,7 @@ package hre.gui;
  * v0.01.0026 2021-05-06 set max size for file/foldername label content (D Ferguson)
  * 			  2021-09-17 Apply tag codes to screen control buttons (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
+ * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -349,7 +350,7 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 				// If they decide to stop, reset ALL restore parameters so they must start again
             	if (nameElements[0].equals(selectedProject)
             			& isFileLocationSame(HGlobal.copytoFilename, HGlobal.copytoFolder) ) {
-					if (JOptionPane.showConfirmDialog(null, warningText1, HG0406Msgs.Text_102,
+					if (JOptionPane.showConfirmDialog(contents, warningText1, HG0406Msgs.Text_102,
     						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
         						JOptionPane.showMessageDialog(btn_Cancel, warningText2,
         													HG0406Msgs.Text_103,JOptionPane.WARNING_MESSAGE);
@@ -603,14 +604,14 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 			errorMessage = HG0406Msgs.Text_143
 					+ HG0406Msgs.Text_144 + restoreProjectName
 					+ HG0406Msgs.Text_145 + fromBackupFilePath;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode > 0) {
 			if (errorCode == 1)  errorMessage =  HG0406Msgs.Text_146
 									+ restoreProjectName
 									+ HG0406Msgs.Text_147;
 			if (errorCode == 2)  errorMessage = HG0406Msgs.Text_148 + restoreProjectName + HG0406Msgs.Text_149;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoRestoreProjectNew
 
@@ -621,14 +622,14 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 			errorMessage = HG0406Msgs.Text_152
 					+ HG0406Msgs.Text_153 + restoreProjectName
 					+ HG0406Msgs.Text_154 + fromBackupFilePath;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode > 0) {
 			if (errorCode == 1)  errorMessage =  HG0406Msgs.Text_155
 									+ restoreProjectName
 									+ HG0406Msgs.Text_156;
 			if (errorCode == 2)  errorMessage = HG0406Msgs.Text_157 + restoreProjectName + HG0406Msgs.Text_158;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoRestoreProject
 
@@ -639,11 +640,11 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 			errorMessage = HG0406Msgs.Text_161
 					+ HG0406Msgs.Text_162 + restoreExtName
 					+ HG0406Msgs.Text_163 + toFolder;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.INFORMATION_MESSAGE);
 		}
 		if (errorCode == 1) {
 			errorMessage = HG0406Msgs.Text_164 + restoreExtName + HG0406Msgs.Text_165 + toFolder;
-			JOptionPane.showMessageDialog(null, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(contents, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
 		}
 	}	// End userInfoRestoreExternal
 
