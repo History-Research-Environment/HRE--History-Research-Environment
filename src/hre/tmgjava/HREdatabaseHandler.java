@@ -57,6 +57,7 @@ public class HREdatabaseHandler {
     		dataH2conn =  DriverManager.getConnection(connectString, userId, passWord);
 
     	} catch(SQLException exc) {
+    		exc.printStackTrace();
     		closeSQLconnect();
     		throw new HCException("Connect SQL error:\n" + exc.getMessage());
     	} catch(ClassNotFoundException clx) {

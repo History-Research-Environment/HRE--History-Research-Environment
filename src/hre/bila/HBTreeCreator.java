@@ -61,8 +61,8 @@ package hre.bila;
  ****************************************************************************************
  * NOTES ON INCOMPLETE FUNCTIONALITY
  ****************************************************************************************
- * NOTE-1 The use of Visible-ID to select person HBTreeCreator - getFocusPerson 
- * may not be correct 
+ * NOTE-1 The use of Visible-ID to select person HBTreeCreator - getFocusPerson
+ * may not be correct
  ***************************************************************************************/
 
 import java.awt.event.MouseAdapter;
@@ -137,7 +137,9 @@ public class HBTreeCreator extends HBBusinessLayer {
     	this.pointPersonSelect = pointPersonSelect;
     	this.personID = personID;
     	this.pointOpenProject = pointOpenProject;
-    	if (pointPersonSelect == null) updateMonitor = false;
+    	if (pointPersonSelect == null) {
+			updateMonitor = false;
+		}
 
     // Set up pointer to DBlayer for BusinessLayer
     	this.pointDBlayer = pointOpenProject.pointProjectHandler.pointDBlayer;
@@ -156,10 +158,12 @@ public class HBTreeCreator extends HBBusinessLayer {
     }	// End HBTree constructor
 
     private void selectDataBase(String dBversion) {
-    	if (dBversion.startsWith("v22b")) {
+    	if (dBversion.startsWith("v22c")) {
     		ownerRecordField = "OWNER_RPID";
     		bestNameField = "BEST_NAME_RPID";
-    	} else System.out.println("Tree Creator - DB build not found - " + dBversion);
+    	} else {
+			System.out.println("Tree Creator - DB build not found - " + dBversion);
+		}
     }
 
 /**
@@ -167,7 +171,9 @@ public class HBTreeCreator extends HBBusinessLayer {
  * @return
  */
     public int initateTree() {
-    	if (HGlobal.TIME) HGlobalCode.timeReport("start processing family tree");
+    	if (HGlobal.TIME) {
+			HGlobalCode.timeReport("start processing family tree");
+		}
 		try {
 
 	    // Set up date translation
@@ -176,20 +182,29 @@ public class HBTreeCreator extends HBBusinessLayer {
 
         //Construct the tree, focused on personID parameter.
 			tree = new GenealogyTree(getGenealogyGraph(personID, dataBaseIndex));
-			if (HGlobal.TIME)
+			if (HGlobal.TIME) {
 				HGlobalCode.timeReport("End processing family tree");
+			}
 
 		} catch (HBException hbe) {
-			if (HGlobal.DEBUG)  System.out.println("Not able to create tree\n" + hbe.getMessage());
-			if (HGlobal.DEBUG)  hbe.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("Not able to create tree\n" + hbe.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("HBCreateTree - Create Tree Error:  " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
 			}
 			return 1;
 		} catch (Exception exc) {
-			if (HGlobal.DEBUG)  System.out.println("HBCreateTree - Unexpected Exception:\n  " + exc.getMessage());
-			if (HGlobal.DEBUG)  exc.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBCreateTree - Unexpected Exception:\n  " + exc.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				exc.printStackTrace();
+			}
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("HBCreateTree - Unexpected Exception:  " + exc.getMessage());
 				HB0711Logging.printStackTraceToFile(exc);
@@ -206,10 +221,15 @@ public class HBTreeCreator extends HBBusinessLayer {
         			GenealogyPerson selectedPerson = tree.getSelectPerson();
         			String name = selectedPerson.getName();
         			long personTablePID = selectedPerson.getPersonTablePID();
-        			if (HGlobal.DEBUG)  System.out.println("Selected: "  + name + " Index: " + personTablePID);
+        			if (HGlobal.DEBUG) {
+						System.out.println("Selected: "  + name + " Index: " + personTablePID);
+					}
 
-        			if (pointPersonSelect != null) pointViewPointHandler.initiatePersonVP(pointOpenProject, personTablePID);
-        			else if (HGlobal.DEBUG) System.out.println("Pointer to HBViewpointHandler not set!!");
+        			if (pointPersonSelect != null) {
+						pointViewPointHandler.initiatePersonVP(pointOpenProject, personTablePID);
+					} else if (HGlobal.DEBUG) {
+						System.out.println("Pointer to HBViewpointHandler not set!!");
+					}
         		}
         	}
         });
@@ -277,13 +297,17 @@ public class HBTreeCreator extends HBBusinessLayer {
     	// Run through tree and get highest pathcount
     	while (row < count) {
       	 	pathCount = tree.getPathForRow(row).getPathCount();
-      	 	if (pathCount > hiPC) hiPC = pathCount;
+      	 	if (pathCount > hiPC) {
+				hiPC = pathCount;
+			}
     	    row++;
     	 }
     	// Go back through tree and collapse hiPC row owners
     	for (row = count; row >= 1; row--) {
       	 	pathCount = tree.getPathForRow(row).getPathCount();
-      	 	if (pathCount == hiPC - 1) tree.collapseRow(row);
+      	 	if (pathCount == hiPC - 1) {
+				tree.collapseRow(row);
+			}
    	 	}
 	}
 
@@ -327,8 +351,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 		// HashMap for person names index PID
 		personDataIndex = new HashMap<>();
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println("Ancestor HRE T401 and T404 to Tree ");
+		}
 
 		try {
 
@@ -349,7 +374,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 		//Set up Person data index
 			personTable.beforeFirst();
 			while (personTable.next()) {
-				if (updateMonitor) pointPersonHandler.setStatusPercent(pointPersonHandler.countStatusBar++);
+				if (updateMonitor) {
+					pointPersonHandler.setStatusPercent(pointPersonHandler.countStatusBar++);
+				}
 				personPID = personTable.getLong("PID");
 				PersonSelectData personSelectData = pointPersonHandler.personDataIndex.get(personPID);
 				int visbleId = personSelectData.getVisibleId();
@@ -358,16 +385,21 @@ public class HBTreeCreator extends HBBusinessLayer {
 				name_RPID = personTable.getLong(bestNameField);
 				if (name_RPID != null_RPID) {
 					personName = personSelectData.getName();
-	    		} else System.out.println(" ERROR - HBTreeCreator - getGenealogyGraph() - PID: " + name_RPID);
+	    		} else {
+					System.out.println(" ERROR - HBTreeCreator - getGenealogyGraph() - PID: " + name_RPID);
+				}
 
-				if (HGlobal.DEBUG) System.out.println("Tree Creator Person name: " + personName);
+				if (HGlobal.DEBUG) {
+					System.out.println("Tree Creator Person name: " + personName);
+				}
 
 			// Extract HDATA START from T170_DATE
 				int bornDateNumber = 0;
 				hdateRPID = personTable.getLong(personHDateBirthField);
 
-				if (hdateRPID == null_RPID) bornDate = "";
-				else {
+				if (hdateRPID == null_RPID) {
+					bornDate = "";
+				} else {
 					bornDateNumber = calculateDateNumber(hdateRPID);
 					bornDate = personSelectData.getBornDate();
 				}
@@ -379,8 +411,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 				genData.setUserGeneratedIndex(visbleId);
 
 				long person_RPID = personTable.getLong(bestNameField);
-				if (!personDataIndex.containsKey(person_RPID))
+				if (!personDataIndex.containsKey(person_RPID)) {
 					personDataIndex.put(person_RPID,genData);
+				}
 			}
 
 		// Generate all GenealogyPerson's
@@ -388,7 +421,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 			personTable.beforeFirst();
 			while (personTable.next()) {		// set progress bar in Location Select
 
-				if (updateMonitor) pointPersonHandler.setStatusPercent(pointPersonHandler.countStatusBar++);
+				if (updateMonitor) {
+					pointPersonHandler.setStatusPercent(pointPersonHandler.countStatusBar++);
+				}
 				int userGenIndex = (int) personTable.getLong("VISIBLE_ID");
 				personPID = personTable.getLong("PID");
 				long bestNamePID = personTable.getLong(bestNameField);
@@ -409,7 +444,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 		// Set up families
 			personTable.beforeFirst();
 			while (personTable.next()) {
-				if (updateMonitor) pointPersonHandler.setStatusPercent(pointPersonHandler.countStatusBar++);
+				if (updateMonitor) {
+					pointPersonHandler.setStatusPercent(pointPersonHandler.countStatusBar++);
+				}
 				long fatherPID = personTable.getLong(personFatherField);
 				GenealogyPerson father = personBranchIndex.get(fatherPID);
 				long motherPID = personTable.getLong(personMotherField);
@@ -442,8 +479,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 				        while (iter.hasNext()) {
 				          long parnerPID = iter.next();
 				          partner = personBranchIndex.get(parnerPID);
-							if (!person.partners.contains(partner))
+							if (!person.partners.contains(partner)) {
 								person.partners.add(partner);
+							}
 				        }
 					}
 				}
@@ -452,9 +490,12 @@ public class HBTreeCreator extends HBBusinessLayer {
 			return getFocusPerson(focusPersID);
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Genealogy Tree - SQL Exception: " + sqle.getMessage());
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
+				System.out.println("Genealogy Tree - SQL Exception: " + sqle.getMessage());
+			}
+			if (HGlobal.DEBUG) {
 				sqle.printStackTrace();
+			}
 			throw new HBException("Create Tree error - PersID: " + focusPersID + "\n" +sqle.getMessage());
 		}
     }	// End getGenealogyGraph
@@ -481,20 +522,23 @@ public class HBTreeCreator extends HBBusinessLayer {
 			}
 
 			if (personFound) {
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("HBTreeCreator - getFocusPerson - Start person "
 							+ focusPersID + " found!");
+				}
 				focusPID = personTable.getLong("PID");
 			} else {
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println("HBTreeCreator - getFocusPerson - Start person "
 						+ focusPersID + " not found in project");
+				}
 				if (!personTable.absolute(focusPersID)) {
-					if (HGlobal.DEBUG) 
+					if (HGlobal.DEBUG) {
 						System.out.println(" ERROR - HBTreeCreator - getFocusPerson - absolute error: " + focusPersID);
+					}
 					//throw new HBException("HBTreeCreator - getFocusPerson - absolute error: " + focusPersID);
 		/******* Eliminate last PID which is deleted *****************
-		 * Eliminate last PID which is deleted 
+		 * Eliminate last PID which is deleted
 		 ***********************************************************'*/
 					personTable.absolute(1);
 				}
@@ -503,9 +547,12 @@ public class HBTreeCreator extends HBBusinessLayer {
 			return personBranchIndex.get(focusPID);
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("getFocusPerson - SQL Exception: " + sqle.getMessage());
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
+				System.out.println("getFocusPerson - SQL Exception: " + sqle.getMessage());
+			}
+			if (HGlobal.DEBUG) {
 				sqle.printStackTrace();
+			}
 			throw new HBException("getFocusPerson - PersID: " + focusPersID + "\n" + sqle.getMessage());
 		}
     }
@@ -547,11 +594,14 @@ public class HBTreeCreator extends HBBusinessLayer {
 	private int calculateDateNumber(long years, String mainDetails) {
 		String outString = "" + years;
 		// Check for irregular date first char = 0
-		if (mainDetails.startsWith("I")) return 0;
+		if (mainDetails.startsWith("I")) {
+			return 0;
+		}
 		try {
 			if (mainDetails.length() > 0) {
-				if (!mainDetails.substring(3,7).contains("%"))
-							outString = outString + mainDetails.substring(3,7);
+				if (!mainDetails.substring(3,7).contains("%")) {
+					outString = outString + mainDetails.substring(3,7);
+				}
 			}
 			return Integer.parseInt(outString);
 		} catch (StringIndexOutOfBoundsException sobe) {
@@ -613,8 +663,12 @@ public class HBTreeCreator extends HBBusinessLayer {
  * @return
  */
     	public String getPersonString() {
-    		if (bornDate.trim().length() > 0 ) bornDate = " b. " + bornDate.trim();
-			if (deathDate.trim().length() > 0 ) deathDate = " - d. " + deathDate.trim();
+    		if (bornDate.trim().length() > 0 ) {
+				bornDate = " b. " + bornDate.trim();
+			}
+			if (deathDate.trim().length() > 0 ) {
+				deathDate = " - d. " + deathDate.trim();
+			}
 			String personString = personName + " (" + userVisibleId + ")" + bornDate + deathDate;
     		return personString;
     	}
@@ -667,12 +721,21 @@ public class HBTreeCreator extends HBBusinessLayer {
 	    						notFound = false;
 	    					}
 		    		}
-		    		if (notFound) children.add(child);
+		    		if (notFound) {
+						children.add(child);
+					}
 		    	} else if (children.size() == 1) {
-		    		if (birthNumber < children.get(0).getBornNumber()) children.add(0,child);
-		    			else children.add(child);
-		    	} else if (children.size() == 0) children.add(child);
-	    	} else children.add(0,child);
+		    		if (birthNumber < children.get(0).getBornNumber()) {
+						children.add(0,child);
+					} else {
+						children.add(child);
+					}
+		    	} else if (children.size() == 0) {
+					children.add(child);
+				}
+	    	} else {
+				children.add(0,child);
+			}
 	    } 	// End addChildren
 
 	    public void setPersonTableID(long personPID) {
@@ -799,7 +862,9 @@ public class HBTreeCreator extends HBBusinessLayer {
 	        if (path != null) {
 	            selPers = path.getLastPathComponent();
 	            return (GenealogyPerson) selPers;
-	        } else return model.getRootPerson();
+	        } else {
+				return model.getRootPerson();
+			}
 	    }
 
 /**

@@ -23,15 +23,16 @@ public class HREmemo {
 	static long null_RPID  = 1999999999999999L;
 	static long memoPID  = proOffset;
 	HREdatabaseHandler pointHREbase;
-	ResultSet hreTable;
+	//ResultSet hreTable;
 	String memoTable = "T167_MEMO_SET";
 
 	public HREmemo(HREdatabaseHandler pointHREbase) {
 		this.pointHREbase = pointHREbase;
-		hreTable = TMGglobal.T167;
+		//hreTable = TMGglobal.T167;
 		try {
 			memoPID = pointHREbase.lastRowPID(memoTable);
-			if (TMGglobal.DEBUG) System.out.println(" Last PID in Table " + memoPID);
+			if (TMGglobal.DEBUG) 
+				System.out.println(" Last PID in Table " + memoPID);
 		} catch (HBException hbe) {
 			System.out.println("Table " + memoTable + " empty");
 			memoPID  = proOffset;
@@ -39,9 +40,9 @@ public class HREmemo {
 		}
 	}
 
-	public long addToT167_22a_MEMO(long ownerRPID, String memoElement) throws HCException {
+	public long addToT167_22c_MEMO(String memoElement) throws HCException {
 		memoPID++;
-		addToT167_MEMO_SET(memoPID, ownerRPID, memoElement, hreTable);
+		addToT167_MEMO_SET(memoPID, memoElement, TMGglobal.T167);
 		return memoPID;
 	}
 
@@ -54,23 +55,19 @@ public class HREmemo {
  * T167_MEMO_SET (
 	PID BIGINT NOT NULL,
 	CL_COMMIT_RPID BIGINT NOT NULL,
-	OWNER_RPID BIGINT NOT NULL,
 	IS_LONG BOOLEAN NOT NULL,
 	SHORT_MEMO VARCHAR(500),
 	LONG_MEMO CLOB(30K));
  */
 	public void addToT167_MEMO_SET(long primaryPID,
-									long ownerRPID,
 									String memoElement,
 									ResultSet hreTable) throws HCException {
 		String shortMemo;
 		try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
-		// -----------------
 			hreTable.updateLong("PID", primaryPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
-			hreTable.updateLong("OWNER_RPID", ownerRPID);
 			if (memoElement.length() <= 500) {
 				hreTable.updateBoolean("IS_LONG", false);
 				hreTable.updateString("SHORT_MEMO", memoElement);

@@ -83,18 +83,23 @@ public class HB0711Logging {
 
 		if (HG0401HREMain.mainFrame != null) {
 			pointSelectedProject = HG0401HREMain.mainFrame.getSelectedOpenProject();
-			if (pointSelectedProject != null)
+			if (pointSelectedProject != null) {
 				projectName = pointSelectedProject.getProjectName();
+			}
 		}
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println("Logged project: " + projectName);
+		}
 
 		String[] logRecord = { nowDate, nowTime,  HGlobal.thisComputer, projectName, actionEntry} ;
 
     // Now create an Arraylist and load it with 1 or both Strings
 		List<String[]> allLogRecords = new ArrayList<>();
-		if (!logFile.exists()) allLogRecords.add(headerRecord);	// if no log file exists, write header record first
+		if (!logFile.exists())
+		 {
+			allLogRecords.add(headerRecord);	// if no log file exists, write header record first
+		}
 		allLogRecords.add(logRecord);
 
 		try (
@@ -142,7 +147,11 @@ public class HB0711Logging {
 		// sort them into descending order (oldest first)
 		Arrays.sort(logfiles, NameFileComparator.NAME_REVERSE);
 		// if 3 or fewer files exist, we're done, else delete the rest
-		if (logfiles.length > 3) for ( int i = 3; i < logfiles.length; i++ ) logfiles[i].delete();
+		if (logfiles.length > 3) {
+			for ( int i = 3; i < logfiles.length; i++ ) {
+				logfiles[i].delete();
+			}
+		}
      }	// End of logManage
 
 /**

@@ -329,8 +329,8 @@ class TMGpass_Locations {
 			String comment = HREmemo.returnStringContent(tmgPtable.getValueString(indexP_PID,"COMMENT"));
 			if (comment.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID", 
-					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(indexP_PID, comment));
-			hreTable.updateString("SURETY", "3");
+					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(comment));
+			hreTable.updateString("SURETY", "3"); // Need update 12.12.2024 ******************
 		//Insert row
 			hreTable.insertRow();
 

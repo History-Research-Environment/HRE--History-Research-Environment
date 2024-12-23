@@ -163,10 +163,12 @@ public class HBPersonFlagManager extends HBBusinessLayer {
 		// Find largest value for FLAG_IDENT and GUI_SEQ
 			flagDefinitionSet.beforeFirst();
 			while (flagDefinitionSet.next()) {
-				if (flagDefinitionSet.getInt("GUI_SEQ") > guiSeq)
+				if (flagDefinitionSet.getInt("GUI_SEQ") > guiSeq) {
 					guiSeq = flagDefinitionSet.getInt("GUI_SEQ");
-				if (flagDefinitionSet.getInt("FLAG_IDENT") > flagIdent)
+				}
+				if (flagDefinitionSet.getInt("FLAG_IDENT") > flagIdent) {
 					flagIdent = flagDefinitionSet.getInt("FLAG_IDENT");
+				}
 			}
 
 		// add to T251_FLAG_DEFN
@@ -207,7 +209,9 @@ public class HBPersonFlagManager extends HBBusinessLayer {
 		//Insert row in database
 			flagTranslationSet.insertRow();
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBPersonHandler - addFlagDescriptTrans(): " + sqle.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("HBPersonHandler - addFlagDescriptTrans(): " + sqle.getMessage());
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBPersonHandler - addFlagDescriptTrans(): " + sqle.getMessage());
 		}
@@ -234,7 +238,9 @@ public class HBPersonFlagManager extends HBBusinessLayer {
 			flagTranslationSet.first();
 			flagTranslationSet.deleteRow();
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBPersonHandler - deleteFlagDescription(): " + sqle.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("HBPersonHandler - deleteFlagDescription(): " + sqle.getMessage());
+			}
 			//sqle.printStackTrace();
 			throw new HBException("HBPersonHandler - deleteFlagDescription(): " + sqle.getMessage());
 		}
@@ -292,7 +298,9 @@ public class HBPersonFlagManager extends HBBusinessLayer {
 				index++;
 			}
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBPersonHandler - updateFlagTableData(): " + sqle.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("HBPersonHandler - updateFlagTableData(): " + sqle.getMessage());
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBPersonHandler - aupdateFlagTableData(): " + sqle.getMessage());
 		}

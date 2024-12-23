@@ -13,7 +13,9 @@ public class HBRequestManager {
  * RequestManager constructor
  */
 	public HBRequestManager() {
-		if (HGlobal.DEBUG) System.out.println("Initiate HBRequestManager");
+		if (HGlobal.DEBUG) {
+			System.out.println("Initiate HBRequestManager");
+		}
 	}
 
 } // End RequestManager

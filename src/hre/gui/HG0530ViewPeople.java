@@ -36,6 +36,7 @@ package hre.gui;
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * 			  2024-12-12 Make Names Alt.Type column biggger (D Ferguson)
+ * v0.04.0032 2024-12-23 Fix initial over-packing of GUI losing the Names section (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Color;
@@ -100,7 +101,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for People with collapsing panels for People Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2020-05-10
  */
 
@@ -116,6 +117,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 	private String className;
 	private int personVPindex = 0;
 	int maxHeight, widthFrame, heightFrame, dividerLocation;	// see correctPanelSize
+	Dimension newSize = new Dimension();
 	JInternalFrame peopleFrame = this;
 	private JPanel contents;
 	JScrollPane scrollPanel;
@@ -173,7 +175,6 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 
 		// Save the selected Project in a local variable (as may change)
 		vpProject = pointOpenProject.getProjectName();
-
 		if (HGlobal.DEBUG)
 			System.out.println("Translated texts:  0-" 		//$NON-NLS-1$
 					+ Arrays.toString(pointPersonHandler.setTranslatedData(screenID, "0", false)));	//$NON-NLS-1$
@@ -199,15 +200,22 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 		contents.add(scrollPanel);
 		pack();
 
-		// Store initial frame height
-        frameHeight = peopleFrame.getHeight();
-
-        // Add the Viewpoint to the Main menu pane and make it visible
+		// Add the Viewpoint to the Main menu pane
      	HG0401HREMain.mainPane.add(peopleFrame);
 
-     	if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: displaying People Viewpoint from HG0530 ViewPeople");  //$NON-NLS-1$
-		if (HGlobal.TIME) HGlobalCode.timeReport("end of HG0530ViewPers on thread "+Thread.currentThread().getName());	 //$NON-NLS-1$
+		// Depending on font size, this frame may be over-packed
+		// resulting in frame parts like Name section not being visible.
+		// Performing a panelSize correction re-calulates the correct Height
+		correctPanelSize();
 
+		// Store re-calculated frame height for saving in frameClosing
+        frameHeight = peopleFrame.getHeight();
+        // and store current correct size in T302
+		newSize.setSize(peopleFrame.getWidth(), peopleFrame.getHeight());
+		pointOpenProject.setSizeScreen(screenID, newSize);
+
+		// and finally make visible
+		if (HGlobal.TIME) HGlobalCode.timeReport("end of HG0530ViewPers create on thread "+Thread.currentThread().getName());	 //$NON-NLS-1$
     	setVisible(true);
 
 	// Listener for FrameClosing Event
@@ -221,7 +229,6 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 					Dimension frameSize = getSize();
 			// Limit screen height to initial dimension
 					double width = frameSize.getWidth();
-					Dimension newSize = new Dimension();
 					newSize.setSize(width, frameHeight);
 					pointOpenProject.setSizeScreen(screenID,newSize);
 			// Set position	in GUI data
@@ -1111,7 +1118,6 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         ImageIcon exhibitImage = pointViewpointHandler.getPersonThumbImage(personVPindex);
          if (exhibitImage != null) {
           // Scale exhibitImage to match height of P5 (120)
-        	//HBMediaHandler pointMediaHandler = (HBMediaHandler)HG0401HREMain.pointBusinessLayer[10];
         	HBMediaHandler pointMediaHandler = pointOpenProject.getMediaHandler();
          	ImageIcon newscaleImage = pointMediaHandler.scaleImage(120, 120, exhibitImage);
          	text50.insertIcon(newscaleImage);
@@ -1284,7 +1290,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         // Now get the frame height
         heightFrame = peopleFrame.getHeight();
         // Restore the Frame to original width with this height (otherwise right panels grow as well!)
-        this.setSize(widthFrame, heightFrame);
+        peopleFrame.setSize(widthFrame, heightFrame);
     }	// End correctPanelSize
 
 /**

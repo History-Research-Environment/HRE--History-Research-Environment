@@ -60,7 +60,7 @@ public class TMGfolderChooser extends JDialog {
  * @param folderStart	folder to start search in (default to User Home directory)
  * @param mode			1=FILES_ONLY, 2=DIRECTORIES_ONLY
  */
-	public TMGfolderChooser (String dialogType, String fileType, String fileExt, String fileName, String folderStart, int mode) {
+	public TMGfolderChooser (final String dialogType, String fileType, final String fileExt, String fileName, String folderStart, final int mode) {
 
 		setResizable(false);
 		// Clear filename and path fields
@@ -82,7 +82,7 @@ public class TMGfolderChooser extends JDialog {
 								   userDir = userDir + File.separator +"hre"+ File.separator;
 								 }
 			else userDir = folderStart;
-		JFileChooser fileChooser = new JFileChooser(userDir);
+		final JFileChooser fileChooser = new JFileChooser(userDir);
 
 		// Setup FileChooser in fast start mode
 		fileChooser.putClientProperty("FileChooser.useShellFolder", Boolean.FALSE);

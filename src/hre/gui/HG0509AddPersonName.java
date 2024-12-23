@@ -7,6 +7,7 @@ package hre.gui;
  * 			  2024-08-16 NLS conversion (D Ferguson)
  * 			  2024-10-13 Edited and removed additinal{} (N Tolleshaug)
  * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
+ * v0.03.0031 2024-12-22 Updated for B32 (N Tolleshaug)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE02 load/edit/save/move of Citation data
@@ -64,7 +65,7 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 			// Action each save function depending on what has been changed
 				long personNameTablePID = 0;
 				try {
-					System.out.println(" HG0509AddPersonName save event type: " + nameEventType);
+					//System.out.println(" HG0509AddPersonName save event type: " + nameEventType);
 					personNameTablePID = pointPersonHandler.createPersonNameRecord(personTablePID, nameEventType);
 					if (styleChanged) {
 						// Save the new name style in DB

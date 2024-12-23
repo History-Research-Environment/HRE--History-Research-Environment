@@ -46,6 +46,7 @@ package hre.tmgjava;
  * 			  2023-11-03 - Updated for new associate event processing
  * 			  2024-10-20 - Removed finally console and status printout (N. Tolleshaug)
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
+ *			  2024-12-12 - Updated for seed v22c database (N. Tolleshaug)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -79,7 +80,7 @@ import hre.bila.HBException;
 public class TMGHREconverter extends SwingWorker<String, String> {
 
 	private TMGloader tmgLoader;
-	protected HREloader_V22b hreLoader;
+	protected HREloader_V22c hreLoader;
 	protected HREmemo pointHREmemo;
 	protected TMGpass_Support pointSupportPass;
 	protected TMGpass_Source pointSourcePass;
@@ -160,7 +161,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		tmghreDataBase = databasePath;
 		tmgStartFolder = TMGglobal.tmgStartFolder;
 
-		seedBase = TMGglobal.seedBase22b;
+		//seedBase = TMGglobal.seedBase22b;
+		seedBase = TMGglobal.seedBase22c;
 
 	// Copy seed database
 		try {
@@ -559,7 +561,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * @throws HCException
  */
 	private void generateHREtables() throws HCException {
-		hreLoader = new HREloader_V22b(tmghreDataBase,this);
+		hreLoader = new HREloader_V22c(tmghreDataBase,this);
 		processMonitor.setProgress(0);
 	}
 /**
@@ -893,8 +895,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		// Test HDATE convert
 			//if (TMGglobal.TRACE) testHdateConvert();
 		// Select database
-			if (!TMGglobal.databaseVersion.startsWith("v22b")) throw new HCException(" MAIN - HRE database version not accepted");
-			tmghreDataBase = TMGglobal.tmghreBase22b;
+			if (!TMGglobal.databaseVersion.startsWith("v22c")) throw new HCException(" MAIN - HRE database version not accepted");
+			tmghreDataBase = TMGglobal.tmghreBase22c;
 
 			TMGHREprogressMonitor conv = new TMGHREprogressMonitor();
 			conv.startMonitor();

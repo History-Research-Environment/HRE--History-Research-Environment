@@ -707,15 +707,11 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 		// If data exist copy data from project open
 			if (pointOpenProject.reloadLocationSelectData || locationStyleChanged) {
-				if (dBbuild.startsWith("v22b")) {
-					nrOfRows = generateHRElocationTable(pointOpenProject, nrOfColumns, tableControl);
-					if (HGlobal.DEBUG) {
-						System.out.println(" HBWhereWhenHandler - HRElocation22a location table initiated ");
-					}
-				} else {
-					System.out.println(" HBWhereWhenHandler selected DataBase not found -" + dBbuild);
-				}
 
+				nrOfRows = generateHRElocationTable(pointOpenProject, nrOfColumns, tableControl);
+				if (HGlobal.DEBUG) 
+					System.out.println(" HBWhereWhenHandler - HRElocation22c location table initiated ");
+		
 				pointOpenProject.locationSelectData = locationData;
 				pointOpenProject.reloadLocationSelectData = false;
 

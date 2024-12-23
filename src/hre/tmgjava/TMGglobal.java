@@ -16,6 +16,9 @@ package hre.tmgjava;
  * v0.00.0028 2023-04-01 - Cleaned database version testing (N. Tolleshaug)
  * v0.00.0030 2023-08-15 - Included log file path for user/HRE (N. Tolleshaug)
  * 			  2023-08-31 - Added boolean FLAGCHECK control flag error (N. Tolleshaug)
+ * v0.00.0031 2023-08-15 - Build 31 (N. Tolleshaug)
+ * v0.00.0032 2024-12-21 - Build 32 (N. Tolleshaug)
+ * 			  2024-12-22 - Updated for v22c database
  * 	
  *****************************************************************************************/
 
@@ -23,15 +26,15 @@ import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "21.06.2024";				// Set Build number
-	public static String releaseDate = "21 Jun. 2024";		// and release date
+	public static String buildNo = "22.12.2024";				// Set Build number
+	public static String releaseDate = "22 Des. 2024";		// and release date
 
-	//public static String databaseVersion = "v22a 2023-05-23";	// Database version
-	public static String databaseVersion = "v22b 2023-10-16";	// Database version
+	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
+	public static String databaseVersion = "v22c 2024-12-19";	// Database version DDL
 	
-	//public static String databaseBuild = "v22a 2023-05-24"; // First build
-	//public static String databaseBuild = "v22a 2023-09-01"; // Updated T20X tables
-	public static String databaseBuild = "v22b 2023-10-18"; // Updated for v22b
+	//public static String databaseBuild = "v22c 2024-11-01"; // Updated T20X tables
+	//public static String databaseBuild = "v22c 2024-11-01"; // Updated for v22c / v22c 2024-11-01
+	public static String databaseBuild = "v22c 2024-12-19"; // Updated for v22c / SQL: DDL v22c 2024-12-19
 
 	public static int dataSetID = 1; // Selected DATASET number from TMG folder
 
@@ -95,19 +98,12 @@ public class TMGglobal {
 	public static String logFile = "C:\\Users\\nils\\HRE\\NTo-B31-Log.txt";
 // **************************************************************************
 	public static String tmgStartFolder = "C:\\Users\\nils\\Documents\\The Master Genealogist v9\\Projects\\";
-	public static String tmghreBase20 = "C:\\Users\\nils\\HRE\\Project\\HRE-TMG-v20";
-	public static String tmghreBase21m = "C:/Users/nils/HRE/Project/HRE-TMG-v21m";
-// DDL 22a/b **************************************************************************
-	public static String tmghreBase22a = "C:/Users/nils/HRE/Project/HRE-TMG-v22a";
-	public static String tmghreBase22b = "C:/Users/nils/HRE/Project/HRE-TMG-v22b";
+// DDL 22c **************************************************************************
+	public static String tmghreBase22c = "C:/Users/nils/HRE/Project/HRE-TMG-v22c";
 //****************************************************************************************
 	public static String seedBase = "C:\\Users\\nils\\HRE\\HRE Seed database.mv.db";
-	public static String seedBase21a = "C:\\Users\\nils\\HRE\\HRE Seed database v21a.mv.db";
-	public static String seedBase21 = "C:\\Users\\nils\\HRE\\HRE Seed database v21m.mv.db";
-// DDL 22a *****************************************************************************
-	public static String seedBase22a = "C:\\Users\\nils\\HRE\\HRE Seed database v22a.mv.db";
-// DDL 22b ************************** NB change to 22b later
-	public static String seedBase22b = "C:\\Users\\nils\\HRE\\HRE Seed database v22b.mv.db";
+// DDL 22c ************************** 	
+	public static String seedBase22c = "C:\\Users\\nils\\HRE\\HRE Seed database v22c.mv.db";
 
 /**
  * Table objects for TMG tables

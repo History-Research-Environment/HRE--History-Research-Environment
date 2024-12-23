@@ -1081,14 +1081,9 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				 pointLocationData[locationVPindex] = new ViewLocationData(pointDBlayer,
 						 								dataBaseIndex, pointOpenProject);
 
-				 if (dBbuild.startsWith("v22b")) {
-
 			// Move nameDisplayIndex from HBOpenProjectData to ViewPeopleData
-							 pointLocationData[locationVPindex].setNameDisplayIndex(pointOpenProject.getNameDisplayIndex());
-							 errorCode = pointLocationData[locationVPindex].updateLocationVPtable(locationTablePID, screenID);
-				} else {
-					System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
-				}
+				 pointLocationData[locationVPindex].setNameDisplayIndex(pointOpenProject.getNameDisplayIndex());
+				 errorCode = pointLocationData[locationVPindex].updateLocationVPtable(locationTablePID, screenID);
 
 				 viewLocationScreen = new HG0530ViewLocation(
 						 pointOpenProject.getViewPointHandler(),
@@ -1335,15 +1330,11 @@ public class HBViewPointHandler extends HBBusinessLayer {
 				}
 
 			// Create eventVPData
-			  	if (dBbuild.startsWith("v22b")) {
 
 			// Move nameDisplayIndex from HBOpenProjectData to ViewPeopleData
-					pointEventData[eventVPindex].setNameDisplayIndex(pointOpenProject.getNameDisplayIndex());
-			    	pointEventData[eventVPindex].updateEventVPtable(eventTablePID, screenID);
+				pointEventData[eventVPindex].setNameDisplayIndex(pointOpenProject.getNameDisplayIndex());
+		    	pointEventData[eventVPindex].updateEventVPtable(eventTablePID, screenID);
 
-				} else {
-					System.out.println("HBViewPointHandler selected DataBase not found - " + dBbuild);
-				}
 
 			//Initiate 	HG0530ViewEvent
 				HG0401HREMain.mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -2034,25 +2025,22 @@ class ViewPeopleData extends HBBusinessLayer {
 			personNameTableRS.beforeFirst();
 			int row = 0;
 			while (personNameTableRS.next()) {
-				if (dBbuild.startsWith("v22b")) {
-					name_RPID = personNameTableRS.getLong("PID");
-					nameStylePID = personNameTableRS.getLong("NAME_STYLE_RPID");
-					nameType = personNameTableRS.getInt("NAME_EVNT_TYPE");
-					nameTable[row][0] = " " + pointLibraryResultSet.getEventName(nameType, langCode, dataBaseIndex).trim();
+				name_RPID = personNameTableRS.getLong("PID");
+				nameStylePID = personNameTableRS.getLong("NAME_STYLE_RPID");
+				nameType = personNameTableRS.getInt("NAME_EVNT_TYPE");
+				nameTable[row][0] = " " + pointLibraryResultSet.getEventName(nameType, langCode, dataBaseIndex).trim();
 
-				// Set type of name
-					primaryName = personNameTableRS.getBoolean("NAME_PRIMARY");
-				// set up personal name style
-					personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStylePID, "N", dataBaseIndex);
-				// Find name according to name style
-					nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,dataBaseIndex, personStyle);
-				// Mark primary
-					if (primaryName) {
-						nameTable[row][1] = nameTable[row][1] + "(Primary)";
-					}
-				} else {
-					System.out.println("HBPersonHandler selected DataBase not found - " + dBbuild);
+			// Set type of name
+				primaryName = personNameTableRS.getBoolean("NAME_PRIMARY");
+			// set up personal name style
+				personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStylePID, "N", dataBaseIndex);
+			// Find name according to name style
+				nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,dataBaseIndex, personStyle);
+			// Mark primary
+				if (primaryName) {
+					nameTable[row][1] = nameTable[row][1] + "(Primary)";
 				}
+
 				long hdatePID = personNameTableRS.getLong("START_HDATE_RPID");
 				nameTable[row][2] = pointLibraryResultSet.exstractDate(hdatePID, dataBaseIndex);
 				row++;

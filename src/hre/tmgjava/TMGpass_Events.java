@@ -377,7 +377,7 @@ class TMGpass_Events  {
 		// Processing memo to T167_MEMO_SET
 			if (efoot.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID",
-					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(indexPID, efoot));
+					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(efoot));
 
 		// Find the role number from E.dbf table "ROLE"
 			int per1 = tmgGtable.getValueInt(rowPID,"PER1");
@@ -398,7 +398,7 @@ class TMGpass_Events  {
 					for (int i = 0; i < vectorTableE.size() ; i++) {
 						String role = tmgEtable.findVectorString(recNr, i, "ROLE");
 						int eper = tmgEtable.findVectorInt(recNr, i, "EPER");
-						int gnum = tmgEtable.findVectorInt(recNr, i, "GNUM");
+						//int gnum = tmgEtable.findVectorInt(recNr, i, "GNUM");
 						//System.out.println(" Eper : " + eper + " Gnum: " + gnum + " Role:" + role);
 						if (per2 == eper) roleNumber = role;
 					}
@@ -467,8 +467,7 @@ class TMGpass_Events  {
 		//A number defining the relationship type, as per the codes defined in the ‘Data Transfer from TMG $/F Records’ section of this document
 			int eventTypeNumber = tmgGtable.getValueInt(indexG_PID,"ETYPE");
 
-		// Updated for en-UK initiated projects with event type < 1000
-			
+		// Updated for en-UK initiated projects with event type < 1000	
 			int origtype = tmgTtable.findValueInt(eventTypeNumber ,"ORIGETYPE");
 			
 		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types		
@@ -490,7 +489,7 @@ class TMGpass_Events  {
 		// Processing memo to T167_MEMO_SET
 			if (efoot.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID",
-					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(indexPID, efoot));
+					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(efoot));
 
 		// Surety in TMG also recorded for other partner relationship
 			hreTable.updateString("SURETY", tmgGtable.getValueString(indexG_PID,"ENSURE"));
@@ -914,6 +913,7 @@ class TMGpass_Events  {
 			hreTable.updateInt("EVNT_ROLE_MINAGE",0);
 			hreTable.updateInt("EVNT_ROLE_MAXAGE",100);
 			hreTable.updateLong("ROLE_SENTENCE_RPID", null_RPID);
+			hreTable.updateBoolean("KEY_ASSOC", false);  // New in v22c - 12.12.2024 *****************
 		//Insert row
 			hreTable.insertRow();
 
@@ -1152,7 +1152,7 @@ class TMGpass_Events  {
 		// Processing memo to T167_MEMO_SET
 			if (memo.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID",
-					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(eventAssocPID, memo));
+					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(memo));
 
 			hreTable.updateLong("ASSOC_SENTENCE_RPID", null_RPID);
 		//Insert row

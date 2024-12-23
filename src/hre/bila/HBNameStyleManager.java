@@ -19,7 +19,7 @@ package hre.bila;
  *  		  2023-01-25 - Implemented Convert TMG and new exception handling (N. Tolleshaug)
  *  		  2023-02-01 - Added code for add new person (N. Tolleshaug)
  *  		  2023-02-04 - Added code for truncation of new style name (N. Tolleshaug)
- * v0.03.0030 2021-10-06 - Truncate Output name style copy if > 30 chars (D Ferguson) 
+ * v0.03.0030 2021-10-06 - Truncate Output name style copy if > 30 chars (D Ferguson)
  **********************************************************************************************
  */
 import java.sql.ResultSet;
@@ -117,9 +117,10 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	public int updateStyleTable(String nameType, String nameStyleTable, String nameElementTable) throws HBException {
 		nameStyleTableName = nameStyleTable;
 		nameElementTableName = nameElementTable;
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println(" Tables: " +  " Name Type: "  + nameType +  " data: "
 					+ nameStyleTableName + " / " + nameElementTableName);
+		}
 		setNameStyleTable(nameType);
 		getAllNameStyleElements(nameType);
 		setNameStyleData(0);
@@ -174,10 +175,13 @@ public class HBNameStyleManager extends HBBusinessLayer {
 				nameStyleCodeString[index] = nameStyleTable.getString("ELEMNT_CODES");
 				nameStyleNameString[index] = nameStyleTable.getString("ELEMNT_NAMES");
 
-				if (HGlobal.DEBUG)
-					if (isTmgNameStyle[index])
+				if (HGlobal.DEBUG) {
+					if (isTmgNameStyle[index]) {
 						System.out.println(" Style descriptions " + nameStyleNameString[index]);
-					else System.out.println(" Style descriptions - Null");
+					} else {
+						System.out.println(" Style descriptions - Null");
+					}
+				}
 
 				if (isDefaultNameStyle[index]) {
 					defaultStyleIndex = index;
@@ -189,8 +193,12 @@ public class HBNameStyleManager extends HBBusinessLayer {
 				index++;
 			}
 		} catch (SQLException | HBException hbe) {
-			if (HGlobal.DEBUG) System.out.println("HBToolHandler - updateStyleTable: " + hbe.getMessage());
-			if (HGlobal.DEBUG) hbe.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBToolHandler - updateStyleTable: " + hbe.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			throw new HBException("HBE01","HBE01 - Name Style Handling \n" + hbe.getMessage(),0);
 		}
 	}
@@ -225,26 +233,37 @@ public class HBNameStyleManager extends HBBusinessLayer {
 				isSystemOutputStyle[index] = outputStyleTable.getBoolean("IS_SYSTEM");
 				isTmgOutputStyle[index] = outputStyleTable.getBoolean("IS_TMG");
 				outType[index] = outputStyleTable.getString("OUT_TYPE");
-				if (outType[index].equals("D")) numberOfDtypes++;
-				if (outType[index].equals("R")) numberOfRtypes++;
+				if (outType[index].equals("D")) {
+					numberOfDtypes++;
+				}
+				if (outType[index].equals("R")) {
+					numberOfRtypes++;
+				}
 				outputStyleText[index] = outputStyleTable.getString("OUT_NAME_STYLE_DESC");
 				outputStyleCodeString[index] = outputStyleTable.getString("OUT_ELEMNT_CODES");
-				if (outputStyleTable.getBoolean("IS_TMG"))
-				  outputStyleNameString[index] = "";
-				else outputStyleNameString[index] = "null|";
+				if (outputStyleTable.getBoolean("IS_TMG")) {
+					outputStyleNameString[index] = "";
+				} else {
+					outputStyleNameString[index] = "null|";
+				}
 
-				if (HGlobal.DEBUG)
-					if (isTmgOutputStyle[index])
+				if (HGlobal.DEBUG) {
+					if (isTmgOutputStyle[index]) {
 						System.out.println(" Style descript:  " + index + " - " + outputStyleNameString[index]);
-					else System.out.println(" Style descript: " + index + " -  null|");
+					} else {
+						System.out.println(" Style descript: " + index + " -  null|");
+					}
+				}
 				selectedStyle = outputStyleNames[index];
 				index++;
 			}
 		} catch (SQLException | HBException hbe) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("HBToolHandler - updateOutputStyleTable: " + hbe.getMessage());
-			if (HGlobal.DEBUG)
+			}
+			if (HGlobal.DEBUG) {
 				hbe.printStackTrace();
+			}
 			throw new HBException("HBE02","HBE02 -  Name Style Handling \n" + hbe.getMessage(),0);
 		}
 	}
@@ -255,7 +274,7 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * @param styleIndex
  * @return boolean
  */
-	
+
 	public String[] getNameStyleElementCodes (int selectedIndex) {
 		return  nameStyleCodeString[nameStyleIndex].split("\\|");
 	}
@@ -273,9 +292,13 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	}
 
 	public void setNameStyleIsDefault(int styleIndex) {
-		for (int i = 0; i < isDefaultNameStyle.length; i++)
-			if (i == styleIndex) isDefaultNameStyle[i] = true;
-			else isDefaultNameStyle[i] = false;
+		for (int i = 0; i < isDefaultNameStyle.length; i++) {
+			if (i == styleIndex) {
+				isDefaultNameStyle[i] = true;
+			} else {
+				isDefaultNameStyle[i] = false;
+			}
+		}
 	}
 
 	public void setOutStyleType(int styleIndex, String outStyleType) {
@@ -287,19 +310,35 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	}
 
 	public boolean lastDtypeOutNS(int styleIndex, String nameType) {
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println(" Number of " +nameType + " D-types: " + numberOfDtypes);
-		if (nameType.equals("N"))
-			if (numberOfDtypes > 2) return false; else return true;
-		else if (nameType.equals("P"))
-			if (numberOfDtypes > 1) return false; else return true;
-		else return true;
+		}
+		if (nameType.equals("N")) {
+			if (numberOfDtypes > 2) {
+				return false;
+			} else {
+				return true;
+			}
+		} else if (nameType.equals("P")) {
+			if (numberOfDtypes > 1) {
+				return false;
+			} else {
+				return true;
+			}
+		} else {
+			return true;
+		}
 	}
 
 	public boolean lastRtypeOutNS(int styleIndex, String nameType) {
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println(" Number of " +nameType + " R-types: " + numberOfRtypes);
-		if (numberOfRtypes > 1) return false; else return true;
+		}
+		if (numberOfRtypes > 1) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 
 /**
@@ -335,14 +374,19 @@ public class HBNameStyleManager extends HBBusinessLayer {
 			nameElementDescription = elementDescription.split("\\|");
 			for (int i = 0; i < nameElementDescription.length; i++) {
 				//Set up index to name element description with key name element code
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println(" " + i + " element "
 							   + nameElementData[i] + "/" + nameElementDescription[i]);
+				}
 				elementCodeMap.put(nameElementData[i], nameElementDescription[i]);
 			}
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - getAllNameStyleElements(): " + sqle.getMessage());
-			if (HGlobal.DEBUG) sqle.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - getAllNameStyleElements(): " + sqle.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				sqle.printStackTrace();
+			}
 			throw new HBException("HBE03","HBE03 - HBNameStyleManager - getAllNameStyleElements(): " + sqle.getMessage(),0);
 		}
 	}
@@ -354,12 +398,13 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	public void setNameStyleData(int styleIndex) {
 		nameStyleIndex = styleIndex;
 		nameStyleCodes = nameStyleCodeString[styleIndex].split("\\|");
-		if (isTmgNameStyle[styleIndex])
+		if (isTmgNameStyle[styleIndex]) {
 			nameStyleDescript = nameStyleNameString[styleIndex].split("\\|");
-		else {
+		} else {
 			nameStyleDescript = new String[nameStyleCodes.length];
-			for (int i = 0; i < nameStyleCodes.length; i++)
+			for (int i = 0; i < nameStyleCodes.length; i++) {
 				nameStyleDescript[i] = elementCodeMap.get(nameStyleCodes[i]);
+			}
 		}
 	}
 
@@ -381,13 +426,16 @@ public class HBNameStyleManager extends HBBusinessLayer {
 					separatorCode = outputStyleCodes[i].split("#");
 					separator = separatorCode[1];
 					testSeparator = separatorCode[0];
-				} else testSeparator = outputStyleCodes[i];
+				} else {
+					testSeparator = outputStyleCodes[i];
+				}
 
 		// Find the element names from style element names
-				for (int j = 0; j < nameStyleDescript.length; j++)
+				for (int j = 0; j < nameStyleDescript.length; j++) {
 					if (testSeparator.equals(nameStyleCodes[j])) {
 						outputStyleDescript[i]	= nameStyleDescript[j] + separator;
 					}
+				}
 			}
 
 		} else {
@@ -398,7 +446,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
 				if (outputStyleCodes[i].length() > 4) {
 					separatorCode = outputStyleCodes[i].split("#");
 					outputStyleDescript[i] = elementCodeMap.get(separatorCode[0]) + separatorCode[1];
-				} else outputStyleDescript[i] = elementCodeMap.get(outputStyleCodes[i]);
+				} else {
+					outputStyleDescript[i] = elementCodeMap.get(outputStyleCodes[i]);
+				}
 			}
 		}
 	}
@@ -452,8 +502,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * @param elements
  */
 	public void getChosenElements(DefaultListModel<String> elements) {
-		for (String element : nameStyleDescript)
+		for (String element : nameStyleDescript) {
 			elements.addElement(element);
+		}
 	}
 
 /**
@@ -461,8 +512,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * @param elements
  */
 	public void getOutputElements(DefaultListModel<String> elements) {
-		for (String element : outputStyleDescript)
+		for (String element : outputStyleDescript) {
 			elements.addElement(element);
+		}
 	}
 
 /**
@@ -470,8 +522,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * @param elements
  */
 	public void getOutputCodes(DefaultListModel<String> elements) {
-		for (String outputStyleCode : outputStyleCodes)
+		for (String outputStyleCode : outputStyleCodes) {
 			elements.addElement(outputStyleCode);
+		}
 	}
 
 /**
@@ -479,8 +532,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * @param codes
  */
 	   public void getChosenCodes(DefaultListModel<String> codes) {
-		   for (String nameStyleCode : nameStyleCodes)
+		   for (String nameStyleCode : nameStyleCodes) {
 			codes.addElement(nameStyleCode);
+		}
 	   }
 
 /**
@@ -492,10 +546,13 @@ public class HBNameStyleManager extends HBBusinessLayer {
 			   elements.addElement(nameElementDescription[i]);
 
 		// The T163 is set up with 3 digits (500) and not leading 0 as 0500
-			   if (nameElementData[i].length() == 3) nameElementData[i] = "0" + nameElementData[i];
-			   if (HGlobal.DEBUG)
-				   System.out.println(" " + i + " element "
+			   if (nameElementData[i].length() == 3) {
+				nameElementData[i] = "0" + nameElementData[i];
+			}
+			   if (HGlobal.DEBUG) {
+				System.out.println(" " + i + " element "
 					   + nameElementData[i] + "/" + nameElementDescription[i]);
+			}
 		   }
 	   }
 
@@ -503,8 +560,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * Load list of ALL Name Style Elements and Element Codes  from the T168 record
  */
 	   public void getAllCodes(DefaultListModel<String> codes) {
-		   for (String element : nameElementData)
+		   for (String element : nameElementData) {
 			codes.addElement(element);
+		}
 	   }
 
 /**
@@ -518,25 +576,38 @@ public class HBNameStyleManager extends HBBusinessLayer {
 		// Find last PID for table, create Style name
 			   long lastPID = lastRowPID(nameStyles, dataBaseIndex);
 			   nameStyleTable.absolute(styleIndex+1); // Start row at index = 1
-			   if (HGlobal.DEBUG) System.out.println(" NAME_STYLE name length: "
-					   + nameStyleTable.getString("NAME_STYLE").trim().length());
+			   if (HGlobal.DEBUG) {
+				System.out.println(" NAME_STYLE name length: "
+						   + nameStyleTable.getString("NAME_STYLE").trim().length());
+			}
 
-			   if (addHRE) styleData[0] = nameStyleTable.getString("NAME_STYLE").trim() + "-COPY";
-			   else styleData[0] = "HRE " + nameStyleTable.getString("NAME_STYLE").trim();
+			   if (addHRE) {
+				styleData[0] = nameStyleTable.getString("NAME_STYLE").trim() + "-COPY";
+			} else {
+				styleData[0] = "HRE " + nameStyleTable.getString("NAME_STYLE").trim();
+			}
 		// Truncation of new style name
 			   if (styleData[0].length() > 30) {
 				   styleData[0] = styleData[0].substring(0,30);
 			   }
 		// Create Style Description
-			   if (addHRE) styleData[1] = nameStyleTable.getString("NAME_STYLE_DESC");
-			   else {
-				   if (nameType.equals("N")) styleData[1] = "HRE person name style converted from TMG";
-				   else if (nameType.equals("P")) styleData[1] = "HRE location name style converted from TMG";
-				   else System.out.println("Illegal name type");
+			   if (addHRE) {
+				styleData[1] = nameStyleTable.getString("NAME_STYLE_DESC");
+			} else {
+				   if (nameType.equals("N")) {
+					styleData[1] = "HRE person name style converted from TMG";
+				} else if (nameType.equals("P")) {
+					styleData[1] = "HRE location name style converted from TMG";
+				} else {
+					System.out.println("Illegal name type");
+				}
 			   }
 		// If this is a copy, then copy the ElementCodes, else use the newCodes parameter
-			   if (addHRE) styleData[2] = nameStyleTable.getString("ELEMNT_CODES");
-			   else styleData[2] = newCodes;
+			   if (addHRE) {
+				styleData[2] = nameStyleTable.getString("ELEMNT_CODES");
+			} else {
+				styleData[2] = newCodes;
+			}
 			   styleData[3] = "null|";
 			   pointLibraryResultSet.addNameStyleToTable(nameStyleTable, lastPID + 1, nameType, styleData);
 
@@ -548,8 +619,12 @@ public class HBNameStyleManager extends HBBusinessLayer {
 			   }
 
 		   } catch (HBException | SQLException hbe) {
-			   if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - addNewTableRow(): " + hbe.getMessage());
-			   if (HGlobal.DEBUG) hbe.printStackTrace();
+			   if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - addNewTableRow(): " + hbe.getMessage());
+			}
+			   if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			   throw new HBException("HBE04", "Name Style Handling - addNewTableRow(\n" + hbe.getMessage(),0);
 		   }
 	   }
@@ -566,9 +641,13 @@ public class HBNameStyleManager extends HBBusinessLayer {
 		   int substitutions = 0;
 		   ResultSet nameTableResultSet;
 	   // Select person or location name table
-		   if (nameType.equals("N")) nameTable = personNameTable;
-		   else if (nameType.equals("P")) nameTable = locationNameTable;
-		   else System.out.println("Illegal nameType!");
+		   if (nameType.equals("N")) {
+			nameTable = personNameTable;
+		} else if (nameType.equals("P")) {
+			nameTable = locationNameTable;
+		} else {
+			System.out.println("Illegal nameType!");
+		}
 		   try {
 		// Find new and old RPID for substitute
 			   newRPID = lastRowPID(nameStyles, dataBaseIndex);
@@ -635,21 +714,28 @@ public class HBNameStyleManager extends HBBusinessLayer {
 		// Find last PID for table
 			   long lastPID = lastRowPID(nameStylesOutput, dataBaseIndex);
 			   outputStyleTable.absolute(styleIndex+1); // Start row at index = 1
-			   if (HGlobal.DEBUG)
-				   System.out.println(" NAME_STYLE name length: "
+			   if (HGlobal.DEBUG) {
+				System.out.println(" NAME_STYLE name length: "
 						   		+ outputStyleTable.getString("OUT_NAME_STYLE").trim().length());
-			   styleData[0] = outType[styleIndex];		  
+			}
+			   styleData[0] = outType[styleIndex];
 			   styleData[1] = outputStyleTable.getString("OUT_NAME_STYLE").trim();
 			   // Restrict length of new name to 30 chars (including "-COPY")
-			   if (styleData[1].length() > 25) styleData[1] = styleData[1].substring(0,25); 
-			   styleData[1] = styleData[1] + copy; 
+			   if (styleData[1].length() > 25) {
+				styleData[1] = styleData[1].substring(0,25);
+			}
+			   styleData[1] = styleData[1] + copy;
 			   styleData[2] = outputStyleTable.getString("OUT_NAME_STYLE_DESC").trim();
 			   styleData[3] = outputStyleTable.getString("OUT_ELEMNT_CODES");
 
 			   pointLibraryResultSet.addOutputStyleToTable(outputStyleTable, lastPID + 1, ownerPID, nameType, styleData);
 		   } catch (HBException | SQLException hbe) {
-			   if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - addNewOutTableRow(): " + hbe.getMessage());
-			   if (HGlobal.DEBUG) hbe.printStackTrace();
+			   if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - addNewOutTableRow(): " + hbe.getMessage());
+			}
+			   if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			   throw new HBException("HBE07","HBE07 - Name Style Handling - addNewOutTableRow() \n" + hbe.getMessage(),0);
 		   }
 	   }
@@ -663,37 +749,52 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	   int occursInNameList = 0;
 	   ResultSet nameTableResultSet;
 	   String tableName = null, selectString;
-	   if (getNameStyleIsDefault(styleIndex))
-		   throw new HBException("HBE08","HBE08 Default name style cannot be deleted!", 0);
+	   if (getNameStyleIsDefault(styleIndex)) {
+		throw new HBException("HBE08","HBE08 Default name style cannot be deleted!", 0);
+	}
 	   try {
 		   setNameStyleData(0);
 		   nameStyleTable.absolute(styleIndex+1); // Start row at index = 1
 		   long oldRPID = nameStyleTable.getLong("PID");
 
-		   if (nameType.equals("N")) tableName = personNameTable;
-		   else if (nameType.equals("P")) tableName = locationNameTable;
-		   else System.out.println("Illegal nameType!");
+		   if (nameType.equals("N")) {
+			tableName = personNameTable;
+		} else if (nameType.equals("P")) {
+			tableName = locationNameTable;
+		} else {
+			System.out.println("Illegal nameType!");
+		}
 
 	// Check the use of name style in name tables
 		   selectString = setSelectSQL("*", tableName,"");
 		   nameTableResultSet = requestTableData(selectString, dataBaseIndex);
 		   nameTableResultSet.beforeFirst();
-		   while (nameTableResultSet.next())
-			   if (nameTableResultSet.getLong("NAME_STYLE_RPID") == oldRPID) occursInNameList++;
-		   if (occursInNameList > 0) throw new HBException("HBE09", "HBE09 Name style used ", occursInNameList);
+		   while (nameTableResultSet.next()) {
+			if (nameTableResultSet.getLong("NAME_STYLE_RPID") == oldRPID) {
+				occursInNameList++;
+			}
+		}
+		   if (occursInNameList > 0) {
+			throw new HBException("HBE09", "HBE09 Name style used ", occursInNameList);
+		}
 
 		   pointLibraryResultSet.deleteNameStyleRow(nameStyleTable, styleIndex);
 
 	// Delete corresponding out styles owned by Name Style
 		   outputStyleTable.last();
 		   int outStyleRows = outputStyleTable.getRow();
-		   for (int outIndex = 0; outIndex < outStyleRows; outIndex++)
-			   pointLibraryResultSet.deleteNameStyleRow(outputStyleTable, outIndex);
+		   for (int outIndex = 0; outIndex < outStyleRows; outIndex++) {
+			pointLibraryResultSet.deleteNameStyleRow(outputStyleTable, outIndex);
+		}
 
 		   nameTableResultSet.close(); //Release resources
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - deleteNameStyleRow(): " + sqle.getMessage());
-			if (HGlobal.DEBUG) sqle.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - deleteNameStyleRow(): " + sqle.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				sqle.printStackTrace();
+			}
 			throw new HBException("HBE10","Name Style Handling - deleteNameStyleRow()"  + sqle.getMessage(), 0);
 		}
    }
@@ -746,8 +847,12 @@ public class HBNameStyleManager extends HBBusinessLayer {
 		   styleData[3] = nameStyleTable.getString("ELEMNT_CODES");
 		   pointLibraryResultSet.updateNameStyleTable(nameStyleTable, styleData);
 	   } catch (SQLException | HBException hbe) {
-		   if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - updateStyleName(): " + hbe.getMessage());
-		   if (HGlobal.DEBUG) hbe.printStackTrace();
+		   if (HGlobal.DEBUG) {
+			System.out.println("HBNameStyleManager - updateStyleName(): " + hbe.getMessage());
+		}
+		   if (HGlobal.DEBUG) {
+			hbe.printStackTrace();
+		}
 		   throw new HBException("HBE12", "Name Style Handling - updateStyleName\n" + hbe.getMessage(),0);
 	   } // Start row at index = 1
    }
@@ -765,8 +870,12 @@ public class HBNameStyleManager extends HBBusinessLayer {
 			styleData[3] = outputStyleTable.getString("OUT_ELEMNT_CODES");
 		    pointLibraryResultSet.updateOutputStyleTable(outputStyleTable, ownerPID, styleData);
 	   } catch (SQLException | HBException hbe) {
-		   if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - updateStyleName(): " + hbe.getMessage());
-		   if (HGlobal.DEBUG) hbe.printStackTrace();
+		   if (HGlobal.DEBUG) {
+			System.out.println("HBNameStyleManager - updateStyleName(): " + hbe.getMessage());
+		}
+		   if (HGlobal.DEBUG) {
+			hbe.printStackTrace();
+		}
 		   throw new HBException("HBE13","Name Style Handling - updateOutputStyleName\n" + hbe.getMessage(),0);
 	   } // Start row at index = 1
    }
@@ -787,13 +896,20 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	   		styleData[0] = nameStyleTable.getString("NAME_STYLE").trim();
 			styleData[1] = nameStyleTable.getString("NAME_STYLE_DESC").trim();
 			String elementNames = nameStyleTable.getString("ELEMNT_NAMES");
-			if (!nameStyleTable.getBoolean("IS_TMG")) styleData[2] = elementNames;
-			else styleData[2] = generateElementString(newDescriot);
+			if (!nameStyleTable.getBoolean("IS_TMG")) {
+				styleData[2] = elementNames;
+			} else {
+				styleData[2] = generateElementString(newDescriot);
+			}
 			styleData[3] = generateElementString(newCodes);
 			pointLibraryResultSet.updateNameStyleTable(nameStyleTable, styleData);
 		} catch (SQLException | HBException hbe) {
-			if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - updateNameStyleData(): " + hbe.getMessage());
-			if (HGlobal.DEBUG) hbe.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - updateNameStyleData(): " + hbe.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			throw new HBException("HBE14", "Name Style Handling - updateNameStyleData\n" + hbe.getMessage(),0);
 		}
    }
@@ -817,8 +933,12 @@ public class HBNameStyleManager extends HBBusinessLayer {
 			styleData[3] = generateElementString(newCodes);
 			pointLibraryResultSet.updateOutputStyleTable(outputStyleTable,  ownerPID, styleData);
 		} catch (SQLException | HBException hbe) {
-			if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - updateOutputStyleData(): " + hbe.getMessage());
-			if (HGlobal.DEBUG) hbe.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - updateOutputStyleData(): " + hbe.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			throw new HBException("HBE15","HBE15 - Name Style Handling - updateOutputStyleData\n" + hbe.getMessage(),0);
 		}
    }
@@ -844,7 +964,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
 				if (nameStyleElements.getString("LANG_CODE").trim().equals(dataLanguage.trim())) {
 					String dataString = generateElementString(newDescript);
 					String codeString = generateElementString(newCodes);
-					if (HGlobal.DEBUG) System.out.println(" updateAllElementTable - datalang: " + nameStyleElements.getString("LANG_CODE"));
+					if (HGlobal.DEBUG) {
+						System.out.println(" updateAllElementTable - datalang: " + nameStyleElements.getString("LANG_CODE"));
+					}
 					pointLibraryResultSet.updateElementList(nameStyleElements, dataString, codeString);
 				} else {
 					String newElementDescriptionString = "";
@@ -853,8 +975,11 @@ public class HBNameStyleManager extends HBBusinessLayer {
 					String codeString = nameStyleElements.getString("ELEMNT_CODES");
 					String[] oldDescript = nameString.split("\\|");
 					String[] oldCodes = codeString.split("\\|");
-					for (int i = 0; i < oldCodes.length; i++)
-						if (oldCodes[i].length() == 3) oldCodes[i] = "0" + oldCodes[i];
+					for (int i = 0; i < oldCodes.length; i++) {
+						if (oldCodes[i].length() == 3) {
+							oldCodes[i] = "0" + oldCodes[i];
+						}
+					}
 					int index = 0;
 					for (int i = 0; i < newCodes.size(); i++) {
 						String elelementCode = newCodes.get(i);
@@ -872,17 +997,23 @@ public class HBNameStyleManager extends HBBusinessLayer {
 							newElementCodeString = newElementCodeString + elelementCode + "|";
 						}
 					}
-					if (HGlobal.DEBUG)
+					if (HGlobal.DEBUG) {
 						System.out.println(" New Descript: " + newElementDescriptionString);
-					if (HGlobal.DEBUG)
+					}
+					if (HGlobal.DEBUG) {
 						System.out.println(" New Codes: " + newElementCodeString);
+					}
 
 					pointLibraryResultSet.updateElementList(nameStyleElements, newElementDescriptionString, newElementCodeString);
 				}
 			}
 		} catch (HBException | SQLException hbe) {
-			if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - updateAllElementTable(): " + hbe.getMessage());
-			if (HGlobal.DEBUG) hbe.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - updateAllElementTable(): " + hbe.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			throw new HBException("HBE16","Name Style Handling - updateAllElementTable\n" + hbe.getMessage(),0);
 		}
    }
@@ -899,8 +1030,12 @@ public class HBNameStyleManager extends HBBusinessLayer {
 			pointLibraryResultSet.updateElementName(nameStyleElements, generateElementString(newDescript));
 
 		} catch (HBException | SQLException hbe) {
-			if (HGlobal.DEBUG) System.out.println("HBNameStyleManager - updateNameElementDescription(): " + hbe.getMessage());
-			if (HGlobal.DEBUG) hbe.printStackTrace();
+			if (HGlobal.DEBUG) {
+				System.out.println("HBNameStyleManager - updateNameElementDescription(): " + hbe.getMessage());
+			}
+			if (HGlobal.DEBUG) {
+				hbe.printStackTrace();
+			}
 			throw new HBException("HBE17","Name Style Handling - updateNameElementDescription\n" + hbe.getMessage(),0);
 		}
    }
@@ -912,8 +1047,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  */
 	public String generateElementString(DefaultListModel<String> elements) {
 		String codeString = "";
-		for (int i = 0; i < elements.getSize(); i++)
+		for (int i = 0; i < elements.getSize(); i++) {
 			codeString = codeString + elements.get(i) + "|";
+		}
 		return codeString;
 	}
 
@@ -976,24 +1112,28 @@ public class HBNameStyleManager extends HBBusinessLayer {
 		int index = 0;
 		String selectString = null;
 		try {
-			if (nameType.equals("N"))
+			if (nameType.equals("N")) {
 				selectString = setSelectSQL("*", personNameTable, "NAME_STYLE_RPID = " + nameStylePID);
-			else if (nameType.equals("P"))
-					selectString = setSelectSQL("*", locationNameTable, "NAME_STYLE_RPID = " + nameStylePID);
-			else System.out.println("updateNameElementCodes name type error? " + nameType);
+			} else if (nameType.equals("P")) {
+				selectString = setSelectSQL("*", locationNameTable, "NAME_STYLE_RPID = " + nameStylePID);
+			} else {
+				System.out.println("updateNameElementCodes name type error? " + nameType);
+			}
 			nameRecords = requestTableData(selectString, dataBaseIndex);
 			nameRecords.last();
 			//System.out.println(" Name rows: " + nameRecords.getRow());
 			nameRecords.beforeFirst();
 			while (nameRecords.next()) {
 				nameTablePID = nameRecords.getLong("PID");
-				if (nameType.equals("N"))
+				if (nameType.equals("N")) {
 					selectString = setSelectSQL("*", personNamesTableElements, "OWNER_RPID = "
 												+ nameTablePID + " AND ELEMNT_CODE = " + oldNameCode);
-				else if (nameType.equals("P"))
+				} else if (nameType.equals("P")) {
 					selectString = setSelectSQL("*", locationNameElementTable, "OWNER_RPID = "
 												+ nameTablePID + " AND ELEMNT_CODE = " + oldNameCode);
-				else System.out.println("updateNameElementCodes name type error? " + nameType);
+				} else {
+					System.out.println("updateNameElementCodes name type error? " + nameType);
+				}
 				nameElementRecord = requestTableData(selectString, dataBaseIndex);
 				if (!isResultSetEmpty(nameElementRecord)) {
 					nameElementRecord.first();

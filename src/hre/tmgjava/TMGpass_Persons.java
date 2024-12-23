@@ -38,6 +38,7 @@ package hre.tmgjava;
  * 			  2023-11-24 - line 653 fix for Parent Role into T405. (N. Tolleshaug)
  * 			  2024-03-16 - line 654 Corrected for parent type import to T405. (N. Tolleshaug)
  * 			  2024-06-17 - Added import of NAME_EVNT_TYPE to T402_PERS_NAME
+ * v0.01.0032 2024-12-22 - Updated for v22c database
  ***************************************************************************************
  * NOTES
  *********************************************************************
@@ -488,6 +489,11 @@ public class TMGpass_Persons {
 			hreTable.updateInt("ANCESTOR_INT", flagIndexValues[5]);
 			hreTable.updateInt("DESCENDANT_INT", flagIndexValues[6]);		
 			hreTable.updateString("REFERENCE", tmg$table.getValueString(rowPID,"REFERENCE"));
+		// Fields added in v22c
+			hreTable.updateInt("RELATE1",0); //V22c
+			hreTable.updateInt("RELATE2",0); //V22c
+			hreTable.updateInt("RELATE3",0); //V22c
+			hreTable.updateInt("RELATE4",0); //V22c
 
 		//Insert row in database
 			hreTable.insertRow();
@@ -670,7 +676,7 @@ public class TMGpass_Persons {
 		// Processing memo to T167_MEMO_SET	
 			if (pnote.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID", 
-					tmgHreConverter.pointHREmemo.addToT167_22a_MEMO(rowPID, pnote));
+					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(pnote));
 
 			hreTable.updateString("SURETY", tmgFtable.getValueString(rowPID,"FSURE")); 
 			hreTable.updateLong("EVNT_RPID", null_RPID);

@@ -38,7 +38,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Clob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -104,26 +103,36 @@ public class HBLibraryBusiness {
 		try {
 			ResultSet researchTypeRPID = pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex);
 			researchTypeRPID.beforeFirst();
-			if (dump) System.out.println("************************");
+			if (dump) {
+				System.out.println("************************");
+			}
 			while (researchTypeRPID.next()) {
 				baseType = researchTypeRPID.getInt("BASE_TYPE");
 				subType = researchTypeRPID.getInt("SUB_TYPE");
 				if (subType == 0) {
 					baseTypePID[baseType] = researchTypeRPID.getLong("PID");
-					if (dump) System.out.println(" BaseType: " + baseType + " PID: " + baseTypePID[baseType]
-							+ " - " + researchTypeRPID.getString("FIRST_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					if (dump) {
+						System.out.println(" BaseType: " + baseType + " PID: " + baseTypePID[baseType]
+								+ " - " + researchTypeRPID.getString("FIRST_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					}
 				}
 			}
 			researchTypeRPID.beforeFirst();
-			if (dump) System.out.println("************************");
+			if (dump) {
+				System.out.println("************************");
+			}
 			while (researchTypeRPID.next()) {
 				baseType = researchTypeRPID.getInt("BASE_TYPE");
 				subType = researchTypeRPID.getInt("SUB_TYPE");
 				if (baseType == select && subType != 0) {
-					if (subType > 9) subType = subType - baseType*10;
+					if (subType > 9) {
+						subType = subType - baseType*10;
+					}
 					subTypePID[subType] = researchTypeRPID.getLong("PID");
-					if (dump) System.out.println(" SubType: " + subType + " PID: " + subTypePID[subType]
-								+ " - " + researchTypeRPID.getString("SECND_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					if (dump) {
+						System.out.println(" SubType: " + subType + " PID: " + subTypePID[subType]
+									+ " - " + researchTypeRPID.getString("SECND_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					}
 				}
 			}
 
@@ -146,7 +155,9 @@ public class HBLibraryBusiness {
 			hreTable.beforeFirst();
 			while (hreTable.next()) {
 				visibleId = (int) hreTable.getLong("VISIBLE_ID");
-				if (visibleId > gretestVisibleId) gretestVisibleId = visibleId;
+				if (visibleId > gretestVisibleId) {
+					gretestVisibleId = visibleId;
+				}
 			}
 			return gretestVisibleId;
 		} catch (SQLException hbe) {
@@ -164,14 +175,17 @@ public class HBLibraryBusiness {
 	public String setUpStyleString(String [] personData, int[] dataStyle) {
 		String place = " ";
 		boolean first = false;
-		if (personData != null)
+		if (personData != null) {
 			for ( int i = 1; i < dataStyle.length; i++) {
 				if (personData[dataStyle[i]].length() > 0) {
-					if (first) place = place + ", ";
+					if (first) {
+						place = place + ", ";
+					}
 					first = true;
 					place = place + personData[dataStyle[i]];
 				}
 			}
+		}
 		return place;
 	}
 
@@ -258,13 +272,19 @@ public class HBLibraryBusiness {
 				Files.copy(Paths.get(sourceFilePath),
 	    				Paths.get(copyFilePath));
 	        } catch (NoSuchFileException nsfe) {
-	        	if (HGlobal.DEBUG) System.out.println("copyFile - No such file: " + nsfe.getMessage());
+	        	if (HGlobal.DEBUG) {
+					System.out.println("copyFile - No such file: " + nsfe.getMessage());
+				}
 				throw new HBException("ERR1-No such file: \n" + nsfe.getMessage());
 	        } catch (FileAlreadyExistsException fae) {
-	        	if (HGlobal.DEBUG) System.out.println("copyFile - File already exists " + fae.getMessage());
+	        	if (HGlobal.DEBUG) {
+					System.out.println("copyFile - File already exists " + fae.getMessage());
+				}
 				throw new HBException("ERR2-File already exist: \n" + fae.getMessage());
 	        } catch (IOException ioe) {
-	        	if (HGlobal.DEBUG) System.out.println("copyFile - Copy file IOException: " + ioe.getMessage());
+	        	if (HGlobal.DEBUG) {
+					System.out.println("copyFile - Copy file IOException: " + ioe.getMessage());
+				}
 				throw new HBException("ERR3-Copy file IOException: \n" + ioe.getMessage());
 			}
 		}
@@ -277,13 +297,20 @@ public class HBLibraryBusiness {
 	public void deleteFile(String sourceFilePath) throws HBException {
         try {
         // delete also trace file is exists
-        	if (sourceFilePath.endsWith("trace.db")) Files.deleteIfExists(Paths.get(sourceFilePath));
-        	else Files.delete(Paths.get(sourceFilePath));
+        	if (sourceFilePath.endsWith("trace.db")) {
+				Files.deleteIfExists(Paths.get(sourceFilePath));
+			} else {
+				Files.delete(Paths.get(sourceFilePath));
+			}
         } catch (NoSuchFileException nsfe) {
-        	if (HGlobal.DEBUG) System.out.println("No such file: \n" + nsfe.getMessage());
+        	if (HGlobal.DEBUG) {
+				System.out.println("No such file: \n" + nsfe.getMessage());
+			}
 			throw new HBException("Cannot delete non existing file \n" + nsfe.getMessage());
         } catch (IOException ioe) {
-        	if (HGlobal.DEBUG) System.out.println("Delete file IOException: \n" + ioe.getMessage());
+        	if (HGlobal.DEBUG) {
+				System.out.println("Delete file IOException: \n" + ioe.getMessage());
+			}
 			throw new HBException("Delete file IOException: \n" + ioe.getMessage());
 		}
 	}
@@ -422,8 +449,9 @@ public class HBLibraryBusiness {
  */
 	public static void addToZipFile(File sourceFile, ZipOutputStream zos) throws HBException {
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println("Writing '" + sourceFile.getName() + "' to zip file");
+		}
 
 		FileInputStream fis;
 		try {
@@ -438,7 +466,9 @@ public class HBLibraryBusiness {
 			while ((length = fis.read(bytes)) >= 0) {
 				zos.write(bytes, 0, length);
 				transferred = transferred + length;
-				if (HGlobal.DEBUG) System.out.println("Number of bytes: " + transferred);
+				if (HGlobal.DEBUG) {
+					System.out.println("Number of bytes: " + transferred);
+				}
 			}
 			zos.closeEntry();
 			fis.close();
@@ -495,14 +525,19 @@ public class HBLibraryBusiness {
 				String name = zipEntry.getName();
 				long size = zipEntry.getSize();
 				long compressedSize = zipEntry.getCompressedSize();
-				if (HGlobal.DEBUG) System.out.printf("Extracted file: %-20s | size: %6d | compressed size: %6d\n",
-						name, size, compressedSize);
+				if (HGlobal.DEBUG) {
+					System.out.printf("Extracted file: %-20s | size: %6d | compressed size: %6d\n",
+							name, size, compressedSize);
+				}
 
 				// If parameter restorePath is a complete filepath+name ending in '.mv.db'
 				// then use it. Else construct it from restorePath + originally zipped filename
 				String restoretoPathFileName = "";
-				if (restorePath.endsWith(".mv.db")) restoretoPathFileName = restorePath;
-					else restoretoPathFileName = restorePath + File.separator + name;
+				if (restorePath.endsWith(".mv.db")) {
+					restoretoPathFileName = restorePath;
+				} else {
+					restoretoPathFileName = restorePath + File.separator + name;
+				}
 				File file = new File(restoretoPathFileName);
 
 				InputStream is = zipFile.getInputStream(zipEntry);
@@ -514,7 +549,9 @@ public class HBLibraryBusiness {
 					fos.write(bytes, 0, length);
 					transferred = transferred + length;
 				}
-				if (HGlobal.DEBUG) System.out.println("Unzipped number of bytes: " + transferred);
+				if (HGlobal.DEBUG) {
+					System.out.println("Unzipped number of bytes: " + transferred);
+				}
 				is.close();
 				fos.close();
 			}
@@ -548,12 +585,15 @@ public class HBLibraryBusiness {
 		                //     data/folder/
 		                //     data/folder/file.txt
 		                // Also zipEntry file separator may not be this OS's separator, so test for both
-		                if (zipEntry.getName().endsWith("/") || zipEntry.getName().endsWith("\\"))  isDirectory = true;
+		                if (zipEntry.getName().endsWith("/") || zipEntry.getName().endsWith("\\")) {
+							isDirectory = true;
+						}
 		                // Now test for 'zip slip'
 		                Path newPath = zipSlipProtect(zipEntry, target);
 		                // IF OK, carry on
-		                if (isDirectory)  Files.createDirectories(newPath);
-		                	else {
+		                if (isDirectory) {
+							Files.createDirectories(newPath);
+						} else {
 		                			// Case 2 - some zips store file path only, so create parent directories
 		                			// e.g data/folder/file.txt
 		                			if (newPath.getParent() != null) {
@@ -646,7 +686,9 @@ class HdateSort {
 	        return null;
 	    }
 	    this.index = new int[array.length];
-	    for (int i= 0; i < array.length; i++) this.index[i] = i;
+	    for (int i= 0; i < array.length; i++) {
+			this.index[i] = i;
+		}
 	    this.names = array;
 	    this.length = array.length;
 	    //this.index = index;
@@ -754,7 +796,7 @@ class HdateInput {
  * @throws SQLException
  * @throws HCException
  */
-    
+
 	public static int updateT170_HDATES(ResultSet hreTable, Object[] inputHdate) throws HBException {
 		main_years = (long) inputHdate[0];
 		main_details = (String) inputHdate[1];
@@ -765,9 +807,10 @@ class HdateInput {
 	}
 	public static int updateT170_HDATES(ResultSet hreTable, String tmgdate) throws HBException {
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println(" ** updateT170_HDATES PID: " + " TMG Date: "
 						+ tmgdate + " Length: " + tmgdate.length());
+		}
 		try {
 
 		// Update T170 record
@@ -783,7 +826,9 @@ class HdateInput {
 			return 0;
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Error updateT170_HDATES - T170_DATES");
+			if (HGlobal.DEBUG) {
+				System.out.println("Error updateT170_HDATES - T170_DATES");
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryBusiness - updateT170_HDATES" + " - error: " + sqle.getMessage());
 		}
@@ -805,12 +850,13 @@ class HdateInput {
 		sort_date_code = (String) inputHdate[4];
 		return addT170_HDATES(hreTable, newHdatePID, "");
 	}
-	
+
 	public static int addT170_HDATES(ResultSet hreTable, long newHdatePID, String tmgdate) throws HBException {
 
-		if (HGlobal.DEBUG)
+		if (HGlobal.DEBUG) {
 			System.out.println(" ** addT170_HDATES PID: " + " TMG Date: "
 						+ tmgdate + " Length: " + tmgdate.length() + " PID: " + newHdatePID);
+		}
 		try {
 
 		// Set up T170 record
@@ -843,7 +889,9 @@ class HdateInput {
 			return 0;
 
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG) System.out.println("Error addT170_HDATES - T170_DATES");
+			if (HGlobal.DEBUG) {
+				System.out.println("Error addT170_HDATES - T170_DATES");
+			}
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryBusiness - addT170_HDATES" + " - error: " + sqle.getMessage());
 		}
@@ -852,7 +900,7 @@ class HdateInput {
 
 /**
  * Processing of HRE memo recording
- * v0.00.0030 2023-04-24 - 
+ * v0.00.0030 2023-04-24 -
  * @author NTo
  * @Since  2023-04-23
  */
@@ -924,7 +972,6 @@ class HREmemo extends HBBusinessLayer {
 			hreTable.moveToInsertRow();
 			hreTable.updateLong("PID", primaryPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
-			hreTable.updateLong("OWNER_RPID", null_RPID); // Not in next DDL setup
 			if (memoElement.length() <= memoLimit) {
 				hreTable.updateBoolean("IS_LONG", false);
 				hreTable.updateString("SHORT_MEMO", memoElement);
@@ -942,13 +989,13 @@ class HREmemo extends HBBusinessLayer {
 			hreTable.insertRow();
 			hreTable.close();
 	}
-	
+
 /**
- * findT167_MEMOrecord(String memoElement, long memoTablePID)	
+ * findT167_MEMOrecord(String memoElement, long memoTablePID)
  * @param memoElement
  * @param memoTablePID
  * @throws HBException
-*/ 
+*/
 	public void findT167_MEMOrecord(String memoElement, long memoTablePID) throws HBException {
 		selectString = setSelectSQL("*", memoSet, " PID = " + memoTablePID);
 		hreMemoResultSet = requestTableData(selectString, dataBaseIndex);
@@ -958,7 +1005,7 @@ class HREmemo extends HBBusinessLayer {
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HREmemo - updateToT167_MEMO: " + sqle.getMessage());
-		}	
+		}
 	}
 
 /**
@@ -966,7 +1013,7 @@ class HREmemo extends HBBusinessLayer {
  * @param memoElement
  * @param hreTable
  * @throws SQLException
-*/ 
+*/
 	private void updateT167_MEMO_SET(String memoElement, ResultSet hreTable) throws SQLException {
 			final int memoLimit = 500;
 			final int maxLimit = 30000;
@@ -987,7 +1034,7 @@ class HREmemo extends HBBusinessLayer {
 			hreTable.updateRow();
 			hreTable.close();
 	}
-	
+
 /**
  * createNClob(String clobContent)
  * @param clobContent
@@ -998,14 +1045,19 @@ class HREmemo extends HBBusinessLayer {
 	    try {
 	    	myClob = createNClob();
 			int nrOfChar = myClob.setString(1, clobContent);
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("Charac in Clob: " + nrOfChar);
+			}
 	        return myClob;
 	    } catch (HDException hre) {
-			if (HGlobal.DEBUG) System.out.println("Write Clob error: " + hre.getMessage());
+			if (HGlobal.DEBUG) {
+				System.out.println("Write Clob error: " + hre.getMessage());
+			}
 			hre.printStackTrace();
 	    } catch (SQLException sqle) {
-	    	if (HGlobal.DEBUG) System.out.println("Write Clob error: " + sqle.getMessage());
+	    	if (HGlobal.DEBUG) {
+				System.out.println("Write Clob error: " + sqle.getMessage());
+			}
 			sqle.printStackTrace();
 		}
 	    return myClob;
@@ -1026,9 +1078,9 @@ class HREmemo extends HBBusinessLayer {
 			//e.printStackTrace();
 		}
 	}
-	
+
 /**
- * readMemo(long memoTablePID) throws HBException	
+ * readMemo(long memoTablePID) throws HBException
  * @param memoTablePID
  * @return
  * @throws HBException
@@ -1044,19 +1096,25 @@ class HREmemo extends HBBusinessLayer {
 		         Reader readClob = clobMemo.getCharacterStream();
 		         StringBuffer buffer = new StringBuffer();
 		         int ch;
-		         while ((ch = readClob.read())!=-1) buffer.append(""+(char)ch);
+		         while ((ch = readClob.read())!=-1) {
+					buffer.append(""+(char)ch);
+				}
 		         memoText = buffer.toString();
-			} else memoText = hreMemoResultSet.getString("SHORT_MEMO");	
-			if (HGlobal.DEBUG) System.out.println(" HREmemo - Memo: " + memoText);
+			} else {
+				memoText = hreMemoResultSet.getString("SHORT_MEMO");
+			}
+			if (HGlobal.DEBUG) {
+				System.out.println(" HREmemo - Memo: " + memoText);
+			}
 		} catch (SQLException | IOException sqle) {
 			System.out.println(" HREmemo - readMemo: " + sqle.getMessage());
 			sqle.printStackTrace();
 			throw new HBException(" HREmemo - readMemo: " + sqle.getMessage());
-		} 
+		}
 		return memoText;
 	}
 
-/*	
+/*
 	public String readT167_MEMOclob(long memoTablePID) throws HBException {
 		selectString = setSelectSQL("*", memoSet, " PID = " + memoTablePID);
 		hreMemoResultSet = requestTableData(selectString, dataBaseIndex);
@@ -1066,7 +1124,7 @@ class HREmemo extends HBBusinessLayer {
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HREmemo - updateToT167_MEMO: " + sqle.getMessage());
-		}	
+		}
 	} */
 /**
  * CREATE TABLE T204_DATA_TRAN(
@@ -1101,8 +1159,9 @@ class HREmemo extends HBBusinessLayer {
 		//Insert row in database
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println("HREmemo - addToT204_DATA_TRAN - error: ");
+			}
 			sqle.printStackTrace();
 			throw new HBException("HREmemo - T204_DATA_TRAN - error: "
 					+ sqle.getMessage());
@@ -1113,7 +1172,7 @@ class HREmemo extends HBBusinessLayer {
  * returnStringContent(String content)
  * @param content
  * @return
- 
+
 	public static String returnStringContent(String content) {
 		if (content == null) return "";
 		if (content.length() == 64) {
@@ -1126,7 +1185,7 @@ class HREmemo extends HBBusinessLayer {
  * getLangCode(String language)
  * @param language
  * @return
- 
+
 	public static String getLangCode(String language) {
 		String code = "--";
 		if (language.equals("AFRIKAANS")) code = "af-AF";

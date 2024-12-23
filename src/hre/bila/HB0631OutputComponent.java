@@ -37,7 +37,9 @@ public class HB0631OutputComponent implements Printable, Pageable {
  * @throws HBException
  */
 	  public HB0631OutputComponent(Component componentToBePrinted) throws HBException {
-		  if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0531 OutputComponent");
+		  if (HGlobal.writeLogs) {
+			HB0711Logging.logWrite("Action: entering HG0531 OutputComponent");
+		}
 		  compToPrint = componentToBePrinted;
 		  // get total space from component
 	      Dimension page = this.compToPrint.getPreferredSize();
@@ -52,13 +54,17 @@ public class HB0631OutputComponent implements Printable, Pageable {
 	      // Calculate width scaling ratio to fit on page
 	      xRatio = pageWidth / compWidth;
 	      // But don't allow scaling up
-	      if (xRatio > 1) xRatio = 1;
+	      if (xRatio > 1) {
+			xRatio = 1;
+		}
 	      // Adjust number of pages by scale
 	      numPages = (int) Math.ceil(numPages * xRatio);
 
 		  print(compToPrint);
 
-		  if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0531 OutputComponent");
+		  if (HGlobal.writeLogs) {
+			HB0711Logging.logWrite("Action: exiting HG0531 OutputComponent");
+		}
 
 	  }		// End HG0531OutputComponent constructor
 
@@ -74,13 +80,16 @@ public class HB0631OutputComponent implements Printable, Pageable {
 		  printJob.setPrintable(this);
 		  printJob.setPageable(this);
 
-		  if (printJob.printDialog())
-			  try {
+		  if (printJob.printDialog()) {
+			try {
 				  printJob.print();
 			  	} catch(PrinterException pe) {
-		          if (HGlobal.writeLogs) HB0711Logging.logWrite("Error: printer output " + pe.getMessage() + " in HG0531 OutputComponent");
+		          if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("Error: printer output " + pe.getMessage() + " in HG0531 OutputComponent");
+				}
 		          throw new HBException("Error: printer output " + pe.getMessage());
 	      }
+		}
 	  }
 
 /**

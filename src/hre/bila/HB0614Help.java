@@ -39,7 +39,7 @@ public class HB0614Help {
 /**
  * Build the Help book from the help files on the helpsetPath
  */
-	@SuppressWarnings("deprecation")
+	//@SuppressWarnings("deprecation")
 	// NOTE on deprecated method of creating hreBook:
 	// The helpsetPath contains the full path to the hre.hs file.
 	// The final URL passed to HelpSet needs to look like (in Windows)
@@ -57,18 +57,20 @@ public class HB0614Help {
 	//     hreBook = new HelpSet(forHelpSet, "hre.js");
 	// then this also includes the %20 instead of blank.
 
+	@SuppressWarnings("deprecation")
 	public static void setupHelp() {
 		// Build full path to helpset file - use 'en' suffix if nativeLanguage is actually 'gb'
 		String langCode = HGlobal.nativeLanguage;
-		if (langCode.equals("gb")) langCode = "en";
+		if (langCode.equals("gb")) {
+			langCode = "en";
+		}
 		helpsetPath = HGlobal.helpPath + langCode + File.separator + "hre.hs";
 
        try {
     	  hreBook = new HelpSet(new URL(helpsetPath));	// deprecated
-	    }
-	    catch (Exception e)  {
-	    	JOptionPane.showMessageDialog(null, e.getMessage() + " View Stack Trace", "HelpSet setup error", JOptionPane.ERROR_MESSAGE);
-	    	e.printStackTrace();
+	    } catch (Exception exe)  {
+	    	JOptionPane.showMessageDialog(null, exe.getMessage() + " View Stack Trace", "HelpSet setup error", JOptionPane.ERROR_MESSAGE);
+	    	exe.printStackTrace();
 	    }
 
         // Create the Help Object

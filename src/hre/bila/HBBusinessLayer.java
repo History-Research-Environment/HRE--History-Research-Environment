@@ -122,9 +122,9 @@ public class HBBusinessLayer  {
 /**
  * Set up pointers to library class objects according to database version
  */
-		if (dBversion.contains("v22b")) {
+		if (dBversion.contains("v22c")) {
 /**
- * DDL22b
+ * DDL22c
  */
 		// Table names
 			pointLibraryResultSet = new HBLibraryResultSet(this);

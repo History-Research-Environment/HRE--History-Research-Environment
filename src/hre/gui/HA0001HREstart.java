@@ -31,6 +31,7 @@ package hre.gui;
  * 			  2023-09-04 Added new Log messsage with Build no. at startup (D Ferguson)
  * 			  2023-09-28 Added all known GUI to the setGUILanguage list (D Ferguson)
  * v0.03.0031 2024-11-23 Stop 1st write to logfile being before HRE directory created (D Ferguson)
+ * v0.01.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
  **********************************************************************************************
  * NOTE - Special setting for user NTo for seed/sample files and help folders
  *********************************************************************************************/
@@ -146,10 +147,6 @@ public class HA0001HREstart {
 			System.out.println("Country:  " + Locale.getDefault(Category.DISPLAY).getDisplayCountry());
 		}
 
-/**
- * Set Production Seed Database path for DDL 21b in HGlobal
- */
-		//if (dBversion.startsWith("v21b")) HGlobal.seedProjectFile = HGlobal.seedProjectFile21b;
 
 /**
  *  Set exclusive file paths for NTo or Nils - Override Production setting in HGlobal
@@ -158,9 +155,9 @@ public class HA0001HREstart {
 			String pathUserHRE = System.getProperty("user.home") + File.separator + "HRE" + File.separator;
 			HGlobal.helpPath = "file:\\" + pathUserHRE + "Help\\";
 			HGlobal.keyStorePath = pathUserHRE + "KeyStore\\";
-			if (dBversion.startsWith("v22b")) {
-				HGlobal.seedProjectFile = pathUserHRE + "HRE Seed database v22b.mv.db";
-				HGlobal.sampleProjectFile = pathUserHRE + "HRE Sample database v22b.mv.db";
+			if (dBversion.startsWith("v22c")) {
+				HGlobal.seedProjectFile = pathUserHRE + "HRE Seed database v22c.mv.db";
+				HGlobal.sampleProjectFile = pathUserHRE + "HRE Sample database v22c.mv.db";
 			} else System.out.println("HA0001HREstart - selected DataBase not found! - " + dBversion);
 		}
 
@@ -211,14 +208,14 @@ public class HA0001HREstart {
 			HGlobal.seedProjectFile = HGlobal.seedProjectMac;
 			HGlobal.sampleProjectFile = HGlobal.sampleProjectMac;
 			HGlobal.keyStorePath = HGlobal.keyStorePathMac;
-			}
+		}
 		// Switch to Linux file paths for any type of Linux
 		if (HGlobal.osType.contains("ux")) {
 			HGlobal.helpPath = HGlobal.helpPathUX;
 			HGlobal.seedProjectFile = HGlobal.seedProjectUX;
 			HGlobal.sampleProjectFile = HGlobal.sampleProjectUX;
 			HGlobal.keyStorePath = HGlobal.keyStorePathUX;
-			}
+		}
 
 /**
  *  Set HGlobal User & Computer names

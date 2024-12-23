@@ -78,8 +78,9 @@ public class HBMediaHandler extends HBBusinessLayer {
 	public HBMediaHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		selectDataBase(dBbuild);
-		if (HGlobal.DEBUG)
-		System.out.println("Media Handler initiated!!");
+		if (HGlobal.DEBUG) {
+			System.out.println("Media Handler initiated!!");
+		}
 	}
 
 /**
@@ -87,10 +88,12 @@ public class HBMediaHandler extends HBBusinessLayer {
  * @param dBversion
  */
     private void selectDataBase(String dBversion) {
-    	if (dBversion.startsWith("v22b")) {
+    	if (dBversion.startsWith("v22c")) {
     		ownerRecordField = "OWNER_RPID";
     		bestNameField = "BEST_NAME_RPID";
-    	} else System.out.println("HBMediaHandler - selected DataBase not found - " + dBversion);
+    	} else {
+			System.out.println("HBMediaHandler - selected DataBase not found - " + dBversion);
+		}
     }
 
 /**
@@ -107,26 +110,36 @@ public class HBMediaHandler extends HBBusinessLayer {
 		try {
 			ResultSet researchTypeRPID = requestTableData(selectSQL, dataBaseIndex);
 			researchTypeRPID.beforeFirst();
-			if (dump) System.out.println("************************");
+			if (dump) {
+				System.out.println("************************");
+			}
 			while (researchTypeRPID.next()) {
 				baseType = researchTypeRPID.getInt("BASE_TYPE");
 				subType = researchTypeRPID.getInt("SUB_TYPE");
 				if (subType == 0) {
 					baseTypePID[baseType] = researchTypeRPID.getLong("PID");
-					if (dump) System.out.println(" BaseType: " + baseType + " PID: " + baseTypePID[baseType]
-							+ " - " + researchTypeRPID.getString("FIRST_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					if (dump) {
+						System.out.println(" BaseType: " + baseType + " PID: " + baseTypePID[baseType]
+								+ " - " + researchTypeRPID.getString("FIRST_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					}
 				}
 			}
 			researchTypeRPID.beforeFirst();
-			if (dump) System.out.println("************************");
+			if (dump) {
+				System.out.println("************************");
+			}
 			while (researchTypeRPID.next()) {
 				baseType = researchTypeRPID.getInt("BASE_TYPE");
 				subType = researchTypeRPID.getInt("SUB_TYPE");
 				if (baseType == select && subType != 0) {
-					if (subType > 9) subType = subType - baseType*10;
+					if (subType > 9) {
+						subType = subType - baseType*10;
+					}
 					subTypePID[subType] = researchTypeRPID.getLong("PID");
-					if (dump) System.out.println(" SubType: " + subType + " PID: " + subTypePID[subType]
-								+ " - " + researchTypeRPID.getString("SECND_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					if (dump) {
+						System.out.println(" SubType: " + subType + " PID: " + subTypePID[subType]
+									+ " - " + researchTypeRPID.getString("SECND_LEVEL_DEFN_TRAN").split("\\|")[0]);
+					}
 				}
 			}
 
@@ -159,10 +172,15 @@ public class HBMediaHandler extends HBBusinessLayer {
 		allImageSQLString = setSelectSQL("*", digtalExhibitTable, "OWNER_RPID = " + ownerTablePID
 											+ " AND ENTITY_TYPE_RPID = " + baseTypePID[imageType]);
 
-		if (imageType == 0) ownerTable = personTable;
-		else if (imageType == 6) ownerTable = eventTable;
-		else if (imageType == 2) ownerTable = locationTable;
-		else System.out.println(" getAllExhibitImage - Unknown image type: " + imageType);
+		if (imageType == 0) {
+			ownerTable = personTable;
+		} else if (imageType == 6) {
+			ownerTable = eventTable;
+		} else if (imageType == 2) {
+			ownerTable = locationTable;
+		} else {
+			System.out.println(" getAllExhibitImage - Unknown image type: " + imageType);
+		}
 		bestImageOwnerSQLString = setSelectSQL("*", ownerTable, "PID = " + ownerTablePID);
 
 		try {
@@ -178,8 +196,9 @@ public class HBMediaHandler extends HBBusinessLayer {
 				image = null;
 				return 1;
 			}
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" Number of images for person: " + allExhibitsSelected.getRow());
+			}
 
 	// Extract all images for person / event / location
 			allExhibitsSelected.beforeFirst();
@@ -187,38 +206,52 @@ public class HBMediaHandler extends HBBusinessLayer {
 			while (allExhibitsSelected.next()) {
 				exhibitT676PID = allExhibitsSelected.getLong("PID");
 				long exhibitType = allExhibitsSelected.getLong("SUB_TYPE_RPID");
-				if (HGlobal.DEBUG)
+				if (HGlobal.DEBUG) {
 					System.out.println(" Image PID: " + exhibitT676PID + " Ent sub type: " + exhibitType);
+				}
 				if (exhibitType == subTypePID[1]) {
-					if (HGlobal.DEBUG)
+					if (HGlobal.DEBUG) {
 						System.out.println(" Image PID: " + exhibitT676PID);
+					}
 					ImageIcon newImage = getImageFromBlob(allExhibitsSelected.getBlob("BIN_CONTENT"));
 					String selectSQL = setSelectSQL("CAPTION", digtalNameTable, "OWNER_RPID = " + exhibitT676PID);
 					ResultSet nameExhibitsSelected = requestTableData(selectSQL, dataBaseIndex);
 					nameExhibitsSelected.first();
 					String imageCaption = nameExhibitsSelected.getString("CAPTION");
-					if (exhibitT676PID == bestImagePID) image = newImage;
+					if (exhibitT676PID == bestImagePID) {
+						image = newImage;
+					}
 					if (newImage != null) {
 						listOfImages.add(newImage);
 						listOfImagesCaptions.add(imageCaption);
 					}
 					else {
-						if (imageType == 0) listOfImages.add(new ImageIcon(getClass().getResource("/hre/images/missing-person-100.png")));
-						else if (imageType == 6) listOfImages.add(new ImageIcon(getClass().getResource("/hre/images/missing-event-100.png")));
-						else if (imageType == 2) listOfImages.add(new ImageIcon(getClass().getResource("/hre/images/missing-locn-100.png")));
-						else System.out.println(" getAllExhibitImage - Unknown image type: " + imageType);
+						if (imageType == 0) {
+							listOfImages.add(new ImageIcon(getClass().getResource("/hre/images/missing-person-100.png")));
+						} else if (imageType == 6) {
+							listOfImages.add(new ImageIcon(getClass().getResource("/hre/images/missing-event-100.png")));
+						} else if (imageType == 2) {
+							listOfImages.add(new ImageIcon(getClass().getResource("/hre/images/missing-locn-100.png")));
+						} else {
+							System.out.println(" getAllExhibitImage - Unknown image type: " + imageType);
+						}
 					}
 				} else if (exhibitType == subTypePID[2]) {
-					if (HGlobal.DEBUG)
+					if (HGlobal.DEBUG) {
 						System.out.println(" Text Exhibit: "+  exhibitT676PID + " File: "
 								+ allExhibitsSelected.getString("FILE_PATH"));
+					}
 					Clob textCont = allExhibitsSelected.getClob("CHAR_CONTENT");
 					String textContent = textCont.getSubString(1,(int) textCont.length());
 					if (textContent.length() > 100) {
 						textContent = textContent.substring(0,100) + "......";
-						if (HGlobal.DEBUG) System.out.println(" Text Content truncated:\n " + textContent);
+						if (HGlobal.DEBUG) {
+							System.out.println(" Text Content truncated:\n " + textContent);
+						}
 					}
-					if (HGlobal.DEBUG) System.out.println(" Text Content:\n" + textContent);
+					if (HGlobal.DEBUG) {
+						System.out.println(" Text Content:\n" + textContent);
+					}
 					listOfTexts.add(textContent);
 				}
 			}
@@ -238,10 +271,14 @@ public class HBMediaHandler extends HBBusinessLayer {
 		byte[] imageBytes = null;
 		try {
 			imageBytes = ((Blob) imageData).getBytes(0,(int)((Blob) imageData).length());
-			if (HGlobal.DEBUG)
+			if (HGlobal.DEBUG) {
 				System.out.println(" Image bytes length: " + imageBytes.length);
-			if (imageBytes.length > 0) return new ImageIcon(imageBytes);
-			else return null;
+			}
+			if (imageBytes.length > 0) {
+				return new ImageIcon(imageBytes);
+			} else {
+				return null;
+			}
 		} catch (NullPointerException | SQLException ime) {
 			System.out.println(" HB MediaHandler - NullPointerException bytes length: " + imageBytes.length);
 			return null;
@@ -285,8 +322,11 @@ public class HBMediaHandler extends HBBusinessLayer {
  * @return
  */
 	public int getNumberOfTexts() {
-		if (listOfTexts == null) return 0;
-		else return listOfTexts.size();
+		if (listOfTexts == null) {
+			return 0;
+		} else {
+			return listOfTexts.size();
+		}
 	}
 
 /**
@@ -294,8 +334,11 @@ public class HBMediaHandler extends HBBusinessLayer {
  * @return
  */
 	public int getNumberOfImages() {
-		if (listOfImages == null) return 0;
-		else return listOfImages.size();
+		if (listOfImages == null) {
+			return 0;
+		} else {
+			return listOfImages.size();
+		}
 	}
 
 /**

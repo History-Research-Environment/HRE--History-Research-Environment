@@ -42,6 +42,7 @@ package hre.bila;
  * 			  2024-01-05 Added table colums adding in empty project (N. Tolleshaug)
  * 			  2024-10-11 Added initiateDateFormat(3); in add first person line 510 (N. Tolleshaug)
  * 			  2024-10-21 Added dateFormatSelect() to addFirstPerson() (N. Tolleshaug)
+ * v0.01.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -498,15 +499,16 @@ public class HBProjectHandler extends HBBusinessLayer {
 
      // Modify columns T404_PARTNER
         int databaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		alterColumnInTable("T404_PARTNER","EVNT_RPID","BIGINT", databaseIndex);
+        /*		alterColumnInTable("T404_PARTNER","EVNT_RPID","BIGINT", databaseIndex);
 		alterColumnInTable("T404_PARTNER","PRI_ROLE","SMALLINT", databaseIndex);
 		alterColumnInTable("T404_PARTNER","SEC_ROLE","SMALLINT", databaseIndex);
-
+*/
 	// Add IS_IMPORTED = FALSE to T126_PROJECTS
-		alterColumnInTable("T126_PROJECTS","IS_IMPORTED","BOOLEAN", databaseIndex);
+		//alterColumnInTable("T126_PROJECTS","IS_IMPORTED","BOOLEAN", databaseIndex);
 		updateTableData("UPDATE T126_PROJECTS SET IS_IMPORTED = FALSE WHERE PROJECT_CODE = 1", databaseIndex);
+		
 	// Increase HDATE_DETAILS for irregular dates
-		updateTableData("ALTER TABLE T170_DATE ALTER HDATE_DETAILS CHARACTER(50)",databaseIndex);
+		//updateTableData("ALTER TABLE T170_DATE ALTER HDATE_DETAILS CHARACTER(50)",databaseIndex);
 		
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
 		

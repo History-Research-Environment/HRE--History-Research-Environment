@@ -715,11 +715,10 @@ public class HBProjectOpenData {
  * 		Generate ResultSet for project tables
  * 		Select database version to process
  */
-		    if (databaseDDLversion.contains("v22b")) {
-				if (HGlobal.DEBUG) {
-					System.out.println("Database DDL build: " + databaseDDLversion);
-				}
-				generateHRETables22a(dataBaseIndex);
+		    if (databaseDDLversion.contains("v22c")) {
+				if (HGlobal.DEBUG) 
+					System.out.println("Database DDL build: " + databaseDDLversion);			
+				generateHRETables22(dataBaseIndex);
 				getLanguageCodes(dataBaseIndex);
 				personMapPID =  pointProjectHandler.pointLibraryResultSet
 								.indexingPersonMapPID(pointT401_PERSONS);
@@ -1105,7 +1104,7 @@ public class HBProjectOpenData {
  * @return
  * @throws HBException
  */
-	private void generateHRETables22a(int dbIndex) throws HBException {
+	private void generateHRETables22(int dbIndex) throws HBException {
 		if (HGlobal.DEBUG) {
 			System.out.println("HBProjectOpenData - generateBiosTables - db-index: " +  dbIndex);
 		}

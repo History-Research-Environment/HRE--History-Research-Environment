@@ -2873,25 +2873,23 @@ class ManagePersonData extends HBBusinessLayer {
 			personNameTableRS.beforeFirst();
 			int row = 0;
 			while (personNameTableRS.next()) {
-				if (dBbuild.startsWith("v22b")) {
-					name_RPID = personNameTableRS.getLong("PID");
-					nameStylePID = personNameTableRS.getLong("NAME_STYLE_RPID");
-					nameType = personNameTableRS.getInt("NAME_EVNT_TYPE");
-					nameTable[row][0] = " " + pointLibraryResultSet.getEventName(nameType, langCode, dataBaseIndex).trim();
 
-				// Set type of name
-					primaryName = personNameTableRS.getBoolean("NAME_PRIMARY");
-				// set up personal name style
-					personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStylePID, "N", dataBaseIndex);
-				// Find name according to name style
-					nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,dataBaseIndex, personStyle);
-				// Mark primary
-					if (primaryName) {
-						nameTable[row][1] = nameTable[row][1] + "(Primary)";
-					}
-				} else {
-					System.out.println("HBPersonHandler selected DataBase not found - " + dBbuild);
+				name_RPID = personNameTableRS.getLong("PID");
+				nameStylePID = personNameTableRS.getLong("NAME_STYLE_RPID");
+				nameType = personNameTableRS.getInt("NAME_EVNT_TYPE");
+				nameTable[row][0] = " " + pointLibraryResultSet.getEventName(nameType, langCode, dataBaseIndex).trim();
+
+			// Set type of name
+				primaryName = personNameTableRS.getBoolean("NAME_PRIMARY");
+			// set up personal name style
+				personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStylePID, "N", dataBaseIndex);
+			// Find name according to name style
+				nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,dataBaseIndex, personStyle);
+			// Mark primary
+				if (primaryName) {
+					nameTable[row][1] = nameTable[row][1] + "(Primary)";
 				}
+
 				long hdatePID = personNameTableRS.getLong("START_HDATE_RPID");
 				nameTable[row][2] = pointLibraryResultSet.exstractDate(hdatePID, dataBaseIndex);
 				personNamePIDhash.put(row, name_RPID);
@@ -6496,6 +6494,12 @@ class AddPersonRecord extends HBBusinessLayer {
 		hreTable.updateInt("ANCESTOR_INT", flagIndexValues[5]);
 		hreTable.updateInt("DESCENDANT_INT", flagIndexValues[6]);
 		hreTable.updateString("REFERENCE", reference);
+		
+	// Fields added in v22c
+		hreTable.updateInt("RELATE1",0); // Added V22c
+		hreTable.updateInt("RELATE2",0); // Added V22c
+		hreTable.updateInt("RELATE3",0); // Added V22c
+		hreTable.updateInt("RELATE4",0); // Added V22c
 
 	//Insert row in database
 		hreTable.insertRow();

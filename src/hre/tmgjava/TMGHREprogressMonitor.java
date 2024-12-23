@@ -186,7 +186,7 @@ public TMGHREprogressMonitor() {
 		toolBar.add(lblNewLabel);
 		toolBar.add(Box.createHorizontalGlue());
 
-		JButton btn_Helpicon = new JButton("");
+		final JButton btn_Helpicon = new JButton("");
 		btn_Helpicon.setToolTipText("Opens the Help module");
 		btn_Helpicon.setMaximumSize(new Dimension(32, 32));
 		btn_Helpicon.setIcon(new ImageIcon(TMGHREprogressMonitor.class.getResource("/hre/images/help_BW_24.png")));
@@ -243,7 +243,7 @@ public TMGHREprogressMonitor() {
 		lbl_Time.setFont(new Font(TMGglobal.dfltGUIfont, Font.PLAIN, 13));
         bottom.add(lbl_Time, "cell 2 1,alignx right");
 
-		JButton btn_Close = new JButton("Close");
+		final JButton btn_Close = new JButton("Close");
 		btn_Close.setHorizontalAlignment(SwingConstants.RIGHT);
 		btn_Close.setToolTipText("Stop the TMG to HRE progress and close");
 		btn_Close.setFont(new Font(TMGglobal.dfltGUIfont, Font.PLAIN, 13));

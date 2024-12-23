@@ -17,6 +17,7 @@ package hre.bila;
  * v0.00.0027 2022-01-17 - Renamed methods, indexes and PID's (N. Tolleshaug)
  * v0.00.0028 2022-12-16 - Store name style index in T302 (N. Tolleshaug)
  * 			  2023-03-09 - Reset T302 if error open project (N. Tolleshaug)
+ * v0.00.0031 2024-10-05 - Edited code to remove if {} on single code lines (N. Tolleshaug)
  ******************************************************************************************/
 import java.awt.Dimension;
 import java.awt.Point;
