@@ -19,7 +19,7 @@ package hre.gui;
  * 			  2024-04-14 Removed variable importedData added 2024-02-15 (N. Tolleshaug)
  * 			  2024-10-12 Added boolean reloadPS user option (D Ferguson)
  * 			  2024-11-15 Added boolean married name prompt option (D Ferguson)
- * v0.03.0032 2024-12-22 Updated for Buid 32 - and database v22c (N. Tolleshaug)
+ * v0.04.0032 2024-12-22 Updated for Build 32 and database v22c (N. Tolleshaug)
  ************************************************************************/
 
 import java.awt.Color;
@@ -32,10 +32,10 @@ import hre.bila.HBProjectOpenData;
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author Don Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version build 0.03.3224.1214
+ * @version build 0.04.3224.1214
  */
 public class HGlobal {
-	public static String buildNo = "0.03.3224.1222";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String buildNo = "0.04.3224.1222";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
 	public static String releaseDate = "22 Dec 2024";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "v22c";		    // Set Database DDL version //$NON-NLS-1$
