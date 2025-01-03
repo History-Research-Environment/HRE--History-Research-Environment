@@ -1,0 +1,69 @@
+<?xml version='1.0'?>
+<toc version="1.0">
+
+
+<tocitem text="Main Menu" target="mainmenu"/>
+
+
+<tocitem text="Project Menu">
+<tocitem text="Open Project" target="40200openproject"/>
+<tocitem text="Create New Project" target="40400newproject"/>
+<tocitem text="Remote Project Definition" target="41800rmtproject"/>
+<tocitem text="Backup Project" target="40500backupproject"/>
+<tocitem text="Restore Project" target="40600restoreproject"/>
+<tocitem text="Close Project" target="40700closeproject"/>
+<tocitem text="Copy Project As..." target="40800copyproject"/>
+<tocitem text="Rename Project" target="40900renameproject"/>
+<tocitem text="Delete Project" target="41000deleteproject"/>
+<tocitem text="Project Summary" target="41400summproject"/>
+<tocitem text="Exit HRE" target="exithre"/>
+</tocitem>
+
+<tocitem text="Person Menu">
+<tocitem text="Select Person By..." target="50700selectperson"/>
+<tocitem text="Manage Person" target="50600manageperson"/>
+<tocitem text="Add Person" target="50500addperson"/>
+<tocitem text="Flag Manager" target="51200flagmanager"/>
+<tocitem text="Person Name Styles" target="52500personnamestyles"/>
+<tocitem text="Convert TMG Name Styles to HRE" target="52700convertnamestyle"/>
+</tocitem>
+
+<tocitem text="Viewpoints">
+<tocitem text="Person Viewpoint" target="53000personvp"/>
+<tocitem text="Event Viewpoint" target="53060eventvp"/>
+<tocitem text="Location Viewpoint" target="53030locationvp"/>
+</tocitem>
+
+<tocitem text="Events/Tasks">
+<tocitem text="Edit Event" target="54700editevent"/>
+<tocitem text="Define Event" target="55100defineevent"/>
+<tocitem text="Manage Event" target="55200manageevent"/>
+</tocitem>
+
+<tocitem text="Where/When">
+<tocitem text="Select Location By..." target="50750selectlocation"/>
+<tocitem text="Manage Location" target="50800managelocation"/>
+<tocitem text="Location Name Styles" target="52600locationnamestyles"/>
+</tocitem>
+
+<tocitem text="Reports">
+<tocitem text="Logging" target="52000logging"/>
+<tocitem text="Ancestor/Descendant Report" target="66000ancestdescendtree"/>
+</tocitem>
+
+<tocitem text="Tools">
+<tocitem text="Settings" target="50100settings"/>
+<tocitem text="Import from TMG" target="41700tmgimport"/>
+<tocitem text="Administration" target="40300admin"/>
+<tocitem text="Database Logon" target="57500dblogon"/>
+</tocitem>
+
+<tocitem text="Help">
+<tocitem text="Reminders" target="54000reminder"/>
+<tocitem text="Help Contents" target="helpcontents"/>
+<tocitem text="Icons" target="screenicons"/>
+<tocitem text="HRE Website" target="hrewebsite"/>
+<tocitem text="About HRE" target="abouthre"/>
+</tocitem>
+
+</toc>

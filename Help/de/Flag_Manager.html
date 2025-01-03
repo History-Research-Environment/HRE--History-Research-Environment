@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Flag Manager</title>
+    <link rel="stylesheet" href="hre.css" type="text/css">
+  </head>
+  <body>
+    <h1>MERKMALVERWALTUNG</h1>
+    <table width="100%" border="0">
+      <tbody>
+        <tr>
+          <td>Die Merkmalverwaltung zeigt den aktuellen Status aller definierten
+            Merkmale an und ermöglicht es dem Benutzer, Merkmale hinzuzufügen,
+            zu bearbeiten und zu löschen.<br>
+            <br>
+            Der Bildschirm zeigt eine Tabelle aller Merkmale an, die den Namen
+            des Merkmals, die Sprache des Merkmals, die Angabe, ob es sich um
+            ein aktives Merkmal handelt, und alle für das Merkmal definierten
+            möglichen Einstellungen enthält.<br>
+            <br>
+            Die Steuerelemente zum Filtern des Tabelleninhalts befinden sich
+            oberhalb der Merkmaltabelle. Um die Liste der Merkmale zu filtern,
+            geben Sie den gewünschten Text in das Feld "Zu filternder Text:"
+            ein, aktivieren das Kontrollkästchen "Filter" und wählen die
+            Tabellenspalte aus, auf die das Filter angewendet werden soll (oder
+            wählen Sie "Alle Spalten"). Wenn Sie das Kontrollkästchen "Filter"
+            deaktivieren, wird wieder die vollständige Liste angezeigt.<br>
+            <br>
+            Auf der linken Seite des Bildschirms befinden sich Steuerelemente
+            zum Hinzufügen oder Löschen von Merkmalen und zum Verschieben von
+            Merkmalen in der Anzeigereihenfolge nach oben oder unten.<br>
+            <br>
+            Durch Doppelklicken auf eine beliebiges Merkmal (oder durch Klicken
+            auf die Schaltfläche "Neues Merkmal hinzufügen") wird ein Bildschirm
+            zur Bearbeitung von Mekmalen angezeigt.<br>
+            <br>
+            Auf dem Bildschirm "Merkmal bearbeiten" können Sie den Namen des
+            Merkmals, seinen Aktiv-Status, die verfügbaren Merkmalwerte und
+            optional eine Beschreibung der Verwendung des Merkmals und seiner
+            Werte ändern (oder setzen).<br>
+            <br>
+            Beim Hinzufügen oder Bearbeiten von Merkmaldetails sollten Sie die
+            folgenden Regeln beachten:<br>
+            <br>
+            1. Systemdefinierte Merkmale können nicht hinzugefügt oder gelöscht
+            werden (sie können jedoch inaktiv gemacht werden)<br>
+            <br>
+            2. Inaktive Merkmale bleiben definiert, werden aber nicht in der
+            Merkmalliste einer Person angezeigt.<br>
+            <br>
+            3. Der erste Merkmalwert ist immer der Standardwert des Merkers<br>
+            <br>
+            4. Die Reihenfolge der möglichen Einstellungen eines merkmals kann
+            nicht geändert werden. Das heißt, Einstellungen wie '?, N, J' können
+            nicht in '?, J, N' umgereiht werden.<br>
+            <br>
+            5. Abgekürzte Merkmalwerte wie "<b>N</b>" oder "<b>J</b>" können zu
+            aussagekräftigen Wörtern (wie "Nein", "Ja") mit bis zu zehn Zeichen
+            Länge erweitert werden, aber der erste Buchstabe des Wortes <b>kann
+              nicht geändert werden</b>. Sie können also ein Kennzeichen für
+            "Beruf" mit dem Wert "<b>G</b>ärtner" einrichten und ihn später in "<b>G</b>artengestalter"
+            ändern, aber Sie können "<b>A</b>rzt" nicht in "<b>C</b>hirurg"
+            ändern.<br>
+            <br>
+            6. Nachdem Sie ein Merkmal in der Merkmaltabelle ausgewählt haben,
+            können Sie dessen Position in der Tabelle mit Hilfe der
+            Schaltflächen '<b>PFEIL AUFWÄRTS/ABWÄRTS</b>' nach oben oder unten
+            verschieben. Dies gilt für alle Merkmale, einschließlich der
+            Systemmerkmale und inaktiven Merkmale.</td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <div id="updated"> <i>Diese Seite wurde geändert am: 18 Feb 2024</i></div>
+    <br>
+  </body>
+</html>

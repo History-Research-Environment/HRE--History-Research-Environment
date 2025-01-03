@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Seleziona Persona</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+<body>
+
+<H1>SELEZIONA PERSONA</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>Il <b>Selettore persona</b> è costituito da un display in 2 parti preceduto da vari controlli per consentire la personalizzazione dei contenuti dei display.<br>
+- Il pannello sinistro dello schermo è una tabella che elenca tutte le persone presenti nel progetto.<br>
+- Il pannello di destra mostra inizialmente una generazione di antenati della persona selezionata nel pannello di sinistra.</p>
+
+<p>I due pannelli sono separati da un divisore che può essere spostato a sinistra o a destra per modificare la quantità di spazio sullo schermo assegnato a ciascun pannello.<br>
+Nella parte superiore del divisore sono presenti due piccoli pulsanti freccia che possono essere utilizzati per fare in modo che uno dei pannelli occupi l'intero schermo.<br>
+Sopra il divisore c'è un pulsante etichettato "<b><< Scambia pannelli >></b>" che può essere utilizzato per scambiare il pannello sinistro con quello destro e viceversa.</p>
+
+<p><b>Opzioni di visualizzazione del pannello sinistro (elenco di selezione persone):</b><br>
+Le prime due righe di controlli sopra l'elenco delle persone consentono di trovare persone particolari o di filtrare la visualizzazione in base a un sottoinsieme di persone.
+Inserendo i dati nella casella "Trova nel nome:" e premendo Invio verrà selezionata la prima persona il cui nome corrisponde al testo inserito (il processo di corrispondenza non fa distinzione tra maiuscole e minuscole). "Trova successivo" passerà alla partita successiva. Se il testo inserito era "theo", verrà trovato qualsiasi nome contenente "theo" o "Theo" ma non "théo". Se l'intento era quello di trovare tutte le corrispondenze "theo" E "théo", ciò può essere ottenuto utilizzando la casella di controllo "<b>Ignora segni diacritici</b>". Questo pulsante consente alla ricerca di ignorare TUTTI i segni diacritici della lingua.</p>
+
+<p>Per filtrare l'elenco delle persone, inserisci il testo richiesto nel campo "Testo da filtrare per:", seleziona la casella di controllo "Filtra" e seleziona la colonna della tabella da utilizzare per applicare il filtro (o scegli Tutte le colonne). La rimozione del controllo "Filtro" riporterà la visualizzazione dell'elenco completo.</p>
+
+<p>Anche l'ordine della tabella delle persone nel pannello di sinistra può essere modificato in diversi modi. Facendo clic su uno qualsiasi dei campi dell'intestazione della tabella, la tabella verrà ordinata in base all'ordine numerico o alfabetico di quel campo (o all'ordine inverso se si fa nuovamente clic). Ciò è indicato da una piccola freccia a destra del nome del campo dell'intestazione della tabella.
+Per impostazione predefinita, la tabella mostra il nome della persona, la data/luogo di nascita e la data/luogo di morte. Qualsiasi informazione di nascita e morte può essere esclusa dalla visualizzazione utilizzando lo strumento di configurazione (l'icona della chiave inglese) nelle icone dello schermo in alto a destra.</p>
+
+<p>L'ordine di visualizzazione dei nomi di una persona è impostato dal controllo "<b>Visualizza nome come:</b>", che ha due semplici impostazioni: l'iniziale "Nome di nascita - Cognome" o "Cognome, Nome di nascita -nome". È possibile richiamare formati più complessi facendo clic sul pulsante "<b>Utilizza stili di nome</b>", che modifica il controllo "Nome visualizzato come:" in un elenco di tutti gli stili di nome di persona correnti. Questo può essere restituito ai formati semplici utilizzando il pulsante "<b>Utilizza formati semplici</b>".</p>
+
+<p><b>Opzioni di visualizzazione del pannello destro</b> (Albero genealogico dinamico):<br>
+Selezionando una persona nel pannello di sinistra si modifica il pannello "Albero genealogico dinamico" a destra per visualizzare gli antenati immediati di quella persona (se presenti).
+Questo può essere modificato in Mostra discendenti (se presenti) e il numero di generazioni visualizzate può essere controllato utilizzando i pulsanti "Espandi" e "Comprimi" o facendo clic sui singoli pulsanti "+"/"-".<br>
+Selezionando qualsiasi persona nell'albero si abilita l'uso del pulsante "Mostra partner", che fornisce un elenco di tutti i partner conosciuti della persona selezionata.
+</p>
+
+<p><b>Visualizzazione di altre schermate:</b><br>
+Un doppio clic su qualsiasi persona nell'elenco delle persone creerà e visualizzerà la schermata Punto di vista per quella persona.<br>
+Facendo clic con il pulsante destro del mouse su qualsiasi persona nell'elenco delle persone verrà visualizzato un menu popup che consente di selezionare la visualizzazione del punto di vista di quella persona OPPURE la visualizzazione della schermata "Gestisci persona".</p>
+</td></tr>
+
+<tr><td>
+<div id="updated">
+<i>Questa pagina è stata aggiornata il: 15 febbraio 2024</i></div>
+</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Importar un proyecto TMG a HRE</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+
+<body>
+
+<H1>IMPORTAR UN PROYECTO TMG A HRE</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>HRE importará directamente un proyecto desde la base de datos The Master Genealogist (TMG) versión 8.05 o 9.x</p>
+  
+<p><b>PREPARANDO TMG:</b></p> 
+Se deben realizar una serie de procesos en TMG para ayudar a realizar una importación exitosa. Estos son:
+<p> 1. Banderas: en el menú Archivo TMG, haga clic en la entrada Administrador de banderas. Cuando se abra, simplemente cierre la pantalla. Esta simple acción reparará una serie de inconsistencias que pueden estar presentes en las entradas de la bandera TMG.</p>
+<p> 2. Miniaturas de exhibición: bajo ciertas condiciones, las miniaturas de exhibición de TMG se pueden perder o dañar y no se pueden importar a HRE. Para solucionar este problema, realice lo siguiente: abra cualquier registro de exhibición de TMG que tenga una entrada y haga clic derecho en la exhibición. Seleccione 'Actualizar todas las miniaturas'. Tenga en cuenta que esto puede tardar algún tiempo en finalizar si tiene una gran cantidad de exhibiciones.</p>
+<br>
+<p><b>ANTES DE INICIAR UNA IMPORTACIÓN:</b></p>
+Verifique que el proyecto TMG solo contenga un conjunto de datos: el proceso de importación solo importará el primer conjunto de datos de un proyecto TMG.<br>
+Verifique la ubicación de su archivo de proyecto TMG (.pjc), como se especifica en TMG: Archivos >> Preferencias >> Opciones del proyecto actual >> General, para que pueda encontrarlo rápidamente una vez que comience el proceso de importación.<br>
+Decida dónde va a almacenar la base de datos HRE cuando la importe. Si no necesariamente desea utilizar la ubicación predeterminada de HRE, cree una carpeta (por ejemplo, Proyectos HRE) en la ubicación deseada y en HRE >> Herramientas >> Configuración >> Usuario >> Ubicaciones de archivos puede especificar esta carpeta como su por defecto.</p>
+<br>
+<p><b>EL PROCESO DE IMPORTACIÓN:</b></p>
+<p> 1. Seleccione Herramientas, luego Importar y aparecerá la opción 'Desde TMG'. Haga clic en este elemento del menú</p>
+<p> 2. Ingrese el NOMBRE del proyecto que desea usar para <u>este proyecto</u> en HRE</p>
+<p> 3. Haga clic en el segundo cuadro para seleccionar la UBICACIÓN donde desea guardar el nuevo proyecto. De forma predeterminada, se utilizará la configuración actual de Ubicaciones de archivos HRE, pero puede cambiar esta ubicación si es necesario, utilizando la administración normal de archivos y carpetas. Ingrese el nombre de archivo que desea usar para este proyecto</p>
+<p> 4. Luego seleccione la ubicación de su base de datos TMG, haciendo clic en su archivo .pjc</p>
+<p> 5. Una vez nominado, comenzará el proceso de importación</p>
+<p> 6. Aparecerá una ventana de progreso a medida que HRE recorre la base de datos TMG elegida y la lee en HRE como un nuevo proyecto HRE</p>
+<p> 7. Al hacer clic en <b>Cerrar</b>, los datos de TMG estarán disponibles para que los utilice HRE</p>
+<p> 8. Utilice el elemento de menú HRE Open Project para abrir el proyecto</p>
+<p> 9. Este puede ser un momento oportuno para realizar una copia de seguridad de este nuevo proyecto HRE, antes de realizar cualquier edición.</p>
+<p><b>NOTA:</b> La base de datos de TMG no se modifica de ninguna manera. Permanece en su carpeta original y seguirá estando disponible en TMG.</p>
+<br>
+<p><b>ERRORES EN EL PROCESO DE IMPORTACIÓN:</b></p>
+Si el proceso de importación falla debido a errores en la base de datos de TMG que HRE no puede manejar, el soporte de HRE puede solicitarle que proporcione más información de depuración mediante el siguiente proceso. <br>
+Antes de continuar, elimine la base de datos HRE probablemente incompleta que acaba de crear utilizando el elemento de menú "Eliminar proyecto" en el elemento de menú Proyecto de HRE. Cuando se le pregunte si desea conservar la base de datos, responda "No".<br><br>
+Ahora vaya a HRE >> Herramientas >> Configuración >> Usuario >> Opciones de depuración y haga clic en 'Escribir mensajes de DEPURACIÓN', luego acepte el cambio.<br><br>
+Vaya al Paso 1 del PROCESO DE IMPORTACIÓN DE TMG anterior. La pantalla de importación habrá cambiado y ahora mostrará 6 casillas de verificación y la ubicación donde se creará un nuevo archivo de registro.<br> <br>
+Seleccione las casillas de verificación que le haya indicado el soporte de HRE y repita los pasos del proceso de importación de TMG. Cuando el proceso de importación vuelva a fallar, cierre HRE y envíe por correo electrónico al soporte técnico una copia del archivo de registro que se habrá creado.<br><br>
+</td></tr>
+
+<tr><td>
+<P class="rlhdr">Temas relacionados</p>
+<UL>
+<LI><A HREF="Backup_Project.html">Proyecto de copia de seguridad</a><br>
+<LI><A HREF="Project_Summary.html">Resumen del proyecto</a><br>
+<LI><A HREF="Open_Project.html">Abrir un proyecto</a><br>
+<LI><A HREF="Close_Project.html">Cerrar proyecto</a><br>
+<LI><A HREF="Copy_Project.html">Copiar proyecto</a><br>
+<LI><A HREF="Renombrar_Proyecto.html">Renombrar Proyecto</a><br>
+<LI><A HREF="Delete_Project.html">Eliminar proyecto</a><br>
+
+</UL>
+</td></tr>
+</table>
+
+<br>
+<div id="updated">
+<i>Esta página fue actualizada el: 28 de diciembre de 2023</i></div>
+<br>
+
+</body>
+</html>

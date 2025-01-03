@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Importing a TMG Project into HRE</title>
+    <link rel="stylesheet" href="hre.css" type="text/css">
+  </head>
+  <body>
+    <h1>IMPORTIEREN EINES TMG-PROJEKTS IN HRE</h1>
+    <table width="100%" border="0">
+      <tbody>
+        <tr>
+          <td>
+            <p>HRE kann ein Projekt direkt aus der Datenbank von The Master
+              Genealogist (TMG) Version 8.05 oder 9.x importieren.</p>
+            <p><b>VORBEREITUNG VON TMG:</b></p>
+            In TMG sollte eine Reihe von Prozessen durchgeführt werden, um einen
+            erfolgreichen Import zu ermöglichen. Diese sind:
+            <p> 1. Merkmale: Klicken Sie im TMG-Menü "Datei" auf den Eintrag
+              "Merkmal-Verwaltung". Wenn er sich öffnet, schließen Sie einfach
+              den Bildschirm. Diese einfache Aktion wird eine Reihe von
+              Unstimmigkeiten beheben, die in den TMG-Merkmaleinträgen vorhanden
+              sein können.</p>
+            <p> 2. Miniaturansichten von Exponaten: Unter bestimmten Umständen
+              können TMG-Miniaturansichten von Exponaten verloren gehen oder
+              beschädigt werden und nicht in HRE importiert werden. Um dieses
+              Problem zu beheben, gehen Sie wie folgt vor: Öffnen Sie ein
+              beliebiges TMG-Exponate-Verzeichnis mit einem Eintrag darin und
+              klicken Sie mit der rechten Maustaste auf das Exponat. Wählen Sie
+              "Alle Miniaturen aktualisieren". Beachten Sie, dass dieser Vorgang
+              bei einer großen Anzahl von Exponaten einige Zeit in Anspruch
+              nehmen kann.</p>
+            <br>
+            <p><b>BEVOR SIE EINEN IMPORT STARTEN:</b></p>
+            Überprüfen Sie, ob das TMG-Projekt nur einen Datensatz enthält - der
+            Importvorgang wird nur den ersten Datensatz eines TMG-Projekts
+            importieren.<br>
+            Überprüfen Sie den Speicherort Ihrer TMG-Projektdatei (.pjc), wie er
+            in TMG angegeben ist: Dateien &gt;&gt; Einstellungen &gt;&gt;
+            Aktuelles Projekt &gt;&gt; Allgemein, damit Sie ihn schnell finden
+            können, wenn Sie den Importvorgang starten.<br>
+            Entscheiden Sie, wo Sie die HRE-Datenbank nach dem Import speichern
+            wollen. Wenn Sie nicht unbedingt den Standard-Speicherort von HRE
+            verwenden wollen, erstellen Sie einen Ordner (z.B. HRE-Projekte) an
+            dem gewünschten Ort, und unter HRE &gt;&gt; Werkzeuge &gt;&gt;
+            Einstellungen &gt;&gt; Benutzer &gt;&gt; Speicherorte können Sie
+            diesen Ordner als Standard festlegen.<br>
+            <br>
+            <br>
+            <p><b>DER IMPORT VORGANG:</b></p>
+            <p> 1. Wählen Sie "Werkzeuge", dann "Import" und die Option "Von
+              TMG" erscheint. Klicken Sie auf diesen Menüpunkt</p>
+            <p> 2. Geben Sie den Projektnamen ein, den Sie für <u>dieses
+                Projekt</u> in HRE verwenden möchten.</p>
+            <p> 3. Klicken Sie in das zweite Feld, um den SPEICHERORT
+              auszuwählen, an dem Sie das neue Projekt speichern möchten.
+              Standardmäßig ist dies die aktuelle Einstellung für
+              HRE-Dateispeicherorte, aber Sie können diesen Speicherort bei
+              Bedarf über die normale Datei- und Ordnerverwaltung ändern. Geben
+              Sie den Dateinamen ein, den Sie für dieses Projekt verwenden
+              möchten</p>
+            <p> 4. Wählen Sie dann den Speicherort Ihrer TMG-Datenbank aus,
+              indem Sie auf deren .pjc-Datei klicken</p>
+            <p> 5. Sobald dies geschehen ist, beginnt der Importvorgang</p>
+            <p> 6. Ein Fortschrittsfenster erscheint, während HRE die
+              ausgewählte TMG-Datenbank durchläuft und sie als neues HRE-Projekt
+              in HRE einliest.</p>
+            <p> 7. Wenn Sie auf <b>Schließen</b> klicken, stehen die TMG-Daten
+              für die Verwendung durch HRE zur Verfügung.</p>
+            <p> 8. Verwenden Sie den Menüpunkt Projekt "Projekt Öffnen", um das
+              Projekt zu öffnen</p>
+            <p> 9. Dies könnte ein günstiger Zeitpunkt sein, um dieses neue
+              HRE-Projekt zu sichern, bevor eine Bearbeitung vorgenommen wird.</p>
+            <p><b>HINWEIS:</b> Die TMG-Datenbank wird dabei in keiner Weise
+              verändert. Sie verbleibt in ihrem ursprünglichen Ordner und ist
+              weiterhin in TMG verfügbar.</p>
+            <br>
+            <p><b>FEHLER IM IMPORTPROZESS:</b></p>
+            Sollte der Importvorgang aufgrund von Fehlern in der TMG-Datenbank,
+            die HRE nicht verarbeiten kann, fehlschlagen, kann der HRE-Support
+            Sie bitten, weitere Informationen zur Fehlersuche mit Hilfe des
+            folgenden Verfahrens bereitzustellen.<br>
+            Bevor Sie fortfahren, löschen Sie die möglicherweise unvollständige
+            HRE-Datenbank, die Sie soeben erstellt haben, indem Sie den
+            Menüpunkt "Projekt löschen" unter dem Menüpunkt "Projekt" von HRE
+            verwenden. Auf die Frage, ob Sie die Datenbank behalten wollen,
+            antworten Sie mit 'Nein'.<br>
+            <br>
+            Gehen Sie nun zu HRE &gt;&gt; Werkzeuge &gt;&gt; Einstellungen
+            &gt;&gt; Benutzer &gt;&gt; Debug-Optionen und klicken Sie auf
+            'DEBUG-Meldungen schreiben', dann übernehmen Sie die Änderung.<br>
+            <br>
+            Gehen Sie zu Schritt 1 des obigen TMG-IMPORTPROZESSES. Der
+            Importbildschirm hat sich geändert und zeigt nun 6 Kontrollkästchen
+            und den Ort an, an dem eine neue Protokolldatei erstellt werden
+            soll.<br>
+            <br>
+            Aktivieren Sie die Kontrollkästchen, die Sie vom HRE-Support
+            erhalten haben, und wiederholen Sie die Schritte des
+            TMG-Importprozesses. Wenn der Importvorgang erneut fehlschlägt,
+            schließen Sie HRE und senden Sie dem Support eine Kopie der
+            erstellten Protokolldatei.<br>
+            <br>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <p class="rlhdr">Verwandte Themen:&nbsp;&nbsp;&nbsp; </p>
+            <ul>
+              <li><a href="Backup_Project.html">Projekt Sichern</a><br>
+              </li>
+              <li><a href="Project_Summary.html">Projekt Zusammenfassung</a><br>
+              </li>
+              <li><a href="Open_Project.html">Projekt Öffnen</a><br>
+              </li>
+              <li><a href="Close_Project.html">Projekt Schließen</a><br>
+              </li>
+              <li><a href="Copy_Project.html">Projekt Kopieren</a><br>
+              </li>
+              <li><a href="Rename_Project.html">Projekt Umbenennen</a><br>
+              </li>
+              <li><a href="Delete_Project.html">Projekt Löschen</a><br>
+              </li>
+            </ul>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <div id="updated">
+      <i>Diese Seite wurde geändert am: 2 Jan 2024</i></div>
+    <br>
+  </body>
+</html>

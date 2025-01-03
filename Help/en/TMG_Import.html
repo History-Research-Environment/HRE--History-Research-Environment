@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Importing a TMG Project into HRE</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+
+<body>
+
+<H1>IMPORTING A TMG PROJECT INTO HRE</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>HRE will directly import a project from The Master Genealogist (TMG) version 8.05 or 9.x database</p>
+  
+<p><b>PREPARING TMG:</b></p> 
+A number of processes should be performed in TMG to help make a successful import. These are:
+<p> 1. Flags: under the TMG File menu, click on the Flag Manager entry. When it opens, just close the screen. This simple action will repair a number of inconsistencies that may be present in TMG flag entries.</p>
+<p> 2. Exhibit Thumbnails: under certain conditions TMG exhibit thumbnails can be lost or corrupted and cannot be imported into HRE. To address this problem, perform the following: open any TMG Exhibit log with an entry in it and right-click on the exhibit. Select 'Refresh all thumbnails'. Note that this may take some time to finish if you have a large number of exhibits.</p>
+<br>
+<p><b>BEFORE STARTING AN IMPORT:</b></p>
+Check the TMG project only contains one dataset - the import process will only import the first dataset of a TMG project.<br>
+Check the location of your TMG project file (.pjc), as specified in TMG: Files >> Preferences >> Current Project Options >> General, so you can find it quickly once you start the import process.<br>
+Decide where you are going to store the HRE database when imported. If you don't necessarily want to use the default HRE location, create a folder (e.g. HRE Projects) in the desired location, and in HRE >> Tools >> Settings >> User >> File Locations you can specify this folder as your default.</p>
+<br>
+<p><b>THE IMPORT PROCESS:</b></p>
+<p> 1. Select Tools, then Import and the 'From TMG' option appears. Click on this menu item</p>
+<p> 2. Enter the Project NAME you want to use for <u>this project</u> in HRE</p>
+<p> 3. Click in the second box to select the LOCATION where you want the new Project saved. It will default to the current HRE File Locations setting, but you can change this location if required, using regular file and folder management. Enter the filename you want to use for this Project</p>
+<p> 4. Then select the location of your TMG database, clicking on its .pjc file</p>
+<p> 5. Once this is nominated the import process will begin</p> 
+<p> 6. A progress window will appear as HRE steps through the chosen TMG database, and reads it into HRE as a new HRE Project</p>
+<p> 7. When you click on <b>Close</b> the TMG data will be available for use by HRE</p>
+<p> 8. Use the HRE Open Project menu item to open the project</p>
+<p> 9. This may be an opportune time to Backup this new HRE Project, before any editing is carried out.</p>
+<p><b>NOTE:</b>  The TMG database is not altered in any way. It remains in its original folder and will still be available in TMG.</p>
+<br>
+<p><b>IMPORT PROCESS ERRORS:</b></p>
+Should the import process fail due to errors in the TMG database that HRE cannot handle, HRE Support may ask you to provide further debugging information by using the following process. <br>
+Before proceeding, delete the probably incomplete HRE database you may have just created by using the 'Delete project' menu item under HRE's Project menu item. When asked whether you wish to keep the database, reply 'No'.<br><br>
+Now go to HRE >> Tools >> Settings >> User >> Debug Options and click on 'Write DEBUG messages', then Accept the change.<br><br>
+Go to Step 1 of THE TMG IMPORT PROCESS above. The import screen will have changed and will now display 6 check-box items and the location where a new log file will be created.<br> <br>
+Select whichever check-boxes you have been told to use by HRE Support and repeat the TMG import process steps. When the import process fails again, close down HRE and email Support a copy of the log file that will have been created.<br><br>
+</td></tr>
+
+<tr><td>
+<P class="rlhdr">Related Topics</p>
+<UL>
+<LI><A HREF="Backup_Project.html">Backup Project</a><br>
+<LI><A HREF="Project_Summary.html">Project Summary</a><br>
+<LI><A HREF="Open_Project.html">Open a Project</a><br>
+<LI><A HREF="Close_Project.html">Close Project</a><br>
+<LI><A HREF="Copy_Project.html">Copy Project</a><br>
+<LI><A HREF="Rename_Project.html">Rename Project</a><br>
+<LI><A HREF="Delete_Project.html">Delete Project</a><br>
+
+</UL>
+</td></tr>
+</table>
+
+<br>
+<div id="updated">
+<i>This page was updated on: 28 Dec 2023</i></div>
+<br>
+
+</body>
+</html>

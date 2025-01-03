@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SÉLECTIONNER UNE PERSONNE</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+<body>
+
+<H1>SÉLECTIONNER UNE PERSONNE</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>Le <b>Sélecteur de personne</b> se compose d'un affichage en deux parties précédé de diverses commandes pour permettre d'adapter le contenu des affichages.<br>
+- Le panneau de gauche de l'écran est un tableau répertoriant toutes les personnes présentes dans le projet.<br>
+- Le panneau de droite affiche initialement une génération d'ancêtres de la personne sélectionnée dans le panneau de gauche.</p>
+
+<p>Les deux panneaux sont séparés par un séparateur qui peut être déplacé vers la gauche ou la droite pour modifier la quantité d'espace d'écran alloué à chaque panneau.<br>
+En haut du séparateur se trouvent deux petits boutons fléchés qui peuvent être utilisés pour que l'un ou l'autre panneau occupe tout l'écran.<br>
+Au-dessus du séparateur se trouve un bouton intitulé "<b><< Échanger des panneaux >></b>" qui peut être utilisé pour permuter le panneau de gauche vers la droite et vice-versa.</p>
+
+<p><b>Options d'affichage du panneau de gauche (Liste de sélection des personnes) :</b><br>
+Les deux premières lignes de contrôles au-dessus de la liste des personnes permettent de rechercher des personnes particulières ou de filtrer l'affichage sur un sous-ensemble de personnes.
+En saisissant des données dans la case « Rechercher dans le nom : » et en appuyant sur Entrée, vous sélectionnerez la première personne dont le nom correspond au texte saisi (le processus de correspondance est neutre en cas de casse). "Rechercher suivant" passera au prochain match. Si le texte saisi était "theo", cela trouvera tout nom contenant "theo" ou "Theo" mais pas "théo". Si l'intention était de trouver toutes les correspondances "theo" ET "théo", cela peut être réalisé en utilisant la case à cocher "<b>Ignorer les signes diacritiques</b>". Ce bouton permet à la recherche d'ignorer TOUS les marqueurs de langue diacritiques.</p>
+
+<p>Pour filtrer la liste des personnes, saisissez le texte requis dans le champ « Texte à filtrer pour : », cochez la case « Filtrer » et sélectionnez la colonne du tableau à utiliser pour appliquer le filtre (ou choisissez Toutes les colonnes). La suppression de la coche « Filtre » ramènera l'affichage à la liste complète.</p>
+
+<p>L'ordre du tableau des personnes dans le panneau de gauche peut également être modifié de plusieurs manières. Cliquer sur l'un des champs de l'en-tête du tableau triera le tableau selon l'ordre numérique ou alphabétique de ce champ (ou l'ordre inverse si vous cliquez à nouveau). Ceci est indiqué par une petite flèche à droite du nom du champ de l'en-tête du tableau.
+Par défaut, le tableau affiche le nom de la personne, la date/lieu de naissance et la date/lieu de décès. Toutes les informations de naissance et de décès peuvent être exclues de l'affichage en utilisant l'outil de configuration (l'icône Outil de clé) dans les icônes de l'écran en haut à droite.</p>
+
+<p>L'ordre d'affichage des noms d'une personne est défini par le contrôle "<b>Afficher le nom comme :</b>", qui comporte deux paramètres simples : l'initial "Nom de naissance - Nom de famille" ou "Nom de famille, Nom de naissance". Des formats plus complexes peuvent être invoqués en cliquant sur le bouton « <b>Utiliser les styles de nom</b> », qui modifie le contrôle « Afficher le nom en tant que : » en une liste de tous les styles de nom de personne actuels. Ceci peut être renvoyé aux formats simples en utilisant le bouton "<b>Utiliser les formats simples</b>".</p>
+
+<p><b>Options d'affichage du panneau de droite</b> (Arbre généalogique dynamique) :<br>
+La sélection d'une personne dans le panneau de gauche modifie le panneau « Arbre généalogique dynamique » sur la droite pour afficher les ancêtres immédiats de cette personne (le cas échéant).
+Cela peut être modifié pour Afficher les descendants (le cas échéant) et le nombre de générations affichées peut être contrôlé en utilisant les boutons « Développer » et « Réduire » ou en cliquant sur les boutons « + »/« - » individuels.<br>
+La sélection d'une personne dans l'arborescence permet d'utiliser le bouton « Afficher le partenaire » qui fournit une liste de tous les partenaires connus de la personne sélectionnée.
+</p>
+
+<p><b>Affichage d'autres écrans :</b><br>
+Un double-clic sur n'importe quelle personne dans la liste des personnes créera et affichera l'écran Point de vue pour cette personne.<br>
+Un clic droit sur n'importe quelle personne dans la liste des personnes affichera un menu contextuel qui permet de sélectionner l'affichage du Point de vue de cette personne OU l'affichage de son écran « Gérer la personne ».</p>
+</td></tr>
+
+<tr><td>
+<div id="updated">
+<i>Cette page a été mise à jour le : 15 février 2024</i></div>
+</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+<?xml version='1.0' ?>
+<index>
+
+<indexitem text="Importerer et TMG-prosjekt" target="41700tmgimport">
+</indexitem>
+<indexitem text="Åpne et importert TMG-prosjekt" target="40200openproject">
+</indexitem>
+
+<indexitem text="Administrere et HRE-prosjekt" >
+	<indexentry text="Sikkerhetskopiere et prosjekt" target="40500backupproject" />
+	<indexentry text="Gjenopprette et prosjekt" target="40600restoreproject" />
+	<indexentry text="Kopiere et prosjekt" target="40800copyproject" />
+	<indexentry text="Gi nytt navn til et prosjekt" target="40900renameproject" />
+	<indexentry text="Slette et prosjekt" target="41000deleteproject" />
+	<indexentry text="Se prosjektinformasjon" target="41400summproject" />
+</indexitem>
+
+
+</index>

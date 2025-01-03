@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Importeer een TMG-project in HRE</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+
+<body>
+
+<H1>IMPORTEER EEN TMG-PROJECT IN HRE</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>HRE importeert rechtstreeks een project uit de database The Master Geneaologist (TMG) versie 8.05 of 9.x</p>
+  
+<p><b>BEREIDING TMG:</b></p> 
+Om een succesvolle import mogelijk te maken, moeten in TMG een aantal processen worden uitgevoerd. Dit zijn:
+<p> 1. Vlaggen: klik in het menu TMG-bestand op het item Flag Manager. Wanneer het wordt geopend, sluit u gewoon het scherm. Deze eenvoudige actie zal een aantal inconsistenties herstellen die aanwezig kunnen zijn in de TMG-vlaginvoer.</p>
+<p> 2. Thumbnails van tentoonstellingen: onder bepaalde omstandigheden kunnen thumbnails van TMG-tentoonstellingen verloren gaan of beschadigd raken en kunnen ze niet in HRE worden geïmporteerd. Om dit probleem op te lossen, voert u het volgende uit: open een TMG Exhibit-logboek met een vermelding daarin en klik met de rechtermuisknop op de exhibit. Selecteer 'Alle miniaturen vernieuwen'. Houd er rekening mee dat het enige tijd kan duren voordat dit klaar is als u een groot aantal exposities heeft.</p>
+<br>
+<p><b>BEFORE STARTING AN IMPORT:</b></p>
+Controleer of het TMG-project slechts één dataset bevat. Het importproces importeert alleen de eerste dataset van een TMG-project.<br>
+Controleer de locatie van uw TMG-projectbestand (.pjc), zoals aangegeven in TMG: Bestanden >> Voorkeuren >> Huidige projectopties >> Algemeen, zodat u het snel kunt vinden zodra u het importproces start.<br>
+Bepaal waar u de HRE-database gaat opslaan wanneer deze wordt geïmporteerd. Als u niet noodzakelijkerwijs de standaard HRE-locatie wilt gebruiken, maak dan een map aan (bijvoorbeeld HRE Projects) op de gewenste locatie en in HRE >> Extra >> Instellingen >> Gebruiker >> Bestandslocaties kunt u deze map opgeven als uw standaard.</p>
+<br>
+<p><b>HET IMPORTPROCES:</b></p>
+<p> 1. Selecteer Extra, vervolgens Importeren en de optie 'Van TMG' verschijnt. Klik op dit menu-item</p>
+<p> 2. Voer de projectnaam in die u wilt gebruiken voor <u>dit project</u> in HRE</p>
+<p> 3. Klik in het tweede vak om de LOCATIE te selecteren waar u het nieuwe project wilt opslaan. Standaard wordt de huidige instelling voor HRE-bestandslocaties gebruikt, maar u kunt deze locatie indien nodig wijzigen met behulp van normaal bestands- en mapbeheer. Voer de bestandsnaam in die u voor dit project wilt gebruiken</p>
+<p> 4. Selecteer vervolgens de locatie van uw TMG-database en klik op het .pjc-bestand</p>
+<p> 5. Zodra dit is genomineerd, begint het importproces</p>
+<p> 6. Er verschijnt een voortgangsvenster terwijl HRE door de gekozen TMG-database stapt en deze in HRE inleest als een nieuw HRE-project</p>
+<p> 7. Wanneer u op <b>Sluiten</b> klikt, zijn de TMG-gegevens beschikbaar voor gebruik door HRE</p>
+<p> 8. Gebruik het menu-item HRE Open Project om het project te openen</p>
+<p> 9. Dit kan een geschikt moment zijn om een back-up te maken van dit nieuwe HRE-project, voordat er bewerkingen worden uitgevoerd.</p>
+<p><b>LET OP:</b> De TMG-database wordt op geen enkele manier gewijzigd. Het blijft in de originele map en zal nog steeds beschikbaar zijn in TMG.</p>
+<br>
+<p><b>FOUTEN IN HET IMPORTPROCES:</b></p>
+Mocht het importproces mislukken vanwege fouten in de TMG-database die HRE niet kan verwerken, dan kan HRE Support u vragen om verdere foutopsporingsinformatie te verstrekken door het volgende proces te gebruiken. <br>
+Voordat u verdergaat, verwijdert u de waarschijnlijk onvolledige HRE-database die u zojuist heeft aangemaakt door het menu-item 'Project verwijderen' te gebruiken onder het menu-item Project van HRE. Wanneer u wordt gevraagd of u de database wilt behouden, antwoordt u 'Nee'.<br><br>
+Ga nu naar HRE >> Extra >> Instellingen >> Gebruiker >> Debug-opties en klik op 'Schrijf DEBUG-berichten' en accepteer vervolgens de wijziging.<br><br>
+Ga naar Stap 1 van HET TMG IMPORTPROCES hierboven. Het importscherm is gewijzigd en toont nu zes selectievakjes en de locatie waar een nieuw logbestand wordt gemaakt.<br> <br>
+Selecteer de selectievakjes die HRE Support u heeft opgedragen te gebruiken en herhaal de stappen van het TMG-importproces. Wanneer het importproces opnieuw mislukt, sluit u HRE af en stuurt u een e-mail naar Support met een kopie van het logbestand dat is aangemaakt.<br><br>
+</td></tr>
+
+<tr><td>
+<P class="rlhdr">Gerelateerde onderwerpen</p>
+<UL>
+<LI><A HREF="Backup_Project.html">Back-up project</a><br>
+<LI><A HREF="Project_Summary.html">Project samenvatting</a><br>
+<LI><A HREF="Open_Project.html">Open project</a><br>
+<LI><A HREF="Close_Project.html">Sluit project</a><br>
+<LI><A HREF="Copy_Project.html">Kopieer project</a><br>
+<LI><A HREF="Rename_Project.html">Hernoem project</a><br>
+<LI><A HREF="Delete_Project.html">Wis project</a><br>
+
+</UL>
+</td></tr>
+</table>
+
+<br>
+<div id="updated">
+<i>Deze pagina is bijgewerkt op: 28 december 2023</i></div>
+<br>
+
+</body>
+</html>

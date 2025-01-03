@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Importazione di un progetto TMG in HRE</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+
+<body>
+
+<H1>IMPORTARE UN PROGETTO TMG IN HRE</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>HRE importerà direttamente un progetto dal database The Master Genealogist (TMG) versione 8.05 o 9.x</p>
+  
+<p><b>PREPARAZIONE DELLA TMG:</b></p> 
+È necessario eseguire una serie di processi in TMG per garantire il successo dell'importazione. Questi sono:
+<p> 1. Flag: nel menu File TMG, fare clic sulla voce Flag Manager. Quando si apre, basta chiudere lo schermo. Questa semplice azione riparerà una serie di incoerenze che potrebbero essere presenti nelle voci dei flag TMG.</p>
+<p> 2. Miniature delle mostre: in determinate condizioni le miniature delle mostre TMG possono andare perse o danneggiate e non possono essere importate in HRE. Per risolvere questo problema, procedi come segue: apri qualsiasi registro dell'esposizione TMG con una voce al suo interno e fai clic con il pulsante destro del mouse sull'esposizione. Seleziona "Aggiorna tutte le miniature". Tieni presente che il completamento dell'operazione potrebbe richiedere del tempo se hai un numero elevato di esposizioni.</p>
+<br>
+<p><b>PRIMA DI INIZIARE UN'IMPORTAZIONE:</b></p>
+Verifica che il progetto TMG contenga solo un set di dati: il processo di importazione importerà solo il primo set di dati di un progetto TMG.<br>
+Controlla la posizione del file di progetto TMG (.pjc), come specificato in TMG: File >> Preferenze >> Opzioni progetto corrente >> Generale, in modo da poterlo trovare rapidamente una volta avviato il processo di importazione.<br>
+Decidi dove archiviare il database HRE una volta importato. Se non vuoi necessariamente utilizzare la posizione HRE predefinita, crea una cartella (ad esempio Progetti HRE) nella posizione desiderata e in HRE >> Strumenti >> Impostazioni >> Utente >> Posizioni file puoi specificare questa cartella come predefinito.</p>
+<br>
+<p><b>IL PROCESSO DI IMPORTAZIONE:</b></p>
+<p> 1. Seleziona Strumenti, quindi Importa e viene visualizzata l'opzione "Da TMG". Fai clic su questa voce di menu</p>
+<p> 2. Inserisci il NOME del progetto che desideri utilizzare per <u>questo progetto</u> in HRE</p>
+<p> 3. Fai clic nella seconda casella per selezionare la POSIZIONE in cui desideri salvare il nuovo progetto. Per impostazione predefinita verrà utilizzata l'impostazione corrente delle posizioni dei file HRE, ma è possibile modificare questa posizione se necessario, utilizzando la normale gestione di file e cartelle. Inserisci il nome del file che desideri utilizzare per questo progetto</p>
+<p> 4. Quindi seleziona la posizione del tuo database TMG, facendo clic sul suo file .pjc</p>
+<p> 5. Una volta nominato, inizierà il processo di importazione</p>
+<p> 6. Apparirà una finestra di avanzamento mentre HRE attraversa il database TMG scelto e lo legge in HRE come un nuovo progetto HRE</p>
+<p> 7. Quando si fa clic su <b>Chiudi</b> i dati TMG saranno disponibili per l'utilizzo da parte di HRE</p>
+<p> 8. Utilizza la voce di menu Apri progetto di HRE per aprire il progetto</p>
+<p> 9. Potrebbe essere il momento opportuno per eseguire il backup di questo nuovo progetto HRE, prima che venga eseguita qualsiasi modifica.</p>
+<p><b>NOTA:</b> il database TMG non viene modificato in alcun modo. Rimane nella sua cartella originale e sarà ancora disponibile in TMG.</p>
+<br>
+<p><b>ERRORI DEL PROCESSO DI IMPORTAZIONE:</b></p>
+Se il processo di importazione non riesce a causa di errori nel database TMG che HRE non è in grado di gestire, il supporto HRE potrebbe chiederti di fornire ulteriori informazioni di debug utilizzando il seguente processo. <br>
+Prima di procedere, elimina il database HRE probabilmente incompleto che potresti aver appena creato utilizzando la voce di menu "Elimina progetto" sotto la voce di menu Progetto di HRE. Quando ti viene chiesto se desideri conservare il database, rispondi "No".<br><br>
+Ora vai su HRE >> Strumenti >> Impostazioni >> Utente >> Opzioni di debug e fai clic su "Scrivi messaggi DEBUG", quindi Accetta la modifica.<br><br>
+Vai al passaggio 1 del PROCESSO DI IMPORTAZIONE TMG sopra. La schermata di importazione sarà cambiata e ora mostrerà 6 caselle di controllo e la posizione in cui verrà creato un nuovo file di registro.<br> <br>
+Seleziona le caselle di controllo che ti è stato detto di utilizzare dal supporto HRE e ripeti i passaggi del processo di importazione TMG. Quando il processo di importazione fallisce nuovamente, chiudi HRE e invia a Support una copia del file di registro che sarà stato creato.<br><br>
+</td></tr>
+
+<tr><td>
+<P class="rlhdr">Argomenti correlati</p>
+<UL>
+<LI><A HREF="Backup_Project.html">Progetto di backup</a><br>
+<LI><A HREF="Project_Summary.html">Riepilogo progetto</a><br>
+<LI><A HREF="Open_Project.html">Apri un progetto</a><br>
+<LI><A HREF="Close_Project.html">Chiudi progetto</a><br>
+<LI><A HREF="Copy_Project.html">Copia progetto</a><br>
+<LI><A HREF="Rename_Project.html">Rinomina progetto</a><br>
+<LI><A HREF="Delete_Project.html">Elimina progetto</a><br>
+
+</UL>
+</td></tr>
+</table>
+
+<br>
+<div id="updated">
+<i>Questa pagina è stata aggiornata il: 28 dicembre 2023</i></div>
+<br>
+
+</body>
+</html>

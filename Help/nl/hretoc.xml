@@ -1,0 +1,69 @@
+<?xml version='1.0'?>
+<toc version="1.0">
+
+
+<tocitem text="Hoofdmenu" target="mainmenu"/>
+
+
+<tocitem text="Projectmenu">
+<tocitem text="Open project" target="40200openproject"/>
+<tocitem text="Nieuw project maken" target="40400newproject"/>
+<tocitem text="Projectdefinitie op afstand" target="41800rmtproject"/>
+<tocitem text="Back-up project" target="40500backupproject"/>
+<tocitem text="Herstel project" target="40600restoreproject"/>
+<tocitem text="Sluit project" target="40700closeproject"/>
+<tocitem text="Kopiëer project als..." target="40800copyproject"/>
+<tocitem text="Hernoem project" target="40900renameproject"/>
+<tocitem text="Wis project" target="41000deleteproject"/>
+<tocitem text="Project samenvatting" target="41400summproject"/>
+<tocitem text="Sluit HRE" target="exithre"/>
+</tocitem>
+
+<tocitem text="Persoonsmenu">
+<tocitem text="Selecteer person..." target="50700selectperson"/>
+<tocitem text="Beheer persoon" target="50600manageperson"/>
+<tocitem text="Toevoegen persoon" target="50500addperson"/>
+<tocitem text="Vlag manager" target="51200flagmanager"/>
+<tocitem text="Stijlen voor persoonsnamen beheren" target="52500personnamestyles"/>
+<tocitem text="Converteer TMG-naamstijlen naar HRE" target="52700convertnamestyle"/>
+</tocitem>
+
+<tocitem text="Views">
+<tocitem text="Persoon view" target="53000personvp"/>
+<tocitem text="Gebeurtenis view" target="53060eventvp"/>
+<tocitem text="Plaats view" target="53030locationvp"/>
+</tocitem>
+
+<tocitem text="Evenementen/Taken">
+<tocitem text="Evenement bewerken" target="54700editevent"/>
+<tocitem text="Definieer evenement" target="55100defineevent"/>
+<tocitem text="Evenement beheren" target="55200manageevent"/>
+</tocitem>
+
+<tocitem text="Waar/wanneer">
+<tocitem text="Selecteer plaats op..." target="50750selectlocation"/>
+<tocitem text="Beheer plaats" target="50800managelocation"/>
+<tocitem text="Plaatsstijlen beheren" target="52600locationnamestyles"/>
+</tocitem>
+
+<tocitem text="Rapporten">
+<tocitem text="Logging" target="52000logging"/>
+<tocitem text="Voorouder/afstammeling rapport" target="66000ancestdescendtree"/>
+</tocitem>
+
+<tocitem text="Tools">
+<tocitem text="Instellingen" target="50100settings"/>
+<tocitem text="Importeer van TMG" target="41700tmgimport"/>
+<tocitem text="Administratie" target="40300admin"/>
+<tocitem text="Database-aanmelding" target="57500dblogon"/>
+</tocitem>
+
+<tocitem text="Help">
+<tocitem text="Herinneringen" target="54000reminder"/>
+<tocitem text="Help-inhoud" target="helpcontents"/>
+<tocitem text="Pictogrammen" target="screenicons"/>
+<tocitem text="HRE Website" target="hrewebsite"/>
+<tocitem text="Over HRE" target="abouthre"/>
+</tocitem>
+
+</toc>

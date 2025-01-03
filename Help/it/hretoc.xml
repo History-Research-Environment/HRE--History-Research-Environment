@@ -1,0 +1,69 @@
+<?xml version='1.0'?>
+<toc version="1.0">
+
+
+<tocitem text="Menu principale" target="mainmenu"/>
+
+
+<tocitem text="Menu Progetto">
+<tocitem text="Progetto aperto" target="40200openproject"/>
+<tocitem text="Crea nuovo progetto" target="40400newproject"/>
+<tocitem text="Definizione progetto remoto" target="41800rmtproject"/>
+<tocitem text="Progetto di backup" target="40500backupproject"/>
+<tocitem text="Progetto di ripristino" target="40600restoreproject"/>
+<tocitem text="Chiudi progetto" target="40700closeproject"/>
+<tocitem text="Copia progetto come..." target="40800copyproject"/>
+<tocitem text="Rinomina progetto" target="40900renameproject"/>
+<tocitem text="Elimina progetto" target="41000deleteproject"/>
+<tocitem text="Riepilogo progetto" target="41400summproject"/>
+<tocitem text="Esci HRE" target="exithre"/>
+</tocitem>
+
+<tocitem text="Menu Persona">
+<tocitem text="Seleziona persona per..." target="50700selectperson"/>
+<tocitem text="Gestisci persona" target="50600manageperson"/>
+<tocitem text="Aggiungi persona" target="50500addperson"/>
+<tocitem text="Amministra tutti i flag di persona" target="51200flagmanager"/>
+<tocitem text="Amministra tutti gli stili dei nomi delle persone" target="52500personnamestyles"/>
+<tocitem text="Converti gli stili dei nomi TMG in HRE" target="52700convertnamestyle"/>
+</tocitem>
+
+<tocitem text="Punti di vista">
+<tocitem text="Punto di vista della persona" target="53000personvp"/>
+<tocitem text="Punto di vista dell'evento" target="53060eventvp"/>
+<tocitem text="Posizione Punto di vista" target="53030locationvp"/>
+</tocitem>
+
+<tocitem text="Eventi/Compiti">
+<tocitem text="Modifica Evento" target="54700editevent"/>
+<tocitem text="Definisci Evento" target="55100defineevent"/>
+<tocitem text="Gestisci Eventi" target="55200manageevent"/>
+</tocitem>
+
+<tocitem text="Dove/Quando">
+<tocitem text="Seleziona posizione per..." target="50750selectlocation"/>
+<tocitem text="Gestisci posizione" target="50800managelocation"/>
+<tocitem text="Amministrare tutti gli stili del nome di posizione" target="52600locationnamestyles"/>
+</tocitem>
+
+<tocitem text="Rapporti">
+<tocitem text="Registrare" target="52000logging"/>
+<tocitem text="Rapporto Antenati/Discendenti" target="66000ancestdescendtree"/>
+</tocitem>
+
+<tocitem text="Strumenti">
+<tocitem text="Impostazioni" target="50100settings"/>
+<tocitem text="Importa da TMG" target="41700tmgimport"/>
+<tocitem text="Amministrazione" target="40300admin"/>
+<tocitem text="Accesso database" target="57500dblogon"/>
+</tocitem>
+
+<tocitem text="Aiuto">
+<tocitem text="Promemoria" target="54000reminder"/>
+<tocitem text="Contenuti di aiuto" target="helpcontents"/>
+<tocitem text="Icone" target="screenicons"/>
+<tocitem text="Sito web HRE" target="hrewebsite"/>
+<tocitem text="A proposito di HRE" target="abouthre"/>
+</tocitem>
+
+</toc>

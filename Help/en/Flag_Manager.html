@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Flag Manager</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+
+<body>
+<H1>FLAG MANAGER</H1>
+<table border="0" width="100%">
+  <tr><td>
+<p>The Flag Manager displays the current status of all defined Flags and enables the user to Add, Edit and Delete Flags.</p>
+
+<p>The screen displays a table of all flags, consisting of the Flag Name, whether it is a System-defined flag. the Flag's language, whether it is an Active Flag and all the possible settings defined for the Flag.</p>
+
+<p>Controls for filtering the table contents sit above the Flag table. To filter the Flag list, enter the required text in the "Text to filter for:" field, select the "Filter" checkbox and Select the table column to use to apply the filter (or choose All Columns). Removing the "Filter" check will return the display to the full list.</p>
+
+<p>On the left of the screen are controls for Adding or Deleting Flags and for moving Flags up or down in the display order.</p>
+<p>Double-clicking on any Flag (or clicking the "Add a new Flag" button) displays a Flag edit screen.</p>
+
+<p>The Flag Edit screen allows changing (or setting) the Flag's name, its Active status, the available Flag values and optionally a description of the use of the Flag and its values.</p>
+
+<p>When adding or editing Flag details, you should be aware of the following rules:</p>
+<p>1. System-defined flags cannot be added or deleted (but can be made inactive)</p>
+<p>2. Inactive flags remain defined but are not displayed in a Person's flag list</p>
+<p>3. The first flag value is always the default value of the flag</p>
+<p>4. The order of a flag's possible settings cannot be changed. That is, settings such as ‘?, N, Y’ cannot be re-ordered to ‘?, Y, N’</p>
+<p>5. Abbreviated flag values, like '<b>N</b>' or '<b>Y</b>' can be expanded to meaningful words (like 'No', 'Yes') up to TEN characters long but the first letter of the word <b>cannot be changed</b>. So you could set up a flag for Occupation with a value of <b>A</b>ccountant and later change it to <b>A</b>ctuary but you could not change <b>D</b>octor to <b>S</b>urgeon.</p>
+<p>6. After selecting a flag in the flag table, its position in the table may be moved up or down by use of the ‘<b>MOVE UP/DOWN</b>’ buttons. This applies to all flags, including System flags and Inactive flags.</p>
+</td></tr>
+</table>
+
+<br>
+<div id="updated">
+<i>This page was updated on: 15 Feb 2024</i></div>
+<br>
+
+</body>
+</html>

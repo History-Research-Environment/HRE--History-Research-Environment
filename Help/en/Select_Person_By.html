@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Select Person</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<link rel="stylesheet" href="hre.css" type="text/css"/>
+</head>
+<body>
+
+<H1>SELECT PERSON</H1>
+<table border="0" width="100%">
+<tr><td>
+<p>The <b>Person Selector</b> consists of a 2-part display preceded by various controls to allow for tailoring of the contents of the displays.<br>
+- The left panel of the screen is a table listing all people present in the project.<br>
+- The right panel initially displays one generation of ancestors of the person selected in the left panel.</p>
+
+<p>The two panels are separated by a divider which may be moved left or right to change the amount of screen space allocated to each panel.<br>
+At the top of the divider are two small arrow buttons which may be used to make either panel take over the whole screen.<br>
+Above the divider is a button labelled "<b><< Swap Panels >></b>" which can be used to swap the left panel to the right and vice-versa.</p>
+
+<p><b>Left-panel (Person picklist) display options:</b><br>
+The first two lines of controls above the list of people allow finding particular people or filtering the display to a subset of people.
+Entering data in the "Find within Name:" box and pressing Enter will select the first person whose name matches the entered text (the matching process is case-neutral). "Find Next" will move on to the next match. If the enter text was "theo", this will find any name containing "theo" or "Theo" but not "théo". If the intent was to find all "theo" AND "théo" matches, this can be achieved by use of the "<b>Ignore Diacritics</b>" checkbox. This button enables the search to ignore ALL diacritic language markers.</p>
+
+<p>To filter the people list, enter the required text in the "Text to filter for:" field, select the "Filter" checkbox and Select the table column to use to apply the filter (or choose All Columns). Removing the "Filter" check will return the display to the full list.</p>
+
+<p>The order of the table of people in the left panel can also be altered in a number of ways. Clicking on any of the table header's fields will sort the table on that field's numeric or alphabetic order (or reverse order if clicked again). This is indicated by a small arrow at the right of the table header's fieldname.
+By default, the table displays the person's name, birth date/place and death date/place. Any of the birth and death information may be excluded from the display by use of the Configuration tool (the Spanner icon) in the screen's icons at top right.</p>
+
+<p>The order of display of a person's names is set by the "<b>Display Name as:</b>" control, which has two simple settings - the initial "Birth-name - Surname" or "Surname, Birth-name". More complex formats can be invoked by clicking the "<b>Use Name Styles</b>" button, which changes the "Display Name as:" control to be a list of all current Person Name Styles. This may be returned to the Simple Formats by use of the "<b>Use Simple Formats</b>" button.</p>
+
+<p><b>Right-panel</b> (Dynamic Family Tree) display options:<br>
+Selecting a person in the left panel changes the "Dynamic Family Tree" panel on the right to display that person's immediate Ancestors (if any).
+This may be changed to Show Descendants (if any) and the number of generations displayed can be controlled by use of the "Expand" and "Collapse" buttons or by clicking on individual "+"/"-" buttons.<br>
+Selecting any person in the tree enables use of the "Show Partner" button, which provides a list of all the selected person's known partners.
+</p>
+
+<p><b>Displaying other screens:</b><br>
+A double-click on any person in the list of people will create and display the Viewpoint screen for that person.<br>
+A right-click on any person in the list of people will display a popup menu which allows selection of display of that person's Viewpoint OR display of their 'Manage Person' screen.</p>
+</td></tr>
+
+<tr><td>
+<div id="updated">
+<i>This page was updated on: 15 Feb 2024</i></div>
+</td></tr>
+</table>
+
+</body>
+</html>

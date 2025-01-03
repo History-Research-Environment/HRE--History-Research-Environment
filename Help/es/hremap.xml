@@ -1,0 +1,63 @@
+<?xml version='1.0'?>
+<map version="1.0">
+
+<mapID target="mainmenu" url="Main_Menu.html" />
+
+<mapID target="40200openproject" url="Open_Project.html" />
+<mapID target="40400newproject" url="New_Project.html" />
+<mapID target="40500backupproject" url="Backup_Project.html" />
+<mapID target="40600restoreproject" url="Restore_Project.html" />
+<mapID target="40700closeproject" url="Close_Project.html" />
+<mapID target="40800copyproject" url="Copy_Project.html" />
+<mapID target="40900renameproject" url="Rename_Project.html" />
+<mapID target="41000deleteproject" url="Delete_Project.html" />
+<mapID target="41400summproject" url="Project_Summary.html" />
+<mapID target="41800rmtproject" url="Remote_Project.html" />
+<mapID target="exithre" url="Exit_HRE.html" />
+
+<mapID target="50500addperson" url="Add_Person.html" />
+<mapID target="50600manageperson" url="Manage_Person.html" />
+<mapID target="50700selectperson" url="Select_Person_By.html" />
+<mapID target="51200flagmanager" url="Flag_Manager.html" />
+<mapID target="52500personnamestyles" url="Manage_Name_Styles.html" />
+<mapID target="52700convertnamestyle" url="Convert_Namestyle.html" />
+
+<mapID target="53000personvp" url="Person_Viewpoint.html" />
+<mapID target="53001personvp" url="Person_Viewpoint.html" />
+<mapID target="53002personvp" url="Person_Viewpoint.html" />
+<mapID target="53003personvp" url="Person_Viewpoint.html" />
+<mapID target="53004personvp" url="Person_Viewpoint.html" />
+<mapID target="53060eventvp" url="Event_Viewpoint.html" />
+<mapID target="53061eventvp" url="Event_Viewpoint.html" />
+<mapID target="53062eventvp" url="Event_Viewpoint.html" />
+<mapID target="53063eventvp" url="Event_Viewpoint.html" />
+<mapID target="53064eventvp" url="Event_Viewpoint.html" />
+<mapID target="53030locationvp" url="Location_Viewpoint.html" />
+<mapID target="53031locationvp" url="Location_Viewpoint.html" />
+<mapID target="53032locationvp" url="Location_Viewpoint.html" />
+<mapID target="53033locationvp" url="Location_Viewpoint.html" />
+<mapID target="53034locationvp" url="Location_Viewpoint.html" />
+
+<mapID target="54700editevent" url="Edit_Event.html" />
+<mapID target="55100defineevent" url="Define_Event.html" />
+<mapID target="55200manageevent" url="Manage_Event.html" />
+
+<mapID target="50750selectlocation" url="Select_Location_By.html" />
+<mapID target="50800managelocation" url="Manage_Location.html" />
+<mapID target="52600locationnamestyles" url="Manage_Name_Styles.html" />
+
+<mapID target="52000logging" url="Logging.html" />
+<mapID target="66000ancestdescendtree" url="AncestorDescend_Report.html" />
+
+<mapID target="50100settings" url="Settings.html" />
+<mapID target="40300admin" url="Administration.html" />
+<mapID target="41700tmgimport" url="TMG_Import.html" />
+<mapID target="57500dblogon" url="Database_Logon.html" />
+
+<mapID target="54000reminder" url="Reminder.html" />
+<mapID target="helpcontents" url="Help_Contents.html" />
+<mapID target="screenicons" url="Screen_Icons.html" />
+<mapID target="hrewebsite" url="HRE_Website.html" />
+<mapID target="abouthre" url="About_HRE.html" />
+
+</map>

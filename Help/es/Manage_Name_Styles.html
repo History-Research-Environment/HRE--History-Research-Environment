@@ -1,0 +1,115 @@
+<html>
+
+<HEAD>
+<meta charset="utf-8"/>
+
+<TITLE>Administrar estilos de nombre de persona y ubicación</TITLE>
+<link rel="STYLESHEET" type="text/css" href="hre.css">
+
+</HEAD><BODY>
+<H1>Administrar estilos de nombre de persona y ubicación</H1>
+
+<p>La pantalla Administrar estilos de nombres de personas brinda al usuario acceso a una característica muy poderosa de HRE: la capacidad de definir y luego implementar una variedad de estilos de nombres y estilos de ubicación para adaptarse a una variedad de tipos y usos personales, culturales y geográficos.</p>
+<p>El diseño de la pantalla para administrar estilos de nombres (tanto para nombres de personas como para ubicaciones) es como se muestra en el siguiente diagrama.</p>
+
+<img src="Images/Admin_Name_Styles.jpg" width="472" height="291" alt="Name Styles Admin Screen" title="Name Styles Admin Screen" /><br>
+
+<p>La sección <b><font size="3">[A]</font></b> contiene información básica sobre el diseño de la pantalla y cómo usarla.</p>
+
+<p>La sección <b><font size="3">[B]</font></b> contiene una lista de todos los elementos definidos actualmente para su uso en un estilo de nombre, ya sea para una persona o una ubicación, según la pantalla que se muestre. Como el formato y la función de ambos tipos de pantalla es el mismo, usaremos Nombres de personas en la siguiente descripción, en aras de la simplicidad.</p>
+
+<p>La sección <b><font size="3">[C]</font></b> contiene una lista de los nombres de todos los Estilos definidos actualmente del tipo elegido (Persona o Ubicación) y cuando se abre la pantalla, el primer elemento de la lista está preseleccionado. Se muestra una descripción más larga del estilo de nombre seleccionado en la sección <b><font size="3">[D]</font></b> y se puede editar.</p>
+
+<p>La sección <b><font size="3">[E]</font></b> contiene una lista de los elementos existentes en el Estilo de Nombre seleccionado en la Sección <b><font size="3">[C]</font></b>.</p>
+
+<p>Botones para <b>Copiar</b>, <b>Borrar</b> y <b>Rebautizar</b> de los estilos de nombre en la sección <b><font size="3">[C]</font></b> existe a su izquierda inmediata en el área <b><font size="3">(<font color="#0000ff">c</font>)</font></b>. Es posible que algunos de estos botones estén inactivos, según el tipo de estilo de nombre seleccionado; consulte la tabla a continuación.  Área <b><font size="3">(<font color="#0000ff">c</font>)</font></b> también contiene una casilla de verificación 'Predeterminada' que indica qué estilo de nombre es el estilo predeterminado (debe haber uno y solo un estilo de nombre predeterminado). Esta casilla de verificación se puede seleccionar para cambiar qué estilo es el predeterminado.</p>
+
+<p>Botones para manipular los elementos de nombre en la Sección <b><font size="3">[E]</font></b> existen en el área <b><font size="3">(<font color="#0000ff">e</font>)</font></b>. Estos permiten elementos en la lista en la Sección <b><font size="3">[E]</font></b> para ser reordenado, eliminado de la lista, renombrado y para otros elementos contenidos en la Sección <b><font size="3">[B]</font></b> para ser agregado a la lista en la Sección <b><font size="3">[E]</font></b>. Además, el usuario puede agregar nuevos elementos a la lista en la Sección<b><font size="3">[B]</font></b> para su uso en estilos de nombres personales. Algunos de estos botones también pueden estar inactivos según el tipo de estilo de nombre que se esté modificando.</p>
+
+<p>El botón '<b>Guardar</b>' en el área <b><font size="3">(<font color="#0000ff">s</font>)</font></b> debajo de la sección <b><font size="3">[E]</font></b>) se activará si es necesario guardar los cambios de estilo de nombre. Cambios realizados en la Sección <b><font size="3">[C]</font></b> se guardan automáticamente y no activará el botón 'Guardar'.</p>
+
+<p>La tercera columna de la pantalla, Secciones <b><font size="3">[F]</font></b>, <b><font size="3">[G]</font></b> y <b><font size="3">[H]</font></b>, controlar los cambios en los estilos de salida asociados con cualquier estilo de nombre seleccionado en la sección <b><font size="3">[C]</font></b>. Botones en áreas <b><font size="3">(<font color="#0000ff">f</font>)</font></b> y <b><font size="3">(<font color="#0000ff">h</font>)</font></b> funcionan de manera similar, pero más restringida, a los botones en áreas <b><font size="3">(<font color="#0000ff">c</font>)</font></b> y <b><font size="3">(<font color="#0000ff">e</font>)</font></b>. Área <b><font size="3">(<font color="#0000ff">f</font>)</font></b> también muestra el tipo de estilo de salida, ya sea para informes o visualización (en pantalla). El tipo se puede cambiar, con la restricción de que un estilo de nombre de persona siempre debe tener un mínimo de 2 tipos de 'Mostrar'(o uno para ubicaciones).</p>
+
+<p>El botón 'Agregar/Quitar coma' <b><font size="3">(<font color="#0000ff">z</font>)</font></b> debajo de la sección <b><font size="3">[H]</font></b> controla si el elemento seleccionado en <b><font size="3">[H]</font></b> tiene una coma después del elemento cuando se usa ese estilo de salida.</p>
+
+<p>El botón '<b>Guardar</b>' en el área <b><font size="3">(<font color="#0000ff">s</font>)</font></b> debajo de la sección <b><font size="3">[H]</font></b> se activará si es necesario guardar los cambios de estilo de salida. Cambios realizados en la Sección <b><font size="3">[F]</font></b> se guardan automáticamente y no activará el botón 'Guardar'.</p>
+
+<p>Si el botón '<b>Cerrar</b>' en el área <b><font size="3">(<font color="#0000ff">s</font>)</font></b> debajo de la sección <b><font size="3">[H]</font></b> se hace clic cuando hay cambios sin guardar, se le pedirá que guarde estos cambios o proceda a cerrar la pantalla sin guardar.</p>
+
+<b><p><font size="3">Reglas que controlan la manipulación de los estilos de nombre</font></p></b>
+
+<p>NOTA IMPORTANTE: Cuando se copia un estilo de nombre, también se copian todos los estilos de salida asociados. Del mismo modo, si se elimina un estilo de nombre, también se eliminan todos los estilos de salida asociados.</p>
+
+<p>Si los estilos de nombre se han importado a HRE desde TMG, existen restricciones específicas en los estilos TMG, como se muestra en la siguiente tabla. Debido a que los Estilos de nombres HRE son mucho más sofisticados que los estilos TMG, se recomienda a los usuarios que se conviertan al uso de Estilos de nombres HRE.</p>
+
+<div style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><table width="100%" border="1" cellpadding="2" cellspacing="2" style="border-color: #000000; border-style: solid; background-color: #ffffff;">
+<tr valign="top">
+<td valign="middle" style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: bold; color: #000000; background-color: transparent; text-decoration: none;">Origen del estilo de nombre</span></p>
+</td>
+<td valign="middle" style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: bold; color: #000000; background-color: transparent; text-decoration: none;">¿Se puede copiar?</span></p>
+</td>
+<td valign="middle" style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: bold; color: #000000; background-color: transparent; text-decoration: none;">¿Se puede actualizar?</span></p>
+</td>
+<td valign="middle" style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: bold; color: #000000; background-color: transparent; text-decoration: none;">¿Se puede eliminar?</span></p>
+</td>
+<td valign="middle" style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: bold; color: #000000; background-color: transparent; text-decoration: none;">¿Se puede renombrar?</span></p>
+</td>
+</tr>
+<tr valign="top">
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Sistema HRE suministrado</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">No</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">No</span></p>
+</td>
+</tr>
+<tr valign="top">
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Usuario HRE creado</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Sí (si no es el PREDETERMINADO actual)</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+</tr>
+<tr valign="top">
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Estilos del sistema TMG importados</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">No</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">No</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Sí (si no se usa)</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">No</span></p>
+</td>
+</tr>
+<tr valign="top">
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Estilos creados por el usuario de TMG importados</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">No</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Sí (si no es el PREDETERMINADO actual)</span></p>
+</td>
+<td style="border-color : #000000 #000000 #000000 #000000; border-style: solid;"><p style=" text-align: center; text-indent: 0px; padding: 0px 0px 0px 0px; margin: 0px 0px 0px 0px;"><span style=" font-size: 9pt; font-family: 'Arial', 'Helvetica', sans-serif; font-style: normal; font-weight: normal; color: #000000; background-color: transparent; text-decoration: none;">Si</span></p>
+</td>
+</tr>
+</table>
+</div>
+
+<b><p><font size="3">Conversión de estilos de nombre TMG a HRE</font></p></b>
+<p>See <A HREF="Convert_NameStyle.html">Cómo convertir un estilo de nombre TMG a HRE</a></p>
+
+<br><BR><div align="left"><font size="2">Este archivo fue creado el 5 de mayo de 2023</font><br></div>
+
+</BODY>
+</html>

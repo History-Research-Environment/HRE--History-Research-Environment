@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Select Person</title>
+    <link rel="stylesheet" href="hre.css" type="text/css">
+  </head>
+  <body>
+    <h1>PERSONENAUSWAHL</h1>
+    <table width="100%" border="0">
+      <tbody>
+        <tr>
+          <td>Die <b>Personenauswahl</b> besteht aus einer zweiteiligen
+            Anzeige, der verschiedene Steuerelemente vorangestellt sind, mit
+            denen der Inhalt der Anzeigen angepasst werden kann.<br>
+            - Der linke Teil des Bildschirms ist eine Tabelle, die alle im
+            Projekt vorhandenen Personen auflistet.<br>
+            - Das rechte Feld zeigt zunächst eine Generation der Vorfahren der
+            im linken Feld ausgewählten Person an.<br>
+            <br>
+            Die beiden Felder sind durch eine Trennlinie getrennt, die nach
+            links oder rechts verschoben werden kann, um den Platz auf dem
+            Bildschirm zu verändern, der jedem Feld zugewiesen ist.<br>
+            Am oberen Rand der Trennlinie befinden sich zwei kleine
+            Pfeilschaltflächen, mit denen Sie die beiden Felder auf den gesamten
+            Bildschirm ausdehnen können.<br>
+            Oberhalb der Trennlinie befindet sich eine Schaltfläche mit der
+            Aufschrift "&lt;&lt;<b>Seiten vertauschen</b> &gt;&gt;", mit der die
+            linke Seite mit der rechten vertauscht werden kann und umgekehrt.<br>
+            <p><b>Azeigeoptionen für die linke Seite (Personen Auswahlliste):</b><br>
+              Die ersten beiden Zeilen der Steuerelemente oberhalb der
+              Personenliste ermöglichen die Suche nach bestimmten Personen oder
+              das Filtern der Anzeige auf eine Teilmenge von Personen. Wenn Sie
+              Daten in das Feld "Suche in Name:" eingeben und die Eingabetaste
+              drücken, wird die erste Person ausgewählt, deren Name mit dem
+              eingegebenen Text übereinstimmt (die Groß- und Kleinschreibung
+              wird dabei nicht berücksichtigt). Mit "Weiter suchen" wird zur
+              nächsten Übereinstimmung übergegangen. Wenn der eingegebene Text
+              "theo" war, werden alle Namen gefunden, die "theo" oder "Theo"
+              enthalten, aber nicht "théo". Wenn die Absicht war, alle
+              Übereinstimmungen von "theo" UND "théo" zu finden, kann dies durch
+              die Verwendung des Kontrollkästchens <b>"Diakritische Zeichen
+                ignorieren"</b> erreicht werden. Mit dieser Schaltfläche wird
+              die Suche so eingestellt, dass ALLE diakritischen Sprachmarker
+              ignoriert werden.<br>
+              <br>
+              Um die Personenliste zu filtern, geben Sie den gewünschten Text in
+              das Feld "Zu filternder Text:" ein, aktivieren Sie das
+              Kontrollkästchen "Filter" und wählen Sie die Tabellenspalte aus,
+              auf die der Filter angewendet werden soll (oder wählen Sie Alle
+              Spalten). Wenn Sie das Kontrollkästchen "Filter" entfernen, wird
+              wieder die vollständige Liste angezeigt.<br>
+              <br>
+              Die Reihenfolge der Personentabelle im linken Bereich kann
+              ebenfalls auf verschiedene Weise geändert werden. Wenn Sie auf
+              eines der Felder in der Kopfzeile der Tabelle klicken, wird die
+              Tabelle nach der numerischen oder alphabetischen Reihenfolge des
+              Feldes sortiert (oder in umgekehrter Reihenfolge, wenn Sie erneut
+              darauf klicken). Dies wird durch einen kleinen Pfeil rechts neben
+              dem Feldnamen in der Kopfzeile der Tabelle angezeigt.
+              Standardmäßig zeigt die Tabelle den Namen, das Geburtsdatum/den
+              Geburtsort und das Sterbedatum/den Sterbeort der Person an. Alle
+              Geburts- und Sterbedaten können mit Hilfe des
+              Konfigurationswerkzeugs (Schraubenschlüssel-Symbol) in den
+              Symbolen oben rechts auf dem Bildschirm von der Anzeige
+              ausgeschlossen werden.<br>
+              <br>
+              Die Reihenfolge, in der die Namen einer Person angezeigt werden,
+              wird mit dem Steuerelement <b>"Name anzeigen als:"</b>
+              festgelegt, das zwei einfache Einstellungen bietet: "Geburtsname -
+              Nachname" oder "Nachname, Geburtsname". Komplexere Formate können
+              durch Klicken auf die Schaltfläche <b>"Namensstile verwenden"</b>
+              aufgerufen werden, wodurch das Steuerelement "Name anzeigen als:"
+              in eine Liste aller aktuellen Namensstile für Personen umgewandelt
+              wird. Über die Schaltfläche <b>"Einfache Formate verwenden"</b>
+              können Sie zu den einfachen Formaten zurückkehren.</p>
+            <p><b>Anrzeigeoptionen für die rechte Seite</b> (Dynamischer
+              Stammbaum):<br>
+              Wenn Sie eine Person im linken Bereich auswählen, werden im
+              Bereich "Dynamischer Stammbaum" auf der rechten Seite die
+              unmittelbaren Vorfahren dieser Person angezeigt (falls vorhanden).
+              Die Anzahl der angezeigten Generationen kann mit den Schaltflächen
+              "Erweitern" und "Verkleinern" oder durch Klicken auf die einzelnen
+              Schaltflächen "+"/"-" gesteuert werden.<br>
+              Wenn Sie eine beliebige Person im Stammbaum auswählen, können Sie
+              die Schaltfläche "Partner anzeigen" verwenden, die eine Liste
+              aller bekannten Partner der ausgewählten Person anzeigt.</p>
+            <p><b>Anzeigen von anderen Bildschirmen:</b><br>
+              Ein Doppelklick auf eine beliebige Person in der Personenliste
+              erstellt und zeigt den Blickwinkel-Bildschirm für diese Person an.<br>
+              Wenn Sie mit der rechten Maustaste auf eine Person in der
+              Personenliste klicken, wird ein Popup-Menü angezeigt, mit dem Sie
+              die Anzeige des Blickwinkels dieser Person ODER die Anzeige ihres
+              Bildschirms "Person verwalten" auswählen können.</p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div id="updated">
+              <i>Diese Seite wurde geändert am: 15 Feb 2024</i></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

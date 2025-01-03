@@ -1,0 +1,290 @@
+
+BODY {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:90%;
+	line-height: 1.3;
+	color:#000000;
+	margin-left : 1%;
+	margin-right : 1%;
+	background-color : #FFFFFF;
+}
+
+#updated
+{
+/* font-family sans-serif;*/
+font-size: 80%;
+font-style: italic
+}
+
+a:link {
+	font-size:100%; 
+	color:red;
+	}
+a:visited {
+	font-size:100%; 
+	color:green;
+	}
+a:hover {
+	font-size:100%; 
+	color:navy;
+	}
+
+a.navigation:link
+{
+	font-size:70%; 
+	color:#996633;
+	}
+
+h1 {
+	font-size:140%;
+	color:#336699;
+	width : 100%;
+}
+h2 {
+
+	font-size:120%;
+	color:#336699;
+	border : solid #cccc99;
+	border-width : 0px 0px thin 0px;
+	width : 100%;
+}
+h3 {
+	font-size:100%;
+	color:#336699;
+	width : 100%;
+	}
+
+P.numcallout {
+	font : bold italic small-caps;
+}
+
+P.rlhdr {
+	font : bold;
+}
+
+P {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:100%;
+	color:#000000;
+	background-color : #FFFFFF;
+}
+
+UL {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:100%;
+	color:#000000;
+	background-color : #FFFFFF;
+}
+LI {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:100%;
+	color:#000000;
+	background-color : #FFFFFF;
+}
+
+CODE {
+	color : #336699;
+	font-family : Arial, Helvetica, sans-serif;
+}
+
+
+DIV.indent {
+	padding-left : 30px;
+}
+
+table.help {
+	margin: 10pt;
+}
+
+td {
+	padding: 5pt;
+}
+	
+
+table.databorders {
+	border : 1px solid #BDB76B;
+	width : 98%;
+	padding : 18px;
+}
+
+TABLE.DATA {
+	width : 98%;
+	padding : 6px;
+}
+
+TR {
+	text-align : left;
+	text-align : left;
+	vertical-align : top;
+	}
+
+TH {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:95%;
+	color:#000000;
+	background-color:#FFFFFF;
+	text-align: center;
+}
+
+TD.data {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:95%;
+	color:#000000;
+	background-color:#FFFFFF;
+}
+
+TD.hdrprodname {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:90%;
+	color:#336699;
+	background-color:#FFFFFF;
+	font-style : italic;
+	font-weight : bold;
+}
+
+TD.hdrbooktitle {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size:120%;
+	color:#336699;
+	background-color:#FFFFFF;
+	font-weight : bold;}
+
+.mediumtext {
+	font-size:90%;
+}
+
+PRE.CODE {
+	color : #336699;
+}
+.smalltext {
+	font-size:85%;
+}
+
+.tinytext {
+	font-size:80%;
+}
+
+/* CSS file generated on Thu Sep 21 10:58:08 CDT 2000 */
+/*
+A:link {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#663300}
+A:active {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#ff6600}
+A:visited {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#996633}
+.OraBGColorVeryDark {background-color:#003366}
+.OraBGColorDark {background-color:#336699}
+.OraBGColorMedium {background-color:#6699cc}
+.OraBGColorLight {background-color:#99ccff}
+.OraBGGrayVeryDark {background-color:#333333}
+.OraBGGrayDark {background-color:#666666}
+.OraBGGrayMedium {background-color:#999999}
+.OraBGGrayLight {background-color:#cccccc}
+.OraBGAccentVeryDark {background-color:#999966}
+.OraBGAccentDark {background-color:#cccc99}
+.OraBGAccentMedium {background-color:#ffffcc}
+.OraBGAccentLight {background-color:#f7f7e7}
+.OraBody {background-color:#ffffff}
+.OraPromptText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; text-align:right; color:#000000}
+.OraDataText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#000000}
+.OraFieldText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#000000}
+.OraFieldTextDisabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#999999}
+.OraFieldNumber {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#000000}
+.OraFieldNumberDisabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#999999}
+.OraInstructionText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#000000}
+.OraInstructionTextStrong {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#000000}
+.OraButtonText {font-family:Arial, Helvetica, Geneva, sans-serif; background-color:#f7f7e7; color:#000000; font-size:12pt}
+.OraButtonTextDisabled {font-family:Arial, Helvetica, Geneva, sans-serif; background-color:#f7f7e7; color:#999966; font-size:12pt}
+.OraGlobalButtonText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; color:#663300}
+.OraGlobalButtonTextSelected {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; color:#336699}
+.OraGlobalButtonTextDisabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; color:#999966}
+.OraGlobalButtonIcon {background-color:#ffffff; color:#999966}
+.OraGlobalButtonIconSelected {background-color:#99ccff; color:#336699}
+.OraGlobalButtonIconDisabled {background-color:#f7f7e7; color:#cccc99}
+.OraLinkText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#663300}
+.OraVLinkText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#996633}
+.OraALinkText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#ff6600}
+.OraTipLabel {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#336699}
+.OraTipText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#336699}
+.OraInlineInfoText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; color:#336699}
+.OraErrorText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#cc0000}
+.OraErrorNameText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#cc0000}
+.OraInlineErrorText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; color:#cc0000}
+.OraHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:16pt; color:#336699}
+.OraHeaderSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#336699; font-weight:bold}
+.OraHeaderSubSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:11pt; color:#336699; font-weight:bold}
+.OraDarkHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:16pt; color:#003366}
+.OraDarkHeaderSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#003366; font-weight:bold}
+.OraDarkHeaderSubSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:11pt; color:#003366; font-weight:bold}
+.OraLightHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:16pt; color:#6699cc}
+.OraLightHeaderSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#6699cc; font-weight:bold}
+.OraLightHeaderSubSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:11pt; color:#6699cc; font-weight:bold}
+.OraColorHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:16pt; color:#ffffcc}
+.OraColorHeaderSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#ffffcc; font-weight:bold}
+.OraColorHeaderSubSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:11pt; color:#ffffcc; font-weight:bold}
+.OraPortletHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#000000}
+.OraDarkPortletHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#000000}
+.OraErrorHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:16pt; color:#cc0000}
+.OraGlobalPageTitle {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#ffffff; font-weight:bold}
+.OraNav1Selected {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#99ccff; font-weight:bold}
+.OraNav1Enabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; background-color:#cccc99; color:#003366}
+.OraNav1Disabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; background-color:#cccc99; color:#ffffcc}
+.OraNav2Selected {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#ffffff; text-decoration:none}
+.OraNav2Enabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#cccc99; text-decoration:none}
+.OraNav2Disabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#6699cc; text-decoration:none}
+.OraNav3Selected {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; background-color:#336699; color:#ffffff; text-decoration:none}
+.OraNav3Enabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#cccc99; color:#003366}
+.OraNav3Disabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#cccc99; color:#ffffcc; text-decoration:none}
+.OraTextInline {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; color:#6699cc}
+.OraTableTitle {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; background-color:#ffffff; color:#336699}
+.OraTableControlBarText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:11pt; background-color:#cccc99; color:#336699; font-weight:bold}
+.OraTableColumnHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:left; background-color:#cccc99; color:#336699; text-indent:1}
+.OraTableSortableColumnHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:left; background-color:#cccc99; color:#336699; text-indent:1; cursor:hand}
+.OraTableRowHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:right; background-color:#cccc99; color:#336699; text-indent:1}
+.OraTableColumnFooter {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:left; background-color:#cccc99; color:#336699; text-indent:1; padding:2px}
+.OraTableTotal {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:right; background-color:#cccc99; color:#336699; padding-top:2px}
+.OraTableAddTotal {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:left; background-color:#cccc99; color:#336699; padding-top:2px}
+.OraTableTotalNumber {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:right; background-color:#cccc99; color:#000000; vertical-align:baseline}
+.OraTableTotalText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; text-align:left; background-color:#cccc99; color:#000000; vertical-align:baseline}
+.OraTableCellText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#f7f7e7; color:#000000; text-indent:1}
+.OraTableCellTextBand {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#ffffff; color:#000000; text-indent:1}
+.OraTableCellNumber {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; text-align:right; background-color:#f7f7e7; color:#000000; text-indent:1}
+.OraTableCellNumberBand {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; text-align:right; background-color:#ffffff; color:#000000; text-indent:1}
+.OraTableCellIconButton {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; text-align:center; background-color:#f7f7e7; color:#000000; text-indent:1}
+.OraTableCellIconButtonBand {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; text-align:center; background-color:#ffffff; color:#000000; text-indent:1}
+.OraTableCellSelect {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#f7f7e7; color:#000000; text-align:center; text-indent:1}
+.OraTableCellSelectBand {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#ffffff; color:#000000; text-align:center; text-indent:1}
+.OraTableVerticalGrid {background-color:#cccc99; width:1px}
+.OraTableVerticalHeaderGrid {background-color:#f7f7e7; width:1px}
+.OraTableHorizontalGrid {background-color:#cccc99; width:1px}
+.OraTableHorizontalHeaderGrid {background-color:#f7f7e7; width:1px}
+.OraTableShadowHeaderGrid {background-color:#666633; width:1px}
+.OraTableHeaderLink {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; background-color:#cccc99; color:#336699; text-indent:1; text-decoration:none}
+.OraTrainActive {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:9pt; color:#336699; font-weight:bold; text-align:center}
+.OraTrainVisited {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:9pt; color:#cccc99; text-align:center}
+.OraTrainUnvisited {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:9pt; color:#336699; text-align:center}
+.OraPrivacy {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; text-align:right; color:#663300}
+.OraCopyright {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:8pt; text-align:left; color:#000000}
+.OraCrumbsSelected {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:9pt; color:#000000; text-decoration:none}
+.OraCrumbsEnabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:9pt; color:#663300}
+.OraNavBarActiveLink {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#663300}
+.OraNavBarInactiveLink {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#999966}
+.OraNavBarViewOnly {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#336699}
+.OraCalendarTitle {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; background-color:#ffffff; color:#336699; text-align:center}
+.OraCalendarHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; background-color:#cccc99; color:#336699; text-align:center; padding:2px}
+.OraCalendarEnabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#f7f7e7; color:#336699; text-align:center; line-height:1.5; padding:2px; text-decoration:none}
+.OraCalendarDisabled {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#f7f7e7; color:#999999; text-align:center; line-height:1.5; padding:2px}
+.OraCalendarSelected {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; background-color:#999966; color:#ffffff; text-align:center; line-height:1.5; padding:2px}
+.OraCContainerColorHeaderSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#ffffcc; font-weight:bold}
+.OraCContainerHeaderSub {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:14pt; color:#336699; font-weight:bold}
+.OraTreeLink {text-decoration:none}
+.OraTreeText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#003366; margin-top:-2px}
+.OraTreeSelectedText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; background-color:#336699; color:#ffffff; margin-top:-2px}
+.OraTreeRow {text-align:left; margin-top:-2px}
+.OraTreeIcon {vertical-align:top}
+.OraShuttleHeader {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:11pt; font-weight:bold; color:#336699}
+.OraShuttleLinkText {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:9pt; color:#663300}
+.OraMessageBoxList {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#336699}
+.OraMessageBoxLink {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#336699}
+.OraMessageBoxParagraph {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#336699}
+.OraMessageBoxErrorList {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#cc0000}
+.OraMessageBoxErrorLink {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; font-weight:bold; color:#cc0000}
+.OraMessageBoxErrorParagraph {font-family:Arial, Helvetica, Geneva, sans-serif; font-size:10pt; color:#cc0000}
+*/

@@ -1,0 +1,68 @@
+<?xml version='1.0'?>
+<toc version="1.0">
+
+<tocitem text="Hovedmeny" target="mainmenu"/>
+
+<tocitem text="Prosjektmeny">
+<tocitem text="Åpne Prosjekt" target="40200openproject"/>
+<tocitem text="Lag Nytt Prosjekt" target="40400newproject"/>
+<tocitem text="Ekstern prosjektdefinisjon" target="41800rmtproject"/>
+<tocitem text="Sikkerhetskopi Project" target="40500backupproject"/>
+<tocitem text="Gjenopprett Prosjekt" target="40600restoreproject"/>
+<tocitem text="Lukk Prosjekt" target="40700closeproject"/>
+<tocitem text="Kopier Prosjekt As..." target="40800copyproject"/>
+<tocitem text="Nytt Navn Prosjekt" target="40900renameproject"/>
+<tocitem text="Slett Prosjekt" target="41000deleteproject"/>
+<tocitem text="Prosjektoppsummering" target="41400summproject"/>
+<tocitem text="Avslutt HRE" target="exithre"/>
+</tocitem>
+
+<tocitem text="Personmeny">
+<tocitem text="Velg Person med..." target="50700selectperson"/>
+<tocitem text="Administrer Person" target="50600manageperson"/>
+<tocitem text="Legg til Person" target="50500addperson"/>
+<tocitem text="Administrer alle Personflagg" target="51200flagmanager"/>
+<tocitem text="Administrer alle Personnavnstiler" target="52500personnamestyles"/>
+<tocitem text="Konverter TMG-navnestiler til HRE" target="52700convertnamestyle"/>
+</tocitem>
+
+<tocitem text="Visninger">
+<tocitem text="Person Visning" target="53000personvp"/>
+<tocitem text="Hendelse Visning" target="53060eventvp"/>
+<tocitem text="Sted Visning" target="53030locationvp"/>
+</tocitem>
+
+<tocitem text="Hendelser/Oppgaver">
+<tocitem text="Rediger Hendelsen" target="54700editevent"/>
+<tocitem text="Definer Hendelsen" target="55100defineevent"/>
+<tocitem text="Behandle Hendelsen" target="55200manageevent"/>
+</tocitem>
+
+<tocitem text="Hvor/Når">
+<tocitem text="Velg sted ved..." target="50750selectlocation"/>
+<tocitem text="Administrer plassering" target="50800managelocation"/>
+<tocitem text="Administrer alle stedsnavnstiler" target="52600locationnamestyles"/>
+</tocitem>
+
+<tocitem text="Rapporter">
+<tocitem text="Logging" target="52000logging"/>
+<tocitem text="Forfedres / etterkommers rapport" target="66000ancestdescendtree"/>
+</tocitem>
+
+<tocitem text="Verktøy">
+<tocitem text="Innstillinger" target="50100settings"/>
+<tocitem text="Import fra TMG" target="41700tmgimport"/>
+<tocitem text="Administrasjon" target="40300admin"/>
+<tocitem text="Database pålogging" target="57500dblogon"/>
+</tocitem>
+
+<tocitem text="Hjelp">
+<tocitem text="Påminnelser" target="54000reminder"/>
+<tocitem text="Hjelp innhold" target="helpcontents"/>
+<tocitem text="Ikoner" target="screenicons"/>
+<tocitem text="HRE nettside" target="hrewebsite"/>
+<tocitem text="Om HRE" target="abouthre"/>
+</tocitem>
+
+</toc>
+

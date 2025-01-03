@@ -1,0 +1,69 @@
+<?xml version='1.0'?>
+<toc version="1.0">
+
+
+<tocitem text="Hauptmenü" target="mainmenu"/>
+
+
+<tocitem text="Projektmenü">
+<tocitem text="Projekt öffnen" target="40200openproject"/>
+<tocitem text="Neues Projekt erstellen" target="40400newproject"/>
+<tocitem text="Remote-Projektdefinition" target="41800rmtproject"/>
+<tocitem text="Projekt sichern" target="40500backupproject"/>
+<tocitem text="Projekt wiederherstellen" target="40600restoreproject"/>
+<tocitem text="Projekt schließen" target="40700closeproject"/>
+<tocitem text="Projekt kopieren" target="40800copyproject"/>
+<tocitem text="Projekt umbenennen" target="40900renameproject"/>
+<tocitem text="Projekt löschen" target="41000deleteproject"/>
+<tocitem text="Projekt-Zusammenfassung" target="41400summproject"/>
+<tocitem text="HRE beenden" target="exithre"/>
+</tocitem>
+
+<tocitem text="Personenmenü">
+<tocitem text="Person auswählen durch" target="50700selectperson"/>
+<tocitem text="Personen verwalten" target="50600manageperson"/>
+<tocitem text="Person hinzufügen" target="50500addperson"/>
+<tocitem text="Merkmal Verwaltung" target="51200flagmanager"/>
+<tocitem text="Personen-Namensstile verwalten" target="52500personnamestyles"/>
+<tocitem text="Konvertieren Sie TMG-Namensstile in HRE" target="52700convertnamestyle"/>
+</tocitem>
+
+<tocitem text="Blickwinkel">
+<tocitem text="Personen-Blickwinkel" target="53000personvp"/>
+<tocitem text="Ereignis-Blickwinkel" target="53060eventvp"/>
+<tocitem text="Orts-Blickwinkel" target="53030locationvp"/>
+</tocitem>
+
+<tocitem text="Ereignisse/Aufgaben">
+<tocitem text="Ereignis bearbeiten" target="54700editevent"/>
+<tocitem text="Ereignis definieren" target="55100defineevent"/>
+<tocitem text="Ereignis verwalten" target="55200manageevent"/>
+</tocitem>
+
+<tocitem text="Wo/Wann">
+<tocitem text="Wähle Ort durch" target="50750selectlocation"/>
+<tocitem text="Orte verwalten" target="50800managelocation"/>
+<tocitem text="Verwalten Sie alle Ortsstile" target="52600locationnamestyles"/>
+</tocitem>
+
+<tocitem text="Berichte">
+<tocitem text="Logging" target="52000logging"/>
+<tocitem text="Vorfahren/Nachkommen Bericht" target="66000ancestdescendtree"/>
+</tocitem>
+
+<tocitem text="Werkzeuge">
+<tocitem text="Einstellungen" target="50100settings"/>
+<tocitem text="Aus TMG importieren" target="41700tmgimport"/>
+<tocitem text="Verwaltung" target="40300admin"/>
+<tocitem text="Datenbankanmeldung" target="57500dblogon"/>
+</tocitem>
+
+<tocitem text="Hilfe">
+<tocitem text="Erinnerungen" target="54000reminder"/>
+<tocitem text="Hilfe Inhalt" target="helpcontents"/>
+<tocitem text="Bildschirmsymbole" target="screenicons"/>
+<tocitem text="HRE Website" target="hrewebsite"/>
+<tocitem text="Über HRE" target="abouthre"/>
+</tocitem>
+
+</toc>

@@ -1,0 +1,19 @@
+<?xml version='1.0' ?>
+<index>
+
+<indexitem text="Importazione di un progetto TMG" target="41700tmgimport">
+</indexitem>
+<indexitem text="Apertura di un progetto TMG importato" target="40200openproject">
+</indexitem>
+
+<indexitem text="Gestione di un progetto HRE" >
+	<indexentry text="Backup di un progetto" target="40500backupproject" />
+	<indexentry text="Ripristino di un progetto" target="40600restoreproject" />
+	<indexentry text="Copia di un progetto" target="40800copyproject" />
+	<indexentry text="Rinominare un progetto" target="40900renameproject" />
+	<indexentry text="Eliminazione di un progetto" target="41000deleteproject" />
+	<indexentry text="Vedere le informazioni sul progetto" target="41400summproject" />
+</indexitem>
+
+
+</index>
