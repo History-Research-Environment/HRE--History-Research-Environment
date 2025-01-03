@@ -12,11 +12,12 @@ package hre.gui;
  *			  2024-05-08 Setting up edit select person (N. Tolleshaug)
  *			  2024-07-31 Revised  HG0507SelectPerson buttons (N. Tolleshaug)
  *			  2024-11-05 Fix filter crashing issue (D Ferguson)
+ * v0.04.0032 2024-12-31 Add citation select/up/down code (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
  * NOTE04 need to pass in the initial person (focusPersIDX)	as a new parameter
- * NOTE06 need to get memo/citation data if updating
+ * NOTE06 need to get memo/citation data and enable edit/save
  ************************************************************************************/
 
 import java.awt.Cursor;
@@ -27,6 +28,8 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.Normalizer;
@@ -60,6 +63,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -79,7 +84,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Select Person
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-03-10
  */
 
@@ -118,6 +123,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
     JTextArea memoText; 				// accessed by update
 	DocumentListener memoTextChange;	// accessed by update
     boolean memoEdited = false; 		// Signals memo is edited
+    boolean citationChanged = false;	// Signals ciation edited
 
 // Added for partner select
 	JComboBox<String> comboPartRole1, comboPartRole2;
@@ -136,7 +142,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private JTable tablePersons;
 	DefaultTableModel myTableModel = null;
 
-    Object[][] tableCiteData;
+	Object[][] objCiteData;
+	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
+	Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
 
 	JLabel lbl_Relate;
 	JComboBox<String> comboBox_Relationships;
@@ -175,6 +183,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
 		// Collect static GUI text from T204 for Person table
 		String[] tableHeaders = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
+
+		// Collect static GUI text from T204 for Citation table
+		String[] tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 
 		// Setup final table column headers - just use ID, Name, Birth data, Death date
 		tablePersColHeads = new String[4];
@@ -332,7 +343,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		memoPanel.add(memoTextScroll, "cell 0 1, aligny top"); //$NON-NLS-1$
 		contents.add(memoPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$
 
-	// Define panel for Citations
+	// Define panel for Citations (for Parents only)
 		citePanel = new JPanel();
 		citePanel.setVisible(false);
 		citePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
@@ -341,39 +352,40 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		lbl_Citation.setFont(lbl_Citation.getFont().deriveFont(lbl_Citation.getFont().getStyle() | Font.BOLD));
 		citePanel.add(lbl_Citation, "cell 0 0, alignx left"); //$NON-NLS-1$
 
-		JButton btn_AddL = new JButton("+"); //$NON-NLS-1$
-		btn_AddL.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddL.setMaximumSize(new Dimension(24, 24));
-		btn_AddL.setEnabled(true);
-		citePanel.add(btn_AddL, "cell 1 0, alignx center, aligny top"); //$NON-NLS-1$
+		JButton btn_Add = new JButton("+"); //$NON-NLS-1$
+		btn_Add.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
+		btn_Add.setMaximumSize(new Dimension(24, 24));
+		btn_Add.setEnabled(true);
+		citePanel.add(btn_Add, "cell 1 0, alignx center, aligny top"); //$NON-NLS-1$
 
-		JButton btn_DelL = new JButton("-"); //$NON-NLS-1$
-		btn_DelL.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelL.setMaximumSize(new Dimension(24, 24));
-		btn_DelL.setEnabled(false);
-		citePanel.add(btn_DelL, "cell 1 0, aligny top"); //$NON-NLS-1$
+		JButton btn_Del = new JButton("-"); //$NON-NLS-1$
+		btn_Del.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
+		btn_Del.setMaximumSize(new Dimension(24, 24));
+		btn_Del.setEnabled(false);
+		citePanel.add(btn_Del, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		ImageIcon upArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_up16.png")); //$NON-NLS-1$
-		JButton btn_UpL = new JButton(upArrow);
-		btn_UpL.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpL.setToolTipText(HG05070Msgs.Text_136);	// Moves Citation up the list
-		btn_UpL.setMaximumSize(new Dimension(20, 20));
-		btn_UpL.setEnabled(false);
-		citePanel.add(btn_UpL, "cell 1 0, aligny top, gapx 10"); //$NON-NLS-1$
+		JButton btn_Up = new JButton(upArrow);
+		btn_Up.setVerticalAlignment(SwingConstants.TOP);
+		btn_Up.setToolTipText(HG05070Msgs.Text_136);	// Moves Citation up the list
+		btn_Up.setMaximumSize(new Dimension(20, 20));
+		btn_Up.setEnabled(false);
+		citePanel.add(btn_Up, "cell 1 0, aligny top, gapx 10"); //$NON-NLS-1$
 
 		ImageIcon downArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_down16.png")); //$NON-NLS-1$
-		JButton btn_DownL = new JButton(downArrow);
-		btn_DownL.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownL.setToolTipText(HG05070Msgs.Text_137);	// Moves Citation down the list
-		btn_DownL.setMaximumSize(new Dimension(20, 20));
-		btn_DownL.setEnabled(false);
-		citePanel.add(btn_DownL, "cell 1 0, aligny top"); //$NON-NLS-1$
+		JButton btn_Down = new JButton(downArrow);
+		btn_Down.setVerticalAlignment(SwingConstants.TOP);
+		btn_Down.setToolTipText(HG05070Msgs.Text_137);	// Moves Citation down the list
+		btn_Down.setMaximumSize(new Dimension(20, 20));
+		btn_Down.setEnabled(false);
+		citePanel.add(btn_Down, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		JLabel lbl_Surety = new JLabel(HG05070Msgs.Text_138);	// Surety
 		citePanel.add(lbl_Surety, "cell 2 0");		//$NON-NLS-1$
 
 		// Create scrollpane and table for the Citations
-		JTable tableCite = new JTable() {
+		DefaultTableModel citeModel = new DefaultTableModel(objCiteData, tableCiteHeader);
+		JTable tableCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
 				@Override
 				public Dimension getPreferredScrollableViewportSize() {
@@ -388,9 +400,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 						return false;
 				}
 			};
-//		tableCiteData = pointxxxxxxxxxxx							// NOTE06 get citation data if updating
-		String[] tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
-		tableCite.setModel(new DefaultTableModel(tableCiteData,tableCiteHeader));
+//		objCiteData = pointxxxxxxxxxxx							// NOTE06 get citation data
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(70);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -755,6 +765,100 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				pack();
 			}
 		});
+
+		// Listener for Citation table mouse clicks
+		tableCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_Del.setEnabled(true);
+	        		btn_Up.setEnabled(true);
+	        		btn_Down.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableCite.getSelectedRow() != -1) {
+	           		int atRow = tableCite.getSelectedRow();
+	           		objCiteDataToEdit = objCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
+		// Listener for changes made in tableCite
+		TableModelListener citeListener = new TableModelListener() {
+			@Override
+			public void tableChanged(TableModelEvent e) {
+				btn_Save.setEnabled(true);
+				citationChanged = true;
+			}
+		};
+		tableCite.getModel().addTableModelListener(citeListener);
+
+		// Listener for Add Citation button
+		btn_Add.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				btn_Save.setEnabled(true);
+				citationChanged = true;
+				// NOTE06 need code here show an AddCitation screen (not yet defined)
+			}
+		});
+
+		// Listener for Delete Citation button
+		btn_Del.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				btn_Save.setEnabled(true);
+				citationChanged = true;
+				// NOTE06 need code here to delete selected Name Citation
+			}
+		});
+
+		// Listener for move Citation up button
+		btn_Up.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				int selectedRow = tableCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+				// Switch rows in citeModel
+					citeModel.moveRow(selectedRow, selectedRow, selectedRow-1);
+				// Switch rows in underlying objNameCiteData
+					objTempCiteData = objCiteData[selectedRow-1];
+					objCiteData[selectedRow-1] = objCiteData[selectedRow];
+					objCiteData[selectedRow] = objTempCiteData;
+				//  Reset visible selected row
+				    tableCite.setRowSelectionInterval(selectedRow-1, selectedRow-1);
+				    btn_Save.setEnabled(true);
+					citationChanged = true;
+				}
+			}
+		});
+
+		// Listener for move Citation down button
+		btn_Down.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				int tableSize = tableCite.getRowCount();
+				int selectedRow = tableCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+				// Switch rows in tableModel
+					citeModel.moveRow(selectedRow, selectedRow, selectedRow+1);
+				// Switch rows in underlying objNameCiteData
+					objTempCiteData = objCiteData[selectedRow];
+					objCiteData[selectedRow] = objCiteData[selectedRow+1];
+					objCiteData[selectedRow+1] = objTempCiteData;
+				//  Reset visible selected row
+					tableCite.setRowSelectionInterval(selectedRow+1, selectedRow+1);
+					btn_Save.setEnabled(true);
+					citationChanged = true;
+				}
+			}
+		});
+
 	}	// End HG0507SelectPerson constructor
 
 	public void setEditMode() {
@@ -762,22 +866,17 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		findPanel.setVisible(false);
 		personPanel.setVisible(false);
 		control1Panel.setVisible(false);
-		//addRelation = false;
-
 		if (thisSelectPerson instanceof HG0507SelectParent)
 			if (!addRelation) addTitle = HG05070Msgs.Text_142;		// Edit Parent
-
 		if (thisSelectPerson instanceof HG0507SelectPartner)
 			if (!addRelation) addTitle = HG05070Msgs.Text_143;		// Edit Partner
-
 		if (thisSelectPerson instanceof HG0507SelectAssociate)
 			if (!addRelation) addTitle = HG05070Msgs.Text_144;		// Edit Associate
 
 	// Display the Relationship/memo/Citation panels instead
 		persRolePanel.setVisible(true);
 		memoPanel.setVisible(true);
-
-		// but don't show citation panel for associates
+	// but only show citation panel for Parents
 		if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
 		control2Panel.setVisible(true);
 		btn_SaveEvent.setEnabled(true);

@@ -114,6 +114,8 @@ package hre.bila;
   *			   2024-11-19 - Modified person name element table update (N. Tolleshaug)
   *			   2024-12-08 - Updated name styles and event type handling (N Tolleshaug)
   *			   2024-12-11 - Fix for Person Select reset PS off (N Tolleshaug)
+  * v0.01.0032 2024-12-22 - Updated for new project B32 (N. Tolleshaug)
+  * 		   2024-12-23 - Fixed update of name memo for add person (N. Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -6531,7 +6533,7 @@ class AddPersonRecord extends HBBusinessLayer {
 		hreTable.updateLong("START_HDATE_RPID", null_RPID);
 		hreTable.updateLong("END_HDATE_RPID", null_RPID);
 		hreTable.updateLong("THEME_RPID", null_RPID);
-		hreTable.updateLong("MEMO_RPID", null_RPID);
+		hreTable.updateLong("MEMO_RPID", newHREMemoPID);
 		hreTable.updateString("SURETY", "3");
 	//Insert row
 		hreTable.insertRow();

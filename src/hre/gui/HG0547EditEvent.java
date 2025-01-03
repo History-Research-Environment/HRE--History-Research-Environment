@@ -24,6 +24,8 @@ package hre.gui;
  * 			  2024-11-03 Removed SwingUtility for table cell focus (D Ferguson)
  * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
  * 			  2024-12-08 Updated location name TAB handling (N. Tolleshaug, D Ferguson)
+ * v0.04.0032 2024-12-29 For Death/Burial group events, set Living=N (D Ferguson)
+ * 			  2024-12-31 Add citation data select/up/down code (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
@@ -100,7 +102,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Events
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2022-04-07
  */
 
@@ -138,6 +140,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	DocumentListener memoTextChange;	// accessed by update
     boolean memoEdited = false; 		// Signals memo is edited
     boolean changedLocationNameStyle = false;   // Signals nane style changed
+    boolean citationChanged = false;
     int selectedStyleIndex;
 
     JLabel actualEvent;
@@ -152,11 +155,15 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
     Object[][] tableLocationData;
     String [] nameData;
-    Object[][] tableEventCiteData;
+
+    Object[][] objEventCiteData;
+	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
+    Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
     public Object[][] tableAssocsData;
     String[] tableAssocsHeader;
     String[] tableCiteHeader;
    	Object[][] roleData;	// Contains Role Name, Role Number, Role Seq.
+	Object[][] objAllFlagData;
     boolean locationElementUpdate = false;
     public long locationNamePID = null_RPID;
 
@@ -295,9 +302,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    // load ALL current Assocs and their current roles
 		tableAssocsData = pointWhereWhenHandler.getAssociateTabl();
 
-		// NOTE06 Following is dummy data for example purposes only - to be removed
-	    Object[][] tableCiteData = {{"1", "Source A ", "3 ,3 ,2 ,1 ,1 "},	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-	    							{"17", "Source B", "3 ,3 ,0 ,1 ,2 "}};	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		// load source/citation data - NOTE06
+//	    objEventCiteData = pointXXXXXXXXXXX
 
 /************************************
  * Setup main panel and its contents
@@ -560,39 +566,40 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		lbl_Citation.setFont(lbl_Citation.getFont().deriveFont(lbl_Citation.getFont().getStyle() | Font.BOLD));
 		botmRightEvntPanel.add(lbl_Citation, "cell 0 0, align left");	//$NON-NLS-1$
 
-		JButton btn_AddL = new JButton("+"); //$NON-NLS-1$
-		btn_AddL.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddL.setMaximumSize(new Dimension(24, 24));
-		btn_AddL.setEnabled(true);
-		botmRightEvntPanel.add(btn_AddL, "cell 1 0, alignx center, aligny top"); //$NON-NLS-1$
+		JButton btn_Add = new JButton("+"); //$NON-NLS-1$
+		btn_Add.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
+		btn_Add.setMaximumSize(new Dimension(24, 24));
+		btn_Add.setEnabled(true);
+		botmRightEvntPanel.add(btn_Add, "cell 1 0, alignx center, aligny top"); //$NON-NLS-1$
 
-		JButton btn_DelL = new JButton("-"); //$NON-NLS-1$
-		btn_DelL.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelL.setMaximumSize(new Dimension(24, 24));
-		btn_DelL.setEnabled(false);
-		botmRightEvntPanel.add(btn_DelL, "cell 1 0, aligny top"); //$NON-NLS-1$
+		JButton btn_Del = new JButton("-"); //$NON-NLS-1$
+		btn_Del.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
+		btn_Del.setMaximumSize(new Dimension(24, 24));
+		btn_Del.setEnabled(false);
+		botmRightEvntPanel.add(btn_Del, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		ImageIcon upArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_up16.png")); //$NON-NLS-1$
-		JButton btn_UpL = new JButton(upArrow);
-		btn_UpL.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpL.setToolTipText(HG0547Msgs.Text_13);	// Moves Citation up the list
-		btn_UpL.setMaximumSize(new Dimension(20, 20));
-		btn_UpL.setEnabled(false);
-		botmRightEvntPanel.add(btn_UpL, "cell 1 0, aligny top, gapx 10"); //$NON-NLS-1$
+		JButton btn_Up = new JButton(upArrow);
+		btn_Up.setVerticalAlignment(SwingConstants.TOP);
+		btn_Up.setToolTipText(HG0547Msgs.Text_13);	// Moves Citation up the list
+		btn_Up.setMaximumSize(new Dimension(20, 20));
+		btn_Up.setEnabled(false);
+		botmRightEvntPanel.add(btn_Up, "cell 1 0, aligny top, gapx 10"); //$NON-NLS-1$
 
 		ImageIcon downArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_down16.png")); //$NON-NLS-1$
-		JButton btn_DownL = new JButton(downArrow);
-		btn_DownL.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownL.setToolTipText(HG0547Msgs.Text_14);	// Moves Citation down the list
-		btn_DownL.setMaximumSize(new Dimension(20, 20));
-		btn_DownL.setEnabled(false);
-		botmRightEvntPanel.add(btn_DownL, "cell 1 0, aligny top"); //$NON-NLS-1$
+		JButton btn_Down = new JButton(downArrow);
+		btn_Down.setVerticalAlignment(SwingConstants.TOP);
+		btn_Down.setToolTipText(HG0547Msgs.Text_14);	// Moves Citation down the list
+		btn_Down.setMaximumSize(new Dimension(20, 20));
+		btn_Down.setEnabled(false);
+		botmRightEvntPanel.add(btn_Down, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		JLabel lbl_Surety = new JLabel(HG0547Msgs.Text_15);	// Surety
 		botmRightEvntPanel.add(lbl_Surety, "cell 2 0");	//$NON-NLS-1$
 
 		// Create scrollpane and table for the Citations
-		JTable tableCite = new JTable() {
+		DefaultTableModel citeModel = new DefaultTableModel(objEventCiteData, tableCiteHeader);
+		JTable tableCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
 				@Override
 				public Dimension getPreferredScrollableViewportSize() {
@@ -607,8 +614,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						return false;
 				}
 			};
-//		tableCiteData = pointxxxxxxxxxxx							// NOTE06 get citation data
-		tableCite.setModel(new DefaultTableModel (tableCiteData, tableCiteHeader));
+//		tableCite = pointxxxxxxxxxxx							// NOTE06 get citation data
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -747,11 +753,11 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	// Set initial focus of screen
         btn_EventType.requestFocusInWindow();
     // Enable event selection only for update event or select partner event
-        if (this instanceof HG0547UpdateEvent || this instanceof HG0547PartnerEvent) {
+        if (this instanceof HG0547UpdateEvent || this instanceof HG0547PartnerEvent)
 			btn_EventType.setEnabled(true);
-		} else {
+		else
 			btn_EventType.setEnabled(false);
-		}
+
    // Event type and role need to be changed from partner table
         if (eventGroup == pointWhereWhenHandler.marrGroup || eventGroup == pointWhereWhenHandler.divorceGroup)
 			btn_EventType.setEnabled(false);
@@ -985,35 +991,82 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			}
 		});
 
-	// Listener for Add Location Citation button
-		btn_AddL.addActionListener(new ActionListener() {
+		// Listener for Citation table mouse clicks
+		tableCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_Del.setEnabled(true);
+	        		btn_Up.setEnabled(true);
+	        		btn_Down.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableCite.getSelectedRow() != -1) {
+	           		int atRow = tableCite.getSelectedRow();
+	           		objCiteDataToEdit = objEventCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+		});
+
+	// Listener for Add Citation button
+		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// NOTE06 need code here show an AddCitation screen ( defined) & turn on btn_Save
 			}
 		});
 
-	// Listener for Delete Location Citation button
-		btn_DelL.addActionListener(new ActionListener() {
+	// Listener for Delete Citation button
+		btn_Del.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here to delete selected Name Citation & turn on btn_Save
+				// NOTE06 need code here to delete selected Citation & turn on btn_Save
 			}
 		});
 
-	// Listener for move Location Citation up button
-		btn_UpL.addActionListener(new ActionListener() {
+	// Listener for move Citation up button
+		btn_Up.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here to move selected Citation up in table & turn on btn_Save
+				int selectedRow = tableCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+				// Switch rows in citeModel
+					citeModel.moveRow(selectedRow, selectedRow, selectedRow-1);
+				// Switch rows in underlying objEventCiteData
+					objTempCiteData = objEventCiteData[selectedRow-1];
+					objEventCiteData[selectedRow-1] = objEventCiteData[selectedRow];
+					objEventCiteData[selectedRow] = objTempCiteData;
+				//  Reset visible selected row
+				    tableCite.setRowSelectionInterval(selectedRow-1, selectedRow-1);
+				    btn_Save.setEnabled(true);
+					citationChanged = true;
+				}
 			}
 		});
 
-	// Listener for move Location Citation down button
-		btn_DownL.addActionListener(new ActionListener() {
+	// Listener for move Citation down button
+		btn_Down.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here to move selected Citation down in table & turn on btn_Save
+				int tableSize = tableCite.getRowCount();
+				int selectedRow = tableCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+				// Switch rows in tableModel
+					citeModel.moveRow(selectedRow, selectedRow, selectedRow+1);
+				// Switch rows in underlying objEventCiteData
+					objTempCiteData = objEventCiteData[selectedRow];
+					objEventCiteData[selectedRow] = objEventCiteData[selectedRow+1];
+					objEventCiteData[selectedRow+1] = objTempCiteData;
+				//  Reset visible selected row
+					tableCite.setRowSelectionInterval(selectedRow+1, selectedRow+1);
+					btn_Save.setEnabled(true);
+					citationChanged = true;
+				}
 			}
 		});
 
@@ -1123,6 +1176,22 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 							// Create new event
 								newEventPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
 
+							// If eventGroup is Death or Burial, we need to set Living Flag = N
+								if (eventGroup == 5 || eventGroup == 9)	{	// death, burial groups
+									// Get all of the person's current flag data. Table columns we need are:
+									// column 3 - FLAG_ID; 8 - FLAG_VALUES
+									objAllFlagData = pointPersonHandler.getManagedFlagTable();
+									// For flagID=2 (Living) we want to get the flag values
+									String flagValues =" ";		//$NON-NLS-1$
+									for (Object[] element : objAllFlagData) {
+										if ((int) (element[3]) ==2)
+											flagValues = (String) element[8];	// get the Flag values of Living flag
+									}
+									String[] values = flagValues.split(",");	//$NON-NLS-1$
+									// Save the 2nd value (the 'N' value)
+									pointPersonHandler.setPersonFlagSetting(2, values[1]);
+								}
+
 							//if update memo text
 								if (memoEdited)
 									pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
@@ -1139,7 +1208,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 								//if (changedLocationNameStyle) {
 									selectedStyleIndex = locationNameStyles.getSelectedIndex();
 									locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
-									//System.out.println(" Edit event - location name PID: " + locationNamePID);
 									pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 								}
 

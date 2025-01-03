@@ -23,6 +23,7 @@ package hre.gui;
  * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * 			  2024-12-08 Updated listener tablePerson name changes (N Tolleshaug)
  * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
+ * v0.04.0032 2024-12-31 Remove dummy Source data from citation table (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE01 load/edit/save of Citation data
@@ -87,7 +88,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage PersonName by Style
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2022-09-23
  */
 
@@ -143,8 +144,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	DocumentListener textListen;
 
 	Object[][] tablePersData;
-								// Following is dummy data for testing only - to be removed
-	Object[][] objNameCiteData = {{"123","Source 1 example only"}, {"567", "Source 2 example only"}}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	Object[][] objNameCiteData;
 	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
 	Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
 	String[] persHeaderData;
@@ -233,8 +233,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	    // For AddName, we'd need to set it to the 1037 event type (Name-Var) as a default
 	    comboEvents.setSelectedIndex(1);
 	    for (int i = 0; i < nameTypes.length; i++)
-	    	if (nameData[3].equals("" + nameTypes[i])) {
-	    		comboEvents.setSelectedIndex(i);	//$NON-NLS-1$
+	    	if (nameData[3].equals("" + nameTypes[i])) {	//$NON-NLS-1$
+	    		comboEvents.setSelectedIndex(i);
 	    		nameEventType = nameTypes[i];
 	    	}
 
@@ -247,7 +247,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 
 	// Match the currently stored Style against the combo-box entries
 	// to be able to show the correct current values
-		
+
 		if (!(this instanceof HG0509AddPersonName)) {
 			int ii = 0;
 			for (ii = 0; ii < comboStyles.getItemCount(); ii++) {
@@ -258,8 +258,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			if (ii == comboStyles.getItemCount()) ii = 0;
 			// Get data for the Person elements and values
 			pointPersonHandler.setNameStyleIndex(ii);
-		} 
-		
+		}
+
 	// Get data for the Person elements and values
 	// Load the name data
 		pointPersonHandler.updateManagePersonNameTable(personNameTablePID);
@@ -886,14 +886,14 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	public void errorJOptionMessage(String title, String errorMess) {
 		JOptionPane.showMessageDialog(contents, errorMess, title, JOptionPane.ERROR_MESSAGE);
 	}
-	
+
 /**
  * clearPersonTableData() - clear name data in JTable tablePerson for add new name
  */
 	protected void clearPersonTableData() {
-		for (int i = 0; i < tablePersData.length; i++) 
+		for (int i = 0; i < tablePersData.length; i++)
 			tablePersData[i][1] = "";	//$NON-NLS-1$
-		
+
 		DefaultTableModel persModel = (DefaultTableModel) tablePerson.getModel();
 		persModel.setDataVector(tablePersData, persHeaderData);
 		pack();

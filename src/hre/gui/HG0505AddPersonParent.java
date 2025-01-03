@@ -7,6 +7,7 @@ package hre.gui;
  * 			  2024-08-25 NLS conversion (D Ferguson)
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
+ * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
  *******************************************************************************/
 
 import java.awt.Font;
@@ -76,23 +77,30 @@ public class HG0505AddPersonParent extends HG0505AddPerson {
 	// Listener for Save button add Parent
 		btn_Save.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				// Check person has a name before allowing Save to proceed
+			// Check person has a name before allowing Save to proceed
 				if (nameElementUpdates == 0) {
 					addNameErrorMessage();
 					return;
 				}
-				// Perform DB updates for all changes not yet saved
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0505AddPersonParent");	//$NON-NLS-1$
+			// Add the person to the database
 				try {
-				// Code for check update of database
-					if (HGlobal.DEBUG) for (int i = 0; i < objReqFlagData.length; i++)
-						System.out.println(" Flagid: " + objReqFlagData[i][3] + " / " + objReqFlagData[i][2]); //$NON-NLS-1$ //$NON-NLS-2$
+				// If we are going to add Death or Burial events, set flag Living=N
+					if (createEvent) {
+						for ( int eventIndex = 0; eventIndex < updatedEvent.length; eventIndex++) {
+							if (eventIndex == 2 && updatedEvent[eventIndex]) setLivingToN();	// Death
+							if (eventIndex == 3 && updatedEvent[eventIndex]) setLivingToN();	// Burial
+						}
+					}
+					if (HGlobal.DEBUG)
+						for (int i = 0; i < objReqFlagData.length; i++)
+							System.out.println(" Flagid: " + objReqFlagData[i][3] + " / " + objReqFlagData[i][2]); //$NON-NLS-1$ //$NON-NLS-2$
 				// Do updates
 					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
 					pointPersonHandler.addNewPerson(refText.getText());
 					pointPersonHandler.setParentRole(parentType.getSelectedIndex());
 					createAllEvents(pointPersonHandler);
 					pointPersonHandler.addNewParent();
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPersonParent");	//$NON-NLS-1$
 
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();

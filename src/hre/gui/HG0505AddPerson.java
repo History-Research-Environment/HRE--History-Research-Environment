@@ -41,16 +41,16 @@ package hre.gui;
  * 			  2024-10-25 make date fields non-editable by keyboard (D Ferguson)
  * 			  2024-10-31 Reduce Memo/Citation area size and make consistent (D Ferguson)
  * 			  2024-11-03 Removed SwingUtility from table cell edit focus (D Ferguson)
- * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
- * 			  2024-12-09 Update TAB handling for åerson and location names (N Tolleshaug)
+ * 			  2024-12-02 Replace JOptionPane 'null' locations with 'contents' (D Ferguson)
+ * 			  2024-12-09 Update TAB handling for ï¿½erson and location names (N Tolleshaug)
+ * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved (D Ferguson)
+ * 			  2024-12-31 Add citation table select/up/down code (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
  * NOTE03 need to load Citation data for all events
  * NOTE05 need code to display an Add Citation screen
  * NOTE06 need code to delete a selected Citation
- * NOTE07 need code to move Citations up/down their table
- * NOTE08 Setting Living=N is temp solution only - should only be done when event saved
  ********************************************************************************/
 
 import java.awt.CardLayout;
@@ -118,7 +118,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Add Person
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2022-03-18
  */
 
@@ -138,8 +138,11 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	boolean createEvent = false;
 	boolean resetPS = false;
 	// Signals memo is edited
-	boolean birthMemoEdited = false, baptMemoEdited = false,
+	boolean nameMemoEdited = false, birthMemoEdited = false, baptMemoEdited = false,
 			deathMemoEdited = false, burialMemoEdited = false, partnerMemoEdited = false;
+	// Signals citation is edited
+	boolean nameCiteEdited = false, birthCiteEdited = false, baptCiteEdited = false,
+			deathCiteEdited = false, burialCiteEdited = false, partnerCiteEdited = false;
 	// Signals date format OK
 	boolean birthDateOK = false, baptDateOK = false,
 			deathDateOK = false, burialDateOK = false, partnerDateOK = false;
@@ -148,20 +151,22 @@ public class HG0505AddPerson extends HG0450SuperDialog {
     static focusPolicy newPolicy;
 
     Object[][] tableNameData;
-    Object[][] tableNameCiteData;
+    Object[][] objNameCiteData;
 	Object[][] tableFlagData;
 	Object[][] objAllFlagData;
 	Object[][] objReqFlagData;
     Object[][] tableBirthData;
-    Object[][] tableBirthCiteData;
+    Object[][] objBirthCiteData;
     Object[][] tableBaptData;
-    Object[][] tableBaptCiteData;
+    Object[][] objBaptCiteData;
     Object[][] tableDeathData;
-    Object[][] tableDeathCiteData;
+    Object[][] objDeathCiteData;
     Object[][] tableBurialData;
-    Object[][] tableBurialCiteData;
+    Object[][] objBurialCiteData;
     Object[][] tablePartnerData;
-    Object[][] tablePartnerCiteData;
+    Object[][] objPartnerCiteData;
+	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
+	Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
 
     JTable tableFlags;
     DefaultTableModel flagModel;
@@ -755,7 +760,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 
 	// Create scrollpane and table for the Name Citations
 	    tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
-		JTable tableNameCite = new JTable() {
+		DefaultTableModel citeNameModel = new DefaultTableModel(objNameCiteData, tableCiteHeader);
+		JTable tableNameCite = new JTable(citeNameModel) {
 			private static final long serialVersionUID = 1L;
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a minimum of a 5-row table, even if empty
@@ -767,8 +773,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-//			tableNameCiteData = pointxxxxxxxxxxx							// NOTE03 get name citation data
-		tableNameCite.setModel(new DefaultTableModel(tableNameCiteData,tableCiteHeader));
+//		objNameCiteData = pointxxxxxxxxxxx							// NOTE03 get name citation data
 		tableNameCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableNameCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableNameCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -1013,7 +1018,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBirthCite.add(lbl_SuretyBi, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
 
 	// Create scrollpane and table for the Birth Citations
-		JTable tableBirthCite = new JTable() {
+		DefaultTableModel citeBirthModel = new DefaultTableModel(objBirthCiteData, tableCiteHeader);
+		JTable tableBirthCite = new JTable(citeBirthModel) {
 			private static final long serialVersionUID = 1L;
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a minimum of an 5-row table, even if empty
@@ -1025,8 +1031,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-//		tableBirthCiteData = pointxxxxxxxxxxx							// NOTE03 get Birth citation data
-		tableBirthCite.setModel(new DefaultTableModel(tableBirthCiteData,tableCiteHeader));
+//		objBirthCiteData = pointxxxxxxxxxxx							// NOTE03 get Birth citation data
 		tableBirthCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableBirthCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableBirthCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -1269,7 +1274,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBaptCite.add(lbl_SuretyBa, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
 
 	// Create scrollpane and table for the Bapt Citations
-		JTable tableBaptCite = new JTable() {
+		DefaultTableModel citeBaptModel = new DefaultTableModel(objBaptCiteData, tableCiteHeader);
+		JTable tableBaptCite = new JTable(citeBaptModel) {
 			private static final long serialVersionUID = 1L;
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a minimum of an 5-row table, even if empty
@@ -1281,8 +1287,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-	//	tableBaptCiteData = pointxxxxxxxxxxx							// NOTE03 get Bapt citation data
-		tableBaptCite.setModel(new DefaultTableModel(tableBaptCiteData,tableCiteHeader));
+	//	objBaptCiteData = pointxxxxxxxxxxx							// NOTE03 get Bapt citation data
 		tableBaptCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableBaptCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableBaptCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -1525,7 +1530,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelDeathCite.add(lbl_SuretyD, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
 
 	// Create scrollpane and table for the Death Citations
-		JTable tableDeathCite = new JTable() {
+		DefaultTableModel citeDeathModel = new DefaultTableModel(objDeathCiteData, tableCiteHeader);
+		JTable tableDeathCite = new JTable(citeDeathModel) {
 			private static final long serialVersionUID = 1L;
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a minimum of an 5-row table, even if empty
@@ -1537,8 +1543,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-	//	tableDeathCiteData = pointxxxxxxxxxxx							// NOTE03 get Death citation data
-		tableDeathCite.setModel(new DefaultTableModel(tableDeathCiteData,tableCiteHeader));
+	//	objDeathCiteData = pointxxxxxxxxxxx							// NOTE03 get Death citation data
 		tableDeathCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableDeathCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableDeathCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -1782,7 +1787,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBurialCite.add(lbl_SuretyBu, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
 
 	// Create scrollpane and table for the Burial Citations
-		JTable tableBurialCite = new JTable() {
+		DefaultTableModel citeBurialModel = new DefaultTableModel(objBurialCiteData, tableCiteHeader);
+		JTable tableBurialCite = new JTable(citeBurialModel) {
 			private static final long serialVersionUID = 1L;
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a minimum of an 5-row table, even if empty
@@ -1794,8 +1800,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-	//	tableBurialCiteData = pointxxxxxxxxxxx							// NOTE03 get Burial citation data
-		tableBurialCite.setModel(new DefaultTableModel(tableBurialCiteData,tableCiteHeader));
+	//	objBurialCiteData = pointxxxxxxxxxxx							// NOTE03 get Burial citation data
 		tableBurialCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableBurialCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableBurialCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -2022,7 +2027,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelPartCite.add(lbl_SuretyP, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
 
 	// Create scrollpane and table for the Partner Citations
-		JTable tablePartnerCite = new JTable() {
+		DefaultTableModel citePartnerModel = new DefaultTableModel(objPartnerCiteData, tableCiteHeader);
+		JTable tablePartnerCite = new JTable(citePartnerModel) {
 			private static final long serialVersionUID = 1L;
 				public Dimension getPreferredScrollableViewportSize() {
 					// Force a minimum of an 5-row table, even if empty
@@ -2034,8 +2040,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-	//	tablePartnerCiteData = pointxxxxxxxxxxx							// NOTE03 get Partner citation data
-		tablePartnerCite.setModel(new DefaultTableModel(tablePartnerCiteData,tableCiteHeader));
+	//	objPartnerCiteData = pointxxxxxxxxxxx							// NOTE03 get Partner citation data
 		tablePartnerCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tablePartnerCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tablePartnerCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -2210,17 +2215,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		    		  createEvent = true;
 		    		  updatedEvent[2] = true;
 		    	  }
-		    	// Set Living Flag = N					// NOTE08 temp solution - should only be set if event saved correctly
-		    	  for (int i = 0; i < tableFlags.getRowCount(); i++) {
-		    		  // First, find flagIdent = 2 (Living)
-		    		  if ((Integer) objReqFlagData[i][3] == 2) {			// this ID is for Living
-		    			  String allValues = (String) objReqFlagData[i][4];	// get all Living values list
-		    			  String[] values = allValues.split(",");			//$NON-NLS-1$
-		    			  String newValue = "   " + values[1];				// extract the N value	//$NON-NLS-1$
-		    			  flagModel.setValueAt(newValue, i, 1);				// save it back into the flagTable
-		    			  pointPersonHandler.addToPersonFlagChangeList(2, 1); // record flag changes for save
-		    		  }
-		    	  }
 		      }
 		    };
 
@@ -2231,17 +2225,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		    	  if (radio_Burial.isSelected()) {
 		    		  createEvent = true;
 		    		  updatedEvent[3] = true;
-		    	  }
-			    // Set Living Flag = N					// NOTE08 temp solution - should only be set if event saved correctly
-		    	  for (int i = 0; i < tableFlags.getRowCount(); i++) {
-		    		  // First, find flagIdent = 2 (Living)
-		    		  if ((Integer) objReqFlagData[i][3] == 2) {			// this ID is for Living
-		    			  String allValues = (String) objReqFlagData[i][4];	// get all Living values list
-		    			  String[] values = allValues.split(",");			//$NON-NLS-1$
-		    			  String newValue = "   " + values[1];				// extract the N value	//$NON-NLS-1$
-		    			  flagModel.setValueAt(newValue, i, 1);				// save it back into the flagTable
-		    			  pointPersonHandler.addToPersonFlagChangeList(2, 1); // record flag changes for save
-		    		  }
 		    	  }
 		      }
 		    };
@@ -2467,7 +2450,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		if (birthHREDate != null)
             			editBirthDate.convertFromHDate(birthMainYear, birthMainDetails, birthExtraYear, birthExtraDetails);
             	}
-
            // 	Set position and set visible
                 Point xyDate = birthDateText.getLocationOnScreen();
                 editBirthDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2490,7 +2472,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		//if (sortHREDate != null)
             			editBirthSortDate.convertFromHDate(birthSortMainYear, birthSortMainDetails, birthSortExtraYear, birthSortExtraDetails);
             	}
-
            // 	Set position and set visible
             	Point xyDate = birthSortDateText.getLocationOnScreen();
             	editBirthSortDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2513,7 +2494,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		if (baptHREDate != null)
             			editBaptDate.convertFromHDate(baptMainYear, baptMainDetails, baptExtraYear, baptExtraDetails);
             	}
-
            // 	Set position and set visible
                 Point xyDate = baptDateText.getLocationOnScreen();
                 editBaptDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2536,7 +2516,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		//if (baptSortHREDate != null)
             			editBaptSortDate.convertFromHDate(baptSortMainYear, baptSortMainDetails, baptSortExtraYear, baptSortExtraDetails);
             	}
-
            // 	Set position and set visible
             	Point xyDate = baptSortDateText.getLocationOnScreen();
             	editBaptSortDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2559,7 +2538,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		if (deathHREDate != null)
             			editDeathDate.convertFromHDate(deathMainYear, deathMainDetails, deathExtraYear, deathExtraDetails);
             	}
-
            // 	Set position and set visible
                 Point xyDate = deathDateText.getLocationOnScreen();
                 editDeathDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2582,7 +2560,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		//if (burialSortHREDate != null)
             			editDeathSortDate.convertFromHDate(deathSortMainYear, deathSortMainDetails, deathSortExtraYear, deathSortExtraDetails);
             	}
-
            // 	Set position and set visible
             	Point xyDate = deathSortDateText.getLocationOnScreen();
             	editDeathSortDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2605,7 +2582,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		if (burialHREDate != null)
             			editBurialDate.convertFromHDate(burialMainYear, burialMainDetails, burialExtraYear, burialExtraDetails);
             	}
-
            // 	Set position and set visible
                 Point xyDate = burialDateText.getLocationOnScreen();
                 editBurialDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2628,7 +2604,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		//if (burialHREDate != null)
             			editBurialSortDate.convertFromHDate(burialSortMainYear, burialSortMainDetails, burialSortExtraYear, burialSortExtraDetails);
             	}
-
            // 	Set position and set visible
             	Point xyDate = burialSortDateText.getLocationOnScreen();
             	editBurialSortDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2637,7 +2612,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             	editBurialSortDate.setVisible(true);
             }
         });
-
 
 		// Listener to partner date to enable save button
 		partnerDateText.addMouseListener(new MouseAdapter(){
@@ -2652,7 +2626,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		if (partnerHREDate != null)
             			editPartnerDate.convertFromHDate(partnerMainYear, partnerMainDetails, partnerExtraYear, partnerExtraDetails);
             	}
-
            // 	Set position and set visible
                 Point xyDate = partnerDateText.getLocationOnScreen();
                 editPartnerDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2675,7 +2648,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             		//if (partnerSortHREDate != null)
             			editPartnerSortDate.convertFromHDate(partnerSortMainYear, partnerSortMainDetails, partnerSortExtraYear, partnerSortExtraDetails);
             	}
-
            // 	Set position and set visible
             	Point xyDate = partnerSortDateText.getLocationOnScreen();
             	editPartnerSortDate.setLocation(xyDate.x-50, xyDate.y-50);
@@ -2701,8 +2673,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
             }
         });
 
-		memoBurialText.addFocusListener(new FocusAdapter() {
-
+		memoDeathText.addFocusListener(new FocusAdapter() {
             public void focusLost(FocusEvent e) {
             	deathMemoEdited = true;
             	btn_Save.setEnabled(true);
@@ -2754,10 +2725,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableBirthLocn.getValueAt(row, 1);
 						String element = (String) tableBirthLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG) 	
+						if (HGlobal.DEBUG)
 							System.out.println("HG0505AddPerson - birth locn table changed: " + row 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$
-						
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList( 1, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2777,7 +2747,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableBaptLocn.getValueAt(row, 1);
 						String element = (String) tableBaptLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG) 	
+						if (HGlobal.DEBUG)
 							System.out.println("HG0505AddPerson - bapt locn table changed: " + row 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$/$NON-NLS-2$
 						if (nameElementData != null) {
@@ -2799,7 +2769,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableDeathLocn.getValueAt(row, 1);
 						String element = (String) tableDeathLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG) 	
+						if (HGlobal.DEBUG)
 							System.out.println("HG0505AddPerson - death locn table changed: " + row 	//$NON-NLS-1$
 											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$/$NON-NLS-2$
 						if (nameElementData != null) {
@@ -2821,9 +2791,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableBurialLocn.getValueAt(row, 1);
 						String element = (String) tableBurialLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG) 	
+						if (HGlobal.DEBUG)
 							System.out.println("HG0505AddPerson - burial locn table changed: " + row
-											+ " Element: " + element + " / " + nameElementData);							
+											+ " Element: " + element + " / " + nameElementData);
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList(4, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2843,7 +2813,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tablePartnerLocn.getValueAt(row, 1);
 						String element = (String) tablePartnerLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG) 	
+						if (HGlobal.DEBUG)
 							System.out.println("HG0505AddPerson - partner locn table changed: " + row
 											+ " Element: " + element + " / " + nameElementData);
 						if (nameElementData != null) {
@@ -2895,10 +2865,131 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_SentenceBurial.addActionListener(sentenceListener);
 		btn_SentencePartner.addActionListener(sentenceListener);
 
+		// Listener for Name Citation table mouse clicks
+		tableNameCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableNameCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_DelN.setEnabled(true);
+	        		btn_UpN.setEnabled(true);
+	        		btn_DownN.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableNameCite.getSelectedRow() != -1) {
+	           		int atRow = tableNameCite.getSelectedRow();
+	           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
+		// Listener for Birth Citation table mouse clicks
+		tableBirthCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableBirthCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_DelB.setEnabled(true);
+	        		btn_UpB.setEnabled(true);
+	        		btn_DownB.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableBirthCite.getSelectedRow() != -1) {
+	           		int atRow = tableBirthCite.getSelectedRow();
+	           		objCiteDataToEdit = objBirthCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
+		// Listener for Baptism Citation table mouse clicks
+		tableBaptCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableBaptCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_DelBap.setEnabled(true);
+	        		btn_UpBap.setEnabled(true);
+	        		btn_DownBap.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableBaptCite.getSelectedRow() != -1) {
+	           		int atRow = tableBaptCite.getSelectedRow();
+	           		objCiteDataToEdit = objBaptCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
+		// Listener for Death Citation table mouse clicks
+		tableDeathCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableDeathCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_DelD.setEnabled(true);
+	        		btn_UpD.setEnabled(true);
+	        		btn_DownD.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableDeathCite.getSelectedRow() != -1) {
+	           		int atRow = tableDeathCite.getSelectedRow();
+	           		objCiteDataToEdit = objDeathCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
+		// Listener for Burial Citation table mouse clicks
+		tableBurialCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableBurialCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_DelBur.setEnabled(true);
+	        		btn_UpBur.setEnabled(true);
+	        		btn_DownBur.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tableBurialCite.getSelectedRow() != -1) {
+	           		int atRow = tableBurialCite.getSelectedRow();
+	           		objCiteDataToEdit = objBurialCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
+		// Listener for Partner Citation table mouse clicks
+		tablePartnerCite.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tablePartnerCite.getSelectedRow() != -1) {
+	           	// SINGLE-CLICK - turn on table controls
+	        		btn_DelPart.setEnabled(true);
+	        		btn_UpPart.setEnabled(true);
+	        		btn_DownPart.setEnabled(true);
+	           	}
+        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
+	           	if (me.getClickCount() == 2 && tablePartnerCite.getSelectedRow() != -1) {
+	           		int atRow = tablePartnerCite.getSelectedRow();
+	           		objCiteDataToEdit = objPartnerCiteData[atRow]; // select whole row
+	        	// Display Citation Editor (to be created)
+//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	           	}
+	        }
+	    });
+
 		// Listener for Add Birth Citation button
 		btn_AddB.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				birthCiteEdited = true;
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
 			}
 		});
@@ -2907,6 +2998,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_AddBap.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				baptCiteEdited = true;
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
 			}
 		});
@@ -2915,6 +3007,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_AddD.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				deathCiteEdited = true;
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
 			}
 		});
@@ -2923,6 +3016,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_AddBur.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				burialCiteEdited = true;
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
 			}
 		});
@@ -2931,6 +3025,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_AddPart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				partnerCiteEdited = true;
 				// NOTE05 need code here show an AddCitation screen (not yet defined)
 			}
 		});
@@ -2939,6 +3034,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_DelN.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				nameCiteEdited = true;
 				// NOTE06 need code here to delete selected Name Citation
 			}
 		});
@@ -2947,6 +3043,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_DelB.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				birthCiteEdited = true;
 				// NOTE06 need code here to delete selected Birth Citation
 			}
 		});
@@ -2955,6 +3052,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_DelBap.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				baptCiteEdited = true;
 				// NOTE06 need code here to delete selected Birth Citation
 			}
 		});
@@ -2963,6 +3061,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_DelD.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				deathCiteEdited = true;
 				// NOTE06 need code here to delete selected Birth Citation
 			}
 		});
@@ -2971,6 +3070,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_DelBur.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				burialCiteEdited = true;
 				// NOTE06 need code here to delete selected Birth Citation
 			}
 		});
@@ -2979,6 +3079,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_DelPart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
+				partnerCiteEdited = true;
 				// NOTE06 need code here to delete selected Birth Citation
 			}
 		});
@@ -2986,96 +3087,162 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		// Listener for move Name Citation up button
 		btn_UpN.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation up in table
+				int selectedRow = tableNameCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+					// call general routine to move row up
+					citationUp(tableNameCite, citeNameModel, objNameCiteData, selectedRow);
+					nameCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Name Citation down button
 		btn_DownN.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation down in table
+				int tableSize = tableNameCite.getRowCount();
+				int selectedRow = tableNameCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+					// call general routine to move row down
+					citationDown(tableNameCite, citeNameModel, objNameCiteData, selectedRow);
+					nameCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Birth Citation up button
 		btn_UpB.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation up in table
+				int selectedRow = tableBirthCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+					// call general routine to move row up
+					citationUp(tableBirthCite, citeBirthModel, objBirthCiteData, selectedRow);
+					birthCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Birth Citation down button
 		btn_DownB.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation down in table
+				int tableSize = tableBirthCite.getRowCount();
+				int selectedRow = tableBirthCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+					// call general routine to move row down
+					citationDown(tableBirthCite, citeBirthModel, objBirthCiteData, selectedRow);
+					birthCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Bapt Citation up button
 		btn_UpBap.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation up in table
+				int selectedRow = tableBaptCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+					// call general routine to move row up
+					citationUp(tableBaptCite, citeBaptModel, objBaptCiteData, selectedRow);
+					baptCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Bapt Citation down button
 		btn_DownBap.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation down in table
+				int tableSize = tableBaptCite.getRowCount();
+				int selectedRow = tableBaptCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+					// call general routine to move row down
+					citationDown(tableBaptCite, citeBaptModel, objBaptCiteData, selectedRow);
+					baptCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Death Citation up button
 		btn_UpD.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation up in table
+				int selectedRow = tableDeathCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+					// call general routine to move row up
+					citationUp(tableDeathCite, citeDeathModel, objDeathCiteData, selectedRow);
+					deathCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Death Citation down button
 		btn_DownD.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation down in table
+				int tableSize = tableDeathCite.getRowCount();
+				int selectedRow = tableDeathCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+					// call general routine to move row down
+					citationDown(tableDeathCite, citeDeathModel, objDeathCiteData, selectedRow);
+					deathCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Burial Citation up button
 		btn_UpBur.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation up in table
+				int selectedRow = tableBurialCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+					// call general routine to move row up
+					citationUp(tableBurialCite, citeBurialModel, objBurialCiteData, selectedRow);
+					burialCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Burial Citation down button
 		btn_DownBur.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation down in table
+				int tableSize = tableBurialCite.getRowCount();
+				int selectedRow = tableBurialCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+					// call general routine to move row down
+					citationDown(tableBurialCite, citeBurialModel, objBurialCiteData, selectedRow);
+					burialCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Partner Citation up button
 		btn_UpPart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation up in table
+				int selectedRow = tablePartnerCite.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+					// call general routine to move row up
+					citationUp(tablePartnerCite, citePartnerModel, objPartnerCiteData, selectedRow);
+					partnerCiteEdited = true;
+				}
 			}
 		});
 
 		// Listener for move Partner Citation down button
 		btn_DownPart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE07 need code here to move selected Citation down in table
+				int tableSize = tablePartnerCite.getRowCount();
+				int selectedRow = tablePartnerCite.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+					// call general routine to move row down
+					citationDown(tablePartnerCite, citePartnerModel, objPartnerCiteData, selectedRow);
+					partnerCiteEdited = true;
+				}
 			}
 		});
 
@@ -3083,22 +3250,28 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	if (unrelated)
 		btn_Save.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				// Check person has a name before allowing Save to proceed
+			// Check person has a name before allowing Save to proceed
 				if (nameElementUpdates == 0) {
 					addNameErrorMessage();
 					return;
 				}
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving updates and leaving HG0505AddPerson-New");	//$NON-NLS-1$
+			// Add the person to the database
 				try {
-				// Code for initiate update of database
+				// If we are going to add Death or Burial events, set flag Living=N
+					if (createEvent) {
+						for ( int eventIndex = 0; eventIndex < updatedEvent.length; eventIndex++) {
+							if (eventIndex == 2 && updatedEvent[eventIndex]) setLivingToN();	// Death
+							if (eventIndex == 3 && updatedEvent[eventIndex]) setLivingToN();	// Burial
+						}
+					}
 					if (HGlobal.DEBUG)
 						for (Object[] element : objReqFlagData)
 							System.out.println(" Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
 					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
 					pointPersonHandler.addNewPerson(refText.getText());
-				// Create the edited evnts
+				// Create the edited events
 					createAllEvents(pointPersonHandler); // If events created
-
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPerson-New");	//$NON-NLS-1$
 				// Reload Result Set for person and names
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
@@ -3121,6 +3294,61 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	public void addNameErrorMessage() {
 		JOptionPane.showMessageDialog(btn_Save, HG0505Msgs.Text_35,		// Please add a Name for this Person
 				HG0505Msgs.Text_13, JOptionPane.ERROR_MESSAGE);
+	}
+
+/**
+ * setLivingToN - set flag Living=N if Death/Burial Events saved
+ *
+ */
+	public void setLivingToN() {
+  	  for (int i = 0; i < tableFlags.getRowCount(); i++) {
+		  // First, find flagIdent = 2 (Living)
+		  if ((Integer) objReqFlagData[i][3] == 2) {			// this ID is for Living
+			  String allValues = (String) objReqFlagData[i][4];	// get all Living values list
+			  String[] values = allValues.split(",");			//$NON-NLS-1$
+			  String newValue = "   " + values[1];				// extract the N value	//$NON-NLS-1$
+			  flagModel.setValueAt(newValue, i, 1);				// save it back into the flagTable
+			  pointPersonHandler.addToPersonFlagChangeList(2, 1); // record flag changes for save
+		  }
+	  }
+	}
+
+/**
+ * citationUp - general routine to handle moving a citation up in any citation table
+ * citeTable - the relevant citation table
+ * citeModel - the relevant citation table model
+ * citeData - the relevant object holding all citation data
+ * row - selected row in the table
+ */
+	public void citationUp(JTable citeTable, DefaultTableModel citeModel, Object[][] citeData, int row) {
+		// Switch rows in citeModel
+		citeModel.moveRow(row, row, row-1);
+		// Switch rows in underlying obj CiteData
+		objTempCiteData = citeData[row-1];
+		citeData[row-1] = citeData[row];
+		citeData[row] = objTempCiteData;
+		//  Reset visible selected row
+	    citeTable.setRowSelectionInterval(row-1, row-1);
+	    btn_Save.setEnabled(true);
+	}
+
+/**
+ * citationDown - general routine to handle moving a citation down in any citation table
+ * citeTable - the relevant citation table
+ * citeModel - the relevant citation table model
+ * citeData - the relevant object holding all citation data
+ * row - selected row in the table
+ */
+	public void citationDown(JTable citeTable, DefaultTableModel citeModel, Object[][] citeData, int row) {
+		// Switch rows in citeModel
+		citeModel.moveRow(row, row, row+1);
+		// Switch rows in underlying obj CiteData
+		objTempCiteData = citeData[row];
+		citeData[row] = citeData[row+1];
+		citeData[row+1] = objTempCiteData;
+		//  Reset visible selected row
+	    citeTable.setRowSelectionInterval(row+1, row+1);
+	    btn_Save.setEnabled(true);
 	}
 
 /**

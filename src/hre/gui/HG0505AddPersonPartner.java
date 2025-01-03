@@ -15,6 +15,7 @@ package hre.gui;
  * 			  2024-08-25 NLS conversion (D Ferguson)
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
+ * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
  ******************************************************************************/
 
 import java.awt.Font;
@@ -172,12 +173,12 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 		// Listener for Save button add Partner
 		btn_Save.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				// Check person has a name before allowing Save to proceed
+			// Check person has a name before allowing Save to proceed
 				if (nameElementUpdates == 0) {
 					addNameErrorMessage();
 					return;
 				}
-				// if no sex has been set, throw warning msg and halt Save operation
+			// if no sex has been set, throw warning msg and halt Save operation
 				for (int i = 0; i < tableFlags.getRowCount(); i++) {
 					// First, find flagIdent = 1 (Birth sex)
 					if ((Integer) objReqFlagData[i][3] == 1) {				// this ID is for Birth Sex
@@ -193,7 +194,7 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 					}
 				}
 
-				// If partner event data has not been set, issue prompt for user to do so
+			// If partner event data has not been set, issue prompt for user to do so
 				if (!updatedEvent[4]) {
 					if (JOptionPane.showConfirmDialog(btn_Save,
 							 HG0505Msgs.Text_66,	// No event data entered. \nAdd Event data for this Partner?
@@ -206,9 +207,16 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 							}
 				}
 
-				// Perform DB updates for all changes not yet saved
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0505AddPersonPartner");	//$NON-NLS-1$
+			// Add the person to the database
 				try {
+				// If we are going to add Death or Burial events, set flag Living=N
+					if (createEvent) {
+						for ( int eventIndex = 0; eventIndex < updatedEvent.length; eventIndex++) {
+							if (eventIndex == 2 && updatedEvent[eventIndex]) setLivingToN();	// Death
+							if (eventIndex == 3 && updatedEvent[eventIndex]) setLivingToN();	// Burial
+						}
+					}
+
 				// Do updates
 					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
 					pointPersonHandler.addNewPerson(refText.getText());
@@ -218,6 +226,7 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 					partRole2 = partnerRoleType[comboPartRole2.getSelectedIndex()];
 					newPartnerPID = pointPersonHandler.addNewPartner(selectedPartnerType, partRole1, partRole2);
 					createAllEvents(pointPersonHandler);
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPersonPartner");	//$NON-NLS-1$
 
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();
