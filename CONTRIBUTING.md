@@ -34,7 +34,7 @@
 
 2.3. **Use of Software Tools:**
 
--  ECLIPSE: HRE will be developed as an RCP under the Eclipse IDE. 
+-  ECLIPSE: HRE is developed under the Eclipse IDE. 
 -  H2: the H2 database has been selected for use with HRE but this is not intended
    to preclude use of Oracle or DB2 for very large implementations.
 
