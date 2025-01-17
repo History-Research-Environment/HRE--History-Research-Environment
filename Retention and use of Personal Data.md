@@ -10,7 +10,7 @@
 
 **Details**
 
-3.  The controller (the organisation responsible for your personal data) is History Research Environment Ltd, a UK company whose registered address is 71- 75 Shelton Street, London, WC2H 9JQ.
+3.  The controller (the organisation responsible for your personal data) is History Research Environment Ltd, a UK company whose registered address is !4 Stirling Park, Rochester, Kent, ME1 3QR.
 
 4.  HRE does not knowingly process the personal data of minors, and volunteers below the age of 16 years of age cannot be accepted.
 
