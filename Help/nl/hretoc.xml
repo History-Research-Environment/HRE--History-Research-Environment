@@ -38,6 +38,14 @@
 <tocitem text="Evenement bewerken" target="54700editevent"/>
 <tocitem text="Definieer evenement" target="55100defineevent"/>
 <tocitem text="Evenement beheren" target="55200manageevent"/>
+<tocitem text="Citaten bewerken" target="55500editcitation"/>
+</tocitem>
+
+<tocitem text="Bewijs">
+<tocitem text="Bronnen beheren" target="56500managesource"/>
+<tocitem text="Citaten bewerken" target="55500editcitation"/>
+<tocitem text="Brontypen beheren" target="56700managesourcetype"/>
+<tocitem text="Repositories beheren" target="56900managerepository"/>
 </tocitem>
 
 <tocitem text="Waar/wanneer">

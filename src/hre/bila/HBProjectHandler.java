@@ -43,6 +43,7 @@ package hre.bila;
  * 			  2024-10-11 Added initiateDateFormat(3); in add first person line 510 (N. Tolleshaug)
  * 			  2024-10-21 Added dateFormatSelect() to addFirstPerson() (N. Tolleshaug)
  * v0.01.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
+ * 			  2024-12-22 Updated for new project B32 (N. Tolleshaug)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -448,7 +449,6 @@ public class HBProjectHandler extends HBBusinessLayer {
 
 		// New code for recording the selectedProject and update pointer
 				mainFrame.setSelectedOpenProject(HGlobalCode.pointOpenProjectByName(selectedProjectName));
-				//openProject.openProject(remote, proIndex, loginData);
 
 		// Add to Number of open projects and set Status bar entries
 				HGlobal.numOpenProjects++;
@@ -467,6 +467,7 @@ public class HBProjectHandler extends HBBusinessLayer {
 		// Add new person if empty project
 				openProject.getT401Persons().last();
 				if (openProject.getT401Persons().getRow() == 0) {
+					HG0401HREMain.mainFrame.setSelectedOpenProject(openProject);
 					addFirstPerson();
 				}
 				else {

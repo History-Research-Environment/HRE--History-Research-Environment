@@ -17,6 +17,7 @@ package hre.dbla;
 * 			 2021-10-01 - Handling of local/remote connect to database (N. Tolleshaug)
 * 			 2021-10-03 - Transfer of remote connect to OpenProjectData (N. Tolleshaug)
 * v0.00.0026 2022-01-02 - Added new method requestTableRows (N. Tolleshaug)
+* v0.00.0023 2025-01-22 - Added test for database index = 0 problem (N. Tolleshaug)
 ****************************************************************************************/
 
 import java.sql.Connection;
@@ -180,14 +181,18 @@ public class HDDatabaseLayer {
  * @throws HDException
  */
 	public ResultSet requestTableData(String sqlSearchString, int dbIndex) throws HDException {
-
+		ResultSet pointResultSet = null;
 		// Adjust SQL request string according to setting in DatabaseAbstraction
 		String updatedString = HDDatabaseAbstraction.updateSqlString(sqlSearchString);
 		if (HGlobal.DEBUG) 
 			 System.out.println("HDDatabaseLayer Request SQL: " + sqlSearchString + " Index: " + dbIndex);
 		try {
-	        ResultSet pointResultSet = connectedDataBases.get(dbIndex).requestSQLdata(updatedString);
-	        if (HGlobal.DEBUG) System.out.println("HDDatabaseLayer - requestTableData\nDatabase path: "
+			if (connectedDataBases.get(dbIndex) != null)
+				pointResultSet = connectedDataBases.get(dbIndex).requestSQLdata(updatedString);
+			else System.out.println("\nHDDatabaseLayer Request " + " Arraylist size: " + connectedDataBases.size() 
+																+ " Index: " + dbIndex + "SQL: " + sqlSearchString);
+	        if (HGlobal.DEBUG) 
+	        	System.out.println("HDDatabaseLayer - requestTableData\nDatabase path: "
 					+ connectedDataBases.get(dbIndex).getDatabaseConnectPath() + " \nRequest SQL: " + sqlSearchString);
 
 	     // Adjust returned ResultSet according to setting in DatabaseAbstraction

@@ -83,6 +83,10 @@ package hre.gui;
  * 			  2024-01-01 Add routine for deletion of Person from Recents list (D Ferguson)
  * 			  2024-02-18 Clear Recent Person list when project open off proj list (D Ferguson)
  * 			  2024-07-27 Ensure only one HG0526 can be open at a time (D Ferguson)
+ * v0.04.0032 2025-01-12 Implement Evidence menu items (D Ferguson)
+ * 			  2025-01-17 Enable all Evidence menu items (D Ferguson)
+ * 			  2025-01-18 Enable Event menu (D Ferguson)
+ * 			  2025-01-21 Removed extension.setBusinessLayerPointer(pointBusinessLayer) (N Tolleshaug)
  *****************************************************************************************/
 
 import java.awt.BorderLayout;
@@ -155,6 +159,7 @@ import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectHandler;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBToolHandler;
+import hre.bila.HBWhereWhenHandler;
 import hre.nls.HG0401Msgs;
 import hre.pf4j.ext.MainMenuExtensionPoint;
 import hre.pf4j.ext.ReportMenuExtensionPoint;
@@ -166,7 +171,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * HRE Main menu
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2020-05-10
  */
 
@@ -189,11 +194,11 @@ public class HG0401HREMain extends JFrame {
 	private JMenuItem menuPersonSister;
 	private JMenuItem menuPersonSon;
 	private JMenuItem menuPersonDau;
-	
+
 	private ArrayList<String> menuPerName = new ArrayList<>();	// For storing person Names for the Person recent used menu
 	private ArrayList<String> menuPerSex = new ArrayList<>();	// For storing person Sex for the Person recent used menu
 	private ArrayList<Long> menuPerPID = new ArrayList<>();		// For storing person PIDs for the Person recent used menu
-	
+
 	private boolean longMenu = false;
 	private int countMenuOpenProjects = 0;		// counts the number of projects opened by clicking on the Project menu 'Recent Projects'
 	private int exitCount = 0;					// counts the number of windowClosing events that are going to be triggered
@@ -447,8 +452,7 @@ public class HG0401HREMain extends JFrame {
 		   		}
 
 	    // Person MENU
-		// Define OS-independent Keystroke accelerators for this menu	
-//********************* Compiler   Version 1.8
+		// Define OS-independent Keystroke accelerators for this menu
 		KeyStroke ctrlM = KeyStroke.getKeyStroke(KeyEvent.VK_M, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()); // For opening ManagePerson
 		// TAKE CARE HERE! currently there are 9 menu entries (incl. Separator) before dynamic items are added
 		// If the number of menu entries are changed you MUST also change Classes updateRecentPersons, deleteRecentPerson, clickPeople, removeRecents
@@ -457,8 +461,7 @@ public class HG0401HREMain extends JFrame {
 		menuBar.add(menuPerson);
 			JMenuItem menuPersonSel = new JMenuItem(HG0401Msgs.Text_32);	// Select Person by...
 			menuPerson.add(menuPersonSel);
-			JMenuItem menuPersonMan = new JMenuItem(HG0401Msgs.Text_34);	// Manage Person 
-//************************************* Compiler version 1.8
+			JMenuItem menuPersonMan = new JMenuItem(HG0401Msgs.Text_34);	// Manage Person
 			menuPersonMan.setAccelerator(ctrlM);							// Ctrl-M
 			menuPerson.add(menuPersonMan);
 			JMenu menuPersonAdd = new JMenu(HG0401Msgs.Text_180);			// Add Person
@@ -508,8 +511,8 @@ public class HG0401HREMain extends JFrame {
 				   else {if (menuPerSex.get(i).equals("F")) menuPerson.add(new JMenuItem(new clickPeople(menuPerName.get(i), //$NON-NLS-1$
 								new ImageIcon(getClass().getResource("/hre/images/female.png"))))); //$NON-NLS-1$
 				   else menuPerson.add(new JMenuItem(new clickPeople(menuPerName.get(i), null)));
-				   }					
-			}						
+				   }
+			}
 
 		// Research Types MENU
 		menuResearch = new JMenu(HG0401Msgs.Text_40);	// Research Types
@@ -585,13 +588,13 @@ public class HG0401HREMain extends JFrame {
 		JMenu menuEvidence = new JMenu(HG0401Msgs.Text_65);		// Evidence
 		menuEvidence.setVisible(false);			// set not visible until 1st project opened
 		menuBar.add(menuEvidence);
-			JMenuItem menuSources = new JMenuItem(HG0401Msgs.Text_66);		// Sources
+			JMenuItem menuSources = new JMenuItem(HG0401Msgs.Text_66);		// Manage Sources
 			menuSources.setEnabled(false);
 			menuEvidence.add(menuSources);
-			JMenuItem menuCitations = new JMenuItem(HG0401Msgs.Text_67);	// Administer all Source Styles
-			menuCitations.setEnabled(false);
-			menuEvidence.add(menuCitations);
-			JMenuItem menuRepository = new JMenuItem(HG0401Msgs.Text_68);	// Repositories
+			JMenuItem menuSourceTypes = new JMenuItem(HG0401Msgs.Text_67);	// Manage Source Types
+			menuSourceTypes.setEnabled(false);
+			menuEvidence.add(menuSourceTypes);
+			JMenuItem menuRepository = new JMenuItem(HG0401Msgs.Text_68);	// Manage Repositories
 			menuRepository.setEnabled(false);
 			menuEvidence.add(menuRepository);
 
@@ -827,6 +830,12 @@ public class HG0401HREMain extends JFrame {
 						menuVPPerson.setEnabled(false);
 						menuVPLocn.setEnabled(false);
 						menuVPEvent.setEnabled(false);
+					// All Event menu items
+						menuEvents.setEnabled(false);
+					// All Evidence menu items
+						menuSources.setEnabled(false);
+						menuSourceTypes.setEnabled(false);
+						menuRepository.setEnabled(false);
 					// All Where-When, Location items
 						menuLocSelect.setEnabled(false);
 						menuLocRecent.setEnabled(false);
@@ -955,6 +964,12 @@ public class HG0401HREMain extends JFrame {
 			menuVPPerson.setEnabled(true);
 			menuVPLocn.setEnabled(true);
 			menuVPEvent.setEnabled(true);
+			// Event menu items
+			menuEvents.setEnabled(true);
+			// Evidence menu items
+			menuSources.setEnabled(true);
+			menuSourceTypes.setEnabled(true);
+			menuRepository.setEnabled(true);
 			// Where/When menu items
 			menuWhWh.setVisible(true);
 			menuLocSelect.setEnabled(true);
@@ -1010,26 +1025,25 @@ public class HG0401HREMain extends JFrame {
 		// Person -> Manage Person
 		menuPersonMan.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {	
+			public void actionPerformed(ActionEvent e) {
                 HBProjectOpenData pointOpenProject = getSelectedOpenProject();
-				int index = pointOpenProject.pointGuiData.getStoreIndex("50600"); //$NON-NLS-1$			
+				int index = pointOpenProject.pointGuiData.getStoreIndex("50600"); //$NON-NLS-1$
 			// If no Manage Person exists, then create it
 				if (pointOpenProject.getWindowPointer(index) == null) {
 					setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 					pointOpenProject.getPersonHandler().activateManagePerson(pointOpenProject);
 					return;
-				} else {
-			//  else if Frame minimized, make it normal, or bring to front
-					JInternalFrame pointIntFrame = (JInternalFrame)pointOpenProject.getWindowPointer(index);
-			  		if (pointIntFrame.isIcon())  {
-				  		try {pointIntFrame.setIcon(false);
-				  			} catch (PropertyVetoException pve) {
-				  				pve.printStackTrace();
-				  			}
-			  		}
-			  		else if (pointIntFrame.isShowing()) 
-						pointIntFrame.toFront();
 				}
+				//  else if Frame minimized, make it normal, or bring to front
+						JInternalFrame pointIntFrame = (JInternalFrame)pointOpenProject.getWindowPointer(index);
+				  		if (pointIntFrame.isIcon())  {
+					  		try {pointIntFrame.setIcon(false);
+					  			} catch (PropertyVetoException pve) {
+					  				pve.printStackTrace();
+					  			}
+				  		}
+				  		else if (pointIntFrame.isShowing())
+							pointIntFrame.toFront();
 			}
 		});
 
@@ -1040,12 +1054,12 @@ public class HG0401HREMain extends JFrame {
 				int sexIndex = 0; //unknown sex
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
-	            HG0505AddPerson addScreen = pointPersonHandler.activateAddPerson(pointOpenProject, sexIndex);	//$NON-NLS-1$
+	            HG0505AddPerson addScreen = pointPersonHandler.activateAddPerson(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
 				addScreen.setAlwaysOnTop(true);
-				addScreen.setVisible(true);	
+				addScreen.setVisible(true);
 			}
 		});
 
@@ -1057,7 +1071,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 	            HG0505AddPerson addScreen = pointPersonHandler.
-	            		activateAddPersonPartner(pointOpenProject, sexIndex); 	//$NON-NLS-1$
+	            		activateAddPersonPartner(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1074,7 +1088,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 				HG0505AddPerson addScreen = pointPersonHandler.
-						activateAddPersonParent(pointOpenProject, sexIndex);	//$NON-NLS-1$
+						activateAddPersonParent(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1091,7 +1105,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 				HG0505AddPerson addScreen = pointPersonHandler.
-						activateAddPersonParent(pointOpenProject, sexIndex);	//$NON-NLS-1$
+						activateAddPersonParent(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1108,7 +1122,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 				HG0505AddPerson addScreen = pointPersonHandler.
-						activateAddPersonSibling(pointOpenProject, sexIndex); 	//$NON-NLS-1$
+						activateAddPersonSibling(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1125,7 +1139,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 				HG0505AddPerson addScreen = pointPersonHandler.
-						activateAddPersonSibling(pointOpenProject, sexIndex); 	//$NON-NLS-1$
+						activateAddPersonSibling(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1142,7 +1156,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 				HG0505AddPerson addScreen = pointPersonHandler.
-						activateAddPersonChild(pointOpenProject, sexIndex); 	//$NON-NLS-1$
+						activateAddPersonChild(pointOpenProject, sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1159,7 +1173,7 @@ public class HG0401HREMain extends JFrame {
 	            HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 	            HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 				HG0505AddPerson addScreen = pointPersonHandler.
-						activateAddPersonChild(pointOpenProject,sexIndex); 	//$NON-NLS-1$
+						activateAddPersonChild(pointOpenProject,sexIndex);
 				addScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = mainPane.getLocationOnScreen();
 				addScreen.setLocation(xymainPane.x + 50, xymainPane.y + 50);
@@ -1175,13 +1189,13 @@ public class HG0401HREMain extends JFrame {
 				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 				allWins = null;
 				// Check if this JDialog already open - if so, return
-				allWins = Window.getWindows(); 
-				for(Window w: allWins) 
-						if(w.getName().equals("HG0525") && w.isVisible()) return;	//$NON-NLS-1$	
-				// Otherwise, open HG0525ManagePersonNameStyles				
+				allWins = Window.getWindows();
+				for(Window w: allWins)
+						if(w.getName().equals("HG0525") && w.isVisible()) return;	//$NON-NLS-1$
+				// Otherwise, open HG0525ManagePersonNameStyles
 				HG0525ManagePersonNameStyles persStyleScreen =
 						pointOpenProject.getPersonHandler().activatePersonNameStyle(pointOpenProject);
-				persStyleScreen.setName("HG0525");	//$NON-NLS-1$	
+				persStyleScreen.setName("HG0525");	//$NON-NLS-1$
 				persStyleScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xyPers = menuPerson.getLocationOnScreen();
 				persStyleScreen.setLocation(xyPers.x, xyPers.y + 80);
@@ -1347,6 +1361,37 @@ public class HG0401HREMain extends JFrame {
 		});
 
 /****************************************************
+ * LISTENERS FOR EVENT MENU ITEMS
+ ***************************************************/
+		// Hover-over acts as doClick
+		menuET.addMouseListener(new MouseAdapter() {
+	        @Override
+			public void mouseEntered(MouseEvent evt) {
+				menuET.doClick();
+	        }
+	     });
+
+		// Events - Manage Events
+		menuEvents.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
+				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+				HG0552ManageEvent eventScreen;
+				//try {
+		        	eventScreen = pointHBWhereWhenHandler.activateAddSelectedEvent(pointOpenProject, 0);
+					//eventScreen = new HG0552ManageEvent(pointOpenProject, "");	//$NON-NLS-1$
+					eventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyEvent = menuET.getLocationOnScreen();
+					eventScreen.setLocation(xyEvent.x, xyEvent.y + 30);
+					eventScreen.setVisible(true);
+/*				} catch (HBException e1) {
+					e1.printStackTrace();
+				} */
+			}
+		});
+
+/****************************************************
  * LISTENERS FOR WHERE/WHEN MENU ITEMS
  ***************************************************/
 		// Hover-over acts as doClick
@@ -1393,7 +1438,7 @@ public class HG0401HREMain extends JFrame {
 			// ************** CODE NEEDED TO MAKE THIS ALWAYS ON TOP LIKE HG0526 *********
 				if  (pointOpenProject.getWindowPointer(index) == null) {
 					pointOpenProject.getWhereWhenHandler().activateManageLocation(pointOpenProject);
-				} 
+				}
 			}
 		});
 
@@ -1405,8 +1450,8 @@ public class HG0401HREMain extends JFrame {
 			allWins = null;
 			// Check if this JDialog already open - if so, return
 			allWins = Window.getWindows();
-			for(Window w: allWins)   
-					if(w.getName().equals("HG0526") && w.isVisible()) return;	//$NON-NLS-1$	
+			for(Window w: allWins)
+					if(w.getName().equals("HG0526") && w.isVisible()) return;	//$NON-NLS-1$
 			// Otherwise, open HG0526ManageLocationNameStyles
 			HG0526ManageLocationNameStyles locnStyleScreen =
 					pointOpenProject.getWhereWhenHandler().
@@ -1417,6 +1462,53 @@ public class HG0401HREMain extends JFrame {
 			locnStyleScreen.setLocation(xyWhWh.x - 70, xyWhWh.y + 80);
 			locnStyleScreen.setAlwaysOnTop(true);
 			locnStyleScreen.setVisible(true);
+			}
+		});
+
+/****************************************************
+ * LISTENERS FOR EVIDENCE MENU ITEMS
+ ***************************************************/
+		// Hover-over acts as doClick
+		menuEvidence.addMouseListener(new MouseAdapter() {
+	        @Override
+			public void mouseEntered(MouseEvent evt) {
+				menuEvidence.doClick();
+	        }
+	     });
+
+		// Evidence - Manage Sources
+		menuSources.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				HG0565ManageSource sourceScreen = new HG0565ManageSource();
+				sourceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xySource = menuEvidence.getLocationOnScreen();
+				sourceScreen.setLocation(xySource.x, xySource.y + 30);
+				sourceScreen.setVisible(true);
+			}
+		});
+
+		// Evidence - Manage Source Types
+		menuSourceTypes.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				HG0567ManageSourceType sourceTypeScreen = new HG0567ManageSourceType();
+				sourceTypeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xySourceT = menuEvidence.getLocationOnScreen();
+				sourceTypeScreen.setLocation(xySourceT.x, xySourceT.y + 30);
+				sourceTypeScreen.setVisible(true);
+			}
+		});
+
+		// Evidence - Manage Repositories
+		menuRepository.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				HG0569ManageRepos repoScreen = new HG0569ManageRepos();
+				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyRepo = menuEvidence.getLocationOnScreen();
+				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);
+				repoScreen.setVisible(true);
 			}
 		});
 
@@ -1494,13 +1586,13 @@ public class HG0401HREMain extends JFrame {
 		menuToolImportTMG.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-			HG0417TMGProjectImport importTMG = new HG0417TMGProjectImport((HBToolHandler) pointBusinessLayer[8]);
-			importTMG.setModalityType(ModalityType.APPLICATION_MODAL);
-			Point xyTools;
-			if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
-			else xyTools = menuTools.getLocationOnScreen();
-			importTMG.setLocation(xyTools.x + 50, xyTools.y + 50);
-			importTMG.setVisible(true);
+				HG0417TMGProjectImport importTMG = new HG0417TMGProjectImport((HBToolHandler) pointBusinessLayer[8]);
+				importTMG.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyTools;
+				if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
+				else xyTools = menuTools.getLocationOnScreen();
+				importTMG.setLocation(xyTools.x + 50, xyTools.y + 50);
+				importTMG.setVisible(true);
 			}
 		});
 
@@ -1508,13 +1600,13 @@ public class HG0401HREMain extends JFrame {
 		menuToolSetUser.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-			HG0501AppSettings appsetScreen = new HG0501AppSettings(getSelectedOpenProject(),(HBToolHandler) pointBusinessLayer[8]);
-			appsetScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-			Point xyTools;
-			if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
-			else xyTools = menuTools.getLocationOnScreen();
-			appsetScreen.setLocation(xyTools.x, xyTools.y + 30);
-			appsetScreen.setVisible(true);
+				HG0501AppSettings appsetScreen = new HG0501AppSettings(getSelectedOpenProject(),(HBToolHandler) pointBusinessLayer[8]);
+				appsetScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyTools;
+				if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
+				else xyTools = menuTools.getLocationOnScreen();
+				appsetScreen.setLocation(xyTools.x, xyTools.y + 30);
+				appsetScreen.setVisible(true);
 			}
 		});
 
@@ -1522,26 +1614,28 @@ public class HG0401HREMain extends JFrame {
 		menuToolAdminUsers.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-			HG0403ProjectUserAdmin adminauxScreen = new HG0403ProjectUserAdmin((HBToolHandler) pointBusinessLayer[8]);
-			adminauxScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-			Point xyTools;
-			if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
-			else xyTools = menuTools.getLocationOnScreen();
-			adminauxScreen.setLocation(xyTools.x, xyTools.y + 30);
-			adminauxScreen.setVisible(true);  				}
+				HG0403ProjectUserAdmin adminauxScreen = new HG0403ProjectUserAdmin((HBToolHandler) pointBusinessLayer[8]);
+				adminauxScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyTools;
+				if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
+				else xyTools = menuTools.getLocationOnScreen();
+				adminauxScreen.setLocation(xyTools.x, xyTools.y + 30);
+				adminauxScreen.setVisible(true);
+			}
 		});
 
 		// Tools - DB Maintenance
 		menuToolDBmaint.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-			HG0620DBMaintenance maintScreen = new HG0620DBMaintenance(getSelectedOpenProject());
-			maintScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-			Point xyTools;
-			if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
-			else xyTools = menuTools.getLocationOnScreen();
-			maintScreen.setLocation(xyTools.x, xyTools.y + 30);
-			maintScreen.setVisible(true);  				}
+				HG0620DBMaintenance maintScreen = new HG0620DBMaintenance(getSelectedOpenProject());
+				maintScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyTools;
+				if (longMenu) xyTools = menuWhWh.getLocationOnScreen();
+				else xyTools = menuTools.getLocationOnScreen();
+				maintScreen.setLocation(xyTools.x, xyTools.y + 30);
+				maintScreen.setVisible(true);
+			}
 		});
 
 /****************************************************
@@ -1867,7 +1961,7 @@ public class HG0401HREMain extends JFrame {
 	    	while (menuPerPID.size() + 9 > menuPerson.getMenuComponentCount()) {
 	    		menuPerName.remove(0);
 	    		menuPerSex.remove(0);
-	    		menuPerPID.remove(0);	    		
+	    		menuPerPID.remove(0);
 	    	}
 		   // If Person already in the Recent list we don't want to add them again
 		   // so compare PID with existing arraylist of PIDs
@@ -1886,20 +1980,20 @@ public class HG0401HREMain extends JFrame {
 		   else {if (sex.equals("F")) menuPerson.add(new JMenuItem(new clickPeople(addPerson,			//$NON-NLS-1$
   									new ImageIcon(getClass().getResource("/hre/images/female.png"))))); //$NON-NLS-1$
 		   		else menuPerson.add(new JMenuItem(new clickPeople(addPerson, null)));
-		   		}		   
+		   		}
 		   // And add the new persName, Sex, PID to their Lists
 		   menuPerName.add(addPerson);
-		   menuPerSex.add(sex);	
+		   menuPerSex.add(sex);
 		   menuPerPID.add(persPID);
 		   // But we only want 10 entries in the list, so delete the oldest
 		   // entry if the menuPerson size has got to 9 (basic menu) + 11 = 20 entries
 		   if (menuPerson.getMenuComponentCount() == 20) {
 				   menuPerson.remove(9);	// remove oldest menu item
-				   menuPerName.remove(0);	// remove matching Name				   
-				   menuPerSex.remove(0);	// remove matching sex	
-				   menuPerPID.remove(0);	// remove matching PID				   
+				   menuPerName.remove(0);	// remove matching Name
+				   menuPerSex.remove(0);	// remove matching sex
+				   menuPerPID.remove(0);	// remove matching PID
 		   }
-		   
+
 	   } 	// End updateRecentPersons
 /****************************************************************
 * Method to remove PersonName from Person menu Recently Used area
@@ -1910,16 +2004,16 @@ public class HG0401HREMain extends JFrame {
 		   for (int i = 0; i < menuPerPID.size(); i++) {
 			   if (persPID.equals(menuPerPID.get(i))) {
 				   // Delete this person from the menuPerXxxx Arraylists
-				   menuPerName.remove(i);	// remove matching Name				   
-				   menuPerSex.remove(i);	// remove matching sex	
-				   menuPerPID.remove(i);	// remove matching PID				   
+				   menuPerName.remove(i);	// remove matching Name
+				   menuPerSex.remove(i);	// remove matching sex
+				   menuPerPID.remove(i);	// remove matching PID
 				   // Delete from the menu list
 				   menuPerson.remove(i+9);
 				   return;
 			   }
-		   }		   
+		   }
 	   } 	// End deleteRecentPerson
-	   
+
 /*****************************************************************************
  * Initiate the plugin environment - needs to be done once during HRE startup.
  * @param JMenuBar mainMenu - pointer to HRE main menu
@@ -1962,7 +2056,7 @@ public class HG0401HREMain extends JFrame {
 	        	extension.setNationalLanguage(HGlobal.nativeLanguage);
 	            extension.setMainPane(mainPane);
 	            extension.setMainPointer(mainFrame);
-	            extension.setBusinessLayerPointer(pointBusinessLayer);
+	            //extension.setBusinessLayerPointer(pointBusinessLayer);
 	            extension.buildMenuBar(mainMenu);
 	        }
 		// Find Research Type extensions
@@ -1972,7 +2066,6 @@ public class HG0401HREMain extends JFrame {
 	        	extension.setNationalLanguage(HGlobal.nativeLanguage);
 	            extension.setMainPane(mainPane);
 	            extension.setMainPointer(mainFrame);
-	            extension.setBusinessLayerPointer(pointBusinessLayer);
 	            extension.buildMenu(menuResearch);
 	        }
 
@@ -1980,11 +2073,11 @@ public class HG0401HREMain extends JFrame {
 	        List<ReportMenuExtensionPoint> reportExtensions = pluginManager.getExtensions(ReportMenuExtensionPoint.class);
 	        for (ReportMenuExtensionPoint extension : reportExtensions) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: starting Report extension: " + extension.className());  //$NON-NLS-1$
+				extension.setDEBUG(HGlobal.DEBUG);
 				extension.setDDLversion(HGlobal.databaseVersion);
 				extension.setNationalLanguage(HGlobal.nativeLanguage);
 	            extension.setMainPane(mainPane);
 	            extension.setMainPointer(mainFrame);
-	            extension.setBusinessLayerPointer(pointBusinessLayer);
 	            extension.buildMenu(menuReports);
 	        }
 
@@ -1995,7 +2088,6 @@ public class HG0401HREMain extends JFrame {
 	        	extension.setNationalLanguage(HGlobal.nativeLanguage);
 	            extension.setMainPane(mainPane);
 	            extension.setMainPointer(mainFrame);
-	            extension.setBusinessLayerPointer(pointBusinessLayer);
 	            extension.buildMenu(menuTools);
 	        }
 
@@ -2006,7 +2098,6 @@ public class HG0401HREMain extends JFrame {
 	        	extension.setNationalLanguage(HGlobal.nativeLanguage);
 	            extension.setMainPane(mainPane);
 	            extension.setMainPointer(mainFrame);
-	            extension.setBusinessLayerPointer(pointBusinessLayer);
 	            extension.buildMenu(menuViewpoint);
 	        }
 

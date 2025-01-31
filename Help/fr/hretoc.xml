@@ -38,6 +38,14 @@
 <tocitem text="Édition Événement" target="54700editevent"/>
 <tocitem text="Définir l'événement" target="55100defineevent"/>
 <tocitem text="Gérer l'événement" target="55200manageevent"/>
+<tocitem text="Modifier les citations" target="55500editcitation"/>
+</tocitem>
+
+<tocitem text="Preuve">
+<tocitem text="Gérer les sources" target="56500managesource"/>
+<tocitem text="Modifier les citations" target="55500editcitation"/>
+<tocitem text="Gérer les types de sources" target="56700managesourcetype"/>
+<tocitem text="Gérer les référentiels" target="56900managerepository"/>
 </tocitem>
 
 <tocitem text="Ou / Quand">

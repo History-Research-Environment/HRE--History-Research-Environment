@@ -62,6 +62,8 @@ package hre.tmgjava;
  * 		  	  2024-09-04 - Removed alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
  *  		  2024-11-11 - Included PER1 == 0 and PER2 != as primary assoc (N. Tolleshaug)
  *   		  2024-11-23 - Added PER1 == 0 and PER2 != 0 role prosessing (N. Tolleshaug)
+ * v0.03.0032 2025-01-30 - Added import of event reminder text (N. Tolleshaug)
+ * 			  2025-01-31 - Removed console print messages (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -560,14 +562,16 @@ class TMGpass_Events  {
 				else eventTypeNr = eventTypeNr + 1000;				
 
 			// extract or update event tags - first, do system-defined
-				if (origeType > 0) {
-					if (!isLdsOnly) updateT460_EVNT_DEFS(eventTypeNr, origeType, etypeName);
+				if (origeType > 0) { // Originally used code if (origeType > 0) test origeType > 1000
+					//System.out.println(" Event hint: " + getReminderText("no-NB", reminder));
+					if (!isLdsOnly) updateT460_EVNT_DEFS(eventTypeNr, origeType, etypeName, reminder);
 					else if (TMGglobal.DEBUG)
 						System.out.println(" Event name LDS excluded: " + eventTypeNr + " / " + etypeName);
 			// else do user-added (origetype = 0)
 				} else  {
 					String reminderText = getReminderText("en-US", reminder);
-	    			if (trace) System.out.println(" Default Language: " + "en-US / "
+	    			if (trace) 
+	    				System.out.println(" Default Language: " + "en-US / "
 		    				+ eventTypeNr + " / " + etypeName + " / " + abbrev + " / " + pasttense);
 					addToT460_EVNT_DEFS(indexT_PID, "en-US", etypeName, eventTypeNr, abbrev, pasttense, reminderText, tableT460);
 					extractLangTags(indexT_PID, eventTypeNr, properties, reminder);
@@ -686,6 +690,7 @@ class TMGpass_Events  {
 		boolean foundEngUK = false;
 		boolean founddata = false;
 		boolean createRecord = false;
+		//System.out.println(" Reminders: " + langCode + " - Text: " + reminder);
 	    String [] tagLang = properties.split("\\r\\n");
 	    for (String element : tagLang) {
 	    	if (!element.startsWith("Def") && element.trim().length() > 0) {
@@ -699,6 +704,7 @@ class TMGpass_Events  {
 			    			if (trace) System.out.println(" Found Language: " + langCode + " / "
 				    				+ etypeNumber + " / " + tagName + " / " + abbrev + " / " + tagSentense);
 				    		reminderText = getReminderText(langCode, reminder);
+				    		//System.out.println(" Reminder text: " + langCode + " - Text: " + reminderText);
 				    		addToT460_EVNT_DEFS(indexT_PID, langCode, tagName, etypeNumber, 
 				    					abbrev, tagSentense, reminderText , tableT460);
 				    		createRecord = false;
@@ -751,13 +757,21 @@ class TMGpass_Events  {
  * String getReminderText(String langText, String reminder)
  * @param langText
  * @param reminder
+ * [L=ENGLISHUK]Intended for adopted children.  Enter the child or children as Principals.
+   [L=ENGLISH]Intended for adopted children.  Enter the child or children as Principals.
+   [L=DUTCH]Bedoeld voor geadopteerde kinderen.  Voer het kind of de kinderen in als Principals
+   [L=NORWEGIAN]Hendelsen brukes for adopterte barn. Legg inn barnet/barna som Hovedpersoner.
+   [L=NORWEGIA2]Hendinga blir brukt for adopterte barn. Legg inn barnet/barna som Hovudpersonar.
+   [L=GERMAN]Vorgesehen für adoptierte Kinder. 
+    Geben Sie das Kind oder die Kinder als Hauptpersonen ein.
  */
 	public String getReminderText(String langText, String reminder) {
 		String text = ""; String langCode = null;
 		String[] reminderText = reminder.split("L=");
+		//System.out.println(" Number of language codes: " + reminderText.length + " - "  + reminder);
 		for (int i = 1; i < reminderText.length; i++) {
-			langCode = getLangCode(reminderText[i].substring(0,reminderText[i].indexOf(']')));
-			//System.out.println("Line " + i + " Code: " + langCode + " Text: " + reminderText[i]);
+			langCode = getLangCode(reminderText[i].substring(0, reminderText[i].indexOf(']')));
+			//System.out.println("Line " + i + " Lang code: " + langCode + " Text: " + reminderText[i]);
 			if (langCode.equals(langText)) {
 				text = reminderText[i].substring(reminderText[i].indexOf(']') + 1);
 				text = text.replace('[', ' ').trim();
@@ -776,36 +790,39 @@ class TMGpass_Events  {
  * @throws SQLException
  * @throws HCException
  */
-	protected void updateT460_EVNT_DEFS(int etypeNumber, int origeType, String etypeName) throws  HCException {
+	protected void updateT460_EVNT_DEFS(int etypeNumber, int origeType, String etypeName, String reminder) throws  HCException {
 		boolean isActive = true;
-		String eventName, language;
+		String eventName, language, hintText;
 		ResultSet hreTable;
-		//String selectString = pointHREbase.setSelectSQL("*", eventDefnTable, "EVNT_TYPE = " + origeType);
 		String selectString = pointHREbase.setSelectSQL("*", eventDefnTable, "EVNT_TYPE = " + etypeNumber);
 		hreTable = pointHREbase.requestTabledata(eventDefnTable, selectString);
 		try {
 			hreTable.beforeFirst();
 			while (hreTable.next()) {
-
+				hintText = " No hint!";
 				if (hreTable.getString("LANG_CODE").contains("en-US")) {
 					hreTable.updateString("EVNT_NAME", etypeName);
 					isActive = hreTable.getBoolean("IS_ACTIVE");
 				}
 				hreTable.updateBoolean("IS_ACTIVE", isActive);
-				eventName = hreTable.getString("EVNT_NAME");
+				eventName = hreTable.getString("EVNT_NAME").trim();
 				language = hreTable.getString("LANG_CODE");
-
+				
+				hintText = getReminderText(language, reminder);
 			// Adopt to Sample UK where event type Nr < 1000
 				if (etypeNumber < 1000)
 					hreTable.updateInt("EVNT_TYPE", origeType + 1000);
 				else hreTable.updateInt("EVNT_TYPE", etypeNumber);
+				hreTable.updateString("EVNT_HINT", hintText);
 				hreTable.updateRow();
+				
 				if (TMGglobal.DEBUG)
 					System.out.println(" updateT460_EVNT_DEFS: "
 									+ " OrigeType: " + origeType
 									+ " langCode: " + language
 									+ " EventType: " + etypeNumber
-									+ " EtypeName. " +  eventName);
+									+ " EtypeName. " +  eventName
+									+ " Hint: " + hintText);
 			}
 		} catch (SQLException sqle) {
 			if (TMGglobal.DEBUG)

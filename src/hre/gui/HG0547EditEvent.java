@@ -26,6 +26,7 @@ package hre.gui;
  * 			  2024-12-08 Updated location name TAB handling (N. Tolleshaug, D Ferguson)
  * v0.04.0032 2024-12-29 For Death/Burial group events, set Living=N (D Ferguson)
  * 			  2024-12-31 Add citation data select/up/down code (D Ferguson)
+ * 			  2025-01-17 Add call to EditCitation (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
@@ -1005,7 +1006,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	           	if (me.getClickCount() == 2 && tableCite.getSelectedRow() != -1) {
 	           		int atRow = tableCite.getSelectedRow();
 	           		objCiteDataToEdit = objEventCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
+	        	// Display HG0555EditCitation with this data
 //	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
 	           	}
 	        }
@@ -1015,7 +1016,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here show an AddCitation screen ( defined) & turn on btn_Save
+				HG0555EditCitation citeScreen = new HG0555EditCitation();
+				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyCite = lbl_Date.getLocationOnScreen();
+				citeScreen.setLocation(xyCite.x, xyCite.y + 30);
+				citeScreen.setVisible(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 

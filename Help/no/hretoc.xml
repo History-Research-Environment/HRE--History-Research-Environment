@@ -36,6 +36,14 @@
 <tocitem text="Rediger Hendelsen" target="54700editevent"/>
 <tocitem text="Definer Hendelsen" target="55100defineevent"/>
 <tocitem text="Behandle Hendelsen" target="55200manageevent"/>
+<tocitem text="Rediger sitater" target="55500editcitation"/>
+</tocitem>
+
+<tocitem text="Bevis">
+<tocitem text="Administrer kilder" target="56500managesource"/>
+<tocitem text="Rediger sitater" target="55500editcitation"/>
+<tocitem text="Administrer kildetyper" target="56700managesourcetype"/>
+<tocitem text="Administrer depoter" target="56900managerepository"/>
 </tocitem>
 
 <tocitem text="Hvor/Når">

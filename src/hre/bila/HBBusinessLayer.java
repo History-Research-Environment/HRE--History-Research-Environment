@@ -388,6 +388,7 @@ public class HBBusinessLayer  {
  * @throws SQLException
  */
 	public boolean isResultSetEmpty(ResultSet rSet) throws SQLException {
+		if (rSet == null) return true; else
 	    return (!rSet.isBeforeFirst() && rSet.getRow() == 0);
 	}
 

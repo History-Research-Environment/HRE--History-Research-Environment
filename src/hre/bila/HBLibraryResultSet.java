@@ -1445,6 +1445,7 @@ public class HBLibraryResultSet {
 		return getRoleNameList(eventNumber, selectRoles, langCode, dataBaseIndex);
 
 	}
+	
 	public ResultSet getRoleNameList(int eventNumber, String selectRoles, String langCode, int dataBaseIndex) throws HBException {
 		ResultSet roleNameList;
 		//String langCode = HGlobal.dataLanguage;
@@ -1463,8 +1464,13 @@ public class HBLibraryResultSet {
  * @throws HBException
  */
 	public ResultSet getEventTypeList( int eventGroup, int dataBaseIndex) throws HBException {
-		ResultSet eventTypeList;
 		String langCode = HGlobal.dataLanguage;
+		return getEventTypeList(eventGroup, langCode, dataBaseIndex);
+	}
+	
+	public ResultSet getEventTypeList( int eventGroup, String langCode, int dataBaseIndex) throws HBException {
+		ResultSet eventTypeList;
+		//String langCode = HGlobal.dataLanguage;
 		String selectString = null;
 	// Select events in eventGroup #
 		if (eventGroup > 0) {

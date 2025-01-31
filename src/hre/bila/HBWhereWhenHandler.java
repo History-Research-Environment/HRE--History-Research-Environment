@@ -72,6 +72,8 @@ package hre.bila;
   *			   2024-11-20 - Updated findLocationNameTablePID to return null_RPID (N. Tolleshaug)
   *			   2024-11-23 - Updated event update for witnessed events (N. Tolleshaug)
   *			   2024-11-28 - Updated event location style handling (N. Tolleshaug)
+  * v0.03.0032 2025-01-11 - Rearranged processing of event and roles (N. Tolleshaug)
+  * 		   2025-01-30 - Updated setting og language code for role/event (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -81,7 +83,6 @@ import java.awt.Point;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
@@ -102,7 +103,6 @@ import hre.gui.HG0551DefineEvent;
 import hre.gui.HG0552ManageEvent;
 import hre.gui.HGlobal;
 import hre.tmgjava.HCException;
-import hre.tmgjava.TMGglobal;
 
 /**
   * WhereWhenHandler constructor
@@ -112,8 +112,19 @@ import hre.tmgjava.TMGglobal;
   */
 
 public class HBWhereWhenHandler extends HBBusinessLayer {
+	
+	public ManageLocationNameData pointManageLocationData;
+	private HBProjectOpenData pointOpenProject;
+	public HBNameStyleManager pointNameStyleManager;
+	public HG0507LocationSelect locationScreen = null;
+	private HBPersonHandler pointPersonMannager;
+	public HBEventRoleManager pointEventRoleManager;
+	public EditEventRecord pointEditEventRecord = null;
+	public CreateEventRecord pointCreateEventRecord;
+	HG0552ManageEvent pointManageEvent = null;
+	HG0547EditEvent pointEditEvent = null;
+	HG0551DefineEvent pointDefineEvent = null;
 
-	String dBbuild = HGlobal.databaseVersion;
 	ArrayList<LocationEventList> locationEventList;
 	ArrayList<LocationTableData> locationDataList;
 
@@ -144,17 +155,6 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	protected ResultSet hdateT175table;
 	protected ResultSet hdateT204data;
 
-	public ManageLocationNameData pointManageLocationData;
-	private HBProjectOpenData pointOpenProject;
-	public HBNameStyleManager pointNameStyleManager;
-	public HG0507LocationSelect locationScreen = null;
-	private HBPersonHandler pointPersonMannager;
-	public EditEventRecord pointEditEventRecord = null;
-	public CreateEventRecord pointCreateEventRecord;
-	HG0552ManageEvent pointManageEvent = null;
-	HG0547EditEvent pointEditEvent = null;
-	HG0551DefineEvent pointDefineEvent = null;
-
 	int selectedEventTableRow;
 /**
  * 	Constructor HBWhereWhenHandler
@@ -163,7 +163,9 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		super();
 		this.pointOpenProject = pointOpenProject;
 		dataBaseIndex =  pointOpenProject.getOpenDatabaseIndex();
-		dBbuild = HGlobal.databaseVersion;
+		if (pointOpenProject != null)
+			pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
+		else System.out.println(" HBWhereWhenHandler() - pointOpenProject == null!");
 		if (HGlobal.DEBUG) {
 			System.out.println("HBWhereWhenHandler() - initiated");
 		}
@@ -209,6 +211,31 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public long createLocationRecord(long eventTablePID) throws HBException {
 		return pointCreateEventRecord.createLocationRecord(eventTablePID);
 	}
+	
+/**
+ * API methods fir Event and Role manager
+ */
+	
+	public String[] getEventTypeList(int eventGroup) throws HBException {
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+		return pointEventRoleManager.getEventTypeList(eventGroup);
+	}
+
+	public int[] getEventTypes() {
+		return pointEventRoleManager.getEventTypes();
+	}
+
+	public String[] getEventRoleList(int eventType, String selectRoles) throws HBException {
+		return pointEventRoleManager.getRolesForEvent(eventType, selectRoles);
+	}
+
+	public Object[][] getEventRoleData(int eventType, String selectRoles) throws HBException {
+		return pointEventRoleManager.getRolesDataForEvent(eventType, selectRoles);
+	}
+
+	public int[] getEventRoleTypes() {
+		return pointEventRoleManager.getEventRoleTypes();
+	}
 
 /**
  * API Methods for Edit Event Manager
@@ -222,29 +249,9 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public long getLocationNameRecordPID() {
 		return pointEditEventRecord.getLocationNameRecordPID();
 	}
-
-	public String[] getEventTypeList(int eventGroup) throws HBException {
-		return pointEditEventRecord.getEventTypeList(eventGroup);
-	}
-
-	public int[] getEventTypes() {
-		return pointEditEventRecord.getEventTypes();
-	}
-
+	
 	public Object[] getAssocTableData(int indexInTable) {
 		return pointEditEventRecord.getAssocTableData(indexInTable);
-	}
-
-	public String[] getEventRoleList(int eventType, String selectRoles) throws HBException {
-		return pointEditEventRecord.getRolesForEvent(eventType, selectRoles);
-	}
-
-	public Object[][] getEventRoleData(int eventType, String selectRoles) throws HBException {
-		return pointEditEventRecord.getRolesDataForEvent(eventType, selectRoles);
-	}
-
-	public int[] getEventRoleTypes() {
-		return pointEditEventRecord.getEventRoleTypes();
 	}
 
 	public String getPartnerNames() {
@@ -1132,7 +1139,6 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		try {
 			pointPersonMannager = pointOpenProject.getPersonHandler();
 			eventPID = pointPersonMannager.getEventPID(tableRow);
-			
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID);
@@ -1148,15 +1154,13 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * HG0552ManageEvent activateAddSelectedEvent(HBProjectOpenData pointOpenProject)
  * @param pointOpenProject
  * @return
- */
+*/ 
 	public HG0552ManageEvent activateAddSelectedEvent(HBProjectOpenData pointOpenProject, int selectedPartnerTableRow) {
-		//pointManageEvent = null;
 		String namePerson = " No person";
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		long eventPID = null_RPID;
 		try {
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
-			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
+			//pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointManageEvent = new HG0552ManageEvent(pointOpenProject, namePerson);
 			pointManageEvent.setPartnerTableSelectedRow(selectedPartnerTableRow);
 			return pointManageEvent;
@@ -1178,13 +1182,12 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public HG0547EditEvent activateAddFixedEvent(HBProjectOpenData pointOpenProject,
 								int eventNumber, int roleNumber, long eventPersonPID, int tableRow) {
 
-		//HG0547EditEvent pointEditEvent = null;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointPersonMannager = pointOpenProject.getPersonHandler();
 		long eventPID = null_RPID;
 		try {
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
-			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
+			//pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID);
 			return pointEditEvent;
 		} catch (HBException hbe) {
@@ -1235,27 +1238,6 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			return pointEditEvent;
 		} catch (HBException | SQLException hbe) {
 			System.out.println(" HBWhereWhenHandler - activateAddPartnerEvent: " + hbe.getMessage());
-			hbe.printStackTrace();
-		}
-		return null;
-	}
-
-/**
- * activateDefineEvent(HBProjectOpenData pointOpenProject, String eventName, String roleName)
- * @param pointOpenProject
- * @param eventName
- * @param roleName
- * @return
- */
-	public HG0551DefineEvent activateDefineEvent(HBProjectOpenData pointOpenProject, String eventName, String roleName) {
-		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		long eventPID = null_RPID;
-		try {
-			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
-			pointDefineEvent = new HG0551DefineEvent(pointOpenProject, eventName, roleName);
-			return pointDefineEvent;
-		} catch (HBException hbe) {
-			System.out.println(" HBWhereWhenHandler - activateDefineEvent error: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
 		return null;
@@ -1612,7 +1594,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  */
 	public HG0552ManageEvent createEventManager(HBProjectOpenData pointOpenProject) throws HBException {
 		//String eventName = null, roleName = null, eventPerson = null;
-
+		//HBEventRoleManager pointEventRoleManager = null;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		CreateEventRecord  pointEventManager = new CreateEventRecord(pointDBlayer, dataBaseIndex,
 																pointOpenProject);
@@ -2881,34 +2863,11 @@ class EditEventRecord extends HBBusinessLayer {
 	public int getDefaultLocationStyleIndex() {
 		return pointLocationStyleData.getDefaultStyleIndex();
 	}
-
-	public String[] getEventTypeList(int eventGroup) throws HBException {
-		listEventTypes(eventGroup);
-		return eventTypeList;
-	}
-
-	public int[] getEventTypes() {
-		return eventTypeNumber;
-	}
 	
 	public long getLocationNameRecordPID() {
 		return locationNamePID;
 	}
-
-	public String[] getRolesForEvent(int eventType, String selectRoles) throws HBException {
-		listEventRoles(eventType, selectRoles);
-		return eventRoleList;
-	}
-
-	public Object[][] getRolesDataForEvent(int eventType, String selectRoles) throws HBException {
-		dataEventRoles(eventType);
-		return eventRoleData;
-	}
-
-	public int[] getEventRoleTypes() {
-		return eventRoleType;
-	}
-
+	
 	public String[] getDates() {
 		return eventDates;
 	}
@@ -3134,132 +3093,6 @@ class EditEventRecord extends HBBusinessLayer {
 			}
 		}
 	}
-
-/**
- * listEventTypes(int eventGroup)
- * @param eventGroup
- * @throws HBException
- */
-	private void listEventTypes(int eventGroup) throws HBException {
-		ResultSet eventListRS = pointLibraryResultSet.getEventTypeList(eventGroup, dataBaseIndex);
-		try {
-			eventListRS.last();
-			int nrOfRows = eventListRS.getRow();
-			if (HGlobal.DEBUG) 
-				System.out.println(" Event #types: " + nrOfRows);
-			
-			eventTypeList = new String[nrOfRows];
-			eventTypeNumber = new int[nrOfRows];
-			int index = 0;
-			eventListRS.beforeFirst();
-			while (eventListRS.next()) {
-				String eventTypeName = eventListRS.getString("EVNT_NAME").trim();
-				int eventTypeNr = eventListRS.getInt("EVNT_TYPE");
-				if (HGlobal.DEBUG) {
-					System.out.println(" Event type: " + index + " - " + eventTypeName + "/" + eventTypeNr);
-				}
-				eventTypeList[index] = eventListRS.getString("EVNT_NAME").trim();
-				eventTypeNumber[index] = eventListRS.getInt("EVNT_TYPE");
-				index++;
-			}
-		// Now sort the eventTypeList alpabetically, keeping eventTypeNumber in sync.
-			index = eventTypeList.length;
-			for(int i = 0; i <index-1; i++) {
-				for (int j = i+1; j < eventTypeList.length; j++) {
-					// compares each elements of the array to all the remaining elements
-					if(eventTypeList[i].compareTo(eventTypeList[j]) > 0) {
-						// swap eventTypeList array elements
-						String tempStr = eventTypeList[i];
-						eventTypeList[i] = eventTypeList[j];
-						eventTypeList[j] = tempStr;
-						// swap eventTypeNumber array to match
-						int tempInt = eventTypeNumber[i];
-						eventTypeNumber[i] = eventTypeNumber[j];
-						eventTypeNumber[j] = tempInt;
-					}
-				}
-			}
-		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHandler updateEventTypes: " + sqle.getMessage());
-			sqle.printStackTrace();
-		}
-	}
-
-/**
- * listEventRoles(int eventType, String selectRoles)
- * @param eventType
- * @throws HBException
- */
-	private void listEventRoles(int eventType, String selectRoles) throws HBException {
-		ResultSet eventRoles = pointLibraryResultSet.getRoleNameList(eventType, selectRoles, dataBaseIndex);
-		try {
-			eventRoles.last();
-			int nrOfRows = eventRoles.getRow();
-			if (nrOfRows == 0) {
-					if (HGlobal.DEBUG) {
-						System.out.println(" No roles found for eventtype: " + eventType + " Select: " + selectRoles);
-					}
-					eventRoleList = new String[1];
-					eventRoleType = new int[1];
-					eventRoleList[0] = "Principal";
-					eventRoleType[0] = 1;
-					return;
-			}
-			eventRoleList = new String[nrOfRows];
-			eventRoleType = new int[nrOfRows];
-			int index = 0;
-			eventRoles.beforeFirst();
-			while (eventRoles.next()) {
-				eventRoleList[index] = eventRoles.getString("EVNT_ROLE_NAME").trim();
-				eventRoleType[index] = eventRoles.getInt("EVNT_ROLE_NUM");
-				index++;
-			}
-		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHandler listEventRoles: " + sqle.getMessage());
-			throw new HBException(" HBPersonHandler listEventRoles: " + sqle.getMessage());
-		}
-	}
-
-/**
- * dataEventRoles(int eventType, String selectRoles)
- * @param eventType
- * @return eventRoleData
- * @throws HBException
- */
-	private void dataEventRoles(int eventType) throws HBException {
-		ResultSet eventRoles = pointLibraryResultSet.getRoleNameList(eventType, "", dataBaseIndex);
-		try {
-			eventRoles.last();
-			int nrOfRows = eventRoles.getRow();
-			// If no roles for the event, construct a dummy return object
-			if (nrOfRows == 0) {
-					if (HGlobal.DEBUG) {
-						System.out.println(" No roles found for Event type: " + eventType);
-					}
-					eventRoleData = new Object[1][3];
-					eventRoleData[0][0] = "Principal";
-					eventRoleData[0][1] = 1;
-					eventRoleData[0][2] = 1;
-					return;
-			}
-			// Otherwise build the Role data - Name, Number, Sequence
-			eventRoleData = new Object[nrOfRows][3];
-			int index = 0;
-			eventRoles.beforeFirst();
-			while (eventRoles.next()) {
-				eventRoleData[index][0] = eventRoles.getString("EVNT_ROLE_NAME").trim();
-				eventRoleData[index][1] = (int)eventRoles.getInt("EVNT_ROLE_NUM");
-				eventRoleData[index][2] = (int)eventRoles.getInt("EVNT_ROLE_SEQ");
-				index++;
-			}
-			// Sort the role data on the sequence field (col 2) before returning it
-			Arrays.sort(eventRoleData, (o1, o2) -> Integer.compare((Integer) o1[2], (Integer) o2[2]));
-		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHandler dataEventRoles: " + sqle.getMessage());
-			throw new HBException(" HBPersonHandler dataEventRoles: " + sqle.getMessage());
-		}
-	}
-
 
 /**
  * createNameDates(boolean update, long nameTablePID)
@@ -3747,171 +3580,3 @@ class EditEventRecord extends HBBusinessLayer {
 		}
 	}
 } // End class EditEventRecord
-
-class ManageEventRole extends HBBusinessLayer {
-	int dataBaseIndex;
-	HBProjectOpenData pointOpenProject;
-	long eventDefnTablePID;
-	private static int marrGroup = 6, divorceGroup = 7;
-	@SuppressWarnings("unused")
-	private int eventGroup = 0, maxYear = 0, minYear = 0 , etypeNumber, evntKeyAssocMin = 0;
-	boolean isActive = false, isSystem = false;
-	String gedcomCode, langCode, etypeName, abbrev, pastSentense, reminder;
-
-/**
- * Constructor
- */
-	public ManageEventRole(int dataBaseIndex, HBProjectOpenData pointOpenProject, long eventTypeTablePID) {
-
-		this.dataBaseIndex = dataBaseIndex;
-		this.pointOpenProject = pointOpenProject;
-		this.eventDefnTablePID = eventTypeTablePID;
-	}
-
-/**
- * private void readT460_EVNT_DEFS(ResultSet hreTable)
- * @param hreTable
- * @throws HBException
- */
-	@SuppressWarnings("unused")
-	private void readT460_EVNT_DEFS(ResultSet hreTable) throws HBException {
-		try {
-			eventDefnTablePID = hreTable.getLong("PID");
-			isSystem = hreTable.getBoolean("IS_SYSTEM");
-			isActive = hreTable.getBoolean("IS_ACTIVE");
-			etypeNumber = hreTable.getInt("EVNT_TYPE");
-			eventGroup = hreTable.getInt("EVNT_GROUP");
-			evntKeyAssocMin = hreTable.getInt("EVNT_KEY_ASSOC_MIN");
-			minYear = hreTable.getInt("MIN_YEAR");
-			maxYear = hreTable.getInt("MAX_YEAR");
-			gedcomCode = hreTable.getString("GEDCOM");
-			langCode = hreTable.getString("LANG_CODE");
-			etypeName = hreTable.getString("EVNT_NAME");
-			abbrev = hreTable.getString("EVNT_ABBREV");
-			pastSentense = hreTable.getString("EVNT_PAST");
-			reminder = hreTable.getString("EVNT_HINT");
-		} catch (SQLException sqle) {
-			System.out.println( "ManageEventRole - readT460_EVNT_DEFS error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HBException("ManageEventRole - readT460_EVNT_DEFS error: " + sqle.getMessage());
-		}
-	}
-
-/**
- * private void addToT460_EVNT_DEFS(long eventDefnPID, ResultSet hreTable)
- * @param eventDefnPID
- * @param hreTable
- * @throws HCException
- * @throws HBException
- */
-	@SuppressWarnings("unused")
-	private void addToT460_EVNT_DEFS(long eventTypeTablePID, boolean addEvntDefs, ResultSet hreTable) throws HCException, HBException {
-		if (TMGglobal.DEBUG) {
-			System.out.println("** addTo T460_EVENT_DEFN PID: " + eventTypeTablePID);
-		}
-
-	// Abbrev too long:
-		if (abbrev.length() > 10) {
-			System.out.println(" Long T460_EVNT_DEFN - EVNT_ABBREV - Length: "
-					+ abbrev.length() + "/10");
-			abbrev = abbrev.substring(0,10);
-		}
-		if (reminder.length() > 2000) {
-			System.out.println(" Long T460_EVNT_DEFN - EVNT_HINT - Length: "
-					+ reminder.length() + "/2000");
-			reminder = reminder.substring(0,2000);
-		}
-
-		try {
-		// if add moves cursor to the insert row
-			if (addEvntDefs) {
-				hreTable.moveToInsertRow();
-			}
-		// update row
-			hreTable.updateLong("PID", eventTypeTablePID);
-			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
-			hreTable.updateBoolean("IS_SYSTEM", false);		// Fix 31.14: IS_SYSTEM=FALSE for user-added event
-			hreTable.updateBoolean("IS_ACTIVE", isActive);
-			hreTable.updateInt("EVNT_TYPE", etypeNumber);
-			hreTable.updateInt("EVNT_GROUP", eventGroup);
-			if (eventGroup == marrGroup || eventGroup == divorceGroup) {
-				hreTable.updateInt("EVNT_KEY_ASSOC_MIN", 2);
-			} else {
-				hreTable.updateInt("EVNT_KEY_ASSOC_MIN", 1);
-			}
-			hreTable.updateInt("MIN_YEAR", minYear);
-			hreTable.updateInt("MAX_YEAR", maxYear);
-			hreTable.updateString("GEDCOM", gedcomCode);
-			hreTable.updateString("LANG_CODE", langCode);
-			hreTable.updateString("EVNT_NAME", etypeName);
-			hreTable.updateString("EVNT_ABBREV", abbrev);
-			hreTable.updateString("EVNT_PAST", pastSentense);
-			hreTable.updateString("EVNT_HINT", reminder);
-		//Insert row or update
-			if (addEvntDefs) {
-				hreTable.insertRow();
-			} else {
-				hreTable.updateRow();
-			}
-
-		} catch (SQLException sqle) {
-			System.out.println( "ManageEventRole - addToT460_EVNT_DEFS error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HBException("ManageEventRole - addToT460_EVNT_DEFS error: " + sqle.getMessage());
-		}
-	}
-
-/**
- * protected void addToT461_EVNT_ROLE(
- * @param primaryPID
- * @param eventTypeNr
- * @param eventRoleNr
- * @param eventRoleSequence
- * @param eventRoleName
- * @param lang_code
- * @param hreTable
- * @throws HCException
- * @throws HBException
- */
-	protected void addToT461_EVNT_ROLE(long primaryPID,
-											int eventTypeNr,
-											int eventRoleNr,
-											int eventRoleSequence,
-											String eventRoleName,
-											String lang_code,
-											ResultSet hreTable) throws HCException, HBException {
-		if (TMGglobal.DEBUG) {
-			System.out.println("** addTo T461_EVNT_ROLE PID: " + primaryPID);
-		}
-
-		if (eventRoleName.length() > 40) {
-			System.out.println(" Long T461_EVNT_ROLE - EVNT_ROLE_NAME - Length: "
-								+ eventRoleName.length() + "/40");
-			eventRoleName = eventRoleName.substring(0,40);
-		}
-		try {
-		// moves cursor to the insert row
-			hreTable.moveToInsertRow();
-		// update
-			hreTable.updateLong("PID", primaryPID);
-			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
-			hreTable.updateBoolean("IS_SYSTEM", true);
-			hreTable.updateString("LANG_CODE", lang_code);
-			hreTable.updateInt("EVNT_TYPE", eventTypeNr);
-			hreTable.updateInt("EVNT_ROLE_NUM", eventRoleNr);
-			hreTable.updateInt("EVNT_ROLE_SEQ", eventRoleSequence); // ************Need update
-			hreTable.updateString("EVNT_ROLE_NAME", eventRoleName);
-			hreTable.updateString("EVNT_ROLE_SEX"," ");
-			hreTable.updateInt("EVNT_ROLE_MINAGE",0);
-			hreTable.updateInt("EVNT_ROLE_MAXAGE",100);
-			hreTable.updateLong("ROLE_SENTENCE_RPID", null_RPID);
-		//Insert row
-			hreTable.insertRow();
-
-		} catch (SQLException sqle) {
-			System.out.println( "ManageEventRole - addToT461_EVNT_ROLE error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HBException("ManageEventRole - addToT461_EVNT_ROLE error: " + sqle.getMessage());
-		}
-	}
-} // End class ManageEventRole

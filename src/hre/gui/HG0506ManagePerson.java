@@ -61,6 +61,7 @@ package hre.gui;
  * 			  2024-10-29 Modified public static final String screenID = "50600"; (N. Tolleshaug)
  * 			  2024-11-10 Add confirmation prompts for delete of partner, parent (D Ferguson)
  * 			  2024-11-15 Removed 'null' positioning of all JOptionPane msgs (D Ferguson)
+ * v0.03.0032 2025-01-11 Rearranged processing of event and roles (N. Tolleshaug)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE01 need code to action Surety input
@@ -696,14 +697,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		asHeaderLabel.setHorizontalAlignment(SwingConstants.LEFT);
 		ListSelectionModel assocSelectionModel = tableAssocs.getSelectionModel();
 		assocSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		// Add table of Assocs to the assocScrollPane
+	// Add table of Assocs to the assocScrollPane
 		assocScrollPane = new JScrollPane(tableAssocs);
 		cardAssocs.add(assocScrollPane, "cell 0 1, grow");	//$NON-NLS-1$
 
 /************
  * cardNames - setup a scrollPane and table for All Names
  ************/
-		//JTable tableNames = new JTable() {
+	//JTable tableNames = new JTable() {
 		tableNames = new JTable() {
 			private static final long serialVersionUID = 1L;
 				@Override
@@ -1296,10 +1297,9 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    ActionListener popAL0 = new ActionListener() {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
-	        	HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 	        	int selectedPartnerTableRow = tablePartners.getSelectedRow();
 	        	HG0552ManageEvent eventScreen = pointHBWhereWhenHandler.activateAddSelectedEvent(pointOpenProject, selectedPartnerTableRow);
-				eventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+	        	eventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				eventScreen.setLocation(xyShow.x, xyShow.y);
 				eventScreen.setVisible(true);

@@ -42,6 +42,10 @@
 <mapID target="55100defineevent" url="Define_Event.html" />
 <mapID target="55200manageevent" url="Manage_Event.html" />
 
+<mapID target="56500managesource" url="Manage_Source.html" />
+<mapID target="56700managesourcetype" url="Manage_SourceType.html" />
+<mapID target="56900managerepository" url="Manage_Repository.html" />
+
 <mapID target="50750selectlocation" url="Select_Location_By.html" />
 <mapID target="50800managelocation" url="Manage_Location.html" />
 <mapID target="52600locationnamestyles" url="Manage_Name_Styles.html" />

@@ -17,5 +17,6 @@ public interface ReportMenuExtensionPoint extends ExtensionPoint {
 	void setMainPointer(HG0401HREMain mainFrame);
 	void setNationalLanguage(String nativeLanguage);
 	void setDDLversion(String dbaseVersion);
+	void setDEBUG(boolean DEBUG);
 
 }

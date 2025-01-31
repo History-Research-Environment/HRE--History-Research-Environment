@@ -116,6 +116,8 @@ package hre.bila;
   *			   2024-12-11 - Fix for Person Select reset PS off (N Tolleshaug)
   * v0.01.0032 2024-12-22 - Updated for new project B32 (N. Tolleshaug)
   * 		   2024-12-23 - Fixed update of name memo for add person (N. Tolleshaug)
+  * 		   2025-01-11 - Rearranged processing of event and roles (N. Tolleshaug)
+  * 		   2025-01-22 - Fixed error in event and roles processing(N. Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -188,6 +190,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 
     public ManagePersonData pointManagePersonData;
     public HBPersonFlagManager pointManagePersonFlag;
+    public HBEventRoleManager pointEventRoleManager;
 	public AddPersonRecord pointAddPersonRecord;
 	private HBProjectOpenData pointSelectedProject;
 	public HBNameStyleManager pointStyleData;
@@ -222,6 +225,9 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public HBPersonHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		this.pointOpenProject = pointOpenProject;
+		if (pointOpenProject != null)
+			pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
+		else System.out.println(" HBPersonHandler() - pointOpenProject == null!");
 		if (HGlobal.DEBUG) 
 			System.out.println("Person Handler initiated!");	
 	}
@@ -340,9 +346,8 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public void updateAllNameTable() throws HBException {
 		pointManagePersonData.updateAllNameTable();
 	}
-
-
-
+	
+	
 /**
  * API Methods for Person Name Manager
  * @returns Object[][] table data or image
@@ -550,14 +555,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 		return pointAddPersonRecord.getEventRoleTypes();
 	}
 
-	public String[] getEventTypeList(int eventGroup) throws HBException {
-		return pointAddPersonRecord.getEventTypeList(eventGroup);
-	}
-
-	public int[] getEventTypes() {
-		return pointAddPersonRecord.getEventTypes();
-	}
-
 	public String[] getPartnerEventList(int eventGroup) throws HBException {
 		return pointAddPersonRecord.getPartnerEventList(eventGroup);
 	}
@@ -584,11 +581,20 @@ public class HBPersonHandler extends HBBusinessLayer {
 
 	public void setNewPartnerPID(long newPartnerPID) throws HBException {
 		if (HGlobal.DEBUG) 
-			System.out.println(" HBPersonHandler setPartner PID:  " + newPartnerPID);
-		
+			System.out.println(" HBPersonHandler setPartner PID:  " + newPartnerPID);	
 		pointAddPersonRecord.setNewPartnerPID(newPartnerPID);
 	}
+	
+/**
+ * API for Event Role manager
+ */
+	public String[] getEventTypeList(int eventGroup) throws HBException {
+		return pointEventRoleManager.getEventTypeList(eventGroup);  
+	}
 
+	public int[] getEventTypes() {
+		return pointEventRoleManager.getEventTypes(); 
+	}
 /**
  * Set pointer for program bar
  * @param progBar
@@ -1874,7 +1880,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 		long personNamePID;
 
 		HG0509ManagePersonName pointManagePersonNameScreen = null;
-		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		//int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 
 	// Load data from database(dataBaseIndex) into ManagePersonNameData
 		pointManagePersonNameData = new ManagePersonNameData(pointDBlayer, pointOpenProject);
@@ -1888,10 +1894,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 			personNamePID = pointManagePersonData.getEventPID(nameTableIndex);
 		}
 
-		pointOpenProject.getWhereWhenHandler().pointEditEventRecord =
-				new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, null_RPID);
-
-		//personNamePID = pointManagePersonData.getPersonNameTablePID(nameTableIndex);
 		if (HGlobal.DEBUG) 
 			System.out.println("initiateManagePersonOtherName: " + personNamePID);
 		
@@ -5248,15 +5250,6 @@ class AddPersonRecord extends HBBusinessLayer {
 		return parentRoleType;
 	}
 
-	public String[] getEventTypeList(int eventGroup) throws HBException {
-		updateEventTypes(eventGroup);
-		return eventTypeList;
-	}
-
-	public int[] getEventTypes() {
-		return eventTypeNumber;
-	}
-
 	public String[] getPartnerEventList(int eventGroup) throws HBException {
 		updatePartnerTypes(eventGroup);
 		return partnerEventList;
@@ -6064,9 +6057,7 @@ class AddPersonRecord extends HBBusinessLayer {
 			sqle.printStackTrace();
 			throw new HBException( "HBPersonHandler - updateParentSibling: " + sqle.getMessage());
 		}
-
 	}
-
 
 /**
  * private void updateParentRelation()
@@ -6224,8 +6215,6 @@ class AddPersonRecord extends HBBusinessLayer {
 			updateTableData("COMMIT", dataBaseIndex);		
 
 	// Close all used result sets
-			//personTableResultSet.close();
-			//personNameTableResultSet.close();
 			personNameElementTableResultSet.close();
 
 			return newPersonTablePID;
@@ -6361,38 +6350,6 @@ class AddPersonRecord extends HBBusinessLayer {
 		}
 	}
 
-/**
- * updateEventTypes(int eventGroup)
- * @param eventGroup
- * @throws HBException
- */
-	private void updateEventTypes(int eventGroup) throws HBException {
-		ResultSet eventListRS = pointLibraryResultSet.getEventTypeList(eventGroup, dataBaseIndex);
-		try {
-			eventListRS.last();
-			int nrOfRows = eventListRS.getRow();
-			if (HGlobal.DEBUG) 
-				System.out.println(" Event #types: " + nrOfRows);
-			
-			eventTypeList = new String[nrOfRows];
-			eventTypeNumber = new int[nrOfRows];
-			int index = 0;
-			eventListRS.beforeFirst();
-			while (eventListRS.next()) {
-				String eventTypeName = eventListRS.getString("EVNT_NAME").trim();
-				int eventTypeNr = eventListRS.getInt("EVNT_TYPE");
-				if (HGlobal.DEBUG) 
-					System.out.println(" Event type: " + index + " - " + eventTypeName + "/" + eventTypeNr);
-				
-				eventTypeList[index] = eventListRS.getString("EVNT_NAME").trim();
-				eventTypeNumber[index] = eventListRS.getInt("EVNT_TYPE");
-				index++;
-			}
-		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHandler updateEventTypes: " + sqle.getMessage());
-			sqle.printStackTrace();
-		}
-	}
 /**
  * updateFlagValues()
  * @throws HBException

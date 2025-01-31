@@ -32,6 +32,8 @@ package hre.gui;
  * 			  2023-09-28 Added all known GUI to the setGUILanguage list (D Ferguson)
  * v0.03.0031 2024-11-23 Stop 1st write to logfile being before HRE directory created (D Ferguson)
  * v0.01.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
+ * 			  2025-01-21 Removed new HBPersonHandler(null) line 536 (N. Tolleshaug)
+ * 
  **********************************************************************************************
  * NOTE - Special setting for user NTo for seed/sample files and help folders
  *********************************************************************************************/
@@ -57,7 +59,6 @@ import hre.bila.HB0614Help;
 import hre.bila.HB0711Logging;
 import hre.bila.HB0744UserAUX;
 import hre.bila.HBBusinessLayer;
-import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectHandler;
 import hre.bila.HBToolHandler;
 import hre.dbla.HDDatabaseLayer;
@@ -531,7 +532,7 @@ public class HA0001HREstart {
  * Create and set up pointers to each main menu point Handler
  */
 		pointBusinessLayer[0] = new HBProjectHandler();
-		pointBusinessLayer[1] = new HBPersonHandler(null); // Needed for Plugin report person
+		//pointBusinessLayer[1] = new HBPersonHandler(null);
 		//pointBusinessLayer[2] = new HBResearchHandler();
 		//pointBusinessLayer[3] = new HBViewPointHandler();
 		//pointBusinessLayer[4] = new HBEventTaskHandler();
@@ -547,7 +548,7 @@ public class HA0001HREstart {
  */
 		pointDBlayer = new HDDatabaseLayer();
 		pointBusinessLayer[0].pointDBlayer = pointDBlayer;
-		pointBusinessLayer[1].pointDBlayer = pointDBlayer;	// Needed for Plugin report person
+		//pointBusinessLayer[1].pointDBlayer = pointDBlayer;
 		//pointBusinessLayer[2].pointDBlayer = pointDBlayer;
 		//pointBusinessLayer[3].pointDBlayer = pointDBlayer;
 		//pointBusinessLayer[4].pointDBlayer = pointDBlayer;

@@ -1,9 +1,7 @@
 <?xml version='1.0'?>
 <toc version="1.0">
 
-
 <tocitem text="Hauptmenü" target="mainmenu"/>
-
 
 <tocitem text="Projektmenü">
 <tocitem text="Projekt öffnen" target="40200openproject"/>
@@ -38,6 +36,14 @@
 <tocitem text="Ereignis bearbeiten" target="54700editevent"/>
 <tocitem text="Ereignis definieren" target="55100defineevent"/>
 <tocitem text="Ereignis verwalten" target="55200manageevent"/>
+<tocitem text="Zitate bearbeiten" target="55500editcitation"/>
+</tocitem>
+
+<tocitem text="Beweis">
+<tocitem text="Quellen verwalten" target="56500managesource"/>
+<tocitem text="Zitate bearbeiten" target="55500editcitation"/>
+<tocitem text="Quelltypen verwalten" target="56700managesourcetype"/>
+<tocitem text="Repositorys verwalten" target="56900managerepository"/>
 </tocitem>
 
 <tocitem text="Wo/Wann">

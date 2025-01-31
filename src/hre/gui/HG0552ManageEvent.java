@@ -21,10 +21,14 @@ package hre.gui;
  * 			  2024-06-16 Place Partner user msg properly (D Ferguson)
  * 			  2024-07-21 NLS conversion (D Ferguson)
  * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2025-01-11 Rearranged processing of event and roles (N. Tolleshaug)
+ * 			  2025-01-17 Imlement add or edit event type (N. Tolleshaug)
+ * 			  2025-01-20 Added Event deletion confirmation msgs (D Ferguson)
+ * 			  2025-01-26 Fixed error in delete event type handling (N. Tolleshaug)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE04 need code to load disabled events
- * NOTE05 code needed for Disable/Enable Event, Copy & Delete Event, Grouped Events
+ * NOTE05 code needed for Disable/Enable Event, Copy Event, Grouped Events
  ********************************************************************************/
 
 import java.awt.Component;
@@ -56,6 +60,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBWhereWhenHandler;
@@ -65,7 +70,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Events
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2022-04-07
  */
 
@@ -106,6 +111,11 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	private JList<String> eventList;
 	private JList<String> roleList;
     private String selectedEvent = "";		//$NON-NLS-1$
+	String[] eventTypeList;
+	int[] eventTypeNumber;
+	String[] eventRoleList;
+	Object[][] eventRoleData;
+
     private int indexSelectedEvent;
     private String selectedRole = "";		//$NON-NLS-1$
     private int selectedEventType;
@@ -137,7 +147,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     public void setPartnerTableSelectedRow(int selectedPartnerTableIndex) {
     	selectedPartnerTableRow = selectedPartnerTableIndex;
     }
-
+    
 /**
  * Create the dialog
  * @throws HBException
@@ -154,7 +164,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 
 	 // Get all partner event type codes
-    	pointHBWhereWhenHandler.getEventTypeList(6);
+	    pointHBWhereWhenHandler.getEventTypeList(6);
     	marrTypes = pointHBWhereWhenHandler.getEventTypes();
 
 	// Setup initial All Events event/role lists
@@ -868,13 +878,15 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    };
 		roleList.addListSelectionListener(roleListener);
 
-		// Listener for Add new eventtype button
+		// Listener for Add new Event Type button
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// load HG0551DefineEvent screen (no Event Name/role) to create new Event type
-				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0551DefineEvent newEventType = pointHBWhereWhenHandler.activateDefineEvent(pointOpenProject, "", "");  //$NON-NLS-1$ //$NON-NLS-2$
+			// load HG0551DefineEvent screen (no Event Name/role) to create new Event type
+				HBEventRoleManager pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
+				String selectedLangCode = HGlobal.dataLanguage;
+				pointEventRoleManager.setSelectedLanguage(selectedLangCode);
+				HG0551DefineEvent newEventType = pointEventRoleManager.activateDefineNewEventType();
 				newEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
 				newEventType.setLocation(xymainPane.x, xymainPane.y);
@@ -893,13 +905,15 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Edit Event button
+		// Listener for Edit Event Type button
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// load HG0551DefineEvent screen (passing Event Name/role) to edit Event type
-				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0551DefineEvent editEventType = pointHBWhereWhenHandler.activateDefineEvent(pointOpenProject, selectedEvent, selectedRole);
+			// load HG0551DefineEvent screen (passing Event Name/role) to edit Event type
+				HBEventRoleManager pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
+				String selectedLangCode = HGlobal.dataLanguage;
+				pointEventRoleManager.setSelectedLanguage(selectedLangCode);
+				HG0551DefineEvent editEventType = pointEventRoleManager.activateEditEventType(selectedEventType);
 				editEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
 				editEventType.setLocation(xymainPane.x, xymainPane.y);
@@ -922,9 +936,18 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		btn_Delete.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-
-				// NOTE05 need code here to delete the Event type, but ONLY IF NOT IN USE IN PROJECT!
-
+				HBEventRoleManager pointRoleManager = new HBEventRoleManager(pointOpenProject);
+				try {
+					int errorCode = pointRoleManager.deleteEventType(selectedEventType);
+					if (errorCode == 0)
+						JOptionPane.showMessageDialog(btn_Delete, "Event type deleted",
+														"Delete Event", JOptionPane.INFORMATION_MESSAGE);
+					if (errorCode == 1)
+						JOptionPane.showMessageDialog(btn_Delete, "Event type in use - cannot be deleted",
+														"Delete Event", JOptionPane.ERROR_MESSAGE);
+				} catch (HBException e) {
+					e.printStackTrace();
+				}
 				dispose();
 			}
 		});
@@ -1023,7 +1046,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  */
     public void resetRoleList(int selectedEvent) throws HBException {
     	roleListmodel = (DefaultListModel<String>) roleList.getModel();
-    	String[] newRoleList = pointHBWhereWhenHandler.getEventRoleList(selectedEvent, ""); //$NON-NLS-1$
+    	String[] newRoleList = pointHBWhereWhenHandler.getEventRoleList(selectedEvent, "");
 
     // Turn off RoleListener and clear role list
     	roleListenOn = false;
