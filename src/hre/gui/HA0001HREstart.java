@@ -31,9 +31,10 @@ package hre.gui;
  * 			  2023-09-04 Added new Log messsage with Build no. at startup (D Ferguson)
  * 			  2023-09-28 Added all known GUI to the setGUILanguage list (D Ferguson)
  * v0.03.0031 2024-11-23 Stop 1st write to logfile being before HRE directory created (D Ferguson)
- * v0.01.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
+ * v0.04.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
  * 			  2025-01-21 Removed new HBPersonHandler(null) line 536 (N. Tolleshaug)
- * 
+ * 			  2025-02-08 Add all missing GUI language NLS imports (D Ferguson)
+ *
  **********************************************************************************************
  * NOTE - Special setting for user NTo for seed/sample files and help folders
  *********************************************************************************************/
@@ -97,10 +98,19 @@ import hre.nls.HG0540Msgs;
 import hre.nls.HG0547Msgs;
 import hre.nls.HG0551Msgs;
 import hre.nls.HG0552Msgs;
+import hre.nls.HG0555Msgs;
+import hre.nls.HG0564Msgs;
+import hre.nls.HG0565Msgs;
+import hre.nls.HG0566Msgs;
+import hre.nls.HG0567Msgs;
+import hre.nls.HG0568Msgs;
+import hre.nls.HG0569Msgs;
+import hre.nls.HG0570Msgs;
 import hre.nls.HG0575Msgs;
 import hre.nls.HG0577Msgs;
 import hre.nls.HG0581Msgs;
 import hre.nls.HG0590Msgs;
+import hre.nls.HG0620Msgs;
 import hre.nls.HG0660Msgs;
 import hre.nls.HGJavaMsgs;
 import hre.nls.HGlobalMsgs;
@@ -509,10 +519,19 @@ public class HA0001HREstart {
 		new HG0547Msgs(HGlobal.nativeLanguage);
 		new HG0551Msgs(HGlobal.nativeLanguage);
 		new HG0552Msgs(HGlobal.nativeLanguage);
+		new HG0555Msgs(HGlobal.nativeLanguage);
+		new HG0564Msgs(HGlobal.nativeLanguage);
+		new HG0565Msgs(HGlobal.nativeLanguage);
+		new HG0566Msgs(HGlobal.nativeLanguage);
+		new HG0567Msgs(HGlobal.nativeLanguage);
+		new HG0568Msgs(HGlobal.nativeLanguage);
+		new HG0569Msgs(HGlobal.nativeLanguage);
+		new HG0570Msgs(HGlobal.nativeLanguage);
 		new HG0575Msgs(HGlobal.nativeLanguage);
 		new HG0577Msgs(HGlobal.nativeLanguage);
 		new HG0581Msgs(HGlobal.nativeLanguage);
 		new HG0590Msgs(HGlobal.nativeLanguage);
+		new HG0620Msgs(HGlobal.nativeLanguage);
 		new HG0660Msgs(HGlobal.nativeLanguage);
 		new HGlobalMsgs(HGlobal.nativeLanguage);
 

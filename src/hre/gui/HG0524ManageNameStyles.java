@@ -23,6 +23,8 @@ package hre.gui;
 * v0.01.0029 2023-04-14 Convert function modified (D Ferguson)
 * v0.03.0030 2023-10-06 Remove Source radio-button (D Ferguson) (Text_58 now unused)
 * v0.03.0031 2024-10-01 Clean whitespace (D Ferguson)
+* v0.04.0032 2025-02-23 Fix crash when invoking Reminder (D Ferguson)
+*
 **********************************************************************************
 */
 
@@ -80,7 +82,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Admin Name Styles
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @param HBNameStyleManager pointStyleHandler
  * @since 2022-10-16
  */
@@ -157,7 +159,7 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 	public HG0524ManageNameStyles(HBProjectOpenData pointOpenProject, HBNameStyleManager pointStyleHandler) {
 		this.pointStyleHandler =  pointStyleHandler;
 		pointWhereWhenhandler = pointOpenProject.getWhereWhenHandler();
-
+		this.pointOpenProject = pointOpenProject;
 		contents = new JPanel();
 		contents.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contents);

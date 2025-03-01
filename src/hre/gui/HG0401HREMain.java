@@ -87,6 +87,7 @@ package hre.gui;
  * 			  2025-01-17 Enable all Evidence menu items (D Ferguson)
  * 			  2025-01-18 Enable Event menu (D Ferguson)
  * 			  2025-01-21 Removed extension.setBusinessLayerPointer(pointBusinessLayer) (N Tolleshaug)
+ * 			  2025-02-08 Add new Evidence Source Elements menu item (D Ferguson)
  *****************************************************************************************/
 
 import java.awt.BorderLayout;
@@ -594,6 +595,9 @@ public class HG0401HREMain extends JFrame {
 			JMenuItem menuSourceTypes = new JMenuItem(HG0401Msgs.Text_67);	// Manage Source Types
 			menuSourceTypes.setEnabled(false);
 			menuEvidence.add(menuSourceTypes);
+			JMenuItem menuSourceElmnts = new JMenuItem(HG0401Msgs.Text_64);	// Manage Source Elements
+			menuSourceElmnts.setEnabled(false);
+			menuEvidence.add(menuSourceElmnts);
 			JMenuItem menuRepository = new JMenuItem(HG0401Msgs.Text_68);	// Manage Repositories
 			menuRepository.setEnabled(false);
 			menuEvidence.add(menuRepository);
@@ -835,6 +839,7 @@ public class HG0401HREMain extends JFrame {
 					// All Evidence menu items
 						menuSources.setEnabled(false);
 						menuSourceTypes.setEnabled(false);
+						menuSourceElmnts.setEnabled(false);
 						menuRepository.setEnabled(false);
 					// All Where-When, Location items
 						menuLocSelect.setEnabled(false);
@@ -969,6 +974,7 @@ public class HG0401HREMain extends JFrame {
 			// Evidence menu items
 			menuSources.setEnabled(true);
 			menuSourceTypes.setEnabled(true);
+			menuSourceElmnts.setEnabled(true);
 			menuRepository.setEnabled(true);
 			// Where/When menu items
 			menuWhWh.setVisible(true);
@@ -1377,17 +1383,12 @@ public class HG0401HREMain extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 				HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0552ManageEvent eventScreen;
-				//try {
-		        	eventScreen = pointHBWhereWhenHandler.activateAddSelectedEvent(pointOpenProject, 0);
-					//eventScreen = new HG0552ManageEvent(pointOpenProject, "");	//$NON-NLS-1$
-					eventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-					Point xyEvent = menuET.getLocationOnScreen();
-					eventScreen.setLocation(xyEvent.x, xyEvent.y + 30);
-					eventScreen.setVisible(true);
-/*				} catch (HBException e1) {
-					e1.printStackTrace();
-				} */
+				HG0552ManageEvent eventScreen
+						= pointHBWhereWhenHandler.activateAddSelectedEvent(pointOpenProject, 0);
+				eventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyEvent = menuET.getLocationOnScreen();
+				eventScreen.setLocation(xyEvent.x, xyEvent.y + 30);
+				eventScreen.setVisible(true);
 			}
 		});
 
@@ -1480,11 +1481,14 @@ public class HG0401HREMain extends JFrame {
 		menuSources.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				HG0565ManageSource sourceScreen = new HG0565ManageSource();
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
+				mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				HG0565ManageSource sourceScreen = new HG0565ManageSource(pointOpenProject, null);
 				sourceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xySource = menuEvidence.getLocationOnScreen();
 				sourceScreen.setLocation(xySource.x, xySource.y + 30);
 				sourceScreen.setVisible(true);
+				mainFrame.setCursor(Cursor.getDefaultCursor());
 			}
 		});
 
@@ -1497,6 +1501,23 @@ public class HG0401HREMain extends JFrame {
 				Point xySourceT = menuEvidence.getLocationOnScreen();
 				sourceTypeScreen.setLocation(xySourceT.x, xySourceT.y + 30);
 				sourceTypeScreen.setVisible(true);
+			}
+		});
+
+		// Evidence - Manage Source Elements
+		menuSourceElmnts.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				HG0564ManageSrcElmnt srcElmntScreen;
+				try {
+					srcElmntScreen = new HG0564ManageSrcElmnt();
+					srcElmntScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xySourceE = menuEvidence.getLocationOnScreen();
+					srcElmntScreen.setLocation(xySourceE.x, xySourceE.y + 30);
+					srcElmntScreen.setVisible(true);
+				} catch (HBException e1) {
+					e1.printStackTrace();
+				}
 			}
 		});
 
@@ -1834,7 +1855,6 @@ public class HG0401HREMain extends JFrame {
 
 	        	try {
 		        	mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
 					int selectIndex = ((HBProjectHandler) pointBusinessLayer[0]).getUserProjectByName(clickedProject);
 					String [] projectData = ((HBProjectHandler) pointBusinessLayer[0]).getUserProjectByIndex(selectIndex);
 

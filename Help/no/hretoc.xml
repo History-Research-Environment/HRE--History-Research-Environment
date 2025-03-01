@@ -40,8 +40,12 @@
 </tocitem>
 
 <tocitem text="Bevis">
-<tocitem text="Administrer kilder" target="56500managesource"/>
 <tocitem text="Rediger sitater" target="55500editcitation"/>
+<tocitem text="Rediger kilder" target="56600editsource"/>
+<tocitem text="Rediger kildetyper" target="56800editsourcetype"/>
+<tocitem text="Rediger depoter" target="57000editrepository"/>
+<tocitem text="Administrer kilder" target="56500managesource"/>
+<tocitem text="Administrer kildeelementer" target="56400managesourceelement"/>
 <tocitem text="Administrer kildetyper" target="56700managesourcetype"/>
 <tocitem text="Administrer depoter" target="56900managerepository"/>
 </tocitem>

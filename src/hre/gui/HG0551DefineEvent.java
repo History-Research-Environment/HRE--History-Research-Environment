@@ -9,10 +9,11 @@ package hre.gui;
  * 		      2025-01-17 Implement add or edit event type (N. Tolleshaug)
  * 			  2025-01-20 Add move role up/down code; add Hint panel (D Ferguson)
  * 			  2025-01-30 Added processing of event hints (N. Tolleshaug)
+ * 			  2025-02-03 Added NLS enabled error message (N. Tolleshaug)
+ * 			  2025-02-22 Change role table col 0 to checkbox (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
- * NOTE01 code needed to load all roles and sentences for Event
- * NOTE04 code needed to save all data
+ * NOTE01 code needed to load all sentences for Event
  * NOTE05 code needed to action all control buttons
  *
  * Note also that the TMG Event tag fields for Past Tense, Abbreviation and type
@@ -49,11 +50,11 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
-import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.text.DefaultCaret;
@@ -80,11 +81,11 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	HBEventRoleManager pointEventRoleManager;
 	DefaultListModel<String> roleListmodel;
 	JTable tableRole;
-	String[] tableRoleHeader = new String[] {"Key?", "Role"};
+	String[] tableRoleHeader = new String[] {"Primary", "Role"};
 
     private String selectedEventName, selectedRoleName, selectedLangCode, newEventName;
-    int selectedEventType, selectedRoleNumber, selectedGroup;
-    
+    int selectedEventType, selectedRoleNumber, selectedGroup, languageIndexDefault;
+
     int teller = 0;
 
 	String[] eventTypeList;
@@ -94,7 +95,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	Object[] eventTypeTransfer = new Object[10]; // Array used to transfer date to HBEventRoleManager
 	Object[] eventRoleTransfer = new Object[10]; // Array used to transfer date to HBEventRoleManager
-	Object objTempRoleData[] = new Object[2];   // to temporarily hold a row of roles when moving rows around
+	Object objTempRoleData[] = new Object[2];   // to temporarily hold a row of roles when moving rows up/down
 
 	JTextField text_minYear, text_maxYear, text_minAssoc, text_gedTag, text_minAge, text_maxAge;
 	JTextArea text_MaleSent, text_FemaleSent, hintText;
@@ -103,8 +104,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	String abbrev, pasttense, eventHint, gedComTag, roleSex, roleSentence;
 	int newEventNumber, roleNumber, maxYear, minYear, roleMinAge, roleMaxAge, eventGroup, eventRoleSequence;
 
-	String yes = " Yes";  // Tranlated to used datalanguage
-	String no = " No"; // Tranlated to used datalanguage
+	DefaultTableModel roleModel;
 	String[] sexOptions = {"Any","Male","Female"};
 	String[] sexValues = {"U","M","F"};
 
@@ -154,7 +154,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  */
     public HG0551DefineEvent(HBEventRoleManager pointEventRoleManager, HBProjectOpenData pointOpenProject,
     									boolean addNewEventType) throws HBException {
-    	selectedEventName = "";
+    	selectedEventName = "";		//$NON-NLS-1$
     	this.pointEventRoleManager = pointEventRoleManager;
     	constructDefineEvent(addNewEventType, true);
     }
@@ -183,7 +183,20 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
     	this.setResizable(false);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0551DefineEvent");}	//$NON-NLS-1$
-				
+
+	// Reset all general variables
+		abbrev = "";		//$NON-NLS-1$
+		pasttense = "";		//$NON-NLS-1$
+		eventHint = ""; 	//$NON-NLS-1$
+		gedComTag = "";		//$NON-NLS-1$
+		roleSex = "U";
+		maxYear = 0;
+		minYear = 0;
+		roleMinAge = 0;
+		roleMaxAge = 0;
+		eventGroup = 0;
+		eventRoleSequence = 1;
+
 	// Set up event groups map index
 		eventGroups = pointEventRoleManager.geteventGroupNames();
 		eventGroupIndex = pointEventRoleManager.geteventGroupNumbers();
@@ -192,7 +205,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		if(!addNewEventType) {
 			eventTypeList = pointEventRoleManager.getEventTypeList(0);
 			eventTypeNumbers = pointEventRoleManager.getEventTypes();
-			eventRoleList = pointEventRoleManager.getEventRoleList(selectedEventType, "");
+			eventRoleList = pointEventRoleManager.getEventRoleList(selectedEventType, "");	//$NON-NLS-1$
 			eventRoleNumbers = pointEventRoleManager.getEventRoleTypes();
 		// Find event type name for selected event
 			for (int i = 0; i < eventTypeNumbers.length; i++)
@@ -200,11 +213,11 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		// Populate role list for selected event
 			tableRoleData = new Object[eventRoleList.length][3];
 			for (int i = 0; i < eventRoleList.length; i++)  {
-				tableRoleData[i][0] = yes;
-				tableRoleData[i][1] = " " + eventRoleList[i].trim();
+//				tableRoleData[i][0] = yes;
+				tableRoleData[i][1] = " " + eventRoleList[i].trim();	//$NON-NLS-1$
 				tableRoleData[i][2] = eventRoleNumbers[i];
 			}
-		} else tableRoleData = new Object[1][3]; 
+		} else tableRoleData = new Object[1][3];
 
 		if (addNewEventType) {
 			selectedEventName = "New";
@@ -244,21 +257,22 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		JLabel lbl_Language = new JLabel("Language: ");
 		contents.add(lbl_Language, "cell 1 0, alignx center");		//$NON-NLS-1$
 		if (initiate) {
-			comboLanguage = new JComboBox<String>(); 
-			
+			comboLanguage = new JComboBox<String>();
+
 			for (int i=0; i < HG0501AppSettings.dataReptLanguages.length; i++)
 					comboLanguage.addItem(HG0501AppSettings.dataReptLanguages[i]);
-		
-			if (HGlobal.numOpenProjects > 0) 
-				for (int i = 0; i < HG0501AppSettings.dataReptLangCodes.length; i++) 
+
+			if (HGlobal.numOpenProjects > 0)
+				for (int i = 0; i < HG0501AppSettings.dataReptLangCodes.length; i++)
 					if (HGlobal.dataLanguage.equals(HG0501AppSettings.dataReptLangCodes[i])) {
 						comboLanguage.setSelectedIndex(i);
-						selectedLangCode = 	HG0501AppSettings.dataReptLangCodes[i];	
+						selectedLangCode = 	HG0501AppSettings.dataReptLangCodes[i];
+						languageIndexDefault = i;
 						pointEventRoleManager.setSelectedLanguage(selectedLangCode);
 						//System.out.println(" Combo language selected: " + selectedLangCode);
 					}
 		}
-				
+
 		contents.add(comboLanguage, "cell 1 0");	//$NON-NLS-1$
 
 /*****************************************************
@@ -380,21 +394,24 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_MoveDown.setEnabled(false);
 		rolePanel.add(btn_MoveDown, "cell 0 6, alignx left, aligny top, growx");		//$NON-NLS-1$
 
-	// Create scrollpane and table for the Roles
-		DefaultTableModel roleModel = new DefaultTableModel(tableRoleData,tableRoleHeader);
+	// Create scrollpane and table for the Roles with checkbox in column 0
+		roleModel = new DefaultTableModel(tableRoleData,tableRoleHeader);
 		tableRole = new JTable(roleModel) {
 			private static final long serialVersionUID = 1L;
 				@Override
 				public boolean isCellEditable(int row, int col) {
 						return true;
-			}};
-	// Set a centred cell renderer for Key column
-		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-		centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+				}
+				public Class<?> getColumnClass(int col) {
+				    if (col == 0) return Boolean.class;
+				    return String.class;
+				}
+		};
+		// Link checkbox listener to the table
+		tableRole.getModel().addTableModelListener(new checkBoxModelListener());
 		// Define table
 		tableRole.getColumnModel().getColumn(0).setMinWidth(25);
 		tableRole.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableRole.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
 		tableRole.getColumnModel().getColumn(1).setMinWidth(80);
 		tableRole.getColumnModel().getColumn(1).setPreferredWidth(150);
 		tableRole.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -403,7 +420,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		roleHeader.setOpaque(false);
 		ListSelectionModel roleSelectionModel = tableRole.getSelectionModel();
 		roleSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		
+
 	// Setup scrollpane and add to Role panel
 		tableRole.setFillsViewportHeight(true);
 		JScrollPane roleScrollPane = new JScrollPane(tableRole);
@@ -528,15 +545,25 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		JButton btn_Cancel = new JButton("Cancel");
 		btn_Cancel.setToolTipText("Cancel changes and exit");
 		contents.add(btn_Cancel, "cell 1 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$
-		
-	// Set up data for gui	from database or default data
+
+	// Set up data for gui from database or default data
+		try {
 		//System.out.println( " Set up Define event! " + selectedEventType + " LangCode: " + selectedLangCode);
 		updateEventTypeData(pointEventRoleManager.getEventTypeTransfer(selectedEventType),addNewEventType );
-		
+		} catch (HBException hbe) {
+			if (hbe.getMessage().startsWith("ERR1"))
+							userInfoEditEvent("Event does not exist in the  "
+									+ comboLanguage.getSelectedItem() + "language.\n"
+									+ "Do you wish to create this event in " + comboLanguage.getSelectedItem() + "?");
+			pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+			comboLanguage.setSelectedIndex(languageIndexDefault);
+			constructDefineEvent(addNewEventType, false);
+		}
+
 		selectedRoleNumber = 1; //Initial select row 1
 		tableRole.setRowSelectionInterval(0, 0);
 		updateEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventType, selectedRoleNumber), addNewEventType);
-	
+
 	// Display the screen
 		pack();
 
@@ -546,11 +573,11 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		// Listener for clicking 'X' on screen
 		addWindowListener(new WindowAdapter() {
 		    @Override
-			public void windowClosing(WindowEvent e)  {
-	    		 btn_Cancel.doClick();
-			} // return to main menu
+			public void windowClosing(WindowEvent e) {
+	    		 btn_Cancel.doClick(); // returns to main menu
+		    }
 		});
-		
+
    // Language checkbox listener
 		comboLanguage.addActionListener(new ActionListener() {
 			@Override
@@ -560,7 +587,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 					try {
 						int selectedIndex = comboLanguage.getSelectedIndex();
 						selectedLangCode = 	HG0501AppSettings.dataReptLangCodes[selectedIndex];
-						//System.out.println(" New Language code: " + selectedLangCode + " / " + teller++);	
 						pointEventRoleManager.setSelectedLanguage(selectedLangCode);
 						constructDefineEvent(addNewEventType, false);
 					} catch (HBException e1) {
@@ -584,12 +610,12 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 						pointEventRoleManager.saveEventRoleData(saveEventRoleData());
 						pointEventRoleManager.addNewEventRole(selectedRoleName.trim());
 					// Reset table tableRoleData
-						String[] newRoleList = pointEventRoleManager.getEventRoleList(selectedEventType, "");
+						String[] newRoleList = pointEventRoleManager.getEventRoleList(selectedEventType, "");	//$NON-NLS-1$
 						int[] roleNumbers = pointEventRoleManager.getEventRoleTypes();
 						tableRoleData = new Object[newRoleList.length][3];
 						for (int i = 0; i < newRoleList.length; i++)  {
-							tableRoleData[i][0] = yes;
-							tableRoleData[i][1] = " " + newRoleList[i].trim();
+//							tableRoleData[i][0] = yes;
+							tableRoleData[i][1] = " " + newRoleList[i].trim();	//$NON-NLS-1$
 							tableRoleData[i][2] = roleNumbers[i];
 						}
 						DefaultTableModel persModel = (DefaultTableModel) tableRole.getModel();
@@ -676,15 +702,15 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
            		btn_Delete.setEnabled(true);
         		btn_MoveUp.setEnabled(true);
         		btn_MoveDown.setEnabled(true);
-        		
+
         	// Update role data in GUI
         		int atRow = tableRole.getSelectedRow();
         		selectedRoleData = tableRoleData[atRow]; // select whole row
         		selectedRoleNumber = (int) selectedRoleData[2];
-        		System.out.println(" Single click role: " + selectedRoleNumber + "/" + selectedRoleData[1]);
-        		updateEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventType, 
+        		System.out.println(" Single click role: " + selectedRoleNumber + "/" + selectedRoleData[1]);	//$NON-NLS-1$
+        		updateEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventType,
         														selectedRoleNumber), addNewEventType);
-           	} 
+           	}
         }
     });
 
@@ -736,15 +762,12 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 					selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
 					pointEventRoleManager.saveEventTypeData(saveEventTypeData());
 					pointEventRoleManager.editEventType(newEventName, selectedEventType, selectedGroup, eventTypeTransfer);
-	           // Save data for selceted roel		
+	           // Save data for selected role
 					atRow = tableRole.getSelectedRow();
 					if (atRow != -1) {
 		           		selectedRoleData = tableRoleData[atRow]; // select whole row
-		           		//System.out.println(" Save role: " + atRow + "-" + selectedRoleData[0] + " / " + selectedRoleData[1] );
-		           		
 		           		selectedRoleName = ((String) selectedRoleData[1]).trim();
 		           		selectedRoleNumber = (int) selectedRoleData[2];
-		
 						pointEventRoleManager.editEventRole(selectedEventType, selectedRoleNumber, saveEventRoleData());
 					} else System.out.println( " No role selection!" + atRow);
 
@@ -782,27 +805,27 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		eventTypeTransfer[4] = minYear;
 		maxYear = Integer.parseInt(text_maxYear.getText());
 		eventTypeTransfer[5] = maxYear;
-		eventTypeTransfer[6] = ""; //abbrev;
-		eventTypeTransfer[7] = ""; //pasttense;
+		eventTypeTransfer[6] = ""; //abbrev;	//$NON-NLS-1$
+		eventTypeTransfer[7] = ""; //pasttense;	//$NON-NLS-1$
 		eventHint = hintText.getText();
-		eventTypeTransfer[8] = eventHint ; //reminder;	
+		eventTypeTransfer[8] = eventHint ; //reminder;
 		return eventTypeTransfer;
 	}
-	
+
 /**
  * protected void saveEventRoleData()
  */
 	protected Object[] saveEventRoleData() {
-		eventRoleTransfer[0] = selectedRoleNumber; 
+		eventRoleTransfer[0] = selectedRoleNumber;
 		eventRoleTransfer[1] = newEventNumber; //newEventNumber;
 		eventRoleTransfer[2] = selectedRoleName; //
-		eventRoleTransfer[3] = sexValues[comboSex.getSelectedIndex()]; 
+		eventRoleTransfer[3] = sexValues[comboSex.getSelectedIndex()];
 		roleMinAge = Integer.parseInt(text_minAge.getText());
 		eventRoleTransfer[4] = roleMinAge;
 		roleMaxAge = Integer.parseInt(text_maxAge.getText());
 		eventRoleTransfer[5] = roleMaxAge;
-		eventRoleTransfer[6] = null; 
-		eventRoleTransfer[7] = false; 
+		eventRoleTransfer[6] = null;
+		eventRoleTransfer[7] = false;
 		eventRoleSequence = 1;
 		return eventRoleTransfer;
 	}
@@ -816,18 +839,19 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	private void updateEventTypeData(Object[] eventTypeTransfer, boolean addNewEventType) {
 		if (addNewEventType) {
 			abbrev = "abr.";
-			pasttense = " sentece";
-			text_gedTag.setText("GEDCOM");
-			text_minYear.setText("0");
-			text_maxYear.setText("2000");
+			pasttense = " sentence";
+			text_gedTag.setText("GEDCOM");	//$NON-NLS-1$
+			text_minYear.setText("0");		//$NON-NLS-1$
+			text_maxYear.setText("2000");	//$NON-NLS-1$
 		} else {
+			//System.out.println( " updateEventTypeData index: " + eventTypeTransfer[2]);
 			for (int i = 0; i <  eventGroupIndex.length; i++)
 				if ((int)eventTypeTransfer[2] == eventGroupIndex[i])
 					comboGroups.setSelectedIndex(i);
 			text_gedTag.setText((String) eventTypeTransfer[3]);
-			text_minYear.setText("" + eventTypeTransfer[4]);
-			text_maxYear.setText("" + eventTypeTransfer[5]);
-			hintText.append("" + eventTypeTransfer[8]);
+			text_minYear.setText("" + eventTypeTransfer[4]);	//$NON-NLS-1$
+			text_maxYear.setText("" + eventTypeTransfer[5]);	//$NON-NLS-1$
+			hintText.append("" + eventTypeTransfer[8]);			//$NON-NLS-1$
 		}
 	}
 
@@ -840,19 +864,19 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		if (addNewEventType) {
 			roleSentence = " sentence";
 			roleSex = "U";
-			text_minAge.setText("0");
-			text_maxAge.setText("100");
+			text_minAge.setText("0");		//$NON-NLS-1$
+			text_maxAge.setText("100");		//$NON-NLS-1$
 		} else {
 			comboSex.setSelectedIndex(0);
 			roleSex = sexValues[0];
-			if (eventRoleTransfer[3] != null) 
+			if (eventRoleTransfer[3] != null)
 				for (int i = 0; i < 3; i++)
 					if (eventRoleTransfer[3].equals(sexValues[i])) {
 						comboSex.setSelectedIndex(i);
 						roleSex = sexValues[i];
 					}
-			text_minAge.setText("" + eventRoleTransfer[4]);
-			text_maxAge.setText("" + eventRoleTransfer[5]);		
+			text_minAge.setText("" + eventRoleTransfer[4]);	//$NON-NLS-1$
+			text_maxAge.setText("" + eventRoleTransfer[5]);	//$NON-NLS-1$
 		}
 	}
 
@@ -861,13 +885,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  * @throws HBException
  */
 	protected void resetRoleTableData() throws HBException {
-		String[] newRoleList = pointEventRoleManager.getEventRoleList(selectedEventType, "");
+		String[] newRoleList = pointEventRoleManager.getEventRoleList(selectedEventType, "");	//$NON-NLS-1$
 		int[] eventRoles = pointEventRoleManager.getEventRoleTypes();
 		// Populate role list for selected event
 		tableRoleData = new Object[newRoleList.length][3];
 		for (int i = 0; i < newRoleList.length; i++)  {
-			tableRoleData[i][0] = yes;
-			tableRoleData[i][1] = " " + newRoleList[i].trim();
+//			tableRoleData[i][0] = yes;
+			tableRoleData[i][1] = " " + newRoleList[i].trim();	//$NON-NLS-1$
 			tableRoleData[i][2] = eventRoles[i];
 		}
 
@@ -875,5 +899,33 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		persModel.setDataVector(tableRoleData,tableRoleHeader);
 		pack();
 	}
+
+	private void userInfoEditEvent(String errorMessage) {
+			int result = JOptionPane.showConfirmDialog(contents, errorMessage,
+										" Define Event",
+										JOptionPane.YES_NO_OPTION,
+							            JOptionPane.QUESTION_MESSAGE);
+			if(result == JOptionPane.YES_OPTION) {
+	             // copy the current event data to new record with chosen language code
+			}
+	}
+
+/*
+ *  checkBoxModelListener - reacts to clicking of col 0 of tableRole
+ */
+    public class checkBoxModelListener implements TableModelListener {
+        public void tableChanged(TableModelEvent e) {
+            int row = e.getFirstRow();
+            int col = e.getColumn();
+            if (col == 0) {
+                Boolean checked = (Boolean) roleModel.getValueAt(row, col);
+                if (checked) {
+                    System.out.println("Checkbox at row " + row + "=" + true);	// change to action appropriate update
+                } else {
+                    System.out.println("Checkbox at row " + row + "=" + false);	// change to action appropriate update
+                }
+            }
+        }
+    }
 
 }  // End of HG0551DefineEvent

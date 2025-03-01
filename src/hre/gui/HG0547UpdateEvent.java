@@ -78,6 +78,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 		memoText.getDocument().removeDocumentListener(memoTextChange);
 		String memoString = pointWhereWhenHandler.readFromGUIMemo(eventPID);
 		memoText.append(memoString);
+		memoText.setCaretPosition(0);	// set scrollbar to top
 	// and enable it again
 		memoText.getDocument().addDocumentListener(memoTextChange);
 

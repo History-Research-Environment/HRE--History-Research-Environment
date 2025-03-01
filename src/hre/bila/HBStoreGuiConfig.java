@@ -10,14 +10,15 @@ package hre.bila;
  * 			  2020-09-09 - Implemented handling of GUI frame size (N Tolleshaug)
  * 			  2020-09-25 - GUI index stored in HashMap when reading T302 (N Tolleshaug)
  * 			  2020-10-03 - Error fixed init HRE with T302 table empty (N. Tolleshaug)
- * v0.00.0025 2021-01-20 - Reset person ID and multiple PersonViewPoint (N. Tolleshaug)
+ * v0.01.0025 2021-01-20 - Reset person ID and multiple PersonViewPoint (N. Tolleshaug)
  * 			  2021-02-07 - Implemented column control HG0581ConfigureTable (N. Tolleshaug)
  * 			  2021-02-22 - Modification in T302 create and update (N. Tolleshaug).
  *            2021-03-06 - Implemented handling of 5 Location VP (N. Tolleshaug)
- * v0.00.0027 2022-01-17 - Renamed methods, indexes and PID's (N. Tolleshaug)
- * v0.00.0028 2022-12-16 - Store name style index in T302 (N. Tolleshaug)
+ * v0.01.0027 2022-01-17 - Renamed methods, indexes and PID's (N. Tolleshaug)
+ * v0.01.0028 2022-12-16 - Store name style index in T302 (N. Tolleshaug)
  * 			  2023-03-09 - Reset T302 if error open project (N. Tolleshaug)
- * v0.00.0031 2024-10-05 - Edited code to remove if {} on single code lines (N. Tolleshaug)
+ * v0.03.0031 2024-10-05 - Edited code to remove if {} on single code lines (N. Tolleshaug)
+ * v0.04.0032 2025-02-24 - Update guiUDvalues for Build 32 screens (D Ferguson)
  ******************************************************************************************/
 import java.awt.Dimension;
 import java.awt.Point;
@@ -45,8 +46,8 @@ public class HBStoreGuiConfig {
 
  // Array with GUI_ID values for Project Menu item dialog windows
 
-	String[] guiProjectVal = {"40200","40300","40400","40500","40600","40700","40800"
-				,"40900","41000","41400","41700"};
+	String[] guiProjectVal = {"40200","40300","40400","40500","40600","40700","40800",
+							  "40900","41000","41400","41700"};
 
 
  // Array with GUI_ID values for project controlled windows
@@ -55,7 +56,9 @@ public class HBStoreGuiConfig {
     						"53000","53001","53002","53003","53004",
     						"53030","53031","53032","53033","53034",
     						"53060","53061","53062","53063","53064",
-    						"54000","56000","56030","57500","66000","70000"};
+    						"54700","55100","55200","55500",
+    						"56400","56500","56600","56700","56800","56900",
+    						"57000","57500","66000"};
 
     int nrOfScreens = guiIDvalues.length; // Number of project windows
 
@@ -92,9 +95,8 @@ public class HBStoreGuiConfig {
 	public int getStoreIndex(String screenID) {
 		if (guiIndexMap.get(screenID) != null) {
 			return guiIndexMap.get(screenID);
-		} else {
-			System.out.println(" HBStoreGuiConfig - getStoreIndex - Key: /" + screenID + "/ not found in HashMap");
 		}
+		System.out.println(" HBStoreGuiConfig - getStoreIndex - Key: /" + screenID + "/ not found in HashMap");
 		return -1;
 	}
 
@@ -298,12 +300,11 @@ public class HBStoreGuiConfig {
 					System.out.println("createT302data : Time in milliseconds: " + output / 1000000);
 				}
 	            return size;
-            } else {
-            	readObjects(t302Data);
-            	if (HGlobal.DEBUG) {
-					System.out.println("Config data read from table!!");
-				}
             }
+			readObjects(t302Data);
+			if (HGlobal.DEBUG) {
+				System.out.println("Config data read from table!!");
+			}
         } catch (SQLException sqle)   {
         	if (sqle.getMessage().startsWith("Unique")) {
 				System.out.println("Table aready created with data!!");

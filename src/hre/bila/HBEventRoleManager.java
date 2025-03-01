@@ -9,6 +9,8 @@ package hre.bila;
  *			  2025-01-17 Imlement add or edit event type (N. Tolleshaug)
  *			  2025-01-22 Fixed initiate error with databaseindex = 0 (N. Tolleshaug)
  *			  2025-01-30 Added processing of event hints (N. Tolleshaug)
+ *			  2025-02-03 Corrected group number for census (N. Tolleshaug)
+ *			  2025-02-24 Modified listEventRoles and dataEventRoles for RS empty (N. Tolleshaug)
  ************************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -36,8 +38,6 @@ public class HBEventRoleManager extends HBBusinessLayer {
 	private static int marrGroup = 6, divorceGroup = 7;
 	int dataBaseIndex;
 	
-	
-	
 	HG0551DefineEvent pointDefineEvent;
 	HBProjectOpenData pointOpenProject;
 	public HG0507LocationSelect locationScreen = null;
@@ -54,8 +54,8 @@ public class HBEventRoleManager extends HBBusinessLayer {
 	Object[] eventTypeTransfer = new Object[10];
 	Object[] eventRoleTransfer = new Object[10];
 	
-	String[] eventGroupNames = new String[13];
-	int[] eventGroupNumber = new int[13];
+	String[] eventGroupNames = new String[14];
+	int[] eventGroupNumber = new int[14];
 	
 	String selectString, lang_code;
 	String eventTypeName = " Event";
@@ -108,7 +108,7 @@ public class HBEventRoleManager extends HBBusinessLayer {
 		return newEventNumber;
 	}
 	
-	public Object[] getEventTypeTransfer(int eventTypeNumber) {		
+	public Object[] getEventTypeTransfer(int eventTypeNumber) throws HBException {		
 		collectEventTypeData(eventTypeNumber, T460_Event_Defs);	
 		eventTypeTransfer[0] = eventTypeName;
 		eventTypeTransfer[1] = newEventNumber;
@@ -226,6 +226,8 @@ public class HBEventRoleManager extends HBBusinessLayer {
 		eventGroupNumber[11] = 18;
 		eventGroupNames[12] = HG0552Msgs.Text_32;		// Your Event Group 4
 		eventGroupNumber[12] = 19;
+		eventGroupNames[13] = HG0552Msgs.Text_34;		// Other
+		eventGroupNumber[13] = 99;
 	}
 	
 	public String[] geteventGroupNames() {
@@ -246,7 +248,6 @@ public class HBEventRoleManager extends HBBusinessLayer {
 			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		} else System.out.println(" Error! HBEventRoleManager -- pointOpenProject == null");
 		setEventGroups();
-		//lang_code = HGlobal.dataLanguage;
 	}	
 		
 /**
@@ -295,7 +296,6 @@ public class HBEventRoleManager extends HBBusinessLayer {
  */
 	private void listEventTypes(int eventGroup) throws HBException {
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		//System.out.println(" listEventTypes language: " + lang_code);
 		ResultSet eventListRS = pointLibraryResultSet.getEventTypeList(eventGroup, lang_code, dataBaseIndex);
 		try {
 			eventListRS.last();
@@ -346,11 +346,16 @@ public class HBEventRoleManager extends HBBusinessLayer {
  * @throws HBException
  */
 	private void listEventRoles(int eventType, String selectRoles) throws HBException {
+		int nrOfRows;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		ResultSet eventRoles = pointLibraryResultSet.getRoleNameList(eventType, selectRoles, lang_code, dataBaseIndex);
 		try {
-			eventRoles.last();
-			int nrOfRows = eventRoles.getRow();
+			if (isResultSetEmpty(eventRoles))
+				nrOfRows = 0;
+			else {
+				eventRoles.last();
+				nrOfRows = eventRoles.getRow();
+			}
 			if (nrOfRows == 0) {
 					if (HGlobal.DEBUG) {
 						System.out.println(" No roles found for eventtype: " + eventType + " Select: " + selectRoles);
@@ -383,10 +388,16 @@ public class HBEventRoleManager extends HBBusinessLayer {
  * @throws HBException
  */
 	private void dataEventRoles(int eventType) throws HBException {
+		int nrOfRows;
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		ResultSet eventRoles = pointLibraryResultSet.getRoleNameList(eventType, "", dataBaseIndex);
 		try {
-			eventRoles.last();
-			int nrOfRows = eventRoles.getRow();
+			if (isResultSetEmpty(eventRoles))
+				nrOfRows = 0;
+			else {
+				eventRoles.last();
+				nrOfRows = eventRoles.getRow();
+			}
 			// If no roles for the event, construct a dummy return object
 			if (nrOfRows == 0) {
 					if (HGlobal.DEBUG) {
@@ -672,8 +683,9 @@ public class HBEventRoleManager extends HBBusinessLayer {
  * private void collectEventTypeData(int eventNumber, ResultSet hreTable)
  * @param eventNumber
  * @param hreTable
+ * @throws HBException 
  */
-	private void collectEventTypeData(int eventNumber, ResultSet hreTable) {
+	private void collectEventTypeData(int eventNumber, ResultSet hreTable) throws HBException {
 		try {
 			hreTable.beforeFirst();
 			while (hreTable.next()) {
@@ -689,12 +701,13 @@ public class HBEventRoleManager extends HBBusinessLayer {
 					pasttense = hreTable.getString("EVNT_PAST").trim();
 					eventHint = hreTable.getString("EVNT_HINT").trim();	
 					//System.out.println(" CollectEventTypes: Event Hints: " + eventHint);
-					break;	
-				} else eventHint = "";
+					return;
+				} 
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new HBException("ERR1 - Eventype have no translation for " + lang_code);
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException(" SQL error! " + sqle.getMessage());
 		}
 	}
 

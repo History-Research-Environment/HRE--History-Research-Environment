@@ -11,6 +11,8 @@ package hre.gui;
  *			  2023-09-08 Changed to HBPersonFlagManager (N. Tolleshaug)
  *			  2023-10-11 Convert to NLS (D Ferguson)
  * v0.03.0031 2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2025-02-23 Fix crash when invoking Reminder (D Ferguson)
+ *
  *******************************************************************************/
 
 import java.awt.Dimension;
@@ -58,7 +60,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Flag Manager
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2021-02-14
  */
 public class HG0512FlagManager extends HG0450SuperDialog {
@@ -101,7 +103,7 @@ public class HG0512FlagManager extends HG0450SuperDialog {
  */
 	public HG0512FlagManager(HBProjectOpenData pointOpenProject, HBPersonFlagManager pointManagePersonFlag)  {
 		this.pointManagePersonFlag = pointManagePersonFlag;
-
+		this.pointOpenProject = pointOpenProject;
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "flagmanager";	//$NON-NLS-1$

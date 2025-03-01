@@ -74,6 +74,7 @@ package hre.bila;
   *			   2024-11-28 - Updated event location style handling (N. Tolleshaug)
   * v0.03.0032 2025-01-11 - Rearranged processing of event and roles (N. Tolleshaug)
   * 		   2025-01-30 - Updated setting og language code for role/event (N. Tolleshaug)
+  * 		   2025-02-18 - Fixed warning unused code (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -162,10 +163,14 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public HBWhereWhenHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		this.pointOpenProject = pointOpenProject;
-		dataBaseIndex =  pointOpenProject.getOpenDatabaseIndex();
-		if (pointOpenProject != null)
+
+		if (pointOpenProject != null) {
 			pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
-		else System.out.println(" HBWhereWhenHandler() - pointOpenProject == null!");
+			dataBaseIndex =  pointOpenProject.getOpenDatabaseIndex();
+		} else {
+			System.out.println(" HBWhereWhenHandler() - pointOpenProject == null!");
+		}
+		
 		if (HGlobal.DEBUG) {
 			System.out.println("HBWhereWhenHandler() - initiated");
 		}

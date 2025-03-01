@@ -45,6 +45,7 @@ package hre.gui;
  * 			  2024-12-09 Update TAB handling for �erson and location names (N Tolleshaug)
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved (D Ferguson)
  * 			  2024-12-31 Add citation table select/up/down code (D Ferguson)
+ * 			  2025-02-16 Fixed error in birt event list - adding language (N Tolleshaug)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
@@ -823,8 +824,11 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		lbl_EventTypeBi.setFont(lbl_EventTypeBi.getFont().deriveFont(lbl_EventTypeBi.getFont().getStyle() | Font.BOLD));
 		panelBirthDetail.add(lbl_EventTypeBi, "cell 0 0,alignx left");		//$NON-NLS-1$
 
-	// Collect event types/roles for Birth, etc
+	// Set datalanguage for event  role manager	
+		pointPersonHandler.pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+	// Collect event types/roles for Birth, etc	
 		birthEventList = pointPersonHandler.getEventTypeList(birthEventGroup);
+		System.out.println(" birthEventList: " + birthEventList.length);
 		birthEventType = pointPersonHandler.getEventTypes();
 		DefaultComboBoxModel<String> birthEvents = new DefaultComboBoxModel<String>(birthEventList);
 		comboBirthType = new JComboBox<String>(birthEvents);

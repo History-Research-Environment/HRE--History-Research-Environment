@@ -3,14 +3,14 @@ package hre.gui;
  * ManageSourceType -
  * ***********************************************************************************
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
- *
+ *			  2025-01-31 Add Delete button, implement Add button (D Ferguson)
+* *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
- * NOTE01 implement Add button
  * NOTE02 implement Edit button
  * NOTE03 implement Copy button
  * NOTE04 doesn't allow editing/saving of source types
- * NOTE05 eventually will import from cite-builder.com files
+ * NOTE06 implement Delete button
  *
  ************************************************************************************/
 
@@ -18,6 +18,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.KeyboardFocusManager;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -127,9 +128,9 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		JButton btn_Copy = new JButton("Copy");		// Copy
 		btn_Copy.setEnabled(false);
 		actionPanel.add(btn_Copy, "cell 0 2, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Import = new JButton("Import");		// Import
-		btn_Import.setEnabled(true);
-		actionPanel.add(btn_Import, "cell 0 3, alignx center, grow"); //$NON-NLS-1$
+		JButton btn_Delete = new JButton("Delete");		// Delete
+		btn_Delete.setEnabled(false);
+		actionPanel.add(btn_Delete, "cell 0 3, alignx center, grow"); //$NON-NLS-1$
 		JLabel find = new JLabel("Find:");		// Find:
 		actionPanel.add(find, "cell 0 4, alignx center"); //$NON-NLS-1$
 		JTextField findText = new JTextField();
@@ -317,6 +318,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 					btn_Edit.setEnabled(true);
 					btn_Copy.setEnabled(true);
 					btn_Select.setEnabled(true);
+					btn_Delete.setEnabled(true);
 				}
 			}
         });
@@ -325,7 +327,11 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE01 does nothing yet
+				HG0568EditSourceType typeScreen = new HG0568EditSourceType();
+				typeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyType = btn_Add.getLocationOnScreen();
+				typeScreen.setLocation(xyType.x, xyType.y + 30);
+				typeScreen.setVisible(true);
 			}
 		});
 
@@ -345,15 +351,11 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Import button
-		btn_Import.addActionListener(new ActionListener() {
+		// Listener for Delete button
+		btn_Delete.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE05 not implemented yet
-				JOptionPane.showMessageDialog(btn_Import,
-						 	"To import templates from cite-builder.com",  // To import templates from cite-builder.com
-						 	"Source Type Import", 			// Source Type Import
-						 	JOptionPane.INFORMATION_MESSAGE);
+				// NOTE06 not implemented yet
 			}
 		});
 

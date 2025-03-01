@@ -6,24 +6,24 @@ public class HG0401Msgs extends NLS {
 	private static String BUNDLE_NAME = "hre.nls.HG0401M-en"; //$NON-NLS-1$
 	public static String Text_0;
 	public static String Text_1;
-	public static String Text_2;	
-	public static String Text_3;	
+	public static String Text_2;
+	public static String Text_3;
 	public static String Text_4;
-	public static String Text_5;	
+	public static String Text_5;
 	public static String Text_6;
 	public static String Text_7;
-	public static String Text_8;	
-	public static String Text_9;			
+	public static String Text_8;
+	public static String Text_9;
 	public static String Text_10;
-	public static String Text_11;	
-	public static String Text_12;	
-	public static String Text_13;	
+	public static String Text_11;
+	public static String Text_12;
+	public static String Text_13;
 	public static String Text_14;
-	public static String Text_15;	
-	public static String Text_16;	
+	public static String Text_15;
+	public static String Text_16;
 	public static String Text_17;
 	public static String Text_18;
-	public static String Text_19;	
+	public static String Text_19;
 	public static String Text_20;
 	public static String Text_21;
 	public static String Text_22;
@@ -34,7 +34,7 @@ public class HG0401Msgs extends NLS {
 	public static String Text_27;
 	public static String Text_28;
 	public static String Text_29;
-	public static String Text_30;	
+	public static String Text_30;
 	public static String Text_31;
 	public static String Text_32;
 	public static String Text_33;
@@ -61,7 +61,7 @@ public class HG0401Msgs extends NLS {
 	public static String Text_57;
 
 	public static String Text_63;
-
+	public static String Text_64;
 	public static String Text_65;
 	public static String Text_66;
 	public static String Text_67;
@@ -95,21 +95,21 @@ public class HG0401Msgs extends NLS {
 
 	public static String Text_133;
 	public static String Text_134;
-	public static String Text_135;	
-	public static String Text_136;	
+	public static String Text_135;
+	public static String Text_136;
 
-	public static String Text_139;	
-	public static String Text_140;	
-	public static String Text_141;	
-	public static String Text_142;	
-	public static String Text_143;	
-	public static String Text_144;	
-	public static String Text_145;	
-	public static String Text_146;	
-	public static String Text_147;	
+	public static String Text_139;
+	public static String Text_140;
+	public static String Text_141;
+	public static String Text_142;
+	public static String Text_143;
+	public static String Text_144;
+	public static String Text_145;
+	public static String Text_146;
+	public static String Text_147;
 
-	public static String Text_150;	
-	public static String Text_151;	
+	public static String Text_150;
+	public static String Text_151;
 	public static String Text_152;
 	public static String Text_153;
 	public static String Text_154;
@@ -123,26 +123,26 @@ public class HG0401Msgs extends NLS {
 	public static String Text_161;
 	public static String Text_165;
 	public static String Text_166;
-	public static String Text_167;	
-	public static String Text_168;	
-	public static String Text_169;	
-	public static String Text_170;	
+	public static String Text_167;
+	public static String Text_168;
+	public static String Text_169;
+	public static String Text_170;
 	public static String Text_171;
 
 	public static String Text_180;
 	public static String Text_181;
 	public static String Text_182;
 	public static String Text_183;
-	public static String Text_184;	
-	public static String Text_185;	
-	public static String Text_186;	
-	public static String Text_187;	
-	public static String Text_188;	
-	
+	public static String Text_184;
+	public static String Text_185;
+	public static String Text_186;
+	public static String Text_187;
+	public static String Text_188;
+
 	public HG0401Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG0401M-" + guiLanguage;  //$NON-NLS-1$
 		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, HG0401Msgs.class);	
+		NLS.initializeMessages(BUNDLE_NAME, HG0401Msgs.class);
 	}
 }

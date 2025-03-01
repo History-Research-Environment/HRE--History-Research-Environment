@@ -27,6 +27,10 @@ package hre.gui;
  * v0.04.0032 2024-12-29 For Death/Burial group events, set Living=N (D Ferguson)
  * 			  2024-12-31 Add citation data select/up/down code (D Ferguson)
  * 			  2025-01-17 Add call to EditCitation (D Ferguson)
+ *  		  2025-02-12 Added code for event citiation (N. Tolleshaug)
+ *  		  2025-02-14 Added activate HG0555EditCitation (N. Tolleshaug)
+ *  		  2025-02-21 Populate citation data and update (N. Tolleshaug)
+ *  		  2025-02-25 Add/Update and delete event citation (N. Tolleshaug)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
@@ -91,6 +95,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -109,11 +114,13 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0547EditEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	long null_RPID  = 1999999999999999L;
+	
 	public HBWhereWhenHandler pointWhereWhenHandler;
 	public HBPersonHandler pointPersonHandler;
+	public HBCitationSourceHandler pointCitationSourceHandler;
 	HG0547EditEvent pointEditEvent = this;
-	long null_RPID  = 1999999999999999L;
-
+	
 	String eventName, roleName = " not set", eventPersonName;
 
 	public String screenID = "54700";	//$NON-NLS-1$
@@ -149,6 +156,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     String[] tableBirthHeader;
     JComboBox<String> locationNameStyles;
     TableModelListener eventLocationListener;
+    DefaultTableModel citeModel;
     JTextField dateText;
     JTextField sortDateText;
     JButton btn_EventType;
@@ -167,6 +175,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	Object[][] objAllFlagData;
     boolean locationElementUpdate = false;
     public long locationNamePID = null_RPID;
+	long eventPID;
 
     public int selectedEventNum;
     public int selectedRoleNum;
@@ -214,6 +223,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		this.pointOpenProject = pointOpenProject;
 		this.eventRoleNum = roleNumber;
 		this.eventNum = eventNumber;
+		this.eventPID = eventPID;
 		// Setup references
 		windowID = screenID;
 		helpName = "editevent";	//$NON-NLS-1$
@@ -227,6 +237,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 	    pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 	    pointPersonHandler = pointOpenProject.getPersonHandler();
+	    pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 	    dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 	    tableAssocsHeader = pointPersonHandler.setTranslatedData("54700", "1", false); // Person, Role //$NON-NLS-1$ //$NON-NLS-2$
 	    tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
@@ -550,7 +561,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    memoText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoTextScroll = new JScrollPane(memoText);
-		memoTextScroll.setMinimumSize(new Dimension(370, 60));
+		memoTextScroll.setPreferredSize(new Dimension(370, 60));
 		memoTextScroll.getViewport().setOpaque(false);
 		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoText.setCaretPosition(0);	// set scrollbar to top
@@ -599,7 +610,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		botmRightEvntPanel.add(lbl_Surety, "cell 2 0");	//$NON-NLS-1$
 
 		// Create scrollpane and table for the Citations
-		DefaultTableModel citeModel = new DefaultTableModel(objEventCiteData, tableCiteHeader);
+		objEventCiteData = pointCitationSourceHandler.getCitationSourceData(eventPID, "T450");
+		citeModel = new DefaultTableModel(objEventCiteData, tableCiteHeader);
 		JTable tableCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
 				@Override
@@ -615,7 +627,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						return false;
 				}
 			};
-//		tableCite = pointxxxxxxxxxxx							// NOTE06 get citation data
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -1007,7 +1018,13 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	           		int atRow = tableCite.getSelectedRow();
 	           		objCiteDataToEdit = objEventCiteData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, (long) objCiteDataToEdit[3]);
+					citeScreen.pointEditEvent = pointEditEvent;
+					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyCite = lbl_Date.getLocationOnScreen();
+					citeScreen.setLocation(xyCite.x, xyCite.y + 30);
+					citeScreen.setVisible(true);
+					btn_Save.setEnabled(true);
 	           	}
 	        }
 		});
@@ -1016,7 +1033,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				HG0555EditCitation citeScreen = new HG0555EditCitation();
+				pointCitationSourceHandler.setCitedTableData("T450", eventPID);
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject);
+				citeScreen.pointEditEvent = pointEditEvent;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Date.getLocationOnScreen();
 				citeScreen.setLocation(xyCite.x, xyCite.y + 30);
@@ -1029,7 +1048,17 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Del.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here to delete selected Citation & turn on btn_Save
+           		int atRow = tableCite.getSelectedRow();
+           		objCiteDataToEdit = objEventCiteData[atRow]; // select whole row
+           		try {
+					pointCitationSourceHandler.deleteCitationRecord((long)objCiteDataToEdit[3]);
+					citeModel.removeRow(atRow);
+					pack();			
+				} catch (HBException hbe) {
+					System.out.println(" Deletet citation action: " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
+				
 			}
 		});
 
@@ -1270,6 +1299,15 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	}	// End HG0547EditEvent constructor
+	
+/**
+ * resetCitationTable()	
+ * @throws HBException
+ */
+	public void resetCitationTable() throws HBException {
+		objEventCiteData = pointCitationSourceHandler.getCitationSourceData(eventPID, "T450");
+		citeModel.setDataVector(objEventCiteData, tableCiteHeader);
+	}
 
 /**
  * public void updateEventType(int selectedEventType, int selectedRole)

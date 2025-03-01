@@ -64,6 +64,7 @@ package hre.tmgjava;
  *   		  2024-11-23 - Added PER1 == 0 and PER2 != 0 role prosessing (N. Tolleshaug)
  * v0.03.0032 2025-01-30 - Added import of event reminder text (N. Tolleshaug)
  * 			  2025-01-31 - Removed console print messages (N. Tolleshaug)
+ * 			  2025-02-11 - Added code to cross ref T450 PID with RECNO (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -126,11 +127,6 @@ class TMGpass_Events  {
  * Map for retrieving event admin group.
  */
 	private HashMap<Integer,Integer> eventAdminTMGmap = new HashMap<>();
-
-/**
- * Map for indexing eventtype with origetype
- */
-	//private HashMap<Integer,Integer> eventtypeT460HashMap = new HashMap<Integer,Integer>();
 
 /**
  * Record born place and death place PID
@@ -222,8 +218,8 @@ class TMGpass_Events  {
 /**
  * Start convert Event
  */
-		for (int indexG_PID = 0; indexG_PID < nrOftmgGRows; indexG_PID++) {
-			currentRow = indexG_PID + 1;
+		for (int index_G_Table = 0; index_G_Table < nrOftmgGRows; index_G_Table++) {
+			currentRow = index_G_Table + 1;
 
 			int styleId = 0;
 
@@ -232,21 +228,21 @@ class TMGpass_Events  {
 			tmgHreConverter.setStatusProgress(progress);
 
 			if (TMGglobal.DEBUG)
-				System.out.println(" Line: " + indexG_PID + "  Progress %: " + progress);
+				System.out.println(" Line: " + index_G_Table + "  Progress %: " + progress);
 
-			if (tmgGtable.getValueInt(indexG_PID,"RECNO") > 0 ) {
+			if (tmgGtable.getValueInt(index_G_Table,"RECNO") > 0 ) {
 
 			// DATASET CHECK
-				if (TMGglobal.dataSetID == tmgGtable.getValueInt(indexG_PID,"DSID"))	{
+				if (TMGglobal.dataSetID == tmgGtable.getValueInt(index_G_Table,"DSID"))	{
 
 				// Find Place PID
-					tmgPlaceNr = tmgGtable.getValueInt(indexG_PID,"PLACENUM");
+					tmgPlaceNr = tmgGtable.getValueInt(index_G_Table,"PLACENUM");
 					if (tmgPlaceNr > 1)
 						locationTablePID = tmgPlaceNr + proOffset;
 					else locationTablePID = null_RPID;
 
 				// Updated for en-UK initiated projects with event type < 1000
-					int etypeNumber = tmgGtable.getValueInt(indexG_PID,"ETYPE");
+					int etypeNumber = tmgGtable.getValueInt(index_G_Table,"ETYPE");
 					int origtype = tmgTtable.findValueInt(etypeNumber,"ORIGETYPE");
 					
 				// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types		
@@ -256,25 +252,25 @@ class TMGpass_Events  {
 				// Record the place RPID to set in T401
 					long personRPID;
 					if (etypeNumber == 1002) { // Born event
-						personRPID = tmgGtable.getValueInt(indexG_PID,"PER1") + proOffset;
+						personRPID = tmgGtable.getValueInt(index_G_Table,"PER1") + proOffset;
 						personBornPlaceIndex.put(personRPID, locationTablePID);
 					}
 
 					if (etypeNumber == 1003) { // Death event
-						personRPID = tmgGtable.getValueInt(indexG_PID,"PER1") + proOffset;
+						personRPID = tmgGtable.getValueInt(index_G_Table,"PER1") + proOffset;
 						personDeathPlaceIndex.put(personRPID, locationTablePID);
 					}
 
 					if (TMGglobal.DEBUG)
 							System.out.println("** TMG name_P.dbf - location: " + tmgPlaceNr
-									+ " / RECNO: " + tmgGtable.getValueInt(indexG_PID,"RECNO")
+									+ " / RECNO: " + tmgGtable.getValueInt(index_G_Table,"RECNO")
 								+ " / STYLEID: " + styleId);
 
 					// ADD EVENTS with new LOCATION
-						addToT450_EVNT(indexG_PID, etypeNumber, locationTablePID, tableT450);
+						addToT450_EVNT(index_G_Table, etypeNumber, locationTablePID, tableT450);
 
 					// Set up partner table
-						int eventTypeNr = tmgGtable.getValueInt(indexG_PID, "ETYPE");
+						int eventTypeNr = tmgGtable.getValueInt(index_G_Table, "ETYPE");
 						int adminGroup = getAdminGroup(eventTypeNr);
 						
 					// Check for primary persons in associate table
@@ -282,15 +278,15 @@ class TMGpass_Events  {
 				   // Only record marriages and divorces
 						if (adminGroup == marrGroup || adminGroup == divorceGroup) {
 							primaryIndex++;
-							addToT404_PARTNER(primaryIndex, indexG_PID, tableT404);
+							addToT404_PARTNER(primaryIndex, index_G_Table, tableT404);
 						} 
 
 				} else System.out.println("Dataset DSID not processed tmgGtable: "
-						+ tmgGtable.getValueInt(indexG_PID,"DSID"));
+						+ tmgGtable.getValueInt(index_G_Table,"DSID"));
 			} else {
 				missingNrOfG_PID++;
 				System.out.println(" Not found PID - TMG name_G.dbf - indexPID: "
-						+ indexG_PID + " / " + tmgGtable.getValueInt(indexG_PID,"PER_NO"));
+						+ index_G_Table + " / " + tmgGtable.getValueInt(index_G_Table,"PER_NO"));
 			}
 		} // end EVENT
 
@@ -329,19 +325,22 @@ class TMGpass_Events  {
  * @throws HCException
  */
 	public void addToT450_EVNT(int rowPID, int etypeNumber, long locationTablePID, ResultSet hreTable) throws HCException {
-		String tmgDate, tmgSort;
-		String roleNumber = "";
-		long sortDate = null_RPID, startDate = null_RPID;
+		String tmgDate, tmgSort, roleNumber = "";
+		long sortDate = null_RPID, startDate = null_RPID, indexPID;
+		int recNr;
 		if (TMGglobal.DEBUG)
 			System.out.println("** addTo T450_EVENTS row: " + rowPID);
-
-		int recNr = tmgGtable.getValueInt(rowPID,"RECNO");
+		
+		recNr = tmgGtable.getValueInt(rowPID,"RECNO");
+		indexPID = proOffset + recNr;
+		
+	// index for event PID 
+		tmgHreConverter.pointSourcePass.eventIndexPID.put(recNr, indexPID );
 
 		try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
 		// Update new row in H2 database
-			long indexPID = proOffset + tmgGtable.getValueInt(rowPID,"RECNO");
 			hreTable.updateLong("PID", indexPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateBoolean("HAS_CITATIONS", false);			
@@ -681,6 +680,16 @@ class TMGpass_Events  {
  * extractLangTags(int indexT_PID, String properties, String reminder)
  * @param properties
  * @throws HCException
+ * l_Englishuk=Birth
+	a_Englishuk=b.
+	p_Englishuk=birth
+	l_English=Birth
+	a_English=b.
+	p_English=born
+	DefPrincipal1=00003
+	DefPrincipal2=00003
+	DefWitness=00002
+	DefStyle=0
  */
     private void extractLangTags(int indexT_PID, int etypeNumber, String properties, String reminder) throws HCException {
 		String langCode = " ~", tagName = " ~",abbrev = " ~", tagSentense = " ~";

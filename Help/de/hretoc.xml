@@ -40,8 +40,12 @@
 </tocitem>
 
 <tocitem text="Beweis">
-<tocitem text="Quellen verwalten" target="56500managesource"/>
 <tocitem text="Zitate bearbeiten" target="55500editcitation"/>
+<tocitem text="Quellen bearbeiten" target="56600editsource"/>
+<tocitem text="Quelltypen bearbeiten" target="56800editsourcetype"/>
+<tocitem text="Repositorys bearbeiten" target="57000editrepository"/>
+<tocitem text="Quellen verwalten" target="56500managesource"/>
+<tocitem text="Quellelemente verwalten" target="56400managesourceelement"/>
 <tocitem text="Quelltypen verwalten" target="56700managesourcetype"/>
 <tocitem text="Repositorys verwalten" target="56900managerepository"/>
 </tocitem>

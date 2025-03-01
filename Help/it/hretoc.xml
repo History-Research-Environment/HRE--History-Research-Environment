@@ -42,8 +42,12 @@
 </tocitem>
 
 <tocitem text="Prova">
-<tocitem text="Gestisci le fonti" target="56500managesource"/>
 <tocitem text="Modifica citazioni" target="55500editcitation"/>
+<tocitem text="Modifica fonti" target="56600editsource"/>
+<tocitem text="Modifica tipi di origine" target="56800editsourcetype"/>
+<tocitem text="Modifica repository" target="57000editrepository"/>
+<tocitem text="Gestisci le fonti" target="56500managesource"/>
+<tocitem text="Gestisci gli elementi sorgente" target="56400managesourceelement"/>
 <tocitem text="Gestisci tipi di origine" target="56700managesourcetype"/>
 <tocitem text="Gestisci repository" target="56900managerepository"/>
 </tocitem>

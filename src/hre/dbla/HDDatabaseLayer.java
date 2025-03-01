@@ -17,7 +17,8 @@ package hre.dbla;
 * 			 2021-10-01 - Handling of local/remote connect to database (N. Tolleshaug)
 * 			 2021-10-03 - Transfer of remote connect to OpenProjectData (N. Tolleshaug)
 * v0.00.0026 2022-01-02 - Added new method requestTableRows (N. Tolleshaug)
-* v0.00.0023 2025-01-22 - Added test for database index = 0 problem (N. Tolleshaug)
+* v0.00.0032 2025-01-22 - Added test for database index = 0 problem (N. Tolleshaug)
+* v0.00.0032 2025-01-22 - Modified test for database index = 0 problem (N. Tolleshaug)
 ****************************************************************************************/
 
 import java.sql.Connection;
@@ -189,8 +190,8 @@ public class HDDatabaseLayer {
 		try {
 			if (connectedDataBases.get(dbIndex) != null)
 				pointResultSet = connectedDataBases.get(dbIndex).requestSQLdata(updatedString);
-			else System.out.println("\nHDDatabaseLayer Request " + " Arraylist size: " + connectedDataBases.size() 
-																+ " Index: " + dbIndex + "SQL: " + sqlSearchString);
+			else System.out.println(" HDDatabaseLayer Request ERROR!" + " \n Arraylist connected db's: " + connectedDataBases.size() 
+																+ " DB index: " + dbIndex + "\n SQL: " + sqlSearchString);
 	        if (HGlobal.DEBUG) 
 	        	System.out.println("HDDatabaseLayer - requestTableData\nDatabase path: "
 					+ connectedDataBases.get(dbIndex).getDatabaseConnectPath() + " \nRequest SQL: " + sqlSearchString);

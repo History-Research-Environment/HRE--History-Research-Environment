@@ -47,6 +47,7 @@ package hre.tmgjava;
  * 			  2024-10-20 - Removed finally console and status printout (N. Tolleshaug)
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  *			  2024-12-12 - Updated for seed v22c database (N. Tolleshaug)
+ *v0.01.0032  2025-02-11 - Code for initiate citation/source import (N. Tolleshaug)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -296,6 +297,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	// Set up memo handler
 			pointHREmemo = new HREmemo(hreLoader.getDataBasePointer());
+			pointSourcePass = new TMGpass_Source(hreLoader.getDataBasePointer());
 
 	// SUPPORT pass
 			passSupportData();
@@ -596,7 +598,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * @throws HCException
  */
 	private void passPersonData() throws HCException {
-		setStatusMessage("*First pass - HRE name table processing");
+		setStatusMessage("** 1st - pass - HRE name table processing");
 		setStatusMessage(" Loading TMG name tables");
 		tmgLoader.loadTmgNameTables();
 		timeReport("load TMG Name tables");
@@ -665,7 +667,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	}
 
 	private void passLocationData() throws HCException {
-		setStatusMessage("*Second pass - HRE place tables processing");
+		setStatusMessage("** 2nd - pass - HRE place tables processing");
 		setStatusMessage(" Loading TMG place tables");
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgPlaceTables();
@@ -703,7 +705,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * @throws HCException
  */
 	private void passEventData() throws HCException {
-		setStatusMessage("*Third pass - HRE event tables processing");
+		setStatusMessage("** 3rd - pass - HRE event tables processing");
 		setStatusMessage(" Loading TMG event tables");
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgEventTables(true);
@@ -735,9 +737,6 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			setStatusMessage(" Updated table PARENT_RELATION");
 			processMonitor.setStatus(completedNumberPasses, totalNumberPasses);
 
-		// Data output (no values counted)
-			//pointEventPass.memoData();
-
 /**
  * Release Table objects for TMG tables
 */
@@ -762,16 +761,18 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * @throws HCException
  */
 	private void passSourceData() throws HCException {
-		setStatusMessage("*Source pass - HRE source table processing");
+		setStatusMessage("** 4th - pass - HRE source table processing");
 		setStatusMessage(" Loading TMG source tables");
 		tmgLoader.loadTmgSourceTables();
 		timeReport("load TMG Source tables");
-		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-
-		pointSourcePass = new TMGpass_Source(pointDB);
-
-		pointSourcePass.testSourceTables();
+		
+	// Copy TMG source tables
+		pointSourcePass.initSourceTables(); 
+	// Import Source tables
+		pointSourcePass.addToSourceTable(this);
+		pointSourcePass.addToCitationTable(this);
 		pointSourcePass.testReposTables();
+		pointSourcePass.citationStat();
 	}
 
 /**
@@ -779,7 +780,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * @throws HCException
  */
 	private void passExhibitData() throws HCException {
-		setStatusMessage("*Third pass - HRE exhibit table processing");
+		setStatusMessage("** 5th - pass - HRE exhibit table processing");
 		setStatusMessage(" Loading TMG exhibit table");
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgExhibitTables();
@@ -813,7 +814,6 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			HB0711Logging.logWrite("ERROR Pass Exhibit Data :  " + hce.getMessage());
 			HB0711Logging.printStackTraceToFile(hce);
 		}
-
 }
 
 /**

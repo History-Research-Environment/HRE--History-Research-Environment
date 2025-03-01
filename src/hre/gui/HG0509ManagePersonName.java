@@ -1,6 +1,7 @@
 package hre.gui;
 /*******************************************************************************
  * Manage Person Name
+ * *****************************************************************************
  * v0.01.0027 2022-09-23 First draft (D Ferguson)
  * v0.01.0028 2022-11-26 Add Show Hidden button (D Ferguson)
  * 			  2022-12-08 Update of handling HIDDEN elements  (N. Tolleshaug)
@@ -24,6 +25,10 @@ package hre.gui;
  * 			  2024-12-08 Updated listener tablePerson name changes (N Tolleshaug)
  * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
  * v0.04.0032 2024-12-31 Remove dummy Source data from citation table (D Ferguson)
+ * 			  2025-02-13 Added code for name citiation (N. Tolleshaug)
+ *  		  2025-02-14 Added activate HG0555EditCitation (N. Tolleshaug)
+ *  		  2025-02-14 Added citationTablePID to HG0555EditCitation call(N. Tolleshaug)
+ *  		  2025-02-26 Added add, edit and remove for name citations (N. Tolleshaug)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE01 load/edit/save of Citation data
@@ -76,6 +81,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -97,7 +103,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 
 	HBWhereWhenHandler pointWhereWhenHandler;
 	HBPersonHandler pointPersonHandler;
-	HG0509ManagePersonName thisNameManager = this;
+	public HBCitationSourceHandler pointCitationSourceHandler;
+	HG0509ManagePersonName pointManagePersonName = this;
 	private JPanel contents;
 
 	public JComboBox<String> comboEvents;
@@ -110,6 +117,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	boolean showHiddenClicked = false;
 	public JTable tablePerson;
 	JToggleButton btn_Primary;
+	DefaultTableModel citeModel;
 
 	boolean eventTypeChanged = false;
 	boolean nameChanged = false;
@@ -137,7 +145,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	String endExtraDetails = "";	//$NON-NLS-1$
 	String endSortCode = "";		//$NON-NLS-1$
 	Object[] endHREDate;
-	long endHDatePID;
+	long endHDatePID, personNameTablePID;
 
 	JTextField dateStart, dateEnd;
 	JTextArea memoNameText;
@@ -165,6 +173,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		this.pointPersonHandler = pointHBPersonHandler;
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
+		this.personNameTablePID = personNameTablePID;
 
 	// Setup references for HG0509ManagePersonName
 		if (HGlobal.DEBUG)
@@ -181,6 +190,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0509ManagePersonName");}	//$NON-NLS-1$
 	    pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 	    pointPersonHandler = pointOpenProject.getPersonHandler();
+	    pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 	    citeHeaderData = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 
 /***********************************
@@ -403,8 +413,9 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		JLabel lbl_Surety = new JLabel(HG0509Msgs.Text_20);	// Surety
 		contents.add(lbl_Surety, "cell 2 3, alignx right, aligny center, gapx 50");		//$NON-NLS-1$
 
-		// Create scrollpane and table for the Name Citations
-		DefaultTableModel citeModel = new DefaultTableModel(objNameCiteData, citeHeaderData);
+	// Create scrollpane and table for the Name Citations
+		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");
+		citeModel = new DefaultTableModel(objNameCiteData, citeHeaderData);
 		JTable tableNameCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
 				@Override
@@ -419,7 +430,6 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int col) {
 						return false;
 			}};
-//		tableNameCiteData = pointxxxxxxxxxxx							// NOTE01 get name citation data
 		tableNameCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableNameCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableNameCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -431,20 +441,21 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		nameCiteHeader.setOpaque(false);
 		ListSelectionModel nameCiteSelectionModel = tableNameCite.getSelectionModel();
 		nameCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		// Setup scrollpane and add to Name panel
+	// Setup scrollpane and add to Name panel
 		tableNameCite.setFillsViewportHeight(true);
 		JScrollPane nameCiteScrollPane = new JScrollPane(tableNameCite);
 		nameCiteScrollPane.setFocusTraversalKeysEnabled(false);
 		nameCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		nameCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-		// Set Source# to be center-aligned
+	// Set Source# to be center-aligned
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment(JLabel.CENTER);
 		tableNameCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		// Set single row selection
+		tableNameCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+	// Set single row selection
 		ListSelectionModel citeSelectionModel = tableNameCite.getSelectionModel();
 		citeSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		// Setup tabbing within table against all rows but only column 1
+	// Setup tabbing within table against all rows but only column 1
 		if (tableNameCite.getRowCount() > 0)
 					JTableCellTabbing.setTabMapping(tableNameCite, 0, tableNameCite.getRowCount(), 1, 1);
 		contents.add(nameCiteScrollPane, "cell 2 4, aligny top");	//$NON-NLS-1$
@@ -581,6 +592,16 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		};
 		tablePerson.getModel().addTableModelListener(persListener);
 
+		// Listener for changes made in tableNameCite
+		TableModelListener citeListener = new TableModelListener() {
+			@Override
+			public void tableChanged(TableModelEvent e) {
+				btn_Save.setEnabled(true);
+				citationChanged = true;
+			}
+		};
+		tableNameCite.getModel().addTableModelListener(citeListener);
+
 		// Listener for Citation table mouse clicks
 		tableNameCite.addMouseListener(new MouseAdapter() {
 			@Override
@@ -595,21 +616,17 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	           	if (me.getClickCount() == 2 && tableNameCite.getSelectedRow() != -1) {
 	           		int atRow = tableNameCite.getSelectedRow();
 	           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+	        	// Display HG0555EditCitation with this data
+					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, (long)objCiteDataToEdit[3]);
+					citeScreen.pointManagePersonName = pointManagePersonName;
+					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyCite = lbl_Style.getLocationOnScreen();
+					citeScreen.setLocation(xyCite.x, xyCite.y + 30);
+					citeScreen.setVisible(true);
+					btn_Save.setEnabled(true);
 	           	}
 	        }
-	    });
-
-		// Listener for changes made in tableNameCite
-		TableModelListener citeListener = new TableModelListener() {
-			@Override
-			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
-				citationChanged = true;
-			}
-		};
-		tableNameCite.getModel().addTableModelListener(citeListener);
+		});
 
 		// Listener for Add Citation button
 		btn_Add.addActionListener(new ActionListener() {
@@ -617,7 +634,14 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				citationChanged = true;
-				// NOTE02 need code here show an AddCitation screen (not yet defined)
+				pointCitationSourceHandler.setCitedTableData("T402", personNameTablePID);
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject);
+				citeScreen.pointManagePersonName = pointManagePersonName;
+				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyCite = lbl_Style.getLocationOnScreen();
+				citeScreen.setLocation(xyCite.x, xyCite.y + 30);
+				citeScreen.setVisible(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -627,7 +651,16 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				citationChanged = true;
-				// NOTE02 need code here to delete selected Name Citation
+           		int atRow = tableNameCite.getSelectedRow();
+           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
+           		try {
+					pointCitationSourceHandler.deleteCitationRecord((long) objCiteDataToEdit[3]);
+					citeModel.removeRow(atRow);
+					pack();			
+				} catch (HBException hbe) {
+					System.out.println(" Deletet citation action: " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -835,7 +868,18 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
             }
         });
 	}	// End HG0509ManagePersonName constructor
-
+	
+/**
+ * resetCitationTable()	
+ * @throws HBException
+ */
+	public void resetCitationTable() throws HBException {
+		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");
+		citeModel.setDataVector(objNameCiteData, citeHeaderData);
+	}
+/**
+ * saveStartDate()
+ */
 	@Override
 	public void saveStartDate() {
 		if (editStartDate != null) {
@@ -855,8 +899,11 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		startHREDate[3] = startExtraDetails;
 		startHREDate[4] = startSortCode;
 		startDateOK = true;
+		
 	}
-
+/**
+ * saveEndDate()
+ */
 	@Override
 	public void saveEndDate() {
 		if (editEndDate != null) {

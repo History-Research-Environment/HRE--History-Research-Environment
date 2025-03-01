@@ -23,6 +23,7 @@ package hre.tmgjava;
  * 			  2024-08-06 - Added alterColumnInTable("T450_EVNT","IMP_TMG","BOOLEAN");
  * 			  2024-09-04 - Removed alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
  * v0.01.0032 2024-12-22 - Updated for v22c database
+ * 			  2025-02-11 - Added code for initiate citation/source import (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -45,13 +46,13 @@ public class HREloader_V22c {
  * @throws HCException
  */
 	public HREloader_V22c(String urlH2loc, TMGHREconverter tmgHreConverter) throws HCException {
-		int nrOfTables = 24;
+		int nrOfTables = 26;
 		int completed = 0;
 		this.urlH2loc = urlH2loc;
 		this.tmgHreConverter = tmgHreConverter;
 		try {
 
-			System.out.println(" HREloader database: vV22c - HRE database connected!");
+			System.out.println(" HREloader database: v22c - HRE database connected!");
 
 			pointHREbase = new HREdatabaseHandler(urlH2loc);
 			
@@ -60,6 +61,46 @@ public class HREloader_V22c {
 			
 	//Delete all rows in T461_EVNT_ROLE but keep table header
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");
+			
+	// Create new citation table		
+			createTableInBase("T735_CITN","PID BIGINT NOT NULL,"
+								+ "CL_COMMIT_RPID BIGINT NOT NULL,"
+								+ "CITED_RPID BIGINT NOT NULL,"
+								+ "OWNER_TYPE CHAR(4) NOT NULL,"
+								+ "SORC_RPID BIGINT NOT NULL,"
+								+ "ASSESSOR_RPID BIGINT NOT NULL,"
+								+ "CITN_DETAIL_RPID BIGINT NOT NULL,"
+								+ "CITN_MEMO_RPID BIGINT NOT NULL,"
+								+ "CITN_REF CHAR(30) NOT NULL,"
+								+ "CITN_GUI_SEQ SMALLINT NOT NULL,"
+								+ "CITN_ACC_NAME CHAR(1) NOT NULL,"
+								+ "CITN_ACC_DATE CHAR(1) NOT NULL,"
+								+ "CITN_ACC_LOCN CHAR(1) NOT NULL,"
+								+ "CITN_ACC_MEMO CHAR(1) NOT NULL");
+			
+			updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
+			
+	// Create new source table		
+			createTableInBase("T736_SORC","PID BIGINT NOT NULL,"
+								+ "CL_COMMIT_RPID BIGINT NOT NULL,"
+								+ "IS_ACTIVE BOOLEAN NOT NULL,"
+								+ "SORC_REF SMALLINT NOT NULL,"
+								+ "SORC_TYPE SMALLINT NOT NULL,"
+								+ "SORC_FIDELITY CHAR(1) NOT NULL,"
+								+ "SORC_TEXT_RPID BIGINT NOT NULL,"
+								+ "SORC_AUTHOR_RPID BIGINT NOT NULL,"
+								+ "SORC_EDITOR_RPID BIGINT NOT NULL,"
+								+ "SORC_COMPILER_RPID BIGINT NOT NULL,"
+								+ "SORC_ABBREV CHAR(50) NOT NULL,"
+								+ "SORC_TITLE VARCHAR(400) NOT NULL,"
+								+ "SORC_FULLFORM VARCHAR(500) NOT NULL,"
+								+ "SORC_SHORTFORM VARCHAR(500) NOT NULL,"
+								+ "SORC_BIBLIOFORM VARCHAR(500) NOT NULL,"
+								+ "SORC_REMIND_RPID BIGINT NOT NULL");
+					
+				updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)");	
+
+	
 
 /**
  * Create new user - remove when moved to HRE
@@ -185,6 +226,14 @@ public class HREloader_V22c {
 			
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T677 = tableLoader("T677_DIGT_NAME");
+			completed++;
+			
+			reportProgress(completed, nrOfTables);
+			TMGglobal.T735 = tableLoader("T735_CITN");
+			completed++;
+			
+			reportProgress(completed, nrOfTables);
+			TMGglobal.T736 = tableLoader("T736_SORC");
 			completed++;
 			
 			reportProgress(completed, nrOfTables);
@@ -386,7 +435,7 @@ public class HREloader_V22c {
  */
 	public void reloadHreTables() throws HCException {
 
-		int nrOfTables = 21;
+		int nrOfTables = 23;
 		int completed = 0;
 		if (TMGglobal.DEBUG) System.out.println("Updated HRE tables:");
 		reportProgress(completed, nrOfTables);
@@ -472,6 +521,14 @@ public class HREloader_V22c {
 		reportProgress(completed, nrOfTables);
 		
 		TMGglobal.T677 = tableLoader("T677_DIGT_NAME");
+		completed++;
+		reportProgress(completed, nrOfTables);
+		
+		TMGglobal.T735 = tableLoader("T735_CITN");
+		completed++;
+		reportProgress(completed, nrOfTables);
+		
+		TMGglobal.T736 = tableLoader("T736_SORC");
 		completed++;
 		reportProgress(completed, nrOfTables);
 
@@ -611,6 +668,16 @@ public class HREloader_V22c {
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
 			tmgHreConverter.setStatusMessage(" T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
+			
+			TMGglobal.T735.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T735_CITN size: " + TMGglobal.T735.getRow());
+			tmgHreConverter.setStatusMessage(" T735_CITN size: " + TMGglobal.T735.getRow());
+			
+			TMGglobal.T736.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T736_SORC size: " + TMGglobal.T736.getRow());
+			tmgHreConverter.setStatusMessage(" T736_SORC size: " + TMGglobal.T736.getRow());
 
 
 		} catch (SQLException sqle) {

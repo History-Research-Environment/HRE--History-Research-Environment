@@ -19,7 +19,7 @@ package hre.tmgjava;
  * v0.00.0031 2023-08-15 - Build 31 (N. Tolleshaug)
  * v0.00.0032 2024-12-21 - Build 32 (N. Tolleshaug)
  * 			  2024-12-22 - Updated for v22c database
- * 	
+ * 			  2025-02-11 - Added parameteres for initiate citation/source import (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.sql.ResultSet;
@@ -165,6 +165,8 @@ public class TMGglobal {
 	public static ResultSet T553 = null;
 	public static ResultSet T676 = null;
 	public static ResultSet T677 = null;
+	public static ResultSet T735 = null;
+	public static ResultSet T736 = null;
 
 	public static int numOpenProjects = 0;					// count of number of currently open projects
 

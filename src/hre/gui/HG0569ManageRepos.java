@@ -3,17 +3,19 @@ package hre.gui;
  * ManageRepositories -
  * ***********************************************************************************
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
- *
+ *			  2025-01-31 Add Delete button (D Ferguson)
+ *			  2025-02-01 Invoke HG0570 from Add button (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
- * NOTE01 implement Add button
  * NOTE02 implement Edit button
  * NOTE03 implement Copy button
+ * NOTE04 implement Delete button
  *
  ************************************************************************************/
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -112,11 +114,14 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		JButton btn_Copy = new JButton("Copy");		// Copy
 		btn_Copy.setEnabled(false);
 		actionPanel.add(btn_Copy, "cell 0 2, alignx center, grow"); //$NON-NLS-1$
+		JButton btn_Delete = new JButton("Delete");		// Delete
+		btn_Delete.setEnabled(false);
+		actionPanel.add(btn_Delete, "cell 0 3, alignx center, grow"); //$NON-NLS-1$
 		JLabel find = new JLabel("Find:");		// Find:
-		actionPanel.add(find, "cell 0 3, alignx center"); //$NON-NLS-1$
+		actionPanel.add(find, "cell 0 4, alignx center"); //$NON-NLS-1$
 		JTextField findText = new JTextField();
 		findText.setColumns(10);
-		actionPanel.add(findText, "cell 0 4, alignx left"); //$NON-NLS-1$
+		actionPanel.add(findText, "cell 0 5, alignx left"); //$NON-NLS-1$
 
 		contents.add(actionPanel, "cell 0 0, aligny top"); //$NON-NLS-1$
 
@@ -242,6 +247,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					btn_Edit.setEnabled(true);
 					btn_Copy.setEnabled(true);
 					btn_Select.setEnabled(true);
+					btn_Delete.setEnabled(true);
 				}
 			}
         });
@@ -250,7 +256,11 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-
+				HG0570EditRepository repoScreen = new HG0570EditRepository();
+				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyRepo = btn_Add.getLocationOnScreen();
+				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);
+				repoScreen.setVisible(true);
 			}
 		});
 
@@ -267,6 +277,14 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				// NOTE03 does nothing yet
+			}
+		});
+
+		// Listener for Delete button
+		btn_Delete.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent actEvent) {
+				// NOTE04 does nothing yet
 			}
 		});
 

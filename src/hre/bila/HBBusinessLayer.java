@@ -28,6 +28,7 @@ package hre.bila;
  * v0.01.0030 2023-06-03 - Activated flag processing (N. Tolleshaug)
  * v0.01.0031 2024-01-06 - Implemented alterColumnInTable for new projects (N. Tolleshaug)
  * 			  2024-10-10 - Modified change date format for all handlers (N. Tolleshaug)
+ * v0.03.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
  ******************************************************************************************/
 
 import java.sql.ResultSet;
@@ -68,6 +69,8 @@ public class HBBusinessLayer  {
 	public String locationTable, locationNameTable, locationNameElementTable, eventTable,eventTagTable,
 				  eventAssocTable, eventDefnTable, eventRoleTable;
 	public String digtalExhibitTable, digtalNameTable;
+	public String citationTable, sourceTable;
+	
 	// Fields
 	public String visibleId, bestImage, bestNameField, personFatherField, personMotherField,
 				  personHDateBirthField, personHdateDeathField, personLocnBirthField,
@@ -99,6 +102,7 @@ public class HBBusinessLayer  {
 	public HG0401HREMain mainFrame;
 	public HBLibraryResultSet pointLibraryResultSet;
 	public HBLibraryBusiness pointLibraryBusiness;
+	public HREmemo pointHREmemo;
 
     int dateFormatIndex = 0; 
     boolean changedDateFormat = true;
@@ -175,7 +179,11 @@ public class HBBusinessLayer  {
 		//Exhibit table
 			digtalExhibitTable = "T676_DIGT";
 			digtalNameTable = "T677_DIGT_NAME";
-
+			
+		// Citation source tables
+			 citationTable = "T735_CITN";
+			 sourceTable = "T736_SORC";
+			 
 		// Field names
 			visibleId = "VISIBLE_ID";
 			ownerRecordField = "OWNER_RPID";
@@ -281,12 +289,12 @@ public class HBBusinessLayer  {
 				if (tableGroupIndex[6] == 0) {
 					tableGroupIndex[6] = i;
 				}
-			} /*else
+			} else
 			if (tableName.startsWith("T7")) {
 				if (TABLES) System.out.println(i + " TG7 - " + tableName);
 				tableName = databaseTables.get(i);
 				if (tableGroupIndex[7] == 0) tableGroupIndex[7] = i;
-			} */ else {
+			}  else {
 				System.out.println(" Table name group not found: " + tableName);
 			}
 		}

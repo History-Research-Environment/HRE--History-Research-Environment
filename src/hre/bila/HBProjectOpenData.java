@@ -63,6 +63,7 @@ package hre.bila;
  * 			  2024-04-14 - Added processing of boolean "IS_IMPORTED" from T126 (N. Tolleshaug)
  * 			  2024-08-18 - Added clear window pointer (N. Tolleshaug)
  * 			  2024-10-05 - Added set window pointer (N. Tolleshaug)
+ * v0.03.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -108,6 +109,7 @@ public class HBProjectOpenData {
 	public HBProjectHandler pointProjectHandler;
 	private HBViewPointHandler pointViewPointHandler;
 	private HBPersonHandler pointPersonHandler;
+	private HBCitationSourceHandler pointCitationSourceHandler;
 	private HBWhereWhenHandler pointWhereWhenHandler;
 	private HBMediaHandler pointMediaHandler;
 
@@ -575,12 +577,19 @@ public class HBProjectOpenData {
 	// Set up HBPersonHandler
 		pointPersonHandler = new HBPersonHandler(this);
 		pointPersonHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+		
+	// Set up citation - source handler	
+		pointCitationSourceHandler  = new HBCitationSourceHandler(this);
+		pointCitationSourceHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+		
 	// Set uo HBViewPointHandler
 		pointViewPointHandler = new HBViewPointHandler(this);
 		pointViewPointHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+		
 	// Set up HBWhereWhenHandler
 		pointWhereWhenHandler = new HBWhereWhenHandler(this);
 		pointWhereWhenHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+		
 	// Set up MediaHandler
 		pointMediaHandler = new HBMediaHandler(this);
 		pointMediaHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
@@ -600,6 +609,14 @@ public class HBProjectOpenData {
  */
 	public HBPersonHandler getPersonHandler() {
 		return pointPersonHandler;
+	}
+
+/**
+ * getCitationSourceHandler()
+ * @return
+ */
+	public HBCitationSourceHandler getCitationSourceHandler() {
+		return pointCitationSourceHandler;
 	}
 
 /**

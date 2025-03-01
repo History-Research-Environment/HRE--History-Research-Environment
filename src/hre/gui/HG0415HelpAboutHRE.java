@@ -7,6 +7,7 @@ package hre.gui;
  * v0.03.0030 2023-07-14 Move to v0.3 logo, add iText (D Ferguson)
  * v0.03.0031 2023-11-10 Adjust HRE wording
  * 			  2024-10-01 Organize imports (D Ferguson)
+ * v0.04.0032 2024-10-17 Correct list of 3rd-party products (D Ferguson)
  *******************************************************************/
 
 import java.awt.Color;
@@ -142,6 +143,7 @@ public class HG0415HelpAboutHRE extends JDialog {
 			"<ul>" +
 			"<li>H2 database system (<a href=https://h2database.com/>https://h2database.com/</a>) which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License)." +
 			"  An original copy of the license agreement can be found at <a href=https://h2database.com/html/license.html>https://h2database.com/html/license.html</a><br>" +
+			"<li>miglayout by Mikael Grev under a GPL licence  " +
 			"<li>iText PDF library available under the open source Affero General Public License (AGPLv3))  " +
 			"<li>JavaDBF (DBF reader) by Alberto Fernandez, licenced under the GNU Lesser General Public License (LGPL v3) <a href=https://www.gnu.org/licenses/lgpl.txt>https://www.gnu.org/licenses/lgpl.txt</a><br>" +
 			"<li>JTattoo licenced under the terms and conditions of the GNU General Public License v3.0 or later as published by the Free Software Foundation<br>" +

@@ -16,6 +16,7 @@ package hre.bila;
  * v0.01.0030 2023-08-24 HDate formated input from GUI (N. Tolleshaug)
  * 			  2023-08-25 Updated date pattern parcer (N. Tolleshaug)
  * v0.01.0031 2023-12-08 class HREmemo extends HBBusinessLayer (N. Tolleshaug)
+ * v0.01.0032 2024-12-22 Updated for new project B32 (N. Tolleshaug)
  *****************************************************************************
  */
 
@@ -1086,7 +1087,8 @@ class HREmemo extends HBBusinessLayer {
  * @throws HBException
  */
 	public String readMemo(long memoTablePID) throws HBException {
-		String memoText = "No Text";
+		String memoText = "";
+		if (memoTablePID == null_RPID) return memoText;
 		selectString = setSelectSQL("*", memoSet, " PID = " + memoTablePID);
 		hreMemoResultSet = requestTableData(selectString, dataBaseIndex);
 		try {
@@ -1168,39 +1170,6 @@ class HREmemo extends HBBusinessLayer {
 		}
 	}
 
-/**
- * returnStringContent(String content)
- * @param content
- * @return
-
-	public static String returnStringContent(String content) {
-		if (content == null) return "";
-		if (content.length() == 64) {
-		   if (content.trim().length() == 0) return "";
-		}
-		return content;
-	}
-*/
-/**
- * getLangCode(String language)
- * @param language
- * @return
-
-	public static String getLangCode(String language) {
-		String code = "--";
-		if (language.equals("AFRIKAANS")) code = "af-AF";
-		if (language.equals("ENGLISH")) code = "en-US";
-		if (language.equals("ENGLISHUK")) code = "en-GB";
-		if (language.equals("DANISH")) code = "da-DA";
-		if (language.equals("DUTCH")) code = "nl-NL";
-		if (language.equals("FRENCH")) code = "fr-FR";
-		if (language.equals("GERMAN")) code = "de-DE";
-		if (language.equals("ITALIAN")) code = "it-IT";
-		if (language.equals("NORWEGIAN")) code = "no-NB";
-		if (language.equals("NORWEGIA2")) code = "no-NN";
-		return code;
-	}
-*/
 }
 
 

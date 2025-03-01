@@ -14,6 +14,8 @@ package hre.gui;
 * 			 2023-01-31 NLS converted (D Ferguson)
 * v0.01.0029 2023-04-14 Convert function modified (D Ferguson)
 * 			 2023-04-19 All NLS entries moved to HG0524Msgs (D Ferguson)
+* v0.04.0032 2025-02-23 Dispose of Reminder on Close (D Ferguson)
+*
 ***********************************************************************************/
 
 import java.awt.Point;
@@ -32,7 +34,7 @@ import hre.nls.HG0524Msgs;
 /**
  * Admin Person Name Styles
  * @author D Ferguson
- * @version v0.01.0029
+ * @version v0.04.0032
  * @param <NameStyleData>
  * @since 2021-04-25
  */
@@ -99,6 +101,8 @@ public class HG0525ManagePersonNameStyles extends HG0524ManageNameStyles {
 		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// Close reminder if showing
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				// If NOT in Save mode, just Close the screen
 				if (!btn_Save.isEnabled() & !btn_OutSave.isEnabled()) {
 					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0525ManagePersonNameStyles"); //$NON-NLS-1$

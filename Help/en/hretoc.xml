@@ -42,8 +42,12 @@
 </tocitem>
 
 <tocitem text="Evidence">
-<tocitem text="Manage Sources" target="56500managesource"/>
 <tocitem text="Edit Citations" target="55500editcitation"/>
+<tocitem text="Edit Sources" target="56600editsource"/>
+<tocitem text="Edit Source Types" target="56800editsourcetype"/>
+<tocitem text="Edit Repositories" target="57000editrepository"/>
+<tocitem text="Manage Sources" target="56500managesource"/>
+<tocitem text="Manage Source Elements" target="56400managesourceelement"/>
 <tocitem text="Manage Source Types" target="56700managesourcetype"/>
 <tocitem text="Manage Repositories" target="56900managerepository"/>
 </tocitem>

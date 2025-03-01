@@ -42,8 +42,12 @@
 </tocitem>
 
 <tocitem text="Bewijs">
-<tocitem text="Bronnen beheren" target="56500managesource"/>
 <tocitem text="Citaten bewerken" target="55500editcitation"/>
+<tocitem text="Bronnen bewerken" target="56600editsource"/>
+<tocitem text="Brontypen bewerken" target="56800editsourcetype"/>
+<tocitem text="Bewerken van repositories" target="57000editrepository"/>
+<tocitem text="Bronnen beheren" target="56500managesource"/>
+<tocitem text="Bronelementen beheren" target="56400managesourceelement"/>
 <tocitem text="Brontypen beheren" target="56700managesourcetype"/>
 <tocitem text="Repositories beheren" target="56900managerepository"/>
 </tocitem>
