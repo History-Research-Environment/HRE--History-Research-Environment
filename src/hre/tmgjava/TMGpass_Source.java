@@ -12,7 +12,25 @@ package hre.tmgjava;
  * v0.01.0032  2025-02-11 - Added code for citation/source import (N. Tolleshaug)
  * 			   2025-02-11 - Updated code for citation/source tables (N. Tolleshaug)
  * 			   2025-02-14 - Updated code name/location tables import (N. Tolleshaug)
- ***********************************************************************************/
+ * 			   2025-03-19 - Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
+ **********************************************************************************
+ * Accuracy numerical definitions
+ * 		3 = an original source, close in time to the event
+ * 		2 = a reliable secondary source
+ * 		1 = a less reliable secondary source or an assumption based on other facts in a source
+ * 		0 = a guess
+ *  	- = -1 the source does not support the information cited or this information has been disproved.
+ * 	space = -2 no accuracy recorded
+ * 	empty = -3 No data available
+ * ********************************************************************************************
+ * For Fidelity, TMG set it as 
+ * 1 = Other, 2 = Original, 3 = Photocopy, 4 = Transcript, 5 = Extract :
+ * TMG = 1 - > HRE 'E'
+ * TMG = 2 - > HRE 'A'
+ * TMG = 3 - > HRE 'B'
+ * TMG = 4 - > HRE 'C'
+ * TMG = 5 - > HRE 'D'
+ */
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -251,10 +269,14 @@ public class TMGpass_Source {
 				
 				hreTable.updateString("CITN_REF", tmgStable.getValueString(index_S_Table,"CITREF"));
 				hreTable.updateInt("CITN_GUI_SEQ", tmgStable.getValueInt(index_S_Table,"SEQUENCE"));
-				hreTable.updateString("CITN_ACC_NAME",tmgStable.getValueString(index_S_Table,"SNSURE"));
-				hreTable.updateString("CITN_ACC_DATE",tmgStable.getValueString(index_S_Table,"SDSURE"));
-				hreTable.updateString("CITN_ACC_LOCN",tmgStable.getValueString(index_S_Table,"SPSURE"));
-				hreTable.updateString("CITN_ACC_MEMO",tmgStable.getValueString(index_S_Table,"SFSURE"));
+				hreTable.updateInt("CITN_ACC_NAME1", accConvert(tmgStable.getValueString(index_S_Table,"SNSURE")));
+				hreTable.updateInt("CITN_ACC_NAME2",accConvert(tmgStable.getValueString(index_S_Table,"SSSURE")));
+				hreTable.updateInt("CITN_ACC_DATE", accConvert(tmgStable.getValueString(index_S_Table,"SDSURE")));
+				hreTable.updateInt("CITN_ACC_LOCN", accConvert(tmgStable.getValueString(index_S_Table,"SPSURE")));
+				hreTable.updateInt("CITN_ACC_MEMO", accConvert(tmgStable.getValueString(index_S_Table,"SFSURE")));
+			// Test
+				//hreTable.updateInt("CITN_ACC_P2NAME", -1);
+				
 			//Insert row
 				hreTable.insertRow();
 		} catch (SQLException sqle) {
@@ -265,6 +287,22 @@ public class TMGpass_Source {
 
 			hce.printStackTrace();
 		}	
+	}
+	
+/**
+ * accConvert(String acc)	
+ * @param acc
+ * @return
+ */
+	private int accConvert(String acc) {
+		if (acc.equals("3")) return 3;
+		else if (acc.equals("2")) return 2;
+		else if (acc.equals("1")) return 1;
+		else if (acc.equals("0")) return 0;
+		else if (acc.equals("-")) return -1;
+		else if (acc.equals(" ")) return -2;
+		else if (acc.isEmpty()) return -3;
+		return -4;
 	}
 /**
  * 		

@@ -31,10 +31,11 @@ package hre.gui;
  *  		  2025-02-14 Added activate HG0555EditCitation (N. Tolleshaug)
  *  		  2025-02-21 Populate citation data and update (N. Tolleshaug)
  *  		  2025-02-25 Add/Update and delete event citation (N. Tolleshaug)
+ *  		  2025-03-19 Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
+ * 			  2025-03-20 Adjust Citation table column size/alignment (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 need to perform sentence editing
- * NOTE06 need code to handle Citations
  * NOTE07 needs code to handle adding/deleting media items
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
  * NOTE09 add Flags support for Events
@@ -115,12 +116,12 @@ import net.miginfocom.swing.MigLayout;
 public class HG0547EditEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	long null_RPID  = 1999999999999999L;
-	
+
 	public HBWhereWhenHandler pointWhereWhenHandler;
 	public HBPersonHandler pointPersonHandler;
 	public HBCitationSourceHandler pointCitationSourceHandler;
 	HG0547EditEvent pointEditEvent = this;
-	
+
 	String eventName, roleName = " not set", eventPersonName;
 
 	public String screenID = "54700";	//$NON-NLS-1$
@@ -313,9 +314,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 	    // load ALL current Assocs and their current roles
 		tableAssocsData = pointWhereWhenHandler.getAssociateTabl();
-
-		// load source/citation data - NOTE06
-//	    objEventCiteData = pointXXXXXXXXXXX
 
 /************************************
  * Setup main panel and its contents
@@ -630,9 +628,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableCite.getColumnModel().getColumn(1).setPreferredWidth(270);
+		tableCite.getColumnModel().getColumn(1).setPreferredWidth(290);
 		tableCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableCite.getColumnModel().getColumn(2).setPreferredWidth(100);
+		tableCite.getColumnModel().getColumn(2).setPreferredWidth(80);
 		tableCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
 		JTableHeader citeHeader = tableCite.getTableHeader();
 		citeHeader.setOpaque(false);
@@ -1053,12 +1051,11 @@ public class HG0547EditEvent extends HG0450SuperDialog {
            		try {
 					pointCitationSourceHandler.deleteCitationRecord((long)objCiteDataToEdit[3]);
 					citeModel.removeRow(atRow);
-					pack();			
+					pack();
 				} catch (HBException hbe) {
 					System.out.println(" Deletet citation action: " + hbe.getMessage());
 					hbe.printStackTrace();
 				}
-				
 			}
 		});
 
@@ -1299,9 +1296,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	}	// End HG0547EditEvent constructor
-	
+
 /**
- * resetCitationTable()	
+ * resetCitationTable()
  * @throws HBException
  */
 	public void resetCitationTable() throws HBException {

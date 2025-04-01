@@ -8,6 +8,7 @@ package hre.gui;
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
+* 			  2025-03-24 Modify panelNameRelate layout (D Ferguson)
  ******************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -52,11 +53,11 @@ public class HG0505AddPersonSibling extends HG0505AddPerson {
 	// Modify Name screen for Siblings
 		JLabel lbl_parType = new JLabel(HG0505Msgs.Text_76);	// Choose Full or Half-sibling:
 		lbl_parType.setFocusTraversalKeysEnabled(false);
-		panelNameRelate.add(lbl_parType, "cell 0 0 2");		//$NON-NLS-1$
+		panelNameRelate.add(lbl_parType, "cell 0 0");		//$NON-NLS-1$
 
 		DefaultComboBoxModel<String> comboTypeModel = new DefaultComboBoxModel<>(siblingTypes);
 		JComboBox<String> siblingType = new JComboBox<>(comboTypeModel);
-		panelNameRelate.add(siblingType, "cell 0 0 2, gapx 10");	//$NON-NLS-1$
+		panelNameRelate.add(siblingType, "cell 0 0, gapx 10");	//$NON-NLS-1$
 		panelNameRelate.setVisible(true);
 	// repack screen
 		pack();

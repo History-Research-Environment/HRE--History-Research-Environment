@@ -13,6 +13,7 @@ package hre.gui;
  *			  2024-07-31 Revised  HG0507SelectPerson buttons (N. Tolleshaug)
  *			  2024-11-05 Fix filter crashing issue (D Ferguson)
  * v0.04.0032 2024-12-31 Add citation select/up/down code (D Ferguson)
+ * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -404,9 +405,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(70);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableCite.getColumnModel().getColumn(1).setPreferredWidth(400);
+		tableCite.getColumnModel().getColumn(1).setPreferredWidth(420);
 		tableCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableCite.getColumnModel().getColumn(2).setPreferredWidth(100);
+		tableCite.getColumnModel().getColumn(2).setPreferredWidth(80);
 		tableCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
 		JTableHeader citeHeader = tableCite.getTableHeader();
 		citeHeader.setOpaque(false);
@@ -802,7 +803,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				citationChanged = true;
-				// NOTE06 need code here show an AddCitation screen (not yet defined)
+				// NOTE06 need code here show an HG0555EditCitation screen
 			}
 		});
 
@@ -812,7 +813,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				btn_Save.setEnabled(true);
 				citationChanged = true;
-				// NOTE06 need code here to delete selected Name Citation
+				// NOTE06 need code here to delete selected Citation
 			}
 		});
 

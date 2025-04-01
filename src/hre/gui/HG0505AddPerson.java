@@ -46,12 +46,11 @@ package hre.gui;
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved (D Ferguson)
  * 			  2024-12-31 Add citation table select/up/down code (D Ferguson)
  * 			  2025-02-16 Fixed error in birt event list - adding language (N Tolleshaug)
+ * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
+ * 			  2025-03-24 Remove all Citation tables (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
- * NOTE03 need to load Citation data for all events
- * NOTE05 need code to display an Add Citation screen
- * NOTE06 need code to delete a selected Citation
  ********************************************************************************/
 
 import java.awt.CardLayout;
@@ -78,7 +77,6 @@ import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultCellEditor;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -92,7 +90,6 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
@@ -100,7 +97,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
@@ -141,9 +137,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Signals memo is edited
 	boolean nameMemoEdited = false, birthMemoEdited = false, baptMemoEdited = false,
 			deathMemoEdited = false, burialMemoEdited = false, partnerMemoEdited = false;
-	// Signals citation is edited
-	boolean nameCiteEdited = false, birthCiteEdited = false, baptCiteEdited = false,
-			deathCiteEdited = false, burialCiteEdited = false, partnerCiteEdited = false;
 	// Signals date format OK
 	boolean birthDateOK = false, baptDateOK = false,
 			deathDateOK = false, burialDateOK = false, partnerDateOK = false;
@@ -152,22 +145,14 @@ public class HG0505AddPerson extends HG0450SuperDialog {
     static focusPolicy newPolicy;
 
     Object[][] tableNameData;
-    Object[][] objNameCiteData;
 	Object[][] tableFlagData;
 	Object[][] objAllFlagData;
 	Object[][] objReqFlagData;
     Object[][] tableBirthData;
-    Object[][] objBirthCiteData;
     Object[][] tableBaptData;
-    Object[][] objBaptCiteData;
     Object[][] tableDeathData;
-    Object[][] objDeathCiteData;
     Object[][] tableBurialData;
-    Object[][] objBurialCiteData;
     Object[][] tablePartnerData;
-    Object[][] objPartnerCiteData;
-	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
-	Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
 
     JTable tableFlags;
     DefaultTableModel flagModel;
@@ -325,8 +310,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	JLabel lbl_ChosenPartnerRole1 = new JLabel(""); //$NON-NLS-1$
 	JLabel lbl_ChosenPartnerRole2 = new JLabel(""); //$NON-NLS-1$
 
-	String[] tableCiteHeader;
-
 /**
  * Create the dialog
  * @param pointOpenProject
@@ -380,13 +363,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		String eventDateText = HG0505Msgs.Text_3;			// Event Date:
 		String sortDateText = HG0505Msgs.Text_4;			// Sort Date:
 		String locStyleText = HG0505Msgs.Text_5;			// Location Style:
-		String citationText = HG0505Msgs.Text_6;			// Citations:
-		String suretyText = HG0505Msgs.Text_7;				// Surety:
+//		String citationText = HG0505Msgs.Text_6;			// Citations:			** no longer used **
+//		String suretyText = HG0505Msgs.Text_7;				// Surety:			** no longer used **
 		String memoText = HG0505Msgs.Text_8;				// Memo:
 //		String sentenceText = HG0505Msgs.Text_9;			// Sentence:			** no longer used **
 		String sentenceEditor = HG0505Msgs.Text_10;			// Sentence Editor
-		String citationUpText = HG0505Msgs.Text_11;			// Moves Citation up the list
-		String citationDownText = HG0505Msgs.Text_12;		// Moves Citation down the list
+//		String citationUpText = HG0505Msgs.Text_11;			// Moves Citation up the list		** no longer used **
+//		String citationDownText = HG0505Msgs.Text_12;		// Moves Citation down the list		** no longer used **
 		String addPersonText = HG0505Msgs.Text_13;			// Add Person
 
 /**************************************
@@ -436,30 +419,32 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		contents.add(rightPanel, "cell 1 0, grow");	//$NON-NLS-1$
 		// Define cards of the CardLayout, each card-Panel with its own layout manager
 		JPanel cardName = new JPanel();
-		cardName.setLayout(new MigLayout(" ", "[grow, fill]", "[grow, fill]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardName.setLayout(new MigLayout("", "[grow, fill]", "[grow, fill]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardName, "NAME");	//$NON-NLS-1$
 		JPanel cardBirth = new JPanel();
-		cardBirth.setLayout(new MigLayout(" ", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardBirth.setLayout(new MigLayout("", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardBirth, "BIRTH");	//$NON-NLS-1$
 		JPanel cardBapt = new JPanel();
-		cardBapt.setLayout(new MigLayout(" ", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardBapt.setLayout(new MigLayout("", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardBapt, "BAPTISM");	//$NON-NLS-1$
 		JPanel cardDeath = new JPanel();
-		cardDeath.setLayout(new MigLayout(" ", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardDeath.setLayout(new MigLayout("", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardDeath, "DEATH");		//$NON-NLS-1$
 		JPanel cardBurial = new JPanel();
-		cardBurial.setLayout(new MigLayout(" ", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardBurial.setLayout(new MigLayout("", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardBurial, "BURIAL");	//$NON-NLS-1$
 		JPanel cardPartner = new JPanel();
-		cardPartner.setLayout(new MigLayout(" ", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardPartner.setLayout(new MigLayout("", "[grow][grow]", "[grow][grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardPartner, "PARTNER");	//$NON-NLS-1$
 
 /************************************************************
  * Setup cardName contents - panelName with Flags
  ***********************************************************/
-	// Define Name panel
-		JPanel panelName = new JPanel();
-		panelName.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	// Define Name panels
+		JPanel panelNameCol0 = new JPanel();
+		panelNameCol0.setLayout(new MigLayout("", "[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$)
+		JPanel panelNameCol1 = new JPanel();
+		panelNameCol1.setLayout(new MigLayout("", "[]", "[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Create Name/Flags details sub-panel
 	//************************************
@@ -545,17 +530,17 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JTableCellTabbing.setTabMapping(tableName, 0, tableName.getRowCount(), 1, 1);
 	// Add to panel
 		panelNameDetail.add(nameScrollPane, "cell 0 2, aligny top");		//$NON-NLS-1$
-	// sub-panel to Name panel
-		panelName.add(panelNameDetail, "cell 0 0 1 2, aligny top");		//$NON-NLS-1$
+	// sub-panel to NameCol0 panel
+		panelNameCol0.add(panelNameDetail, "cell 0 0, aligny top");		//$NON-NLS-1$
 
-	// Add Reference area to Name panel
+	// Add Reference area to NameCol1 panel
 	//*********************************
 		JLabel lbl_Ref = new JLabel(HG0505Msgs.Text_23);		// Reference:
 		lbl_Ref.setFont(lbl_Ref.getFont().deriveFont(lbl_Ref.getFont().getStyle() | Font.BOLD));
-		panelName.add(lbl_Ref, "cell 1 0,alignx left");		//$NON-NLS-1$
+		panelNameCol1.add(lbl_Ref, "cell 0 0,alignx left");		//$NON-NLS-1$
 		refText = new JTextField();
 		refText.setColumns(24);
-		panelName.add(refText, "cell 1 0,alignx left,gapx 10");		//$NON-NLS-1$
+		panelNameCol1.add(refText, "cell 0 0,alignx left,gapx 10");		//$NON-NLS-1$
 
 	// Create a Flag sub-Panel for flag data
 	//**************************************
@@ -610,15 +595,13 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Create table for the Flag data
 		tableFlags = new JTable(flagModel) {
 			private static final long serialVersionUID = 1L;
-
 				public Dimension getPreferredScrollableViewportSize() {
-					// Force a maximum of a 9-row table
+					// Force a maximum of a 5-row table
 					int r = super.getRowCount();
-					if (r > 9) r = 9;
+					if (r > 5) r = 5;
 					  return new Dimension(super.getPreferredSize().width,
 					    		r * super.getRowHeight());
 				  }
-
 				public boolean isCellEditable(int row, int col) {
 					if (col == 1) return true;
 					return false;
@@ -662,8 +645,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JTableCellTabbing.setTabMapping(tableFlags, 0, tableFlags.getRowCount(), 1, 1);
 		// Add to Flag panel
 		panelFlags.add(flagScrollPane, "cell 0 1");	//$NON-NLS-1$
-		// Add flagPanel to namePanel
-		panelName.add(panelFlags, "cell 1 1, aligny top");	//$NON-NLS-1$
+		// Add flagPanel to namePanelCol1
+		panelNameCol1.add(panelFlags, "cell 0 1, aligny top");	//$NON-NLS-1$
 
 	// If related use the sexIndex to set Birth Sex flag
 		if (!unrelated)
@@ -682,10 +665,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	//**********************************************************************
 		panelNameRelate = new JPanel();
 		panelNameRelate.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelNameRelate.setLayout(new MigLayout("insets 5", "[]50[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelNameRelate.setLayout(new MigLayout("insets 5", "[]", "[]5[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-	// Add sub-panel to Name panel
-		panelName.add(panelNameRelate, "cell 0 2 2, aligny top, grow, hidemode 3");		//$NON-NLS-1$
+	// Add sub-panel to panelNameCol0
+		panelNameCol0.add(panelNameRelate, "cell 0 1, aligny top, grow, hidemode 3");		//$NON-NLS-1$
 		panelNameRelate.setVisible(false);
 
 	// Add a Memo sub-panel for Memo text area (scrollable)
@@ -715,97 +698,12 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		memoNameScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoNameText.setCaretPosition(0);	// set scrollbar to top
 		panelNameMemo.add(memoNameScroll, "cell 0 1, grow");		//$NON-NLS-1$
-	// Add memo sub-panel to Name panel
-		panelName.add(panelNameMemo, "cell 0 3, grow, aligny top");		//$NON-NLS-1$
-
-	// Create Citations sub-panel for Citations label and controls
-	//***********************************************************
-		JPanel panelNameCite = new JPanel();
-		panelNameCite.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelNameCite.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel lbl_CitationsN = new JLabel(citationText);
-		lbl_CitationsN.setFont(lbl_CitationsN.getFont().deriveFont(lbl_CitationsN.getFont().getStyle() | Font.BOLD));
-		panelNameCite.add(lbl_CitationsN, "cell 0 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-		JButton btn_AddN = new JButton("+"); //$NON-NLS-1$
-		btn_AddN.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddN.setMaximumSize(new Dimension(24, 24));
-		btn_AddN.setEnabled(true);
-		panelNameCite.add(btn_AddN, "cell 1 0, align center"); //$NON-NLS-1$
-
-		JButton btn_DelN = new JButton("-"); //$NON-NLS-1$
-		btn_DelN.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelN.setMaximumSize(new Dimension(24, 24));
-		btn_DelN.setEnabled(false);
-		panelNameCite.add(btn_DelN, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		ImageIcon upArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_up16.png")); //$NON-NLS-1$
-		JButton btn_UpN = new JButton(upArrow);
-		btn_UpN.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpN.setToolTipText(citationUpText);
-		btn_UpN.setMaximumSize(new Dimension(20, 20));
-		btn_UpN.setEnabled(false);
-		panelNameCite.add(btn_UpN, "cell 1 0, aligny center, gapx 10"); //$NON-NLS-1$
-
-		ImageIcon downArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_down16.png")); //$NON-NLS-1$
-		JButton btn_DownN = new JButton(downArrow);
-		btn_DownN.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownN.setToolTipText(citationDownText);
-		btn_DownN.setMaximumSize(new Dimension(20, 20));
-		btn_DownN.setEnabled(false);
-		panelNameCite.add(btn_DownN, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JLabel lbl_SuretyN = new JLabel(suretyText);
-		panelNameCite.add(lbl_SuretyN, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-	// Create scrollpane and table for the Name Citations
-	    tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
-		DefaultTableModel citeNameModel = new DefaultTableModel(objNameCiteData, tableCiteHeader);
-		JTable tableNameCite = new JTable(citeNameModel) {
-			private static final long serialVersionUID = 1L;
-				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of a 5-row table, even if empty
-					int r = super.getRowCount();
-					if (r < 5) r = 5;
-					  return new Dimension(super.getPreferredSize().width,
-					    		r * super.getRowHeight());
-					 }
-				public boolean isCellEditable(int row, int col) {
-						return false;
-			}};
-//		objNameCiteData = pointxxxxxxxxxxx							// NOTE03 get name citation data
-		tableNameCite.getColumnModel().getColumn(0).setMinWidth(30);
-		tableNameCite.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableNameCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableNameCite.getColumnModel().getColumn(1).setPreferredWidth(220);
-		tableNameCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableNameCite.getColumnModel().getColumn(2).setPreferredWidth(100);
-		tableNameCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
-		JTableHeader nameCiteHeader = tableNameCite.getTableHeader();
-		nameCiteHeader.setOpaque(false);
-		ListSelectionModel nameCiteSelectionModel = tableNameCite.getSelectionModel();
-		nameCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	// Setup scrollpane and add to Name panel
-		tableNameCite.setFillsViewportHeight(true);
-		JScrollPane nameCiteScrollPane = new JScrollPane(tableNameCite);
-		nameCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		nameCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source# to be center-aligned
-		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-		centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-		tableNameCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		tableNameCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-	// Setup tabbing within table against all rows but only column 1
-		if (tableNameCite.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableNameCite, 0, tableNameCite.getRowCount(), 1, 1);
-	// Add to scrollpane to Citations panel
-		panelNameCite.add(nameCiteScrollPane, "cell 0 1 3, aligny top");	//$NON-NLS-1$
-	// Add citations to Name panel
-		panelName.add(panelNameCite, "cell 1 3, aligny top");	//$NON-NLS-1$
+	// Add memo sub-panel to panelNameCol1
+		panelNameCol1.add(panelNameMemo, "cell 0 2, grow, aligny top");		//$NON-NLS-1$
 
 	// Add to Name card
-		cardName.add(panelName, "cell 0 0");	//$NON-NLS-1$
+		cardName.add(panelNameCol0, "cell 0 0, aligny top");	//$NON-NLS-1$
+		cardName.add(panelNameCol1, "cell 1 0, aligny top");	//$NON-NLS-1$
 
 /****************************************
  * Setup cardBirth contents - panelBirth
@@ -824,11 +722,11 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		lbl_EventTypeBi.setFont(lbl_EventTypeBi.getFont().deriveFont(lbl_EventTypeBi.getFont().getStyle() | Font.BOLD));
 		panelBirthDetail.add(lbl_EventTypeBi, "cell 0 0,alignx left");		//$NON-NLS-1$
 
-	// Set datalanguage for event  role manager	
+	// Set datalanguage for event  role manager
 		pointPersonHandler.pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
-	// Collect event types/roles for Birth, etc	
+	// Collect event types/roles for Birth, etc
 		birthEventList = pointPersonHandler.getEventTypeList(birthEventGroup);
-		System.out.println(" birthEventList: " + birthEventList.length);
+		//System.out.println(" birthEventList: " + birthEventList.length);
 		birthEventType = pointPersonHandler.getEventTypes();
 		DefaultComboBoxModel<String> birthEvents = new DefaultComboBoxModel<String>(birthEventList);
 		comboBirthType = new JComboBox<String>(birthEvents);
@@ -948,7 +846,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add locn scrollpane to Locn sub-panel
 		panelBirthLocn.add(birthScrollPane, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Locn sub-panel to Birth panel
-		panelBirth.add(panelBirthLocn, "cell 1 0");	//$NON-NLS-1$
+		panelBirth.add(panelBirthLocn, "cell 1 0 1 2, aligny top");	//$NON-NLS-1$
 
 	// Create Memo label and text area (scrollable) in a Memo sub-panel
 	//***************************************************************
@@ -969,7 +867,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoBirthText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoBirthScroll = new JScrollPane(memoBirthText);
-		memoBirthScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
+		memoBirthScroll.setMinimumSize(new Dimension(300, 110)); // set a starter size
 		memoBirthScroll.getViewport().setOpaque(false);
 		memoBirthScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoBirthText.setCaretPosition(0);	// set scrollbar to top
@@ -982,88 +880,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JButton btn_SentenceBirth = new JButton(sentenceEditor);
 		panelBirth.add(btn_SentenceBirth, "cell 0 2, aligny center, alignx center");		//$NON-NLS-1$
 
-	// Create Citations sub-panel and all its contents
-	//************************************************
-		JPanel panelBirthCite = new JPanel();
-		panelBirthCite.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelBirthCite.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel lbl_CitationsBi = new JLabel(citationText);
-		lbl_CitationsBi.setFont(lbl_CitationsBi.getFont().deriveFont(lbl_CitationsBi.getFont().getStyle() | Font.BOLD));
-		panelBirthCite.add(lbl_CitationsBi, "cell 0 0, align left, aligny bottom");		//$NON-NLS-1$
-
-		JButton btn_AddB = new JButton("+"); //$NON-NLS-1$
-		btn_AddB.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddB.setMaximumSize(new Dimension(24, 24));
-		btn_AddB.setEnabled(true);
-		panelBirthCite.add(btn_AddB, "cell 1 0, alignx center, aligny center"); //$NON-NLS-1$
-
-		JButton btn_DelB = new JButton("-"); //$NON-NLS-1$
-		btn_DelB.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelB.setMaximumSize(new Dimension(24, 24));
-		btn_DelB.setEnabled(false);
-		panelBirthCite.add(btn_DelB, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JButton btn_UpB = new JButton(upArrow);
-		btn_UpB.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpB.setToolTipText(citationUpText);
-		btn_UpB.setMaximumSize(new Dimension(20, 20));
-		btn_UpB.setEnabled(false);
-		panelBirthCite.add(btn_UpB, "cell 1 0, aligny center, gapx 10"); //$NON-NLS-1$
-
-		JButton btn_DownB = new JButton(downArrow);
-		btn_DownB.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownB.setToolTipText(citationDownText);
-		btn_DownB.setMaximumSize(new Dimension(20, 20));
-		btn_DownB.setEnabled(false);
-		panelBirthCite.add(btn_DownB, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JLabel lbl_SuretyBi = new JLabel(suretyText);
-		panelBirthCite.add(lbl_SuretyBi, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-	// Create scrollpane and table for the Birth Citations
-		DefaultTableModel citeBirthModel = new DefaultTableModel(objBirthCiteData, tableCiteHeader);
-		JTable tableBirthCite = new JTable(citeBirthModel) {
-			private static final long serialVersionUID = 1L;
-				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 5-row table, even if empty
-					int r = super.getRowCount();
-					if (r < 5) r = 5;
-					  return new Dimension(super.getPreferredSize().width,
-					    		r * super.getRowHeight());
-					 }
-				public boolean isCellEditable(int row, int col) {
-						return false;
-			}};
-//		objBirthCiteData = pointxxxxxxxxxxx							// NOTE03 get Birth citation data
-		tableBirthCite.getColumnModel().getColumn(0).setMinWidth(30);
-		tableBirthCite.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableBirthCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableBirthCite.getColumnModel().getColumn(1).setPreferredWidth(220);
-		tableBirthCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableBirthCite.getColumnModel().getColumn(2).setPreferredWidth(100);
-		tableBirthCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
-		JTableHeader birthCiteHeader = tableNameCite.getTableHeader();
-		birthCiteHeader.setOpaque(false);
-		ListSelectionModel birthCiteSelectionModel = tableBirthCite.getSelectionModel();
-		birthCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	// Setup scrollpane
-		tableBirthCite.setFillsViewportHeight(true);
-		JScrollPane birthCiteScrollPane = new JScrollPane(tableBirthCite);
-		birthCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		birthCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source#, Surety to be center-aligned
-		tableBirthCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		tableBirthCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-	// Setup tabbing within table against all rows but only column 1, 2
-		if (tableBirthCite.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableBirthCite, 0, tableBirthCite.getRowCount(), 1, 2);
-	// Add scrollpane to Citations sub-panel
-		panelBirthCite.add(birthCiteScrollPane, "cell 0 1 3, aligny top");		//$NON-NLS-1$
-	// Add Citations sub-panel to Birth panel
-		panelBirth.add(panelBirthCite, "cell 1 1 1 2, aligny top");	//$NON-NLS-1$
 	// Add Birth panel to cardBirth
-		cardBirth.add(panelBirth, "cell 0 0");		//$NON-NLS-1$
+		cardBirth.add(panelBirth, "cell 0 0, aligny top");		//$NON-NLS-1$
 
 /****************************************
 * Setup cardBapt contents - panelBapt
@@ -1203,7 +1021,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add locn scrollpane to Locn sub-panel
 		panelBaptLocn.add(baptScrollPane, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Location sub-panel to Bapt panel
-		panelBapt.add(panelBaptLocn, "cell 1 0");	//$NON-NLS-1$
+		panelBapt.add(panelBaptLocn, "cell 1 0 1 2, aligny top");	//$NON-NLS-1$
 
 	// Create Memo label and text area (scrollable) in a Memo sub-panel
 	//***************************************************************
@@ -1225,7 +1043,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoBaptText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoBaptScroll = new JScrollPane(memoBaptText);
-		memoBaptScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
+		memoBaptScroll.setMinimumSize(new Dimension(300, 110)); // set a starter size
 		memoBaptScroll.getViewport().setOpaque(false);
 		memoBaptScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoBaptText.setCaretPosition(0);	// set scrollbar to top
@@ -1238,88 +1056,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JButton btn_SentenceBapt = new JButton(sentenceEditor);
 		panelBapt.add(btn_SentenceBapt, "cell 0 2, align center");		//$NON-NLS-1$
 
-	// Create Citations sub-panel and all its contents
-	//************************************************
-		JPanel panelBaptCite = new JPanel();
-		panelBaptCite.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelBaptCite.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel lbl_CitationsBa = new JLabel(citationText);
-		lbl_CitationsBa.setFont(lbl_CitationsBa.getFont().deriveFont(lbl_CitationsBa.getFont().getStyle() | Font.BOLD));
-		panelBaptCite.add(lbl_CitationsBa, "cell 0 0, align left, aligny bottom");		//$NON-NLS-1$
-
-		JButton btn_AddBap = new JButton("+"); //$NON-NLS-1$
-		btn_AddBap.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddBap.setMaximumSize(new Dimension(24, 24));
-		btn_AddBap.setEnabled(true);
-		panelBaptCite.add(btn_AddBap, "cell 1 0, alignx center, aligny center"); //$NON-NLS-1$
-
-		JButton btn_DelBap = new JButton("-"); //$NON-NLS-1$
-		btn_DelBap.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelBap.setMaximumSize(new Dimension(24, 24));
-		btn_DelBap.setEnabled(false);
-		panelBaptCite.add(btn_DelBap, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JButton btn_UpBap = new JButton(upArrow);
-		btn_UpBap.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpBap.setToolTipText(citationUpText);
-		btn_UpBap.setMaximumSize(new Dimension(20, 20));
-		btn_UpBap.setEnabled(false);
-		panelBaptCite.add(btn_UpBap, "cell 1 0, aligny center, gapx 10"); //$NON-NLS-1$
-
-		JButton btn_DownBap = new JButton(downArrow);
-		btn_DownBap.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownBap.setToolTipText(citationDownText);
-		btn_DownBap.setMaximumSize(new Dimension(20, 20));
-		btn_DownBap.setEnabled(false);
-		panelBaptCite.add(btn_DownBap, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JLabel lbl_SuretyBa = new JLabel(suretyText);
-		panelBaptCite.add(lbl_SuretyBa, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-	// Create scrollpane and table for the Bapt Citations
-		DefaultTableModel citeBaptModel = new DefaultTableModel(objBaptCiteData, tableCiteHeader);
-		JTable tableBaptCite = new JTable(citeBaptModel) {
-			private static final long serialVersionUID = 1L;
-				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 5-row table, even if empty
-					int r = super.getRowCount();
-					if (r < 5) r = 5;
-					  return new Dimension(super.getPreferredSize().width,
-					    		r * super.getRowHeight());
-					 }
-				public boolean isCellEditable(int row, int col) {
-						return false;
-			}};
-	//	objBaptCiteData = pointxxxxxxxxxxx							// NOTE03 get Bapt citation data
-		tableBaptCite.getColumnModel().getColumn(0).setMinWidth(30);
-		tableBaptCite.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableBaptCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableBaptCite.getColumnModel().getColumn(1).setPreferredWidth(220);
-		tableBaptCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableBaptCite.getColumnModel().getColumn(2).setPreferredWidth(100);
-		tableBaptCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
-		JTableHeader baptCiteHeader = tableNameCite.getTableHeader();
-		baptCiteHeader.setOpaque(false);
-		ListSelectionModel baptCiteSelectionModel = tableBaptCite.getSelectionModel();
-		baptCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	// Setup scrollpane
-		tableBaptCite.setFillsViewportHeight(true);
-		JScrollPane baptCiteScrollPane = new JScrollPane(tableBaptCite);
-		baptCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		baptCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source#, Surety to be center-aligned
-		tableBaptCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		tableBaptCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-	// Setup tabbing within table against all rows but only column 1, 2
-		if (tableBaptCite.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableBaptCite, 0, tableBaptCite.getRowCount(), 1, 2);
-	// Add scrollpane to Citations sub-panel
-		panelBaptCite.add(baptCiteScrollPane, "cell 0 1 3, aligny top");		//$NON-NLS-1$
-	// Add Citations sub-panel to Bapt panel
-		panelBapt.add(panelBaptCite, "cell 1 1 1 2, aligny top");	//$NON-NLS-1$
 	// Add Bapt panel to cardBapt
-		cardBapt.add(panelBapt, "cell 0 0");		//$NON-NLS-1$
+		cardBapt.add(panelBapt, "cell 0 0, aligny top");		//$NON-NLS-1$
 
 /****************************************
 * Setup cardDeath contents - panelDeath
@@ -1460,7 +1198,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add locn scrollpane to Locn sub-panel
 		panelDeathLocn.add(deathScrollPane, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Locn sub-panel to Death panel
-		panelDeath.add(panelDeathLocn, "cell 1 0");	//$NON-NLS-1$
+		panelDeath.add(panelDeathLocn, "cell 1 0 1 2, aligny top");	//$NON-NLS-1$
 
 	// Create Memo label and text area (scrollable) in a Memo sub-panel
 	//***************************************************************
@@ -1481,7 +1219,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoDeathText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoDeathScroll = new JScrollPane(memoDeathText);
-		memoDeathScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
+		memoDeathScroll.setMinimumSize(new Dimension(300, 110)); // set a starter size
 		memoDeathScroll.getViewport().setOpaque(false);
 		memoDeathScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoDeathText.setCaretPosition(0);	// set scrollbar to top
@@ -1494,88 +1232,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JButton btn_SentenceDeath = new JButton(sentenceEditor);
 		panelDeath.add(btn_SentenceDeath, "cell 0 2, align center");		//$NON-NLS-1$
 
-	// Create Citations sub-panel and all its contents
-	//************************************************
-		JPanel panelDeathCite = new JPanel();
-		panelDeathCite.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelDeathCite.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel lbl_CitationsD = new JLabel(citationText);
-		lbl_CitationsD.setFont(lbl_CitationsD.getFont().deriveFont(lbl_CitationsD.getFont().getStyle() | Font.BOLD));
-		panelDeathCite.add(lbl_CitationsD, "cell 0 0, align left, aligny bottom");		//$NON-NLS-1$
-
-		JButton btn_AddD = new JButton("+"); //$NON-NLS-1$
-		btn_AddD.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddD.setMaximumSize(new Dimension(24, 24));
-		btn_AddB.setEnabled(true);
-		panelDeathCite.add(btn_AddD, "cell 1 0, alignx center, aligny center"); //$NON-NLS-1$
-
-		JButton btn_DelD = new JButton("-"); //$NON-NLS-1$
-		btn_DelD.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelD.setMaximumSize(new Dimension(24, 24));
-		btn_DelD.setEnabled(false);
-		panelDeathCite.add(btn_DelD, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JButton btn_UpD = new JButton(upArrow);
-		btn_UpD.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpD.setToolTipText(citationUpText);
-		btn_UpD.setMaximumSize(new Dimension(20, 20));
-		btn_UpD.setEnabled(false);
-		panelDeathCite.add(btn_UpD, "cell 1 0, aligny center, gapx 10"); //$NON-NLS-1$
-
-		JButton btn_DownD = new JButton(downArrow);
-		btn_DownD.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownD.setToolTipText(citationDownText);
-		btn_DownD.setMaximumSize(new Dimension(20, 20));
-		btn_DownD.setEnabled(false);
-		panelDeathCite.add(btn_DownD, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JLabel lbl_SuretyD = new JLabel(suretyText);
-		panelDeathCite.add(lbl_SuretyD, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-	// Create scrollpane and table for the Death Citations
-		DefaultTableModel citeDeathModel = new DefaultTableModel(objDeathCiteData, tableCiteHeader);
-		JTable tableDeathCite = new JTable(citeDeathModel) {
-			private static final long serialVersionUID = 1L;
-				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 5-row table, even if empty
-					int r = super.getRowCount();
-					if (r < 5) r = 5;
-					  return new Dimension(super.getPreferredSize().width,
-					    		r * super.getRowHeight());
-					 }
-				public boolean isCellEditable(int row, int col) {
-						return false;
-			}};
-	//	objDeathCiteData = pointxxxxxxxxxxx							// NOTE03 get Death citation data
-		tableDeathCite.getColumnModel().getColumn(0).setMinWidth(30);
-		tableDeathCite.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableDeathCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableDeathCite.getColumnModel().getColumn(1).setPreferredWidth(220);
-		tableDeathCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableDeathCite.getColumnModel().getColumn(2).setPreferredWidth(100);
-		tableDeathCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
-		JTableHeader deathCiteHeader = tableNameCite.getTableHeader();
-		deathCiteHeader.setOpaque(false);
-		ListSelectionModel deathCiteSelectionModel = tableDeathCite.getSelectionModel();
-		deathCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	// Setup scrollpane
-		tableDeathCite.setFillsViewportHeight(true);
-		JScrollPane deathCiteScrollPane = new JScrollPane(tableDeathCite);
-		deathCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		deathCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source#, Surety to be center-aligned
-		tableDeathCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		tableDeathCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-	// Setup tabbing within table against all rows but only column 1, 2
-		if (tableDeathCite.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableDeathCite, 0, tableDeathCite.getRowCount(), 1, 2);
-	// Add scrollpane to Citations sub-panel
-		panelDeathCite.add(deathCiteScrollPane, "cell 0 1 3, aligny top");		//$NON-NLS-1$
-	// Add Citations sub-panel to Death panel
-		panelDeath.add(panelDeathCite, "cell 1 1 1 2, aligny top");	//$NON-NLS-1$
 	// Add Death panel to cardDeath
-		cardDeath.add(panelDeath, "cell 0 0");		//$NON-NLS-1$
+		cardDeath.add(panelDeath, "cell 0 0, aligny top");		//$NON-NLS-1$
 
 /****************************************
 * Setup cardBurial contents - panelBurial
@@ -1716,7 +1374,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add locn scrollpane to Locn sub-panel
 		panelBurialLocn.add(burialScrollPane, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Locn sub-panel to Burial panel
-		panelBurial.add(panelBurialLocn, "cell 1 0");	//$NON-NLS-1$
+		panelBurial.add(panelBurialLocn, "cell 1 0 1 2, aligny top");	//$NON-NLS-1$
 
 	// Create Memo label and text area (scrollable) in a Memo sub-panel
 	//***************************************************************
@@ -1738,7 +1396,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoBurialText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoBurialScroll = new JScrollPane(memoBurialText);
-		memoBurialScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
+		memoBurialScroll.setMinimumSize(new Dimension(300, 110)); // set a starter size
 		memoBurialScroll.getViewport().setOpaque(false);
 		memoBurialScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoBurialText.setCaretPosition(0);	// set scrollbar to top
@@ -1751,88 +1409,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JButton btn_SentenceBurial = new JButton(sentenceEditor);
 		panelBurial.add(btn_SentenceBurial, "cell 0 2, align center");		//$NON-NLS-1$
 
-	// Create Citations sub-panel and all its contents
-	//************************************************
-		JPanel panelBurialCite = new JPanel();
-		panelBurialCite.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelBurialCite.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel lbl_CitationsBu = new JLabel(citationText);
-		lbl_CitationsBu.setFont(lbl_CitationsBu.getFont().deriveFont(lbl_CitationsBu.getFont().getStyle() | Font.BOLD));
-		panelBurialCite.add(lbl_CitationsBu, "cell 0 0, align left, aligny bottom");		//$NON-NLS-1$
-
-		JButton btn_AddBur = new JButton("+"); //$NON-NLS-1$
-		btn_AddBur.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddBur.setMaximumSize(new Dimension(24, 24));
-		btn_AddBur.setEnabled(true);
-		panelBurialCite.add(btn_AddBur, "cell 1 0, alignx center, aligny center"); //$NON-NLS-1$
-
-		JButton btn_DelBur = new JButton("-"); //$NON-NLS-1$
-		btn_DelBur.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelBur.setMaximumSize(new Dimension(24, 24));
-		btn_DelBur.setEnabled(false);
-		panelBurialCite.add(btn_DelBur, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JButton btn_UpBur = new JButton(upArrow);
-		btn_UpBur.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpBur.setToolTipText(citationUpText);
-		btn_UpBur.setMaximumSize(new Dimension(20, 20));
-		btn_UpBur.setEnabled(false);
-		panelBurialCite.add(btn_UpBur, "cell 1 0, aligny center, gapx 10"); //$NON-NLS-1$
-
-		JButton btn_DownBur = new JButton(downArrow);
-		btn_DownBur.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownBur.setToolTipText(citationDownText);
-		btn_DownBur.setMaximumSize(new Dimension(20, 20));
-		btn_DownBur.setEnabled(false);
-		panelBurialCite.add(btn_DownBur, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JLabel lbl_SuretyBu = new JLabel(suretyText);
-		panelBurialCite.add(lbl_SuretyBu, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-	// Create scrollpane and table for the Burial Citations
-		DefaultTableModel citeBurialModel = new DefaultTableModel(objBurialCiteData, tableCiteHeader);
-		JTable tableBurialCite = new JTable(citeBurialModel) {
-			private static final long serialVersionUID = 1L;
-				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 5-row table, even if empty
-					int r = super.getRowCount();
-					if (r < 5) r = 5;
-					  return new Dimension(super.getPreferredSize().width,
-					    		r * super.getRowHeight());
-					 }
-				public boolean isCellEditable(int row, int col) {
-						return false;
-			}};
-	//	objBurialCiteData = pointxxxxxxxxxxx							// NOTE03 get Burial citation data
-		tableBurialCite.getColumnModel().getColumn(0).setMinWidth(30);
-		tableBurialCite.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableBurialCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableBurialCite.getColumnModel().getColumn(1).setPreferredWidth(220);
-		tableBurialCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableBurialCite.getColumnModel().getColumn(2).setPreferredWidth(100);
-		tableBurialCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
-		JTableHeader burialCiteHeader = tableNameCite.getTableHeader();
-		burialCiteHeader.setOpaque(false);
-		ListSelectionModel burialCiteSelectionModel = tableBurialCite.getSelectionModel();
-		burialCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	// Setup scrollpane
-		tableBurialCite.setFillsViewportHeight(true);
-		JScrollPane burialCiteScrollPane = new JScrollPane(tableBurialCite);
-		burialCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		burialCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source#, Surety to be center-aligned
-		tableBurialCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		tableBurialCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-	// Setup tabbing within table against all rows but only column 1, 2
-		if (tableBurialCite.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableBurialCite, 0, tableBurialCite.getRowCount(), 1, 2);
-	// Add scrollpane to Citations sub-panel
-		panelBurialCite.add(burialCiteScrollPane, "cell 0 1 3, aligny top");		//$NON-NLS-1$
-	// Add Citations sub-panel to Burial panel
-		panelBurial.add(panelBurialCite, "cell 1 1 1 2, aligny top");	//$NON-NLS-1$
 	// Add Burial panel to cardBurial
-		cardBurial.add(panelBurial, "cell 0 0");		//$NON-NLS-1$
+		cardBurial.add(panelBurial, "cell 0 0, aligny top");		//$NON-NLS-1$
 
 /********************************************
 * Setup cardPartner contents - panelPartner
@@ -1956,7 +1534,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add locn scrollpane to Locn sub-panel
 		panelPartnerLocn.add(partnerScrollPane, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Locn sub-panel to Partner panel
-		panelPartner.add(panelPartnerLocn, "cell 1 0");	//$NON-NLS-1$
+		panelPartner.add(panelPartnerLocn, "cell 1 0 1 2, aligny top");	//$NON-NLS-1$
 
 	// Create Memo label and text area (scrollable) in a Memo sub-panel
 	//***************************************************************
@@ -1978,7 +1556,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	    memoPartnerText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea
 		JScrollPane memoPartnerScroll = new JScrollPane(memoPartnerText);
-		memoPartnerScroll.setMinimumSize(new Dimension(320, 110)); // set a starter size
+		memoPartnerScroll.setMinimumSize(new Dimension(300, 110)); // set a starter size
 		memoPartnerScroll.getViewport().setOpaque(false);
 		memoPartnerScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoPartnerText.setCaretPosition(0);	// set scrollbar to top
@@ -1991,88 +1569,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		JButton btn_SentencePartner = new JButton(sentenceEditor);
 		panelPartner.add(btn_SentencePartner, "cell 0 2, align center");		//$NON-NLS-1$
 
-	// Create Citations sub-panel and all its contents
-	//************************************************
-		JPanel panelPartCite = new JPanel();
-		panelPartCite.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		panelPartCite.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]3[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel lbl_CitationsP = new JLabel(citationText);
-		lbl_CitationsP.setFont(lbl_CitationsP.getFont().deriveFont(lbl_CitationsP.getFont().getStyle() | Font.BOLD));
-		panelPartCite.add(lbl_CitationsP, "cell 0 0, align left, aligny bottom");		//$NON-NLS-1$
-
-		JButton btn_AddPart = new JButton("+"); //$NON-NLS-1$
-		btn_AddPart.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_AddPart.setMaximumSize(new Dimension(24, 24));
-		btn_AddPart.setEnabled(true);
-		panelPartCite.add(btn_AddPart, "cell 1 0, alignx center, aligny center"); //$NON-NLS-1$
-
-		JButton btn_DelPart = new JButton("-"); //$NON-NLS-1$
-		btn_DelPart.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_DelPart.setMaximumSize(new Dimension(24, 24));
-		btn_DelPart.setEnabled(false);
-		panelPartCite.add(btn_DelPart, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JButton btn_UpPart = new JButton(upArrow);
-		btn_UpPart.setVerticalAlignment(SwingConstants.TOP);
-		btn_UpPart.setToolTipText(citationUpText);
-		btn_UpPart.setMaximumSize(new Dimension(20, 20));
-		btn_UpPart.setEnabled(false);
-		panelPartCite.add(btn_UpPart, "cell 1 0, aligny center, gapx 10"); //$NON-NLS-1$
-
-		JButton btn_DownPart = new JButton(downArrow);
-		btn_DownPart.setVerticalAlignment(SwingConstants.TOP);
-		btn_DownPart.setToolTipText(citationDownText);
-		btn_DownPart.setMaximumSize(new Dimension(20, 20));
-		btn_DownPart.setEnabled(false);
-		panelPartCite.add(btn_DownPart, "cell 1 0, aligny center"); //$NON-NLS-1$
-
-		JLabel lbl_SuretyP = new JLabel(suretyText);
-		panelPartCite.add(lbl_SuretyP, "cell 2 0, alignx left, aligny bottom");		//$NON-NLS-1$
-
-	// Create scrollpane and table for the Partner Citations
-		DefaultTableModel citePartnerModel = new DefaultTableModel(objPartnerCiteData, tableCiteHeader);
-		JTable tablePartnerCite = new JTable(citePartnerModel) {
-			private static final long serialVersionUID = 1L;
-				public Dimension getPreferredScrollableViewportSize() {
-					// Force a minimum of an 5-row table, even if empty
-					int r = super.getRowCount();
-					if (r < 5) r = 5;
-					  return new Dimension(super.getPreferredSize().width,
-					    		r * super.getRowHeight());
-					 }
-				public boolean isCellEditable(int row, int col) {
-						return false;
-			}};
-	//	objPartnerCiteData = pointxxxxxxxxxxx							// NOTE03 get Partner citation data
-		tablePartnerCite.getColumnModel().getColumn(0).setMinWidth(30);
-		tablePartnerCite.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tablePartnerCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tablePartnerCite.getColumnModel().getColumn(1).setPreferredWidth(220);
-		tablePartnerCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tablePartnerCite.getColumnModel().getColumn(2).setPreferredWidth(100);
-		tablePartnerCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
-		JTableHeader partnerCiteHeader = tableNameCite.getTableHeader();
-		partnerCiteHeader.setOpaque(false);
-		ListSelectionModel partnerCiteSelectionModel = tablePartnerCite.getSelectionModel();
-		partnerCiteSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-	// Setup scrollpane
-		tablePartnerCite.setFillsViewportHeight(true);
-		JScrollPane partnerCiteScrollPane = new JScrollPane(tablePartnerCite);
-		partnerCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		partnerCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source#, Surety to be center-aligned
-		tablePartnerCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-		tablePartnerCite.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-	// Setup tabbing within table against all rows but only column 1, 2
-		if (tablePartnerCite.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tablePartnerCite, 0, tablePartnerCite.getRowCount(), 1, 2);
-	// Add scrollpane to Citations sub-panel
-		panelPartCite.add(partnerCiteScrollPane, "cell 0 1 3, aligny top");		//$NON-NLS-1$
-	// Add Citations sub-panel to Partner panel
-		panelPartner.add(panelPartCite, "cell 1 1 1 2, aligny top");	//$NON-NLS-1$
 	// Add Partner panel to cardPartner
-		cardPartner.add(panelPartner, "cell 0 0");		//$NON-NLS-1$
+		cardPartner.add(panelPartner, "cell 0 0, aligny top");		//$NON-NLS-1$
 
 //*************************
 // Add bottom control panel
@@ -2094,7 +1592,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         focusOrder.add(refText);
         focusOrder.add(tableFlags);
         focusOrder.add(memoNameText);
-        focusOrder.add(tableNameCite);
         // Birth panel
         focusOrder.add(comboBirthType);
         focusOrder.add(birthRoles);
@@ -2102,7 +1599,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         focusOrder.add(birthSortDateText);
         focusOrder.add(birthLocnStyle);
         focusOrder.add(tableBirthLocn);
-        focusOrder.add(tableBirthCite);
         focusOrder.add(memoBirthText);
         //Bapt/Chr panel
         focusOrder.add(comboBaptType);
@@ -2111,7 +1607,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         focusOrder.add(baptSortDateText);
         focusOrder.add(baptLocnStyle);
         focusOrder.add(tableBaptLocn);
-        focusOrder.add(tableBaptCite);
         focusOrder.add(memoBaptText);
         // Death panel
         focusOrder.add(comboDeathType);
@@ -2121,7 +1616,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         focusOrder.add(deathSortDateText);
         focusOrder.add(deathLocnStyle);
         focusOrder.add(tableDeathLocn);
-        focusOrder.add(tableDeathCite);
         focusOrder.add(memoDeathText);
         // Burial panel
         focusOrder.add(comboBurialType);
@@ -2130,14 +1624,12 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         focusOrder.add(burialSortDateText);
         focusOrder.add(burialLocnStyle);
         focusOrder.add(tableBurialLocn);
-        focusOrder.add(tableBurialCite);
         focusOrder.add(memoBurialText);
         // Partner panel
         focusOrder.add(partnerDateText);
         focusOrder.add(partnerSortDateText);
         focusOrder.add(partnerLocnStyle);
         focusOrder.add(tablePartnerLocn);
-        focusOrder.add(tablePartnerCite);
         focusOrder.add(memoPartnerText);
 
         contents.setFocusCycleRoot(true);
@@ -2848,14 +2340,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         memoBurialText.getDocument().addDocumentListener(textListen);
         memoPartnerText.getDocument().addDocumentListener(textListen);
 
-		// Listener for Add Name Citation button
-		btn_AddN.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				// NOTE05 need code here show an AddCitation screen (not yet defined)
-			}
-		});
-
 		// General Listener for Sentence Editor buttons
 		ActionListener sentenceListener = new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -2868,387 +2352,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		btn_SentenceDeath.addActionListener(sentenceListener);
 		btn_SentenceBurial.addActionListener(sentenceListener);
 		btn_SentencePartner.addActionListener(sentenceListener);
-
-		// Listener for Name Citation table mouse clicks
-		tableNameCite.addMouseListener(new MouseAdapter() {
-			@Override
-	        public void mousePressed(MouseEvent me) {
-	           	if (me.getClickCount() == 1 && tableNameCite.getSelectedRow() != -1) {
-	           	// SINGLE-CLICK - turn on table controls
-	        		btn_DelN.setEnabled(true);
-	        		btn_UpN.setEnabled(true);
-	        		btn_DownN.setEnabled(true);
-	           	}
-        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
-	           	if (me.getClickCount() == 2 && tableNameCite.getSelectedRow() != -1) {
-	           		int atRow = tableNameCite.getSelectedRow();
-	           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
-	           	}
-	        }
-	    });
-
-		// Listener for Birth Citation table mouse clicks
-		tableBirthCite.addMouseListener(new MouseAdapter() {
-			@Override
-	        public void mousePressed(MouseEvent me) {
-	           	if (me.getClickCount() == 1 && tableBirthCite.getSelectedRow() != -1) {
-	           	// SINGLE-CLICK - turn on table controls
-	        		btn_DelB.setEnabled(true);
-	        		btn_UpB.setEnabled(true);
-	        		btn_DownB.setEnabled(true);
-	           	}
-        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
-	           	if (me.getClickCount() == 2 && tableBirthCite.getSelectedRow() != -1) {
-	           		int atRow = tableBirthCite.getSelectedRow();
-	           		objCiteDataToEdit = objBirthCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
-	           	}
-	        }
-	    });
-
-		// Listener for Baptism Citation table mouse clicks
-		tableBaptCite.addMouseListener(new MouseAdapter() {
-			@Override
-	        public void mousePressed(MouseEvent me) {
-	           	if (me.getClickCount() == 1 && tableBaptCite.getSelectedRow() != -1) {
-	           	// SINGLE-CLICK - turn on table controls
-	        		btn_DelBap.setEnabled(true);
-	        		btn_UpBap.setEnabled(true);
-	        		btn_DownBap.setEnabled(true);
-	           	}
-        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
-	           	if (me.getClickCount() == 2 && tableBaptCite.getSelectedRow() != -1) {
-	           		int atRow = tableBaptCite.getSelectedRow();
-	           		objCiteDataToEdit = objBaptCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
-	           	}
-	        }
-	    });
-
-		// Listener for Death Citation table mouse clicks
-		tableDeathCite.addMouseListener(new MouseAdapter() {
-			@Override
-	        public void mousePressed(MouseEvent me) {
-	           	if (me.getClickCount() == 1 && tableDeathCite.getSelectedRow() != -1) {
-	           	// SINGLE-CLICK - turn on table controls
-	        		btn_DelD.setEnabled(true);
-	        		btn_UpD.setEnabled(true);
-	        		btn_DownD.setEnabled(true);
-	           	}
-        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
-	           	if (me.getClickCount() == 2 && tableDeathCite.getSelectedRow() != -1) {
-	           		int atRow = tableDeathCite.getSelectedRow();
-	           		objCiteDataToEdit = objDeathCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
-	           	}
-	        }
-	    });
-
-		// Listener for Burial Citation table mouse clicks
-		tableBurialCite.addMouseListener(new MouseAdapter() {
-			@Override
-	        public void mousePressed(MouseEvent me) {
-	           	if (me.getClickCount() == 1 && tableBurialCite.getSelectedRow() != -1) {
-	           	// SINGLE-CLICK - turn on table controls
-	        		btn_DelBur.setEnabled(true);
-	        		btn_UpBur.setEnabled(true);
-	        		btn_DownBur.setEnabled(true);
-	           	}
-        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
-	           	if (me.getClickCount() == 2 && tableBurialCite.getSelectedRow() != -1) {
-	           		int atRow = tableBurialCite.getSelectedRow();
-	           		objCiteDataToEdit = objBurialCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
-	           	}
-	        }
-	    });
-
-		// Listener for Partner Citation table mouse clicks
-		tablePartnerCite.addMouseListener(new MouseAdapter() {
-			@Override
-	        public void mousePressed(MouseEvent me) {
-	           	if (me.getClickCount() == 1 && tablePartnerCite.getSelectedRow() != -1) {
-	           	// SINGLE-CLICK - turn on table controls
-	        		btn_DelPart.setEnabled(true);
-	        		btn_UpPart.setEnabled(true);
-	        		btn_DownPart.setEnabled(true);
-	           	}
-        		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
-	           	if (me.getClickCount() == 2 && tablePartnerCite.getSelectedRow() != -1) {
-	           		int atRow = tablePartnerCite.getSelectedRow();
-	           		objCiteDataToEdit = objPartnerCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
-	           	}
-	        }
-	    });
-
-		// Listener for Add Birth Citation button
-		btn_AddB.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				birthCiteEdited = true;
-				// NOTE05 need code here show an AddCitation screen (not yet defined)
-			}
-		});
-
-		// Listener for Add Bapt Citation button
-		btn_AddBap.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				baptCiteEdited = true;
-				// NOTE05 need code here show an AddCitation screen (not yet defined)
-			}
-		});
-
-		// Listener for Add Death Citation button
-		btn_AddD.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				deathCiteEdited = true;
-				// NOTE05 need code here show an AddCitation screen (not yet defined)
-			}
-		});
-
-		// Listener for Add Burial Citation button
-		btn_AddBur.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				burialCiteEdited = true;
-				// NOTE05 need code here show an AddCitation screen (not yet defined)
-			}
-		});
-
-		// Listener for Add Partner Citation button
-		btn_AddPart.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				partnerCiteEdited = true;
-				// NOTE05 need code here show an AddCitation screen (not yet defined)
-			}
-		});
-
-		// Listener for Delete Name Citation button
-		btn_DelN.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				nameCiteEdited = true;
-				// NOTE06 need code here to delete selected Name Citation
-			}
-		});
-
-		// Listener for Delete Birth Citation button
-		btn_DelB.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				birthCiteEdited = true;
-				// NOTE06 need code here to delete selected Birth Citation
-			}
-		});
-
-		// Listener for Delete Bapt Citation button
-		btn_DelBap.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				baptCiteEdited = true;
-				// NOTE06 need code here to delete selected Birth Citation
-			}
-		});
-
-		// Listener for Delete Death Citation button
-		btn_DelD.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				deathCiteEdited = true;
-				// NOTE06 need code here to delete selected Birth Citation
-			}
-		});
-
-		// Listener for Delete Burial Citation button
-		btn_DelBur.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				burialCiteEdited = true;
-				// NOTE06 need code here to delete selected Birth Citation
-			}
-		});
-
-		// Listener for Delete Partner Citation button
-		btn_DelPart.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				partnerCiteEdited = true;
-				// NOTE06 need code here to delete selected Birth Citation
-			}
-		});
-
-		// Listener for move Name Citation up button
-		btn_UpN.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int selectedRow = tableNameCite.getSelectedRow();
-				// only allow move up if not at top of table
-				if (selectedRow >= 1) {
-					// call general routine to move row up
-					citationUp(tableNameCite, citeNameModel, objNameCiteData, selectedRow);
-					nameCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Name Citation down button
-		btn_DownN.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int tableSize = tableNameCite.getRowCount();
-				int selectedRow = tableNameCite.getSelectedRow();
-				// only allow move down if not at end of table
-				if (selectedRow < tableSize-1) {
-					// call general routine to move row down
-					citationDown(tableNameCite, citeNameModel, objNameCiteData, selectedRow);
-					nameCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Birth Citation up button
-		btn_UpB.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int selectedRow = tableBirthCite.getSelectedRow();
-				// only allow move up if not at top of table
-				if (selectedRow >= 1) {
-					// call general routine to move row up
-					citationUp(tableBirthCite, citeBirthModel, objBirthCiteData, selectedRow);
-					birthCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Birth Citation down button
-		btn_DownB.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int tableSize = tableBirthCite.getRowCount();
-				int selectedRow = tableBirthCite.getSelectedRow();
-				// only allow move down if not at end of table
-				if (selectedRow < tableSize-1) {
-					// call general routine to move row down
-					citationDown(tableBirthCite, citeBirthModel, objBirthCiteData, selectedRow);
-					birthCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Bapt Citation up button
-		btn_UpBap.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int selectedRow = tableBaptCite.getSelectedRow();
-				// only allow move up if not at top of table
-				if (selectedRow >= 1) {
-					// call general routine to move row up
-					citationUp(tableBaptCite, citeBaptModel, objBaptCiteData, selectedRow);
-					baptCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Bapt Citation down button
-		btn_DownBap.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int tableSize = tableBaptCite.getRowCount();
-				int selectedRow = tableBaptCite.getSelectedRow();
-				// only allow move down if not at end of table
-				if (selectedRow < tableSize-1) {
-					// call general routine to move row down
-					citationDown(tableBaptCite, citeBaptModel, objBaptCiteData, selectedRow);
-					baptCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Death Citation up button
-		btn_UpD.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int selectedRow = tableDeathCite.getSelectedRow();
-				// only allow move up if not at top of table
-				if (selectedRow >= 1) {
-					// call general routine to move row up
-					citationUp(tableDeathCite, citeDeathModel, objDeathCiteData, selectedRow);
-					deathCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Death Citation down button
-		btn_DownD.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int tableSize = tableDeathCite.getRowCount();
-				int selectedRow = tableDeathCite.getSelectedRow();
-				// only allow move down if not at end of table
-				if (selectedRow < tableSize-1) {
-					// call general routine to move row down
-					citationDown(tableDeathCite, citeDeathModel, objDeathCiteData, selectedRow);
-					deathCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Burial Citation up button
-		btn_UpBur.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int selectedRow = tableBurialCite.getSelectedRow();
-				// only allow move up if not at top of table
-				if (selectedRow >= 1) {
-					// call general routine to move row up
-					citationUp(tableBurialCite, citeBurialModel, objBurialCiteData, selectedRow);
-					burialCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Burial Citation down button
-		btn_DownBur.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int tableSize = tableBurialCite.getRowCount();
-				int selectedRow = tableBurialCite.getSelectedRow();
-				// only allow move down if not at end of table
-				if (selectedRow < tableSize-1) {
-					// call general routine to move row down
-					citationDown(tableBurialCite, citeBurialModel, objBurialCiteData, selectedRow);
-					burialCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Partner Citation up button
-		btn_UpPart.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int selectedRow = tablePartnerCite.getSelectedRow();
-				// only allow move up if not at top of table
-				if (selectedRow >= 1) {
-					// call general routine to move row up
-					citationUp(tablePartnerCite, citePartnerModel, objPartnerCiteData, selectedRow);
-					partnerCiteEdited = true;
-				}
-			}
-		});
-
-		// Listener for move Partner Citation down button
-		btn_DownPart.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int tableSize = tablePartnerCite.getRowCount();
-				int selectedRow = tablePartnerCite.getSelectedRow();
-				// only allow move down if not at end of table
-				if (selectedRow < tableSize-1) {
-					// call general routine to move row down
-					citationDown(tablePartnerCite, citePartnerModel, objPartnerCiteData, selectedRow);
-					partnerCiteEdited = true;
-				}
-			}
-		});
 
 	// Activate listener for Add New Person SAVE button ONLY
 	if (unrelated)
@@ -3315,44 +2418,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			  pointPersonHandler.addToPersonFlagChangeList(2, 1); // record flag changes for save
 		  }
 	  }
-	}
-
-/**
- * citationUp - general routine to handle moving a citation up in any citation table
- * citeTable - the relevant citation table
- * citeModel - the relevant citation table model
- * citeData - the relevant object holding all citation data
- * row - selected row in the table
- */
-	public void citationUp(JTable citeTable, DefaultTableModel citeModel, Object[][] citeData, int row) {
-		// Switch rows in citeModel
-		citeModel.moveRow(row, row, row-1);
-		// Switch rows in underlying obj CiteData
-		objTempCiteData = citeData[row-1];
-		citeData[row-1] = citeData[row];
-		citeData[row] = objTempCiteData;
-		//  Reset visible selected row
-	    citeTable.setRowSelectionInterval(row-1, row-1);
-	    btn_Save.setEnabled(true);
-	}
-
-/**
- * citationDown - general routine to handle moving a citation down in any citation table
- * citeTable - the relevant citation table
- * citeModel - the relevant citation table model
- * citeData - the relevant object holding all citation data
- * row - selected row in the table
- */
-	public void citationDown(JTable citeTable, DefaultTableModel citeModel, Object[][] citeData, int row) {
-		// Switch rows in citeModel
-		citeModel.moveRow(row, row, row+1);
-		// Switch rows in underlying obj CiteData
-		objTempCiteData = citeData[row];
-		citeData[row] = citeData[row+1];
-		citeData[row+1] = objTempCiteData;
-		//  Reset visible selected row
-	    citeTable.setRowSelectionInterval(row+1, row+1);
-	    btn_Save.setEnabled(true);
 	}
 
 /**

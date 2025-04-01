@@ -169,7 +169,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 						}
 					} else
-						System.out.println(" HG0547UpdateEvent - No updated data for event!");	//$NON-NLS-1$
+						if (HGlobal.DEBUG) System.out.println(" HG0547UpdateEvent - No updated data for event!");	//$NON-NLS-1$
 
 
 				// Reload Person windows

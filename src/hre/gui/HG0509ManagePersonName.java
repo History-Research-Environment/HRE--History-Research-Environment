@@ -29,9 +29,9 @@ package hre.gui;
  *  		  2025-02-14 Added activate HG0555EditCitation (N. Tolleshaug)
  *  		  2025-02-14 Added citationTablePID to HG0555EditCitation call(N. Tolleshaug)
  *  		  2025-02-26 Added add, edit and remove for name citations (N. Tolleshaug)
+ * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
- * NOTE01 load/edit/save of Citation data
  * NOTE04 Sentence edit function missing
  *****************************************************************************/
 
@@ -433,9 +433,9 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		tableNameCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableNameCite.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableNameCite.getColumnModel().getColumn(1).setMinWidth(100);
-		tableNameCite.getColumnModel().getColumn(1).setPreferredWidth(170);
+		tableNameCite.getColumnModel().getColumn(1).setPreferredWidth(190);
 		tableNameCite.getColumnModel().getColumn(2).setMinWidth(80);
-		tableNameCite.getColumnModel().getColumn(2).setPreferredWidth(100);
+		tableNameCite.getColumnModel().getColumn(2).setPreferredWidth(80);
 		tableNameCite.setAutoCreateColumnsFromModel(false);	// preserve column setup
 		JTableHeader nameCiteHeader = tableNameCite.getTableHeader();
 		nameCiteHeader.setOpaque(false);
@@ -447,7 +447,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		nameCiteScrollPane.setFocusTraversalKeysEnabled(false);
 		nameCiteScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		nameCiteScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	// Set Source# to be center-aligned
+	// Set Source#, Surety columns to be center-aligned
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment(JLabel.CENTER);
 		tableNameCite.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
@@ -656,7 +656,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
            		try {
 					pointCitationSourceHandler.deleteCitationRecord((long) objCiteDataToEdit[3]);
 					citeModel.removeRow(atRow);
-					pack();			
+					pack();
 				} catch (HBException hbe) {
 					System.out.println(" Deletet citation action: " + hbe.getMessage());
 					hbe.printStackTrace();
@@ -868,9 +868,9 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
             }
         });
 	}	// End HG0509ManagePersonName constructor
-	
+
 /**
- * resetCitationTable()	
+ * resetCitationTable()
  * @throws HBException
  */
 	public void resetCitationTable() throws HBException {
@@ -899,7 +899,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		startHREDate[3] = startExtraDetails;
 		startHREDate[4] = startSortCode;
 		startDateOK = true;
-		
+
 	}
 /**
  * saveEndDate()

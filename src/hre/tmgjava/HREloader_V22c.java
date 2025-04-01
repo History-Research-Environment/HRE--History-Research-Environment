@@ -24,14 +24,18 @@ package hre.tmgjava;
  * 			  2024-09-04 - Removed alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
  * v0.01.0032 2024-12-22 - Updated for v22c database
  * 			  2025-02-11 - Added code for initiate citation/source import (N. Tolleshaug)
+ * 			  2025-03-19 - Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
+ * 			  2025-03-24 Create boolean IS_OWNER in T131 (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 /**
- *
- * @author NTo
- *
+ * class HREloader_V22c
+ * Initiate the HRE tables
+ * @author NTo - Nils Tolleshaug
+ * @since 2020-03-05
+ * @see document
  */
 public class HREloader_V22c {
 
@@ -39,6 +43,8 @@ public class HREloader_V22c {
 	String urlH2loc;
 	TMGHREconverter tmgHreConverter;
 	ResultSet HRE_Tables;
+	
+	long proOffset = 1000000000000000L;
 
 /**
  * HREloader
@@ -57,7 +63,11 @@ public class HREloader_V22c {
 			pointHREbase = new HREdatabaseHandler(urlH2loc);
 			
 	// Update table T126 - IS_IMPORTED
-			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");		
+			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");	
+			
+	// Create boolean IS_OWNER in T131		
+			alterColumnInTable("T131_USER","IS_OWNER","BOOLEAN");
+			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
 			
 	//Delete all rows in T461_EVNT_ROLE but keep table header
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");
@@ -73,10 +83,11 @@ public class HREloader_V22c {
 								+ "CITN_MEMO_RPID BIGINT NOT NULL,"
 								+ "CITN_REF CHAR(30) NOT NULL,"
 								+ "CITN_GUI_SEQ SMALLINT NOT NULL,"
-								+ "CITN_ACC_NAME CHAR(1) NOT NULL,"
-								+ "CITN_ACC_DATE CHAR(1) NOT NULL,"
-								+ "CITN_ACC_LOCN CHAR(1) NOT NULL,"
-								+ "CITN_ACC_MEMO CHAR(1) NOT NULL");
+								+ "CITN_ACC_NAME1 TINYINT,"
+								+ "CITN_ACC_NAME2 TINYINT,"
+								+ "CITN_ACC_DATE TINYINT,"
+								+ "CITN_ACC_LOCN TINYINT,"
+								+ "CITN_ACC_MEMO TINYINT");
 			
 			updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
 			
@@ -99,8 +110,6 @@ public class HREloader_V22c {
 								+ "SORC_REMIND_RPID BIGINT NOT NULL");
 					
 				updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)");	
-
-	
 
 /**
  * Create new user - remove when moved to HRE

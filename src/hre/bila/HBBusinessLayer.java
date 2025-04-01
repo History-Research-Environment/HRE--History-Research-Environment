@@ -29,6 +29,7 @@ package hre.bila;
  * v0.01.0031 2024-01-06 - Implemented alterColumnInTable for new projects (N. Tolleshaug)
  * 			  2024-10-10 - Modified change date format for all handlers (N. Tolleshaug)
  * v0.03.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
+ * 			  2025-03-20 - Added userTable name (N. Tolleshaug)
  ******************************************************************************************/
 
 import java.sql.ResultSet;
@@ -60,10 +61,12 @@ public class HBBusinessLayer  {
     long proOffset = 1000000000000000L;
     long null_RPID  = 1999999999999999L;
 
-	public String languageUses, translatedLang, schemaDefined, projectTable, translatedData, translatedFlag, dateTable, memoSet;
+	public String languageUses, translatedLang, schemaDefined, projectTable, userTable, translatedData, translatedFlag, 
+				  dateTable, memoSet;
 	public String nameStyles, nameStylesOutput, nameElementsDefined, locationNameStyles,
 				  locationNameElements, entityTypeDefinition;
 	public String flagDefn, flagValue, flagDefinition, flagSettingValues;
+	
 	public String personTable, personNameTable, personNamesTableElements, personBirthTable,
 				  personParentTable, personPartnerTable;
 	public String locationTable, locationNameTable, locationNameElementTable, eventTable,eventTagTable,
@@ -136,6 +139,7 @@ public class HBBusinessLayer  {
 		// System tables
 			schemaDefined = "T104_SCHEMA_DEFN";
 			projectTable = "T126_PROJECTS";
+			userTable = "T131_USER";
 
 		// Style tables
 			nameStyles = "T160_NAME_STYLE";
@@ -486,8 +490,24 @@ public class HBBusinessLayer  {
 		String sqlRequest = "ALTER TABLE " + tableName + " ADD " + colName + " " + varType;
     	updateTableData(sqlRequest, dbIndex);
 	}
+	
 /**
- *
+ * updateTableInBase(String tableName, String sqlCommand, String condition, int dbIndex) 	
+ * @param tableName
+ * @param sqlCommand
+ * @param condition
+ * @param dbIndex
+ * @throws HBException
+ */
+	public void updateTableInBase(String tableName, String sqlCommand, String condition, int dbIndex) throws HBException {
+		String sqlRequest;
+		if (condition.length() > 0)
+			sqlRequest = sqlCommand + " " + tableName + " " + condition;
+		else sqlRequest = sqlCommand + " " + tableName;
+    	updateTableData(sqlRequest, dbIndex);
+	}
+/**
+ * public boolean updateTableData(String selectSQL, int dbIndex)
  * @param selectSQL
  * @param dbIndex
  * @return
@@ -504,6 +524,24 @@ public class HBBusinessLayer  {
 		}
 	}
 
+	
+/**
+ *
+ * @param selectSQL
+ * @param dbIndex
+ * @return
+ * @throws HBException
+ */
+	public boolean createTableInBase(String tableName, String columnStructure, int dbIndex) throws HBException {
+		try {
+			return pointDBlayer.createTableInBase(tableName, columnStructure, dbIndex);
+		} catch(HDException hde) {
+			if (HGlobal.DEBUG) {
+				System.out.println("Update table data error: " + hde.getMessage());
+			}
+			throw new HBException("Update table data error: \n" + hde.getMessage());
+		}
+	}
 /**
  * Close Database in DBLayer
  * @param dataBaseIndex - index open databases

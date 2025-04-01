@@ -8,7 +8,8 @@ package hre.gui;
  *			  2025-02-04 Add Show Inactive button (D Ferguson)
  *			  2025-02-14 Activated Source list table (N. Tolleshaug)
  *			  2025-02-18 Add Save button (D Ferguson)
- *
+ *			  2025-03-01 Make Select button dispose this screen (D Ferguson)
+ *			  2025-03-22 Handling add citation if source table emplty (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -16,7 +17,7 @@ package hre.gui;
  * NOTE04 implement Delete button
  * NOTE05 implement Save button
  * NOTE06 implement Show Inactive button
- * NOTE07 implement Select button
+
  ************************************************************************************/
 
 import java.awt.Component;
@@ -174,55 +175,58 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			hbe.printStackTrace();
 		}
 		if (tableSourceData == null ) {
-			JOptionPane.showMessageDialog(tableSource, "No data found in HRE database\n"	// No data found in HRE database\n
+			JOptionPane.showMessageDialog(tableSource, "No sources found in HRE database\n"	// No data found in HRE database\n
 													 + "Source Select error",		// Source Select error
 													   "Source Select", 			// Source Select
 													   JOptionPane.ERROR_MESSAGE);
-			dispose();
-		}
+			//dispose();
+		} 
+		
 	 	// Setup tableSource, model and renderer
-		srcTableModel = new DefaultTableModel(
-    		tableSourceData, tableSourceColHeads) {
-				private static final long serialVersionUID = 1L;
-				@SuppressWarnings({ "unchecked", "rawtypes" })
-				@Override
-				public Class getColumnClass(int column) {
-						return getValueAt(0, column).getClass();
-			}
-		};
-        tableSource.setModel(srcTableModel);
-		tableSource.getColumnModel().getColumn(0).setMinWidth(50);
-		tableSource.getColumnModel().getColumn(0).setPreferredWidth(50);
-		tableSource.getColumnModel().getColumn(1).setMinWidth(100);
-		tableSource.getColumnModel().getColumn(1).setPreferredWidth(270);
-		tableSource.getColumnModel().getColumn(2).setMinWidth(50);
-		tableSource.getColumnModel().getColumn(2).setPreferredWidth(50);
-		tableSource.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
-		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
-		tableSource.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
-		tableSource.getColumnModel().getColumn(2).setCellRenderer(centerLabelRenderer);
-		// Set the ability to sort on columns
-		tableSource.setAutoCreateRowSorter(true);
-	    TableModel myModel = tableSource.getModel();
-	    TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
-		List <RowSorter.SortKey> psortKeys1 = new ArrayList<>();
-		// Presort on column 1
-		psortKeys1.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
-		sorter.setSortKeys(psortKeys1);
-	    tableSource.setRowSorter(sorter);
-	    // Set tooltips and header format
-		tableSource.getTableHeader().setToolTipText("Click to sort; Click again to sort in reverse order");	// Click to sort; Click again to sort in reverse order
-		JTableHeader pHeader = tableSource.getTableHeader();
-		pHeader.setOpaque(false);
-		TableCellRenderer prendererFromHeader = tableSource.getTableHeader().getDefaultRenderer();
-		JLabel pheaderLabel = (JLabel) prendererFromHeader;
-		pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		// Set row selection action
-		ListSelectionModel rowSelectionModel = tableSource.getSelectionModel();
-		rowSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-		tableSource.setMaximumSize(new Dimension(32767, 32767));
-		tableSource.setFillsViewportHeight(true);
+		if (tableSourceData != null) {
+			srcTableModel = new DefaultTableModel(
+	    		tableSourceData, tableSourceColHeads) {
+					private static final long serialVersionUID = 1L;
+					@SuppressWarnings({ "unchecked", "rawtypes" })
+					@Override
+					public Class getColumnClass(int column) {
+							return getValueAt(0, column).getClass();
+				}
+			};
+	        tableSource.setModel(srcTableModel);
+			tableSource.getColumnModel().getColumn(0).setMinWidth(50);
+			tableSource.getColumnModel().getColumn(0).setPreferredWidth(50);
+			tableSource.getColumnModel().getColumn(1).setMinWidth(100);
+			tableSource.getColumnModel().getColumn(1).setPreferredWidth(270);
+			tableSource.getColumnModel().getColumn(2).setMinWidth(50);
+			tableSource.getColumnModel().getColumn(2).setPreferredWidth(50);
+			tableSource.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+			DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
+			centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
+			tableSource.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
+			tableSource.getColumnModel().getColumn(2).setCellRenderer(centerLabelRenderer);
+			// Set the ability to sort on columns
+			tableSource.setAutoCreateRowSorter(true);
+		    TableModel myModel = tableSource.getModel();
+		    TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
+			List <RowSorter.SortKey> psortKeys1 = new ArrayList<>();
+			// Presort on column 1
+			psortKeys1.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
+			sorter.setSortKeys(psortKeys1);
+		    tableSource.setRowSorter(sorter);
+		    // Set tooltips and header format
+			tableSource.getTableHeader().setToolTipText("Click to sort; Click again to sort in reverse order");	// Click to sort; Click again to sort in reverse order
+			JTableHeader pHeader = tableSource.getTableHeader();
+			pHeader.setOpaque(false);
+			TableCellRenderer prendererFromHeader = tableSource.getTableHeader().getDefaultRenderer();
+			JLabel pheaderLabel = (JLabel) prendererFromHeader;
+			pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
+			// Set row selection action
+			ListSelectionModel rowSelectionModel = tableSource.getSelectionModel();
+			rowSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+			tableSource.setMaximumSize(new Dimension(32767, 32767));
+			tableSource.setFillsViewportHeight(true);
+		}
 		// Setup tabbing within table against all rows, column 0-2
 		if (tableSource.getRowCount() > 0)
 					JTableCellTabbing.setTabMapping(tableSource, 0, tableSource.getRowCount(), 0, 2);
@@ -339,7 +343,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 
 					btn_Edit.setEnabled(true);
 					btn_Copy.setEnabled(true);
-					btn_Select.setEnabled(true);
+					if (tableSourceData != null) btn_Select.setEnabled(true);
 					btn_Delete.setEnabled(true);
 				}
 			}
@@ -409,16 +413,12 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-
 				Object objSourceDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
 				int clickedRow = tableSource.getSelectedRow();
 				int selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
-           		//int atRow = tableSource.getSelectedRow();
            		objSourceDataToEdit = tableSourceData[selectedRowInTable]; // select whole row
 				pointEditCitation.setSourceSelectedData(objSourceDataToEdit);
-					
-				
-				// NOTE07 does nothing yet - needs to pass selected Source back to caller
+				dispose();
 			}
 		});
 
@@ -427,6 +427,8 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0565ManageSource");	//$NON-NLS-1$
+			// Dispose EditCitation
+				pointEditCitation.dispose();
 				dispose();
 			}
 		});
@@ -458,7 +460,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	            }
 	          }
 		});
-
+		
 	}	// End HG0565ManageSource constructor
 
 }  // End of HG0565ManageSource

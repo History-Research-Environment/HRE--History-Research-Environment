@@ -61,10 +61,11 @@ package hre.gui;
  * 			  2024-10-29 Modified public static final String screenID = "50600"; (N. Tolleshaug)
  * 			  2024-11-10 Add confirmation prompts for delete of partner, parent (D Ferguson)
  * 			  2024-11-15 Removed 'null' positioning of all JOptionPane msgs (D Ferguson)
- * v0.03.0032 2025-01-11 Rearranged processing of event and roles (N. Tolleshaug)
+ * v0.04.0032 2025-01-11 Rearranged processing of event and roles (N. Tolleshaug)
+ * 			  2025-03-17 Removed person Surety; adjust Parent Surety column size (D Ferguson)
+ * 		 	  2025-03-20 Modify top of screen to enable primary Image to be shown (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
- * NOTE01 need code to action Surety input
  * NOTE06 need listener and code for handling Notepads
  * NOTE07 need listener and code for handling DNA data
  * NOTE09 need to load new audio/video media or delete existing
@@ -75,6 +76,7 @@ package hre.gui;
  * at about line 960, which reads: txt_Text = new JTextArea("\""+listText+" ...\"");
  * This needs to be commented out (temporalily) to execute Externalize Strings.
  *********************************************************************************************/
+
 
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -121,6 +123,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
@@ -156,7 +159,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Person
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2020-08-09
  */
 
@@ -256,7 +259,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 							, Long personPID) throws HBException {
 		super(pointPersonHand,"Manage Person",true,true,true,true);	 //$NON-NLS-1$
 
-	// Setup special toolbar buttonsfor thos screen
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0506ManagePerson");}	//$NON-NLS-1$
+
+	// Setup special toolbar buttons for this screen
 		JButton btn_CopyIcon = new JButton(new ImageIcon(getClass().getResource("/hre/images/copyperson_BW_24.png"))); //$NON-NLS-1$
 		btn_CopyIcon.setToolTipText(HG0506Msgs.Text_18);	// Copy this Person to a new Person entry
 		btn_CopyIcon.setMinimumSize(new Dimension(24, 24));
@@ -272,23 +278,23 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		btn_RenumIcon.setMinimumSize(new Dimension(24, 24));
 		btn_RenumIcon.setMaximumSize(new Dimension(24, 24));
 
-	// Setup references for HG0506ManagePerson
+	// Setup al references for HG0506ManagePerson
 		windowID = screenID;
 		helpName = "manageperson";	//$NON-NLS-1$
-    	//this.screenID = screenID; // Removed 29.10.2024
     	this.pointOpenProject = pointOpenProject;
 		this.personPID = personPID;
     	className = getClass().getSimpleName();
     	this.setResizable(true);
 		pointPersonHandler = pointOpenProject.getPersonHandler();
 		pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-		// Get table headers from T204
+		styleNameDates = pointPersonHand.getManagedStyleNameAndDates();
+		HBMediaHandler pointMediaHandler = pointOpenProject.getMediaHandler();
+		listImages = pointMediaHandler.getImageList();
+		listImagesCaptions = pointMediaHandler.getImageCaptionList();
+
+	// Get table headers from T204
 		tableNameHeader = pointPersonHandler.setTranslatedData(screenID, "4", false);	//$NON-NLS-1$   // Alternate Type, Names, Date
 		tableHeaderForPartnerAndAssocs = pointPersonHandler.setTranslatedData(screenID, "3", false);	//$NON-NLS-1$	// Person, Role, Event, Date
-
-		styleNameDates = pointPersonHand.getManagedStyleNameAndDates();
-		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0506ManagePerson");}	//$NON-NLS-1$
 	    setTitle(HG0506Msgs.Text_1 + pointOpenProject.getProjectName());	// Manage Person in Project
 
 	// Enable the Add other Persons main menu items
@@ -299,7 +305,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  ***********************************/
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[]10[]10[]10[grow]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[grow]10[grow]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
     	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);
@@ -313,42 +319,52 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
+		// Setup top area of Main panel for picture and Name/Parent detail
+		JPanel picPanel = new JPanel();
+		picPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		contents.add(picPanel, "cell 0 0, grow");
+		picPanel.setLayout(new MigLayout("fill, hidemode 3", "[]", "[center]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		picPanel.setVisible(false);
+		// NB: we have to leave populating this panel until AFTER the frame is made visible to get the size right
+
+		JPanel nameParentPanel = new JPanel();
+		nameParentPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		contents.add(nameParentPanel, "cell 1 0, grow");
+		nameParentPanel.setLayout(new MigLayout("insets 5", "[]10[grow]", "[]5[]5[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
 		JLabel lbl_Ident = new JLabel(HG0506Msgs.Text_2);		// Identity:
-		contents.add(lbl_Ident, "cell 0 0, align right");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_Ident, "cell 0 0, align right");	//$NON-NLS-1$
 		persName = new DCTextField(pointPersonHandler.getManagedPersonName());
-		contents.add(persName, "cell 1 0, growx");	//$NON-NLS-1$
+		nameParentPanel.add(persName, "cell 1 0, growx");	//$NON-NLS-1$
 
 		JLabel lbl_NStyle = new JLabel(HG0506Msgs.Text_3);		// Style:
-		contents.add(lbl_NStyle, "cell 1 0, align right, gapx 20");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_NStyle, "cell 1 0, align right, gapx 20");	//$NON-NLS-1$
 		nameStyle = new JLabel (styleNameDates[0]);
-		contents.add(nameStyle, "cell 1 0");	//$NON-NLS-1$
+		nameParentPanel.add(nameStyle, "cell 1 0");	//$NON-NLS-1$
 
 		JLabel lbl_Reference = new JLabel(HG0506Msgs.Text_4);	// Reference:
-		contents.add(lbl_Reference, "cell 0 1, align right");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_Reference, "cell 0 1, align right");	//$NON-NLS-1$
 		JTextField reference = new JTextField(pointPersonHandler.getPersonReference());
 		reference.setColumns(25);
-		contents.add(reference, "cell 1 1");	//$NON-NLS-1$
+		nameParentPanel.add(reference, "cell 1 1, growx");	//$NON-NLS-1$
 
-		JLabel lbl_Surety = new JLabel(HG0506Msgs.Text_50);	// Surety:
-		contents.add(lbl_Surety, "cell 1 1, align right, gapx 15");	//$NON-NLS-1$
-		JLabel Surety = new JLabel("- - - - -");	//$NON-NLS-1$		// NOTE01
-		contents.add(Surety, "cell 1 1");	//$NON-NLS-1$
+		// HG0506Msgs.Text_50    (Surety: ) no longer used
 
 		JLabel lbl_Sex = new JLabel(HG0506Msgs.Text_5);		// Birth Sex:
-		contents.add(lbl_Sex, "cell 1 1, align right, gapx 25");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_Sex, "cell 1 1, align right, gapx 25");	//$NON-NLS-1$
 		JLabel birthSex = new JLabel();
-		contents.add(birthSex, "cell 1 1");	//$NON-NLS-1$
+		nameParentPanel.add(birthSex, "cell 1 1");	//$NON-NLS-1$
 
 		int partnerCount = pointPersonHandler.getNumberOfMarriages();
 		JLabel lbl_Partners = new JLabel(HG0506Msgs.Text_6 + partnerCount);		// # Partners =
-		contents.add(lbl_Partners, "cell 1 1, gapx 25");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_Partners, "cell 1 1, gapx 25");	//$NON-NLS-1$
 
 		int childCount = pointPersonHandler.getNumberOfCildren();
 		JLabel lbl_Children = new JLabel(HG0506Msgs.Text_7 + childCount);		// # Children =
-		contents.add(lbl_Children, "cell 1 1, gapx 25");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_Children, "cell 1 1, gapx 25");	//$NON-NLS-1$
 
 		JLabel lbl_Parents = new JLabel(HG0506Msgs.Text_8);		// Parents:
-		contents.add(lbl_Parents, "cell 0 2, align right");	//$NON-NLS-1$
+		nameParentPanel.add(lbl_Parents, "cell 0 2, align right");	//$NON-NLS-1$
 
 		tableParents = new JTable() {
 			private static final long serialVersionUID = 1L;
@@ -368,8 +384,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		tableParents.getColumnModel().getColumn(0).setPreferredWidth(120);
 		tableParents.getColumnModel().getColumn(1).setMinWidth(200);
 		tableParents.getColumnModel().getColumn(1).setPreferredWidth(410);
-		tableParents.getColumnModel().getColumn(2).setMinWidth(70);
-		tableParents.getColumnModel().getColumn(2).setPreferredWidth(120);
+		tableParents.getColumnModel().getColumn(2).setMinWidth(80);
+		tableParents.getColumnModel().getColumn(2).setPreferredWidth(80);
 		JTableHeader tHdParents = tableParents.getTableHeader();
 		tHdParents.setOpaque(false);
 		tableParents.setFillsViewportHeight(true);
@@ -383,7 +399,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		JScrollPane scrollParents = new JScrollPane(tableParents);
 		scrollParents.setMinimumSize(new Dimension(650, height));
 		tableParents.setPreferredScrollableViewportSize(new Dimension(650, height));
-		contents.add(scrollParents, "cell 1 2 2 1, growx");  	//$NON-NLS-1$
+		nameParentPanel.add(scrollParents, "cell 1 2, grow");  	//$NON-NLS-1$
 
 		// Binding to allow F4 (show tag type list) to be recognised
 	    InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -399,40 +415,40 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    });
 
 /**************************************
- * Setup top leftTopPanel and its contents
+ * Setup left controlPanel and its contents
  **************************************/
-		JPanel leftTopPanel = new JPanel();
-		leftTopPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(leftTopPanel, "cell 0 3, growx, aligny top");	//$NON-NLS-1$
-		leftTopPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		JPanel controlPanel = new JPanel();
+		controlPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		contents.add(controlPanel, "cell 0 1, growx, aligny top");	//$NON-NLS-1$
+		controlPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_EditType = new JLabel(HG0506Msgs.Text_9);		// Edit Category
-		leftTopPanel.add(lbl_EditType, "cell 0 0, alignx center");	//$NON-NLS-1$
+		controlPanel.add(lbl_EditType, "cell 0 0, alignx center");	//$NON-NLS-1$
 
 		JRadioButton radio_Event = new JRadioButton(HG0506Msgs.Text_10);	// Events
 		radio_Event.setSelected(true);
-		leftTopPanel.add(radio_Event, "cell 0 1, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_Event, "cell 0 1, alignx left");		//$NON-NLS-1$
 
 		JRadioButton radio_Partners = new JRadioButton(HG0506Msgs.Text_51);		// Partners
-		leftTopPanel.add(radio_Partners, "cell 0 2, alignx left");	//$NON-NLS-1$
+		controlPanel.add(radio_Partners, "cell 0 2, alignx left");	//$NON-NLS-1$
 
 		JRadioButton radio_Assocs = new JRadioButton(HG0506Msgs.Text_11);		// Associates
-		leftTopPanel.add(radio_Assocs, "cell 0 3, alignx left");	//$NON-NLS-1$
+		controlPanel.add(radio_Assocs, "cell 0 3, alignx left");	//$NON-NLS-1$
 
 		radio_Names = new JRadioButton(HG0506Msgs.Text_12);		// All Names
-		leftTopPanel.add(radio_Names, "cell 0 4, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_Names, "cell 0 4, alignx left");		//$NON-NLS-1$
 
 		JRadioButton radio_Flag = new JRadioButton(HG0506Msgs.Text_13);		// Flags
-		leftTopPanel.add(radio_Flag, "cell 0 5, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_Flag, "cell 0 5, alignx left");		//$NON-NLS-1$
 
 		JRadioButton radio_Media = new JRadioButton(HG0506Msgs.Text_14);		// Media
-		leftTopPanel.add(radio_Media, "cell 0 6, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_Media, "cell 0 6, alignx left");		//$NON-NLS-1$
 
 		JRadioButton radio_Note = new JRadioButton(HG0506Msgs.Text_15);		// Notepads
-		leftTopPanel.add(radio_Note, "cell 0 7, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_Note, "cell 0 7, alignx left");		//$NON-NLS-1$
 
 		JRadioButton radio_DNA = new JRadioButton("DNA");			//$NON-NLS-1$
-		leftTopPanel.add(radio_DNA, "cell 0 8, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_DNA, "cell 0 8, alignx left");		//$NON-NLS-1$
 
 		ButtonGroup radioGroup = new ButtonGroup();
 		radioGroup.add(radio_Event);
@@ -449,7 +465,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  **************************************/
 		JPanel leftBotmPanel = new JPanel();
 		leftBotmPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(leftBotmPanel, "cell 0 4, growx, aligny bottom");	//$NON-NLS-1$
+		contents.add(leftBotmPanel, "cell 0 2, growx, aligny bottom");	//$NON-NLS-1$
 		leftBotmPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]10"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lblPerPrompt = new JLabel(HG0506Msgs.Text_16);		// Go to Person #:
@@ -471,7 +487,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  **************************************************/
 		JPanel rightPanel = new JPanel(new CardLayout());
 		rightPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(rightPanel, "cell 1 3 2 2, grow");	//$NON-NLS-1$
+		contents.add(rightPanel, "cell 1 1 2 2, grow");	//$NON-NLS-1$
+
 		// Define cards of the CardLayout, each card-Panel with its own layout manager
 		JPanel cardEvents = new JPanel();
 		cardEvents.setLayout(new MigLayout("", "[grow]", "[]10[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -542,9 +559,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 			        	if (!isRowSelected(row)) {
 			        		// Make a witnessed event background slightly darker
-				        	if(objEventData[row][5].equals("W")) { //$NON-NLS-1$
+				        	if(objEventData[row][5].equals("W")) 	 //$NON-NLS-1$
 								c.setBackground(verylightGray);
-							}
 				        	// Make a child event White on darker background
 				            if(objEventData[row][5].equals("C")) {	//$NON-NLS-1$
 				            	c.setBackground(getBackground().darker().darker());
@@ -899,14 +915,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 	// Define a media JPanel
     	JPanel mediaPanel = new JPanel();
-		HBMediaHandler pointMediaHandler = pointOpenProject.getMediaHandler();
+//		HBMediaHandler pointMediaHandler = pointOpenProject.getMediaHandler();
 	// Add Person Images to mediaPanel
-		listImages = pointMediaHandler.getImageList();
-		listImagesCaptions = pointMediaHandler.getImageCaptionList();
+//		listImages = pointMediaHandler.getImageList();
+//		listImagesCaptions = pointMediaHandler.getImageCaptionList();
 		if (HGlobal.DEBUG)
-		 {
 			System.out.println(" number of Images: " + pointMediaHandler.getNumberOfImages());	//$NON-NLS-1$
-		}
+
         if (listImages.size() > 0) {
             for (int i = 0; i < listImages.size(); i++) {
 	    		JPanel imagePanel = new JPanel();
@@ -1058,6 +1073,19 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		personManagerFrame.setVisible(true);
 		setCursor(Cursor.getDefaultCursor());
 
+		// Now that frame is visible the picPanel has a size (is 0,0 otherwise)
+		// This allows us to scale the primary image to fit into picPanel as big as possible
+		if (listImages != null && listImages.size() > 0) {
+			picPanel.setVisible(true);
+	        JTextPane picPane = new JTextPane();
+	        picPane.setEditable(false);
+	       ImageIcon primaryPic = pointMediaHandler.getExhibitImage();
+	       // Scale primaryPic
+	        ImageIcon newscaleImage = pointMediaHandler.scaleImage(picPanel.getHeight(), picPanel.getHeight(), primaryPic);
+	        picPane.insertIcon(newscaleImage);
+	        picPanel .add(picPane, "cell 0 0, alignx center");  //$NON-NLS-1$
+		}
+
 /******************
  * ACTION LISTENERS
  ******************/
@@ -1066,9 +1094,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    	 @Override
 			public void internalFrameClosed(InternalFrameEvent c)  {
 				if (HGlobal.writeLogs)
-				 {
 					HB0711Logging.logWrite("Action: exiting HG0506ManagePerson"); //$NON-NLS-1$
-				}
+
 	    	// As we exit, update the Recently Accessed person list under the Person menu,
 	    	// and disable the Add other Persons main menu items, BUT only if this ManagePerson
 			// instance is running against the current project.
@@ -1084,9 +1111,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    	 @Override
 			public void internalFrameClosing(InternalFrameEvent c)  {
 			// close reminder display
-				if (reminderDisplay != null) {
-					reminderDisplay.dispose();
-				}
+				if (reminderDisplay != null) reminderDisplay.dispose();
 
 		    // Set frame size in GUI data
 				Dimension frameSize = getSize();
@@ -1138,9 +1163,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					HG0401HREMain.mainFrame.deleteRecentPerson(personPID);
 
     			// close reminder display
-					if (reminderDisplay != null) {
+					if (reminderDisplay != null)
 						reminderDisplay.dispose();
-					}
 
 			    // Set frame size in GUI data
 					Dimension frameSize = getSize();
@@ -1160,13 +1184,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				} catch (HBException hbe) {
 					if (HGlobal.DEBUG)
 						System.out.println(" ERROR in PersonHandler deletePersonInTable: " + hbe.getMessage());	//$NON-NLS-1$
-					
+
 					JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_60 + persName.getText()		// ERROR: failed to delete
 					 			+ hbe.getMessage(),
 								HG0506Msgs.Text_49, JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG) 
+					if (HGlobal.DEBUG)
 						hbe.printStackTrace();
-					
+
 				}
 			}
 		});
@@ -1190,16 +1214,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        		long personPID = pointOpenProject.getPersonPIDfromVisID(enteredNum);
 	        		if (HGlobal.DEBUG)
 						System.out.println("Entered:" + enteredNum + "  PID: "+ personPID); //$NON-NLS-1$ //$NON-NLS-2$
-					
+
 	        		if (personPID != null_RPID) {
 	    				if (HGlobal.writeLogs)
 							HB0711Logging.logWrite("Action: reset HG0506ManagePerson"); //$NON-NLS-1$
-						
 
     				// close reminder display
-    					if (reminderDisplay != null) 
+    					if (reminderDisplay != null)
 							reminderDisplay.dispose();
-						
 
     			    // Set frame size in GUI data
     					Dimension frameSize = getSize();
@@ -1334,9 +1356,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 					HG0547EditEvent editPartnerScreen = pointHBWhereWhenHandler.activateAddPartnerEvent(pointOpenProject,
 														eventNumber, roleNumber, partnerTablePID, selectedPartnerTableRow);
-					if (editPartnerScreen == null) {
-						return;
-					}
+					if (editPartnerScreen == null) 	return;
+
 					editPartnerScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyShow = persName.getLocationOnScreen();
 					editPartnerScreen.setLocation(xyShow.x, xyShow.y);
@@ -1394,7 +1415,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        	rowInTable = tableEvents.getSelectedRow();
 	        	eventPID = pointPersonHandler.getEventPID(rowInTable);
 	        	if (rowInTable < 0) return;
-				
+
 	        	try {
 		    		selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.eventTable, "PID = " + eventPID); //$NON-NLS-1$ //$NON-NLS-2$
 		    		eventTableRS = pointPersonHandler.requestTableData(selectString, dataBaseIndex);
@@ -1515,9 +1536,9 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        					System.out.println("HG0506ManagePerson - Edit Name error: " + hbe.getMessage());	//$NON-NLS-1$
 	        					hbe.printStackTrace();
 	        				}
-                		} else { // N
-						popupMenu.show(me.getComponent(), me.getX(), me.getY());
-					}
+                		} else {
+                				popupMenu.show(me.getComponent(), me.getX(), me.getY());
+                		}
                 	}
                 }
             }
@@ -1842,10 +1863,9 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	            int flagID = (int) objReqFlagData[clickedRow][3];
 	        // Just check it all looks good ->
 	            if (HGlobal.DEBUG)
-				 {
 					System.out.println(" New Flag setting Row = "+ clickedRow + " newValue = " + newValue +		//$NON-NLS-1$//$NON-NLS-2$
 	            						" Flag = " + objReqFlagData[clickedRow][0] + " FlagID = " + flagID);	//$NON-NLS-1$//$NON-NLS-2$
-				}
+
 	         // Update the Flag in DB
 	            try {
 					pointPersonHandler.setPersonFlagSetting(flagID, newValue);
@@ -1934,11 +1954,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		    @Override
 			public void actionPerformed(ActionEvent e) {
 			   boolean state;
-			   if (checkChildren.isSelected()) {
-				state = true;
-			} else {
-				state = false;
-			}
+			   if (checkChildren.isSelected()) 	state = true;
+			   else state = false;
 		        try {
 					pointPersonHandler.setChildrenState(state);
 					objEventData = pointPersonHandler.getManagedEventTable();
@@ -1989,9 +2006,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		comboBox_Subset.addActionListener (new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				if (chkbox_Filter.isSelected()) {
+				if (chkbox_Filter.isSelected())
 					setTableFilter(comboBox_Subset.getSelectedItem().toString(), filterTextField.getText());
-				}
 			}
 		});
 	}	// End HG0506ManagePerson constructor
@@ -2048,9 +2064,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	            // Switch to Names card
 				radio_Names.doClick();
 				// If only 1 Name it MUST be Primary, so show HG0509ManagePersonName for editing
-				if (tableNames.getRowCount() == 1) {
-					popMenuNamesEdit.doClick();
-				}
+				if (tableNames.getRowCount() == 1) popMenuNamesEdit.doClick();
 	        }
 	    }
 	}	// End DCTextField

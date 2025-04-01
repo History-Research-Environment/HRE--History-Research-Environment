@@ -37,8 +37,10 @@ package hre.bila;
  * 			  2024-02-30 - Updated read result set eventtype for both parents (N. Tolleshaug)
  * 			  2024-03-31 - Updated getEventTypeList for event group selection (N. Tolleshaug)
  * 			  2024-10-19 - getPersonBirthEventPID() returns null_RPID if no birth event(N. Tolleshaug)
- * 			  2024-10-21 - getEventGroup() checks only em-US for eventGroup
- * 			  2024-11-11 - exstractPersonName - updated with "No name found"
+ * 			  2024-10-21 - getEventGroup() checks only em-US for eventGroup (N. Tolleshaug)
+ * 			  2024-11-11 - exstractPersonName - updated with "No name found" (N. Tolleshaug)
+ * v0.03.0032 2025-03-20 - Added findActiveUser(int dataBaseIndex) (N. Tolleshaug)
+ * 			  2025-03-25 - Updated addUserToTable wilth IS_OWNER = false (N. Tolleshaug)
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -1138,7 +1140,36 @@ public class HBLibraryResultSet {
 		   		throw new HBException("Find password - SQL error: \n" + exc.getMessage());
 		   	}
 	   }
-
+	
+/**
+ * public String findActiveUser(int dataBaseIndex)	
+ * @return
+ * @throws HBException 
+ * @throws SQLException 
+ * **************************************************************************
+ * NOTE 1 need to select assessor acording to boolean marking in T131 table
+ ****************************************************************************/
+	public String findActiveUser(int dataBaseIndex) throws HBException  {
+		String selectSQL;
+		String userName = "No name!";
+		ResultSet userTableRS;
+	// DATA from T131_USERS
+		selectSQL = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.userTable ,"");
+		try {
+			userTableRS =  pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex );
+			userTableRS.beforeFirst();
+			while (userTableRS.next())
+				if (userTableRS.getBoolean("IS_OWNER"))
+					userName = userTableRS.getNString("USER_NAME");
+			userTableRS.close();
+			if (HGlobal.DEBUG) 
+				System.out.println("SQL active User Name: " + userName);
+			return userName;
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("findActiveUser error: " + sqle.getMessage());
+		}		
+	}
 
 /**
  * BuildTableModel convert ResultSet to DefaultTableModel
@@ -1146,8 +1177,6 @@ public class HBLibraryResultSet {
  * @return DefaultTableModel instance
  * @throws HBException
  */
-
-
 	public DefaultTableModel buildTableModel(ResultSet resSet) throws HBException {
 
 	    try {
@@ -1259,7 +1288,8 @@ public class HBLibraryResultSet {
 			pointResultSet.updateString("USER_NAME", userData[1]);
 			pointResultSet.updateString("PASSWORD", userData[2]);
 			pointResultSet.updateString("EMAIL", userData[3]);
-			pointResultSet.updateLong("USER_GROUP_RPID",null_RPID);
+			pointResultSet.updateLong("USER_GROUP_RPID", null_RPID);
+			pointResultSet.updateBoolean("IS_OWNER", false);
 			pointResultSet.insertRow();
 			pointResultSet.beforeFirst();
 

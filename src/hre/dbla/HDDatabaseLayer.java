@@ -24,11 +24,14 @@ package hre.dbla;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.gui.HGlobal;
+import hre.tmgjava.HCException;
+import hre.tmgjava.TMGglobal;
 
 /**
  * class DatabaseLayer includes all methods and administration of complex requests
@@ -246,6 +249,27 @@ public class HDDatabaseLayer {
 		} catch(HDException exc) {
 			if (HGlobal.DEBUG) System.out.println("updateTableData - SQL error: \n" + exc.getMessage());
 			throw new HDException("updateTableData - SQL error: \n" + exc.getMessage());
+		}
+	}
+	
+/**
+ * Create table in H2 base
+ * @param tableName
+ * @param columnStructure
+ * @throws HCException
+ */
+	public boolean createTableInBase(String tableName, String columnStructure, int dbIndex) throws HDException {
+		
+		String sqlRequest = "CREATE TABLE " + tableName + "(" + columnStructure + ");";
+		// Adjust SQL request string according to setting in DatabaseAbstraction
+		String updatedString = HDDatabaseAbstraction.updateSqlString(sqlRequest);
+    	try {
+
+	        if (HGlobal.DEBUG) System.out.println("Request SQL String: \n" + updatedString);
+	        return connectedDataBases.get(dbIndex).changeSQLdata(updatedString);
+		} catch(HDException exc) {
+			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			throw new HDException("Create table SQL error: \n" + exc.getMessage());
 		}
 	}
 

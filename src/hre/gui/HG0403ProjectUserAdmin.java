@@ -33,6 +33,8 @@ package hre.gui;
  * v0.03.0031 2024-10-01 Revise complex IFs (D Ferguson)
  * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * 			  2024-11-30 Fix crash if cancel out of Browse action (D Ferguson)
+ * v0.04.0032 2025-03-26 Add display of IS_OWNER setting (D Ferguson)
+ * 			  2025-03-27 Reject duplicate and illegal LogonID entries (D Ferguson)
  ******************************************************************************************
 */
 
@@ -83,7 +85,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Admin
  * @author R Thompson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2019-02-10
  */
 
@@ -191,22 +193,33 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 		btn_Done.setToolTipText(HG0403Msgs.Text_40);			// Closes the window
 		contents.add(btn_Done, "cell 1 7, align right, gapx 20, tag ok"); //$NON-NLS-1$
 
-	// Setup Users table as editable by the user and set ListModel
-		table_Users = new JTable() { private static final long serialVersionUID = 1L;
-										@Override
-										public boolean isCellEditable(int row, int column) {
-											if (column == 0) return false;
-											return true;}};
+	// Setup Users table as editable by the user and set Model
+		table_Users = new JTable() {
+			private static final long serialVersionUID = 1L;
+				@Override
+				public boolean isCellEditable(int row, int col) {
+					if (col == 0) return false;
+					return true;
+				}
+				@Override
+				public Class<?> getColumnClass(int col) {
+				    Class<?> classType = String.class;
+				    if (col == 3) classType = Boolean.class;
+				    return classType;
+				}
+			};
 		table_Users.setModel(new DefaultTableModel(
 								new String[][] {  },
-								new String[] {HG0403Msgs.Text_42, HG0403Msgs.Text_43, HG0403Msgs.Text_44}));	// Logon ID, User's Name, E-mail
-		table_Users.getColumnModel().getColumn(0).setPreferredWidth(120);
-		table_Users.getColumnModel().getColumn(0).setMinWidth(120);
-		table_Users.getColumnModel().getColumn(1).setPreferredWidth(120);
-		table_Users.getColumnModel().getColumn(1).setMinWidth(120);
+								new String[] {HG0403Msgs.Text_42, HG0403Msgs.Text_43, 		// Logon ID, User's Name
+											  HG0403Msgs.Text_44, "Is Owner?"}));			// E-mail, Owner?
+		table_Users.getColumnModel().getColumn(0).setMinWidth(80);
+		table_Users.getColumnModel().getColumn(0).setPreferredWidth(100);
+		table_Users.getColumnModel().getColumn(1).setMinWidth(80);
+		table_Users.getColumnModel().getColumn(1).setPreferredWidth(100);
+		table_Users.getColumnModel().getColumn(2).setMinWidth(100);
 		table_Users.getColumnModel().getColumn(2).setPreferredWidth(120);
-		table_Users.getColumnModel().getColumn(2).setMinWidth(120);
-
+		table_Users.getColumnModel().getColumn(3).setMinWidth(30);
+		table_Users.getColumnModel().getColumn(3).setPreferredWidth(30);
 	// Set the ability to sort on columns and presort column 0
 		table_Users.setAutoCreateRowSorter(true);
 		TableRowSorter<TableModel> userSorter = new TableRowSorter<TableModel>(table_Users.getModel());
@@ -292,7 +305,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 				HGlobal.projectFilename = HGlobal.projectFilename.trim();
 				lbl_FilenameData.setText(HGlobal.projectFilename);   	// set filename
 				lbl_FolderNameData.setText(HGlobal.projectFolder); 		// set path
-				if (HGlobal.projectFilename.equals("")) return;	// retutn if cancelled out of folderchooser
+				if (HGlobal.projectFilename.equals("")) return;	//$NON-NLS-1$	// return if cancelled out of folderchooser
 
 				try {
 				// Check if editor active and stop editing
@@ -422,7 +435,16 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 					// Populate user table from project data
 						DefaultTableModel model = (DefaultTableModel) table_Users.getModel();
 						model.setDataVector(pointToolHand.presentTableUsersT131(),
-								new String[] {HG0403Msgs.Text_42,HG0403Msgs.Text_43, HG0403Msgs.Text_44});	// Logon ID, User's Name, E-mail
+								new String[] {HG0403Msgs.Text_42,HG0403Msgs.Text_43, HG0403Msgs.Text_44, "Is Owner?"});	// Logon ID, User's Name, E-mail
+					// Reset column sizes
+						table_Users.getColumnModel().getColumn(0).setMinWidth(80);
+						table_Users.getColumnModel().getColumn(0).setPreferredWidth(100);
+						table_Users.getColumnModel().getColumn(1).setMinWidth(80);
+						table_Users.getColumnModel().getColumn(1).setPreferredWidth(100);
+						table_Users.getColumnModel().getColumn(2).setMinWidth(100);
+						table_Users.getColumnModel().getColumn(2).setPreferredWidth(120);
+						table_Users.getColumnModel().getColumn(3).setMinWidth(30);
+						table_Users.getColumnModel().getColumn(3).setPreferredWidth(30);
 					// set button visibility
 						btn_AddUser.setEnabled(true);
 						btn_DeleteUser.setEnabled(true);
@@ -588,24 +610,42 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
  */
 	private String[] addUserInfo(JButton btn_AddUser) {
 		String[] chgUserInfo = new String[4];
+		// Get new Logon ID
 		chgUserInfo[0] = JOptionPane.showInputDialog(btn_AddUser,
 							HG0403Msgs.Text_108, chgUserInfo[0]);		// Enter new Logon ID:
-		if (chgUserInfo[0] == null) return null; // user must have cancelled
-		if (chgUserInfo[0].length() == 0) return null;
+		if (chgUserInfo[0] == null) return null; 		// user must have cancelled
+		if (chgUserInfo[0].length() == 0) return null;	// user pressed OK
+		// Test if LogonID contains blanks - will create illegal SQL is it does
+		if (chgUserInfo[0].contains(" ")) {
+			JOptionPane.showMessageDialog(btn_AddUser,
+					"Logon ID must not contain blanks",
+					chgUserInfo[1],
+					JOptionPane.ERROR_MESSAGE);
+			return null;
+		}
+		// Test if new LogonId equals existing one - not allowed
+		for(int i = 0; i < table_Users.getRowCount(); i++){
+			if(chgUserInfo[0].equals(table_Users.getModel().getValueAt(i, 0).toString().trim())) {
+				JOptionPane.showMessageDialog(btn_AddUser,
+						"Logon ID " + chgUserInfo[0] + " already in use",
+						chgUserInfo[1],
+						JOptionPane.ERROR_MESSAGE);
+				return null;
+			}
+		}
+		// Get new User anme
 		chgUserInfo[1] = JOptionPane.showInputDialog(btn_AddUser,
 							HG0403Msgs.Text_109 + chgUserInfo[0] +"\n"+ //$NON-NLS-1$	// Logon ID is:
 							HG0403Msgs.Text_111, chgUserInfo[1]);						// Now enter new User's Name:
-
-		if (chgUserInfo[1] == null) return null; // user must have cancelled
-		if (chgUserInfo[1].length() == 0) return null;  // user must pressed OK
+		if (chgUserInfo[1] == null) return null; 		// user must have cancelled
+		if (chgUserInfo[1].length() == 0) return null;  // user pressed OK
+		// Get email address
 		String email = JOptionPane.showInputDialog(btn_AddUser,
 							HG0403Msgs.Text_109 + chgUserInfo[0] +"\n"	 //$NON-NLS-1$	// Logon ID is:
 							+ HG0403Msgs.Text_114 + chgUserInfo[1] +"\n" //$NON-NLS-1$	// User's name is:
 							+ HG0403Msgs.Text_116);										// Now enter their email address:
-
 		if (email == null) return null;	// user must have cancelled
 		if (email.length() == 0) return null;	// user must have clicked OK
-
 		if (HGlobalCode.isEmailValid(email)) {     	//email address is valid
 			chgUserInfo[3] = email;
 		} else {
@@ -617,12 +657,12 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 			}
 			chgUserInfo[3] = email;
 		}
-
+		// Enter password
 		passWord = setNewPassWord(btn_AddUser);
 		if (passWord == null) {
 			JOptionPane.showMessageDialog(btn_AddUser,
 					HG0403Msgs.Text_121 + chgUserInfo[0], 				// Default password set for
-					HG0403Msgs.Text_32, JOptionPane.ERROR_MESSAGE);	// Set Password
+					HG0403Msgs.Text_32, JOptionPane.ERROR_MESSAGE);		// Set Password
 			chgUserInfo[2] = "Hre_2021"; //$NON-NLS-1$
 		} else chgUserInfo[2] = passWord;
 

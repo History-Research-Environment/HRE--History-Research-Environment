@@ -16,6 +16,7 @@ package hre.gui;
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
+ * 			  2025-03-24 Modify panelNameRelate layout (D Ferguson)
  ******************************************************************************/
 
 import java.awt.Font;
@@ -94,9 +95,9 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 		panelNameRelate.add(comboPartRole1, "cell 0 1, gapx 10");		//$NON-NLS-1$
 
 		JLabel lbl_nRole2 = new JLabel( HG0505Msgs.Text_64);	// Role of New Partner
-		panelNameRelate.add(lbl_nRole2, "cell 1 1");		//$NON-NLS-1$
+		panelNameRelate.add(lbl_nRole2, "cell 0 2");		//$NON-NLS-1$
 		comboPartRole2 = new JComboBox<>(partnerRoleList);
-		panelNameRelate.add(comboPartRole2, "cell 1 1, gapx 10");		//$NON-NLS-1$
+		panelNameRelate.add(comboPartRole2, "cell 0 2, gapx 10");		//$NON-NLS-1$
 		panelNameRelate.setVisible(true);
 
 	// and copy Partner role to the Partner event panel

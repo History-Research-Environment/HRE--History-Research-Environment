@@ -12,11 +12,17 @@ package hre.gui;
  *        	  2025-02-25 Add/Update and delete event citation (N. Tolleshaug)
  *        	  2025-02-26 Add/Update and delete name citation (N. Tolleshaug)
  *            2025-02-27 Fix InputVerifier, add Source Fidelity, close Reminder on exit (D Ferguson)
+ *            2025-03-01 Fixes to turn on Save button as needed (D Ferguson)
+ *            2025-03-02 Added update of fidelity source citation edit (N. Tolleshaug)
+ *            2025-03-19 Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
+ *            2025-03-20 Added assessorName setting from findAssessorName() (N. Tolleshaug)
+ *            2025-03-21 Improved hnadling of Surety field input (D Ferguson)
+ *            2025-03-22 Handling add citation if source table emplty (N. Tolleshaug)
+ *            2025-03-23 Removed console print fir fidelity (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 Visualise button needs action written
  * NOTE04 Source selection by ## action incomplete
- *
  ************************************************************************************/
 
 import java.awt.Component;
@@ -34,9 +40,7 @@ import java.awt.event.WindowEvent;
 import java.text.NumberFormat;
 
 import javax.swing.Box;
-import javax.swing.InputVerifier;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -54,12 +58,12 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
-import javax.swing.text.JTextComponent;
+import javax.swing.text.DocumentFilter;
 import javax.swing.text.NumberFormatter;
-import javax.swing.text.PlainDocument;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
@@ -90,11 +94,11 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	private JPanel contents;
 	boolean outputVisible = false;
 
-	String citationRefer = "", sourceTitle = "", citationDetail = "", citationMemo = "";
+	String citationRefer = "", sourceTitle = "", citationDetail = "", citationMemo = "", assessorName;
 	int sourceREF = 0;
-	String[] accuracyData = {"","","",""};
-	String fidData = "";
-	String[] accuracyEdited = null;
+	String[] accuracyData;
+	String fidelityData = "";
+	int[] accuracyEdited = null;
 	Object[] citationEditData;
 	Object[] citationSaveData;
 	long citationTablePID = null_RPID;
@@ -114,7 +118,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	public void setSourceSelectedData(Object[] objSourceDataToEdit) {
 		sourceTablePID = (long) objSourceDataToEdit[3];
 		sourceTitleText.setText((String) objSourceDataToEdit[1]);
-		srcNum.setText("" + objSourceDataToEdit[0]);
+		srcNum.setText(" " + objSourceDataToEdit[0]);
 	}
 
 /**
@@ -142,15 +146,20 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 
 	// Collect citationData
-		if (!addCitationRecord)
 		try {
-			citationEditData = pointCitationSourceHandler.getCitationEditData(citationTablePID);
-			citationRefer = (String) citationEditData[0];
-			sourceREF = (int) citationEditData[1];
-			sourceTitle = (String) citationEditData[2];
-			citationDetail = (String) citationEditData[3];
-			citationMemo = (String) citationEditData[4];
+			if (!addCitationRecord) {
+				citationEditData = pointCitationSourceHandler.getCitationEditData(citationTablePID);
+				citationRefer = (String) citationEditData[0];
+				sourceREF = (int) citationEditData[1];
+				sourceTitle = (String) citationEditData[2];
+				citationDetail = (String) citationEditData[3];
+				citationMemo = (String) citationEditData[4];
+				//assessorName = (String) citationEditData[5];
+				fidelityData = (String) citationEditData[6];
+				//accuracyData = pointCitationSourceHandler.getAccoracyData();
+			}
 			accuracyData = pointCitationSourceHandler.getAccoracyData();
+			assessorName = " " + pointCitationSourceHandler.findAssessorName();
 		} catch (HBException hbe) {
 			System.out.println(" HG0555EditCitation error: " + hbe.getMessage());
 			hbe.printStackTrace();
@@ -250,6 +259,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citePanel.add(assess, "cell 0 4, alignx right");	//$NON-NLS-1$
 		JTextField assessText = new JTextField();
 		assessText.setColumns(30);
+		assessText.setText(assessorName);
 		citePanel.add(assessText, "cell 1 4, alignx left");	//$NON-NLS-1$
 
 		JLabel sure = new JLabel("Surety:");
@@ -257,61 +267,60 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 
 		JLabel srcFidLbl = new JLabel("Source Fidelity: ");
 		citePanel.add(srcFidLbl, "cell 0 6, alignx right");	//$NON-NLS-1$
-		JTextField fidText = new JTextField();
-		fidText.setColumns(15);
-		fidText.setEditable(false);
-		fidText.setFocusable(false);
-		fidText.setText(fidAnalyse());
-		citePanel.add(fidText, "cell 1 6, alignx left");	//$NON-NLS-1$
+		JTextField fidelityText = new JTextField();
+		fidelityText.setColumns(15);
+		fidelityText.setEditable(false);
+		fidelityText.setFocusable(false);
+		fidelityText.setText(" " + fidAnalyse());
+		citePanel.add(fidelityText, "cell 1 6, alignx left");	//$NON-NLS-1$
 
 	// Define Surety panel
 		JPanel surePanel = new JPanel();
-		surePanel.setLayout(new MigLayout("", "[]10[]", "[]0[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		surePanel.setLayout(new MigLayout("", "[]5[]5[]5[]5[]20[]", "[]0[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel sure12PDM = new JLabel("  1    2    D    P   M");
-		surePanel.add(sure12PDM, "cell 0 0, alignx left");	//$NON-NLS-1$
+		JLabel sure1 = new JLabel("1");		//$NON-NLS-1$
+		surePanel.add(sure1, "cell 0 0,alignx center");	//$NON-NLS-1$
+		JLabel sure2 = new JLabel("2");		//$NON-NLS-1$
+		surePanel.add(sure2, "cell 1 0,alignx center");	//$NON-NLS-1$
+		JLabel sureD = new JLabel("D");
+		surePanel.add(sureD, "cell 2 0,alignx center");	//$NON-NLS-1$
+		JLabel sureP = new JLabel("P");
+		surePanel.add(sureP, "cell 3 0,alignx center");	//$NON-NLS-1$
+		JLabel sureM = new JLabel("M");
+		surePanel.add(sureM, "cell 4 0,alignx center");	//$NON-NLS-1$
 
-		acc1 = new JTextField();
+		acc1 = new JTextField(1);
 		acc1.setColumns(1);
-		acc1.setInputVerifier(new accVerifier());
-		acc1.setDocument(new JTextFieldLimit(1));
 		acc1.setHorizontalAlignment(SwingConstants.CENTER);
 		acc1.setText(accuracyData[0]);
 		surePanel.add(acc1, "cell 0 1");	//$NON-NLS-1$
 
-		acc2 = new JTextField();		// <<<<<< not being set yet!!
+		acc2 = new JTextField();
 		acc2.setColumns(1);
-		acc2.setInputVerifier(new accVerifier());
-		acc2.setDocument(new JTextFieldLimit(1));
 		acc2.setHorizontalAlignment(SwingConstants.CENTER);
-		surePanel.add(acc2, "cell 0 1");	//$NON-NLS-1$
+		acc2.setText(accuracyData[1]);
+		surePanel.add(acc2, "cell 1 1");	//$NON-NLS-1$
 
 		accD = new JTextField();
 		accD.setColumns(1);
-		accD.setInputVerifier(new accVerifier());
-		accD.setDocument(new JTextFieldLimit(1));
 		accD.setHorizontalAlignment(SwingConstants.CENTER);
-		accD.setText(accuracyData[1]);
-		surePanel.add(accD, "cell 0 1");	//$NON-NLS-1$
+		accD.setText(accuracyData[2]);
+		surePanel.add(accD, "cell 2 1");	//$NON-NLS-1$
 
 		accP = new JTextField();
 		accP.setColumns(1);
-		accP.setInputVerifier(new accVerifier());
-		accP.setDocument(new JTextFieldLimit(1));
 		accP.setHorizontalAlignment(SwingConstants.CENTER);
-		accP.setText(accuracyData[2]);
-		surePanel.add(accP, "cell 0 1");	//$NON-NLS-1$
+		accP.setText(accuracyData[3]);
+		surePanel.add(accP, "cell 3 1");	//$NON-NLS-1$
 
 		accM = new JTextField();
 		accM.setColumns(1);
-		accM.setInputVerifier(new accVerifier());
-		accM.setDocument(new JTextFieldLimit(1));
 		accM.setHorizontalAlignment(SwingConstants.CENTER);
-		accM.setText(accuracyData[3]);
-		surePanel.add(accM, "cell 0 1");	//$NON-NLS-1$
+		accM.setText(accuracyData[4]);
+		surePanel.add(accM, "cell 4 1");	//$NON-NLS-1$
 
-		JLabel accHint = new JLabel("(Valid values 3, 2, 1, 0, blank, minus)");
-		surePanel.add(accHint, "cell 1 1");	//$NON-NLS-1$
+		JLabel accHint = new JLabel("(Valid values are 3, 2, 1, 0, minus, blank)");
+		surePanel.add(accHint, "cell 5 1");	//$NON-NLS-1$
 
 		citePanel.add(surePanel, "cell 1 5, alignx left");	//$NON-NLS-1$
 		contents.add(citePanel, "cell 0 0, aligny top"); //$NON-NLS-1$
@@ -422,13 +431,18 @@ public class HG0555EditCitation extends HG0450SuperDialog {
         citeMemoText.getDocument().addDocumentListener(citeMemoListen);
 
         // Listener for Reference textfield
-		refText.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-	          	refTextChanged = true;
+		refText.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {updateFieldState();}
+            @Override
+            public void removeUpdate(DocumentEvent e) {updateFieldState();}
+            @Override
+            public void changedUpdate(DocumentEvent e) {updateFieldState();}
+            protected void updateFieldState() {
+            	refTextChanged = true;
             	btn_Save.setEnabled(true);
-			}
-		});
+            }
+        });
 
         // Listener for Assessor textfield
 		assessText.addActionListener(new ActionListener() {
@@ -439,7 +453,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Source Select button
+		// Listener for Source Select button - get a new Source
 		btn_sorcSelect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
@@ -451,6 +465,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				sorcScreen.setVisible(true);
 				btn_Display.setEnabled(true);
 				setCursor(Cursor.getDefaultCursor());
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -460,7 +475,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				int enteredNum = ((Integer) srcNum.getValue()).intValue();
 	        	if (enteredNum > 0) {
-	        		// NOTE04 Get the Source with the entered number and populate screen
+	        		// NOTE04 Get the Source with the entered number and put its Source name in field SourceTitleText
 
 	        		} else {
 						JOptionPane.showMessageDialog(srcNum, "No Source with number: " + enteredNum,
@@ -500,7 +515,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					System.out.println(" HG0555EditCitation save error: " + hbe.getMessage());
 					hbe.printStackTrace();
 				}
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit HG0565ManageSource");	//$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit HG0555EditCitation");	//$NON-NLS-1$
 				dispose();
 			}
 		});
@@ -511,12 +526,12 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// Close reminder display, if open
 				if (reminderDisplay != null) reminderDisplay.dispose();
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0565ManageSource");	//$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0555EditCitation");	//$NON-NLS-1$
 				dispose();
 			}
 		});
 
-		// Focus listener for all Accuracy fields
+		// Add Focus listener to all Accuracy fields so field is shown as selected
 		accFocus = new FocusListener() {
 			  @Override
 			  public void focusGained(FocusEvent fe) {
@@ -533,6 +548,50 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		accP.addFocusListener(accFocus);
 		accM.addFocusListener(accFocus);
 
+		// Add a DocumentFilter to all Accuracy fields to validate input
+        DocumentFilter accDocFilter = new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                // Allow only valid characters and ensure the field has max 1 character
+                if (text != null && text.length() <= 1 && ("3210-".contains(text) || text.isBlank())) {
+                    fb.replace(0, fb.getDocument().getLength(), text, attrs); // Replace everything with the new character
+                }
+            }
+            @Override
+            public void insertString(FilterBypass fb, int offset, String text, AttributeSet attrs) throws BadLocationException {
+                replace(fb, offset, 0, text, attrs); // Redirect to replace to ensure only 1 char ever acceptedc
+            }
+        };
+        ((AbstractDocument) acc1.getDocument()).setDocumentFilter(accDocFilter);
+        ((AbstractDocument) acc2.getDocument()).setDocumentFilter(accDocFilter);
+        ((AbstractDocument) accD.getDocument()).setDocumentFilter(accDocFilter);
+        ((AbstractDocument) accP.getDocument()).setDocumentFilter(accDocFilter);
+        ((AbstractDocument) accM.getDocument()).setDocumentFilter(accDocFilter);
+
+        // Add a Document listener to all Accuracy fields to set Save button on
+        DocumentListener accDocListen = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+            	accuracyChanged = true;
+            	btn_Save.setEnabled(true);
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+            	accuracyChanged = true;
+            	btn_Save.setEnabled(true);
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+            	accuracyChanged = true;
+            	btn_Save.setEnabled(true);
+            }
+        };
+        acc1.getDocument().addDocumentListener(accDocListen);
+        acc2.getDocument().addDocumentListener(accDocListen);
+        accD.getDocument().addDocumentListener(accDocListen);
+        accP.getDocument().addDocumentListener(accDocListen);
+        accM.getDocument().addDocumentListener(accDocListen);
+
 	}	// End HG0555EditCitation constructor
 
 /**
@@ -540,17 +599,18 @@ public class HG0555EditCitation extends HG0450SuperDialog {
  * @return
  */
 	private Object[] citationSaveData() {
-		accuracyEdited = new String[4];
+		accuracyEdited = new int[5];
 		citationSaveData = new Object[5];
 		citationSaveData[0] = refText.getText();
 		citationSaveData[1] = Integer.parseInt(srcNum.getText().trim());
 		citationSaveData[2] = sourceTitleText.getText();
 		citationSaveData[3] = citeDetailText.getText();
 		citationSaveData[4] = citeMemoText.getText();
-		accuracyEdited[0] = acc1.getText();
-		accuracyEdited[1] = accD.getText();
-		accuracyEdited[2] = accP.getText();
-		accuracyEdited[3] = accM.getText();
+		accuracyEdited[0] = inputAccConvert(acc1.getText());
+		accuracyEdited[1] = inputAccConvert(acc2.getText());
+		accuracyEdited[2] = inputAccConvert(accD.getText());
+		accuracyEdited[3] = inputAccConvert(accP.getText());
+		accuracyEdited[4] = inputAccConvert(accM.getText());
 		return citationSaveData;
 	}
 
@@ -559,56 +619,31 @@ public class HG0555EditCitation extends HG0450SuperDialog {
  * @return fidelity text
  */
 	private String fidAnalyse() {
-		String fidText;
-		if (fidData.equals("A")) fidText = "Original";
-		if (fidData.equals("B")) fidText = "Copy";
-		if (fidData.equals("C")) fidText = "Transcript";
-		if (fidData.equals("D")) fidText = "Extract";
-		if (fidData.equals("E")) fidText = "Other";
-		else fidText = "";
+		String fidText = "-";
+		if (fidelityData.equals("A")) fidText = "Original";
+		else if (fidelityData.equals("B")) fidText = "Copy";
+		else if (fidelityData.equals("C")) fidText = "Transcript";
+		else if (fidelityData.equals("D")) fidText = "Extract";
+		else if (fidelityData.equals("E")) fidText = "Other";
+		else 
+			if (HGlobal.DEBUG) System.out.println(" Soruce fidelity not defined for code: " + fidelityData);
 		return fidText;
 	}
 
 /**
- * class accVerifier - Verify Accuracy textfield inputs (3,2,1,0," ", "-" or null)
+ * private int inputAccConvert(String acc)
+ * @param acc
+ * @return
  */
-	public class accVerifier extends InputVerifier {
-		@Override
-		public boolean verify(JComponent input) {
-		    String text = ((JTextField) input).getText();
-			input.requestFocusInWindow();
-	        ((JTextComponent) input).selectAll();
-			if (text.equals("3") || text.equals("2") || text.equals("1") || text.equals("0")
-								 || text.equals(" ") || text.equals("-") || text.isEmpty()) {
-					accuracyChanged = true;
-					btn_Save.setEnabled(true);
-					return true;
-				}
-			return false;
-		}
+	private int inputAccConvert(String acc) {
+		if (acc.equals("3")) return 3;
+		if (acc.equals("2")) return 2;
+		if (acc.equals("1")) return 1;
+		if (acc.equals("0")) return 0;
+		if (acc.equals("-")) return -1;
+		if (acc.equals(" ")) return -2;
+		if (acc.isEmpty()) return -3;
+		return -4;
 	}
-
-/**
- * class JTextFieldLimit - limits data length of a JTextField
- */
-	class JTextFieldLimit extends PlainDocument {
-		private static final long serialVersionUID = 1L;
-		private int limit ;
-		   JTextFieldLimit(int limit) {
-		      super();
-		      this.limit = limit;
-		   }
-		   JTextFieldLimit(int limit, boolean upper) {
-		      super();
-		      this.limit = limit;
-		   }
-		   public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
-		      if (str == null)
-		         return;
-		      if ((getLength() + str.length()) <= limit) {
-		         super.insertString(offset, str, attr);
-		      }
-		   }
-		}
 
 }  // End of HG0555EditCitation
