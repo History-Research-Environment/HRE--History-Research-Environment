@@ -75,6 +75,7 @@ package hre.bila;
   * v0.03.0032 2025-01-11 - Rearranged processing of event and roles (N. Tolleshaug)
   * 		   2025-01-30 - Updated setting og language code for role/event (N. Tolleshaug)
   * 		   2025-02-18 - Fixed warning unused code (N. Tolleshaug)
+  * 		   2025-04-27 - Added activation code for activateAddEvent (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -97,6 +98,7 @@ import hre.gui.HG0401HREMain;
 import hre.gui.HG0507LocationSelect;
 import hre.gui.HG0508ManageLocation;
 import hre.gui.HG0526ManageLocationNameStyles;
+import hre.gui.HG0547AddEvent;
 import hre.gui.HG0547EditEvent;
 import hre.gui.HG0547PartnerEvent;
 import hre.gui.HG0547UpdateEvent;
@@ -1147,6 +1149,34 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID);
+			return pointEditEvent;
+		} catch (HBException hbe) {
+			System.out.println("HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+		return null;
+	}
+	
+/**
+ * public HG0547EditEvent activateAddEvent(HBProjectOpenData pointOpenProject,
+											int eventNumber, int roleNumber, long eventPersonPID)
+ * @param pointOpenProject
+ * @param eventNumber
+ * @param roleNumber
+ * @param eventPersonPID
+ * @return
+ */
+	public HG0547EditEvent activateAddEvent(HBProjectOpenData pointOpenProject,
+											int eventNumber, int roleNumber, long eventPersonPID) {
+		long eventPID = 0;
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		dateFormatSelect();
+		try {
+			pointPersonMannager = pointOpenProject.getPersonHandler();
+			//eventPID = pointPersonMannager.getEventPID(tableRow);
+			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
+			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
+			pointEditEvent = new HG0547AddEvent(pointOpenProject, eventNumber, roleNumber);
 			return pointEditEvent;
 		} catch (HBException hbe) {
 			System.out.println("HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());

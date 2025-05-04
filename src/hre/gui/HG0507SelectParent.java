@@ -8,14 +8,17 @@ package hre.gui;
  * 			  2024-07-31 Revised  HG0507SelectParent buttons (N. Tolleshaug)
  * 			  2024-08-24 NLS conversion (D Ferguson)
  * 			  2024-10-03 Added reset T401/402 and PS/PM reset (N. Tolleshaug)
+ * 			  2025-04-25 Add Citation load and GUI seq reset code (D Ferguson)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
  * 		Need to match roles to sex of selected person (so don't add male as a female role)
  *      (use pointPersonHandler.getPersonSex(personPID) to get sexIndex of chosen parent)
  * ***********************************************************************************/
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 
 /**************************************************************************************
  * HG0507SelectParent - extends HG0507SelectPerson
@@ -62,13 +65,15 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 		super(pointPersonHandler, pointOpenProject, addParent);
 		this.selectedRowInTable = selectedRowInTable;
 		this.addRelation = addParent;
+		citeTableName = "T405";
+
 	// Set titles for Parent Select
 		selectTitle = HG05070Msgs.Text_160;	// Select New Parent
 		newTitle = HG05070Msgs.Text_161;	// New Parent:
 		addTitle = HG05070Msgs.Text_162;	// Add New Parent
 		setTitle(selectTitle); // Set first title
 	// Setup of parentRelationData:
-	//	0 = ParentPID, 1 = parent Name, 2 = parentRole, 3 = surety, 4 = parentRPID
+	//	0 = memoPID, 1 = parent Name, 2 = parentRole, 3 = surety, 4 = parentRPID
 		parentRelationData = pointPersonHandler.getParentTableData(selectedRowInTable);
 
 		btn_SaveEvent.setEnabled(false);
@@ -81,8 +86,7 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 	// Set parent name in window
 		if (parentRelationData != null) {
 			lbl_ParentName.setText(HG05070Msgs.Text_165 + (String) parentRelationData[1]);	// Edit parent:
-		} 
-
+		}
 		parentRoleList = pointPersonHandler.getRolesForParent(parentEventGroup);
 		parentRoleType = pointPersonHandler.getRolesTypeParent();
 	    updateComboPanel(comboBox_Relationships, parentRoleList);
@@ -93,12 +97,22 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 		if (parentRelationData != null) {
 			memoString = pointPersonHandler.readSelectGUIMemo((long)parentRelationData[0],
 							pointPersonHandler.personParentTable);
-		} else {
+		} else
 			memoString = HG05070Msgs.Text_155;		//  No memo found
-		}
+
 		memoText.append(memoString);
 	// and enable it again
 		memoText.getDocument().addDocumentListener(memoTextChange);
+
+	// Get the citation data for this parentPID relationship
+		if (parentRelationData != null) {
+			personPID = (long)parentRelationData[4];
+			objCiteData = pointCitationSourceHandler.getCitationSourceData(personPID, citeTableName);  // T405
+			// and sort it on GUI sequence
+			Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
+			// and ensure it is displayed
+			resetCitationTable(citeTableName);
+		}
 
 	// Set correct parent role in combo when edit
 	    if (!addRelation) {
@@ -124,18 +138,23 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 					pointPersonHandler.setParentRole(selectedParentRole);
 					if (addRelation) {
 						pointPersonHandler.addNewParent(personPID);
-						if (memoEdited) 
+						if (memoEdited)
 							pointPersonHandler.createSelectGUIMemo(memoText.getText(),
-									pointPersonHandler.personParentTable);		
+									pointPersonHandler.personParentTable);
 					} else {
-						if (memoEdited) 
+						if (memoEdited)
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 								(long)parentRelationData[0], pointPersonHandler.personParentTable);
-						
+
 						pointPersonHandler.setParentRole(selectedParentRole);
 						pointPersonHandler.updateParentRelationTableRow((long)parentRelationData[0]);
 					}
-					
+
+					// Redo citation sequence, but only if more than 1 citation left
+					if (citationOrderChanged && objCiteData.length > 1) {
+						pointCitationSourceHandler.updateCiteGUIseq(personPID, citeTableName, objCiteData);
+						citationOrderChanged = false;
+					}
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
 					pointOpenProject.getPersonHandler().resetPersonSelect();

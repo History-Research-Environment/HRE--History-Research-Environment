@@ -10,12 +10,14 @@ package hre.gui;
  *            2024-05-20 Add and edit partner and memo (N. Tolleshaug)
  *            2024-06-09 Change Save options to be with/without event (D Ferguson)
  *            2024-07-31 Revised HG0507SelectPartner buttons (N. Tolleshaug)
-* 			  2024-08-24 NLS conversion (D Ferguson)-
+ * 			  2024-08-24 NLS conversion (D Ferguson)-
+ * v0.04.0032 2025-04-27 Add handling of citations (D Ferguson)
  *************************************************************************************/
 
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
@@ -68,6 +70,8 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 										 int selectedRowInTable, boolean addPartner) throws HBException {
 		super(pointPersonHandler, pointOpenProject, addPartner);
 		this.addRelation = addPartner;
+		citeTableName = "T404";
+
 	// Set titles for Partner Select
 		selectTitle = HG05070Msgs.Text_170;	// Select New Partner
 		newTitle = HG05070Msgs.Text_171;	// New Partner:
@@ -78,6 +82,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		btn_SaveEvent.setEnabled(true);
 
 		pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+		// partnerRelationData[0] = personPID; [1] = eventype; [2] = prirole; [3] = secrole; [4] = priname; [5] = secname
 		partnerRelationData = pointPersonHandler.getPartnerTableData(selectedRowInTable);
 
 	// Update event memo
@@ -87,12 +92,20 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 			memoString = pointPersonHandler.readSelectGUIMemo((long)partnerRelationData[0],
 															pointPersonHandler.personPartnerTable);
 		}
-		else {
-			memoString = HG05070Msgs.Text_155;		//  No memo found
-		}
+		else memoString = HG05070Msgs.Text_155;		//  No memo found
 		memoText.append(memoString);
 	// and enable listener again
 		memoText.getDocument().addDocumentListener(memoTextChange);
+
+	// Get the citation data for this partnerPID
+		if (partnerRelationData != null) {
+			personPID = (long)partnerRelationData[0];
+			objCiteData = pointCitationSourceHandler.getCitationSourceData(personPID, citeTableName); //for T404
+			// and sort it on GUI sequence
+			Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
+			// and ensure it is displayed
+			resetCitationTable(citeTableName);
+		}
 
 	// Add code for select partner role and activate save button
 		lbl_Relate.setText(HG05070Msgs.Text_174);		//  Set Event Type
@@ -112,7 +125,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 
 		if (partnerRelationData != null) {
 			lbl_nRole1 = new JLabel("" + partnerRelationData[4]);	//$NON-NLS-1$
-		} else { 
+		} else {
 			lbl_nRole1 = new JLabel("");	//$NON-NLS-1$
 		}
 		lbl_nRole1.setText("" + pointPersonHandler.getManagedPersonName());	//$NON-NLS-1$
@@ -221,9 +234,15 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 									(long)partnerRelationData[0], pointPersonHandler.personPartnerTable);
 						}
-					// update partner table
+						// update partner table memo
 						pointPersonHandler.updatePartner((long)partnerRelationData[0],
 												selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
+					}
+
+					// Redo citation sequence, but only if more than 1 citation left
+					if (citationOrderChanged && objCiteData.length > 1) {
+						pointCitationSourceHandler.updateCiteGUIseq(personPID, citeTableName, objCiteData);
+						citationOrderChanged = false;
 					}
 
 					pointOpenProject.reloadT401Persons();
@@ -256,7 +275,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 									(long)partnerRelationData[0], pointPersonHandler.personPartnerTable);
 						}
-					// update partner table
+						// update partner table
 						pointPersonHandler.updatePartner((long)partnerRelationData[0],
 												selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
 					}

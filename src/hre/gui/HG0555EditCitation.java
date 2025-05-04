@@ -17,12 +17,15 @@ package hre.gui;
  *            2025-03-19 Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
  *            2025-03-20 Added assessorName setting from findAssessorName() (N. Tolleshaug)
  *            2025-03-21 Improved hnadling of Surety field input (D Ferguson)
- *            2025-03-22 Handling add citation if source table emplty (N. Tolleshaug)
- *            2025-03-23 Removed console print fir fidelity (N. Tolleshaug)
+ *            2025-03-22 Handling add citation if source table empty (N. Tolleshaug)
+ *            2025-03-23 Removed console print of fidelity (N. Tolleshaug)
+ *            2025-04-10 Add parsing routine to display footnote/biblio output (D Ferguson)
+ *            2025-04-28 Adjust editable Surety values based on citation owner type (D Ferguson)
+ *            2025-04-29 Allow added source selection by number entry (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
- * NOTE03 Visualise button needs action written
- * NOTE04 Source selection by ## action incomplete
+ * NOTE02 footnote/biblio templates not yet loaded from source data
+ * NOTE03 parsing routine needs [  ] parameter substitution method
  ************************************************************************************/
 
 import java.awt.Component;
@@ -38,9 +41,14 @@ import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JEditorPane;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -88,6 +96,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	HG0555EditCitation pointEditCitation = this;
 	HG0547EditEvent pointEditEvent = null;
 	HG0509ManagePersonName pointManagePersonName = null;
+	HG0507SelectPerson pointSelectPerson = null;
 
 	public HBCitationSourceHandler pointCitationSourceHandler;
 
@@ -101,6 +110,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	int[] accuracyEdited = null;
 	Object[] citationEditData;
 	Object[] citationSaveData;
+	Object[][] objSourceData;
+
 	long citationTablePID = null_RPID;
 	long sourceTablePID = null_RPID;
 
@@ -108,35 +119,38 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	FocusListener accFocus;
 	boolean citeDetailChanged, citeMemoChanged, refTextChanged, assessChanged = false;
 	boolean accuracyChanged, fidelityChanged;
+	boolean sourceFound = false;
 
 	JTextArea citeMemoText, citeDetailText;
 	JTextField sourceTitleText, refText, acc1, acc2, accD, accP, accM;
 	JFormattedTextField srcNum;
+
+	String templateFullFootnote, templateShortFootnote, templateBibliography = "";  // NOTE02 data still to be loaded
 
 	JButton btn_Save;
 
 	public void setSourceSelectedData(Object[] objSourceDataToEdit) {
 		sourceTablePID = (long) objSourceDataToEdit[3];
 		sourceTitleText.setText((String) objSourceDataToEdit[1]);
-		srcNum.setText(" " + objSourceDataToEdit[0]);
+		srcNum.setText((String) objSourceDataToEdit[0]);
 	}
 
 /**
  * Create the dialog
  */
-	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject)  {
+	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, String citeOwnerType)  {
 		this.pointOpenProject = pointOpenProject;
-		createGUI(addCitationRecord);
+		createGUI(addCitationRecord, citeOwnerType);
 	}
 
-	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, long citationTablePID)  {
+	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject,
+							  String citeOwnerType, long citationTablePID)  {
 		this.pointOpenProject = pointOpenProject;
 		this.citationTablePID = citationTablePID;
-		createGUI(addCitationRecord);
+		createGUI(addCitationRecord, citeOwnerType);
 	}
 
-	private void createGUI(boolean addCitationRecord) {
-
+	private void createGUI(boolean addCitationRecord, String citeOwnerType) {
 		if (addCitationRecord) setTitle("Add Citation");
 		else setTitle("Edit Citation");
 
@@ -156,9 +170,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				citationMemo = (String) citationEditData[4];
 				//assessorName = (String) citationEditData[5];
 				fidelityData = (String) citationEditData[6];
-				//accuracyData = pointCitationSourceHandler.getAccoracyData();
 			}
-			accuracyData = pointCitationSourceHandler.getAccoracyData();
+			accuracyData = pointCitationSourceHandler.getAccuracyData();
 			assessorName = " " + pointCitationSourceHandler.findAssessorName();
 		} catch (HBException hbe) {
 			System.out.println(" HG0555EditCitation error: " + hbe.getMessage());
@@ -204,6 +217,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	    srcNum.setColumns(5);
 	    srcNum.setHorizontalAlignment(SwingConstants.CENTER);
 	    citePanel.add(srcNum, "cell 1 0, alignx left");		//$NON-NLS-1$
+	    // Don't allow user entry of new source number for an Edit
+	    if (!addCitationRecord)	srcNum.setEnabled(false);
 
 		sourceTitleText = new JTextField(sourceTitle);
 		sourceTitleText.setColumns(30);
@@ -319,6 +334,18 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		accM.setText(accuracyData[4]);
 		surePanel.add(accM, "cell 4 1");	//$NON-NLS-1$
 
+		// The above Surety values of 1, 2, D, P, M do not apply for all events
+		// For Names (ownertype=T402) only 1, M apply
+		// For Parent relationship (T405) only 1, D, M apply
+		// For all except some T450, only 1, D, P, M apply
+		// So set appropriate values non-enabled to enforce these rules
+		if (!citeOwnerType.equals("T450")) acc2.setEnabled(false);
+		if (citeOwnerType.equals("T402")) {
+			accD.setEnabled(false);
+			accP.setEnabled(false);
+		}
+		if (citeOwnerType.equals("T405")) accP.setEnabled(false);
+
 		JLabel accHint = new JLabel("(Valid values are 3, 2, 1, 0, minus, blank)");
 		surePanel.add(accHint, "cell 5 1");	//$NON-NLS-1$
 
@@ -333,9 +360,10 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		JLabel fullFoot = new JLabel("Full footnote");
 		outputPanel.add(fullFoot, "cell 0 0, alignx left");	//$NON-NLS-1$
 		JTextPane fullFootText = new JTextPane();
+		fullFootText.setContentType("text/html"); //$NON-NLS-1$
 		fullFootText.setEditable(false);
 		fullFootText.setFocusable(false);
-		fullFootText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
+		fullFootText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		fullFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		fullFootText.setBorder(new JTable().getBorder());		// match Table border
 		fullFootText.setPreferredSize(new Dimension(200, 90));
@@ -346,9 +374,10 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		JLabel shortFoot = new JLabel("Short footnote");
 		outputPanel.add(shortFoot, "cell 0 2, alignx left");	//$NON-NLS-1$
 		JTextPane shortFootText = new JTextPane();
+		shortFootText.setContentType("text/html"); //$NON-NLS-1$
 		shortFootText.setEditable(false);
 		shortFootText.setFocusable(false);
-		shortFootText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
+		shortFootText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		shortFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		shortFootText.setBorder(new JTable().getBorder());		// match Table border
 		shortFootText.setPreferredSize(new Dimension(200, 75));
@@ -359,9 +388,10 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		JLabel biblio = new JLabel("Bibliography");
 		outputPanel.add(biblio, "cell 0 4, alignx left");	//$NON-NLS-1$
 		JTextPane biblioText = new JTextPane();
+		biblioText.setContentType("text/html"); //$NON-NLS-1$
 		biblioText.setEditable(false);
 		biblioText.setFocusable(false);
-		biblioText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
+		biblioText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		biblioText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		biblioText.setBorder(new JTable().getBorder());		// match Table border
 		biblioText.setPreferredSize(new Dimension(200, 75));
@@ -475,13 +505,31 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				int enteredNum = ((Integer) srcNum.getValue()).intValue();
 	        	if (enteredNum > 0) {
-	        		// NOTE04 Get the Source with the entered number and put its Source name in field SourceTitleText
-
-	        		} else {
-						JOptionPane.showMessageDialog(srcNum, "No Source with number: " + enteredNum,
-													"Select Source", JOptionPane.ERROR_MESSAGE);
+	        		try {
+	        			// Get source number, title, cited, PID
+						objSourceData = pointCitationSourceHandler.getSourceList();
+					} catch (HBException hse) {
+						System.out.println(" HG0555EditCitation get source data error: " + hse.getMessage());
+						hse.printStackTrace();
 					}
+	        		// Get the PID and title of the entered source number
+	        		for (int i = 0; i < objSourceData.length; i++) {
+	        			if ((int)objSourceData[i][0] == enteredNum) {
+	        				sourceTablePID = (long) objSourceData[i][3];
+	        				sourceTitleText.setText((String) objSourceData[i][1]);
+	        				btn_Save.setEnabled(true);
+	        				sourceFound = true;
+	        				break;
+	        			}
+	        		}
 	        	}
+        		// No source number matched
+				if (!sourceFound) JOptionPane.showMessageDialog(srcNum,
+																"No Source exists with number: " + enteredNum,
+																"Select Source", JOptionPane.ERROR_MESSAGE);
+				// reset for next time
+				sourceFound = false;
+	        }
 		});
 
 		// Listener for Display (Visualise) button
@@ -492,8 +540,12 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				outputPanel.setVisible(true);
 				outputVisible = true;
 				pack();
-			// NOTE03 needs action code here to parse the Citation text
-			// into the Source templates and display it in the new output panel
+			// Parse the full Footnote text into its output area
+				fullFootText.setText(parseNoteBiblio(templateFullFootnote));
+			// Parse the short Footnote text into its output area
+				shortFootText.setText(parseNoteBiblio(templateShortFootnote));
+			// Parse the Bibliography text into its output area
+				biblioText.setText(parseNoteBiblio(templateBibliography));
 			}
 		});
 
@@ -511,6 +563,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					} else pointCitationSourceHandler.saveCitedData(citationTablePID, citationSaveData(), accuracyEdited);
 					if (pointEditEvent != null) pointEditEvent.resetCitationTable();
 					if (pointManagePersonName != null) pointManagePersonName.resetCitationTable();
+					if (pointSelectPerson != null) pointSelectPerson.resetCitationTable(citeOwnerType);
+
 				} catch (HBException hbe) {
 					System.out.println(" HG0555EditCitation save error: " + hbe.getMessage());
 					hbe.printStackTrace();
@@ -625,7 +679,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		else if (fidelityData.equals("C")) fidText = "Transcript";
 		else if (fidelityData.equals("D")) fidText = "Extract";
 		else if (fidelityData.equals("E")) fidText = "Other";
-		else 
+		else
 			if (HGlobal.DEBUG) System.out.println(" Soruce fidelity not defined for code: " + fidelityData);
 		return fidText;
 	}
@@ -645,5 +699,227 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		if (acc.isEmpty()) return -3;
 		return -4;
 	}
+
+/**
+ * parseNoteBiblio - converts footnote/bibliography template to HTML display form
+ * inputText	template text to be converted
+ * returns output - text in HTML format with formatting applied
+ */
+	private String parseNoteBiblio(String inputText) {
+		// Define token workareas (150 entries should be enough)
+		String[] tokensPh2 = new String[150];
+		String[] tokensPh3 = new String[150];
+		// and return string
+		String output = "";		//$NON-NLS-1$
+		// and token counters
+		int tokenNumPh2 = 0;
+		int tokenNumPh3 = 0;
+		// and work string
+		String workText = "";
+
+		// If no input, return nothing
+		if (inputText == null || inputText.isEmpty()) {
+			output = "";	//$NON-NLS-1$
+			return output;
+		}
+
+	/****************************
+	 * PHASE 1 - clean the input
+	 ***************************/
+		// Both TMG/HRE templates and HTML use < > markers for different purposes, so we need to replace all
+		// such markers in the input string to enable use of HTML formatting codes.
+		// We have chosen to replace the template < and > markers with ≤ and ≥ - we do this now.
+		String markers = inputText.replace("<", "≤").replace(">", "≥");
+
+		// The format of input string can include TMG formatting values which should never be
+		// part of citations. These are [SCAP:] [INDEX:] [SIZE:] and need to be removed.
+		// Next, all the other [xxx:] and [:xxx} codes need to be converted to their
+		// HTML equivalents.
+		// To do this we use an iterative regex.
+		Map<String, String> repl = new HashMap<>();
+		repl.put("[BOLD:]", "<b>");
+		repl.put("[:BOLD]", "</b>");
+		repl.put("[ITAL:]", "<i>");
+		repl.put("[:ITAL]", "</i>");
+		repl.put("[UND:]", "<u>");
+		repl.put("[:UND]", "</u>");
+		repl.put("[SUP:]", "<sup>");
+		repl.put("[:SUP]", "</sup>");
+		repl.put("[SUB:]", "<sub>");
+		repl.put("[:SUB]", "</sub>");
+		repl.put("[HID:]", "<!");
+		repl.put("[:HID]", "->");
+		repl.put("[CAP:]", "<p style=\"text-transform: uppercase;\">");
+		repl.put("[:CAP]", "</p>");
+		repl.put("[HTML:]", "");
+		repl.put("[:HTML]", "");
+		repl.put("[WEB:]", "");
+		repl.put("[:WEB]", "");
+		repl.put("[EMAIL:]", "<a href=mailto:");
+		repl.put("[:EMAIL]", "></a>");
+		repl.put("[INDEX:]", "");
+		repl.put("[:INDEX]", "");
+		repl.put("[SIZE:]", "");
+		repl.put("[:SIZE]", "");
+		repl.put("[SCAP:]", "");
+		repl.put("[:SCAP]", "");
+		Pattern pattern1 = Pattern.compile
+			("\\[BOLD:\\]|\\[:BOLD\\]|\\[ITAL:\\]|\\[:ITAL\\]|\\[UND:\\]|\\[:UND\\]|\\[SUP:\\]|\\[:SUP\\]|\\[SUB:\\]|\\[:SUB\\]|\\[HID:\\]|\\[:HID\\]|\\[CAP:\\]|\\[:CAP\\]|\\[HTML:\\]|\\[:HTML\\]|\\[WEB:\\]|\\[:WEB\\]|\\[EMAIL:\\]|\\[:EMAIL\\]|\\[INDEX:\\]|\\[:INDEX\\]|\\[SIZE:\\]|\\[:SIZE\\]|\\[SCAP:\\]|\\[:SCAP\\]");
+		Matcher matcher1 = pattern1.matcher(markers);
+		StringBuffer buffer1 = new StringBuffer();
+		while(matcher1.find())
+		    matcher1.appendReplacement(buffer1, repl.get(matcher1.group()));
+		matcher1.appendTail(buffer1);
+		workText = buffer1.toString();
+
+		//System.out.println("End Phase 1: " + workText);
+
+	/******************************
+	 * PHASE 2 - tokenize the input
+	 ******************************/
+		// In Phase 2 we want to break the revised input string into an array of 'tokens',
+		// each containing just 1 component of the input string.
+		// So we setup a regex to break the text string into 'tokens' in tokensPh2[]
+		String regex2 = "\\[[^\\]]*\\]|\\≤[^\\≥]*\\≥|[^≤≥\\[\\]]+";
+		Pattern pattern2 = Pattern.compile(regex2);
+        Matcher matcher2 = pattern2.matcher(workText);
+        // This regex will extract each string enclosed in [ ] or ≤ ≥ or plain text
+        // note that ≤ ≥ strings will enclose more [ ] strings - process them in Phase 3.
+        while (matcher2.find()) {
+            tokensPh2[tokenNumPh2] = matcher2.group();
+            tokenNumPh2++ ;
+        }
+
+        // Display tokensPh2 for checking
+  		//System.out.println("End Phase 2:");
+  		//for (int i = 0; i < tokenNumPh2; i++) {
+  		//	System.out.println("tokensPh2[" + i + "] = " + tokensPh2[i]);
+  		//}
+
+	/**********************************************************
+	 * PHASE 3 - remove empty tokens and split apart < > tokens
+	 **********************************************************/
+        // This phase transfers all tokens to tokensPh3, ignoring null/empty tokens and tokens wrapped in ≤ ≥ (for now).
+        for (int i=0; i < tokenNumPh2; i++) {
+        	if (tokensPh2[i].trim().length() > 0 && tokensPh2[i] != null && !tokensPh2[i].substring(0, 1).equals("≤")) {
+        		tokensPh3[tokenNumPh3] = tokensPh2[i];
+        		tokenNumPh3++;
+        	}
+            // Now break apart all ≤  ≥ entries in tokensPh2 to expose [  ] entries they
+        	// will contain and load them into tokensPh3 as separate tokens
+        	if (tokensPh2[i].startsWith("≤")) {
+        		// Remove the ≤, ≥ characters from beginning/end of this token
+    			workText = tokensPh2[i].substring(1, tokensPh2[i].length() - 1);
+    			// add the ≤ into tokensPh3
+    			tokensPh3[tokenNumPh3] = "≤";
+    			tokenNumPh3++;
+    			// Break apart the ≤ ≥ contents using the previous regex pattern (now
+    			// applied to workText) and add these into tokensPh3.
+    			Matcher matcher3 = pattern2.matcher(workText);
+                while (matcher3.find()) {
+                	tokensPh3[tokenNumPh3] = matcher3.group();
+                    tokenNumPh3++ ;
+                }
+    			// add the ending ≥
+    			tokensPh3[tokenNumPh3] ="≥";
+    			tokenNumPh3++;
+        	}
+        }
+
+        // Display tokensPh3 for checking
+  		//System.out.println("End Phase 3:");
+  		//for (int i = 0; i < tokenNumPh3; i++) {
+  		//	System.out.println("tokensPh3[" + i + "] = " + tokensPh3[i]);
+  		//}
+
+	/***************************************************
+	 * PHASE 4 - substitute [  ] fields with real values
+	 ***************************************************/
+  		// At this stage we should be substituting the [xxx] tokens with their real values
+  		// but at this facility isn't available yet, we'll carry on.
+
+
+        // Display tokensPh3 for checking
+  		//System.out.println("End Phase 4:");
+  		//for (int i = 0; i < tokenNumPh3; i++) {
+  		//	System.out.println("tokensPh3[" + i + "] = " + tokensPh3[i]);
+  		//}
+
+	/***************************************************
+	 * PHASE 5 - process within the ≤ ≥ markers
+	 ***************************************************/
+   		// Now check the substitutions of tokens enclosed in the ≤ ≥ markers.
+		// If there are unsubstituted tokens then the complete content
+		// of these markers needs to be removed from the output.
+    	// First, look for a start marker
+    	int startMarker = 0;
+    	int stopMarker = 0;
+		for (int i = 0; i < tokenNumPh3; i++) {
+			if (tokensPh3[i].startsWith("≤")) {
+				startMarker = i;
+				// Once "≤" is found, look for a "≥"
+				for (int j = i; j < tokenNumPh3; j++) {
+					if (tokensPh3[j].startsWith("≥")) {
+						stopMarker = j;
+						break;
+					}
+				}
+				// Now check within the range of the start/stopMarkers for a  [  ] token.
+				// If one exists, it hasn't been substituted, so delete the whole ≤ ≥ range.
+				for (int k = startMarker+1; k < stopMarker; k++) {
+					if (tokensPh3[k].startsWith("[")) {
+						for (int x = startMarker; x < stopMarker+1; x++) {
+							tokensPh3[x] = "";
+						}
+					}
+				}
+			}
+		}
+
+        // Display tokensPh3 for checking
+  		//System.out.println("End Phase 5:");
+  		//for (int i = 0; i < tokenNumPh3; i++) {
+  		//	System.out.println("tokensPh3[" + i + "] = " + tokensPh3[i]);
+  		//}
+
+	/****************************************************
+	 * PHASE 6 - build final output string
+	 ****************************************************/
+        // Build the tokens into our workText string, ignoring blank tokens
+		workText = "";
+        for (int i=0; i < tokenNumPh3; i++) {
+        	if (!tokensPh3[i].equals("")) workText = workText + tokensPh3[i] + " ";
+        }
+        // Now clean the output of double blanks, blanks before/after punctuation and
+        // the ≤ ≥ markers remaining after valid substitutions were made.
+        // Use another iterative regex to do this.
+		Map<String, String> clean = new HashMap<>();
+		clean.put("  ", " ");		// change double blank to blank
+		clean.put("( ", "(");		// remove blank after (
+		clean.put(" )", ")");		// remove blank before )
+		clean.put(" :", ":");		// remove blank before :
+		clean.put(" ;", ";");		// remove blank before ;
+		clean.put(" ,", ",");		// remove blank before ,
+		clean.put(" .", ".");		// remove blank before .
+		clean.put("≤", "");			// remove leftover ≤ marker
+		clean.put("≥", "");			// remove leftover ≥ marker
+		StringBuffer buffer3 = new StringBuffer(workText);
+		for (Map.Entry<String, String> entry : clean.entrySet()) {
+	        // Create the regex pattern from the map key
+	        Pattern pattern3 = Pattern.compile(Pattern.quote(entry.getKey()));
+	        Matcher matcher3 = pattern3.matcher(buffer3.toString());
+	        // Perform replacement and update the StringBuffer
+	        buffer3.setLength(0); 	// Clear the buffer
+            while (matcher3.find()) {
+                matcher3.appendReplacement(buffer3, entry.getValue());
+            }
+            matcher3.appendTail(buffer3);
+	    }
+		output = buffer3.toString();
+
+        // and return it
+		return output;
+
+	}		// end of parseFootBiblio
 
 }  // End of HG0555EditCitation

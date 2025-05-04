@@ -64,6 +64,8 @@ package hre.gui;
  * v0.04.0032 2025-01-11 Rearranged processing of event and roles (N. Tolleshaug)
  * 			  2025-03-17 Removed person Surety; adjust Parent Surety column size (D Ferguson)
  * 		 	  2025-03-20 Modify top of screen to enable primary Image to be shown (D Ferguson)
+ * 			  2025-04-25 Fix parent teble popup menu structure; correct picPanel size (D Ferguson)
+ * 			  2025-04-26 Setup NLS of null parent table data (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
@@ -207,6 +209,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 	String[] tableNameHeader;
 	Object[][] objParentData;
+	boolean canOnlyAddParent = false;
 	Object[][] objSelfData;
 	ArrayList<ImageIcon> listImages;
 	ArrayList<String> listImagesCaptions;
@@ -278,7 +281,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		btn_RenumIcon.setMinimumSize(new Dimension(24, 24));
 		btn_RenumIcon.setMaximumSize(new Dimension(24, 24));
 
-	// Setup al references for HG0506ManagePerson
+	// Setup all references for HG0506ManagePerson
 		windowID = screenID;
 		helpName = "manageperson";	//$NON-NLS-1$
     	this.pointOpenProject = pointOpenProject;
@@ -322,14 +325,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		// Setup top area of Main panel for picture and Name/Parent detail
 		JPanel picPanel = new JPanel();
 		picPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(picPanel, "cell 0 0, grow");
-		picPanel.setLayout(new MigLayout("fill, hidemode 3", "[]", "[center]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.add(picPanel, "cell 0 0, grow");	//$NON-NLS-1$
+		picPanel.setLayout(new MigLayout("fill, hidemode 3, insets 0", "[]", "[center]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		picPanel.setVisible(false);
 		// NB: we have to leave populating this panel until AFTER the frame is made visible to get the size right
 
 		JPanel nameParentPanel = new JPanel();
 		nameParentPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(nameParentPanel, "cell 1 0, grow");
+		contents.add(nameParentPanel, "cell 1 0, grow");	//$NON-NLS-1$
 		nameParentPanel.setLayout(new MigLayout("insets 5", "[]10[grow]", "[]5[]5[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_Ident = new JLabel(HG0506Msgs.Text_2);		// Identity:
@@ -377,15 +380,26 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				public boolean isCellEditable(int row, int column) {return false;}
 		 	};
 		objParentData = pointPersonHandler.getManagedParentTable();
+		// Pre-process the Parent data to check for 2 unknown parents, in which case set
+		// the 'Father', 'Mother', 'Not recorded' text in correct language
+		if (objParentData.length == 2) {
+			if (((String) objParentData[0][1]).trim().equals("---") && ((String) objParentData[1][1]).trim().equals("---")) {
+				objParentData[0][0] = HG0506Msgs.Text_87;		// Father
+				objParentData[1][0] = HG0506Msgs.Text_88;		// Mother
+				objParentData[0][1] = HG0506Msgs.Text_89;		// Not recorded
+				objParentData[1][1] = HG0506Msgs.Text_89;		// Not recorded
+				canOnlyAddParent= true;
+			}
+		}
 		tableParents.setModel(new DefaultTableModel(objParentData,
 										pointPersonHandler.setTranslatedData(screenID, "1", false)	//$NON-NLS-1$  // Role, Name, Surety
 				 					));
 		tableParents.getColumnModel().getColumn(0).setMinWidth(70);
 		tableParents.getColumnModel().getColumn(0).setPreferredWidth(120);
 		tableParents.getColumnModel().getColumn(1).setMinWidth(200);
-		tableParents.getColumnModel().getColumn(1).setPreferredWidth(410);
-		tableParents.getColumnModel().getColumn(2).setMinWidth(80);
-		tableParents.getColumnModel().getColumn(2).setPreferredWidth(80);
+		tableParents.getColumnModel().getColumn(1).setPreferredWidth(440);
+		tableParents.getColumnModel().getColumn(2).setMinWidth(50);
+		tableParents.getColumnModel().getColumn(2).setPreferredWidth(50);
 		JTableHeader tHdParents = tableParents.getTableHeader();
 		tHdParents.setOpaque(false);
 		tableParents.setFillsViewportHeight(true);
@@ -1077,13 +1091,16 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		// This allows us to scale the primary image to fit into picPanel as big as possible
 		if (listImages != null && listImages.size() > 0) {
 			picPanel.setVisible(true);
-	        JTextPane picPane = new JTextPane();
+			JTextPane picPane = new JTextPane();
 	        picPane.setEditable(false);
 	       ImageIcon primaryPic = pointMediaHandler.getExhibitImage();
-	       // Scale primaryPic
-	        ImageIcon newscaleImage = pointMediaHandler.scaleImage(picPanel.getHeight(), picPanel.getHeight(), primaryPic);
+	       // Get picPanel height and adjust for borders
+	       int picHeight = picPanel.getHeight() - 20;
+	       // Scale primaryPic, show it, repack
+	        ImageIcon newscaleImage = pointMediaHandler.scaleImage(picHeight, picHeight, primaryPic);
 	        picPane.insertIcon(newscaleImage);
 	        picPanel .add(picPane, "cell 0 0, alignx center");  //$NON-NLS-1$
+	        pack();
 		}
 
 /******************
@@ -1563,7 +1580,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
 				} catch (HBException hbe) {
-		// Attempt to edit parent relation without table recording
+		// Attempt to edit parent relation without table recording - should never happen!
 					if (hbe.getMessage().contains("No Parent")) {		//$NON-NLS-1$
 						setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 						JOptionPane.showMessageDialog(personSelectScreen, HG0506Msgs.Text_84, // No Parent data available to edit
@@ -1627,12 +1644,16 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    popMenuParentDelete.addActionListener(popParentDelete);
 	    JMenuItem popMenuParentAdd = new JMenuItem(HG0506Msgs.Text_69);	// Add new parent
 	    popMenuParentAdd.addActionListener(popParentAdd);
+	    JMenuItem popMenuParentNew = new JMenuItem(HG0506Msgs.Text_69);	// Add new parent
+	    popMenuParentNew.addActionListener(popParentAdd);
 
-	 // Define a right-click popup menu to use in tableParents
+	 // Define  right-click popup menus to use in tableParents
 	    JPopupMenu popupMenuParent = new JPopupMenu();
 	    popupMenuParent.add(popMenuParentEdit);
 	    popupMenuParent.add(popMenuParentDelete);
 	    popupMenuParent.add(popMenuParentAdd);
+	    JPopupMenu popupMenuParentNew = new JPopupMenu();
+	    popupMenuParentNew.add(popMenuParentNew);
 	 // Listener for Parents table mouse click
 	    tableParents.addMouseListener(new MouseAdapter() {
 			@Override
@@ -1640,7 +1661,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
                 if (me.getButton() == MouseEvent.BUTTON3) {
                 // RIGHT-CLICK
                 	rowClicked = tableParents.rowAtPoint(me.getPoint());
-                	popupMenuParent.show(me.getComponent(), me.getX(), me.getY());
+                	if (rowClicked == -1 || canOnlyAddParent)
+                		popupMenuParentNew.show(me.getComponent(), me.getX(), me.getY());
+                	else
+                		popupMenuParent.show(me.getComponent(), me.getX(), me.getY());
                 }
 	           	if (me.getClickCount() == 2 && tableParents.getSelectedRow() != -1) {
 	           		// DOUBLE-CLICK - maybe edit the tag
@@ -1738,9 +1762,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
                 	rowClicked = tablePartners.rowAtPoint(me.getPoint());
                 	if (tablePartners.rowAtPoint(me.getPoint()) < 0) {
 						popupMenuPartnerAdd.show(me.getComponent(), me.getX(), me.getY());
-					} else {
+					} else
 						popupMenuPartner.show(me.getComponent(), me.getX(), me.getY());
-					}
                 }
 	           	if (me.getClickCount() == 2 && tablePartners.getSelectedRow() != -1) {
 	           		// DOUBLE-CLICK - edit the tag

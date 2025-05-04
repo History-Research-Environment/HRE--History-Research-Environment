@@ -7,7 +7,8 @@ package hre.gui;
  * 			  2024-08-16 NLS conversion (D Ferguson)
  * 			  2024-10-13 Edited and removed additinal{} (N Tolleshaug)
  * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
- * v0.03.0031 2024-12-22 Updated for B32 (N Tolleshaug)
+ * v0.04.0032 2024-12-22 Updated for Build 32 (N Tolleshaug)
+ * 			  2025-04-21 Remove redundant citationchanged code (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE02 load/edit/save/move of Citation data
@@ -27,7 +28,7 @@ import hre.nls.HG0509Msgs;
 /**
  * Add PersonName
  * @author N Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-06-14
  */
 
@@ -65,7 +66,6 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 			// Action each save function depending on what has been changed
 				long personNameTablePID = 0;
 				try {
-					//System.out.println(" HG0509AddPersonName save event type: " + nameEventType);
 					personNameTablePID = pointPersonHandler.createPersonNameRecord(personTablePID, nameEventType);
 					if (styleChanged) {
 						// Save the new name style in DB
@@ -81,14 +81,13 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 							styleChanged = false;
 					}
 
-					if (startDateOK)					 
+					if (startDateOK)
 						pointPersonHandler.createNameDates(false, personNameTablePID, "START_HDATE_RPID", startHREDate);   //$NON-NLS-1$
-					
-					if (endDateOK)	 
+
+					if (endDateOK)
 						pointPersonHandler.createNameDates(false, personNameTablePID, "END_HDATE_RPID", endHREDate);//$NON-NLS-1$
-					
+
 					if (nameChanged) {
-							//new TableModelEvent(tablePerson.getModel()); // Mod 5.12.2024
 					// Update best name in T401
 						if (setPrimary) {
 							pointPersonHandler.setNameEventType(nameEventType);
@@ -104,18 +103,13 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 					// Update all names table in manage person
 						pointPersonHandler.updateAllNameTable();
 						pointPersonHandler.managePersonScreen.resetAllNametable(pointOpenProject);
-						
+
 					// Reset personSelector (if running)
 						pointOpenProject.reloadT401Persons();
 						pointOpenProject.reloadT402Names();
 						pointOpenProject.getPersonHandler().resetPersonManager();
 						pointOpenProject.getPersonHandler().resetPersonSelect();
 						nameChanged = false;
-					}
-
-					if (citationChanged) {
-						// Save the new citation in the DB - NOTE02
-						citationChanged = false;
 					}
 
 					if (memoChanged) {
@@ -138,5 +132,5 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 			}
 		});
 	}	// End HG0509AddPersonName constructor
-	
+
 }	// End HG0509AddPersonName

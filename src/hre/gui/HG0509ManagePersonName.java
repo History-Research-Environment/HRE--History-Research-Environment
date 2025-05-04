@@ -30,6 +30,7 @@ package hre.gui;
  *  		  2025-02-14 Added citationTablePID to HG0555EditCitation call(N. Tolleshaug)
  *  		  2025-02-26 Added add, edit and remove for name citations (N. Tolleshaug)
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
+ * 			  2025-04-21 Observe GUI Seq when loading citation data (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE04 Sentence edit function missing
@@ -49,6 +50,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.EventObject;
 import java.util.Vector;
 
@@ -122,7 +124,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	boolean eventTypeChanged = false;
 	boolean nameChanged = false;
 	boolean styleChanged = false;
-	boolean citationChanged = false;
+	boolean citationOrderChanged = false;
 	boolean memoChanged = false;
 	boolean startDateOK = false;
 	boolean endDateOK = false;
@@ -414,7 +416,9 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		contents.add(lbl_Surety, "cell 2 3, alignx right, aligny center, gapx 50");		//$NON-NLS-1$
 
 	// Create scrollpane and table for the Name Citations
-		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");
+		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");	//$NON-NLS-1$
+		// and sort it on GUI sequence
+		Arrays.sort(objNameCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
 		citeModel = new DefaultTableModel(objNameCiteData, citeHeaderData);
 		JTable tableNameCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
@@ -593,7 +597,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		tablePerson.getModel().addTableModelListener(persListener);
 
 		// Listener for changes made in tableNameCite
-		TableModelListener citeListener = new TableModelListener() {
+/*		TableModelListener citeListener = new TableModelListener() {
 			@Override
 			public void tableChanged(TableModelEvent e) {
 				btn_Save.setEnabled(true);
@@ -601,7 +605,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			}
 		};
 		tableNameCite.getModel().addTableModelListener(citeListener);
-
+*/
 		// Listener for Citation table mouse clicks
 		tableNameCite.addMouseListener(new MouseAdapter() {
 			@Override
@@ -617,7 +621,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	           		int atRow = tableNameCite.getSelectedRow();
 	           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
-					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, (long)objCiteDataToEdit[3]);
+					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, "T402", (long)objCiteDataToEdit[3]);
 					citeScreen.pointManagePersonName = pointManagePersonName;
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyCite = lbl_Style.getLocationOnScreen();
@@ -632,16 +636,15 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				citationChanged = true;
-				pointCitationSourceHandler.setCitedTableData("T402", personNameTablePID);
-				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject);
+				pointCitationSourceHandler.setCitedTableData("T402", personNameTablePID);	//$NON-NLS-1$
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, "T402");
 				citeScreen.pointManagePersonName = pointManagePersonName;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Style.getLocationOnScreen();
 				citeScreen.setLocation(xyCite.x, xyCite.y + 30);
 				citeScreen.setVisible(true);
 				btn_Save.setEnabled(true);
+				citationOrderChanged = true;
 			}
 		});
 
@@ -649,8 +652,6 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		btn_Del.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				citationChanged = true;
            		int atRow = tableNameCite.getSelectedRow();
            		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
            		try {
@@ -658,7 +659,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 					citeModel.removeRow(atRow);
 					pack();
 				} catch (HBException hbe) {
-					System.out.println(" Deletet citation action: " + hbe.getMessage());
+					System.out.println("HG0509ManagePersonName delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 			}
@@ -680,7 +681,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				//  Reset visible selected row
 				    tableNameCite.setRowSelectionInterval(selectedRow-1, selectedRow-1);
 				    btn_Save.setEnabled(true);
-					citationChanged = true;
+					citationOrderChanged = true;
 				}
 			}
 		});
@@ -702,7 +703,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				//  Reset visible selected row
 					tableNameCite.setRowSelectionInterval(selectedRow+1, selectedRow+1);
 					btn_Save.setEnabled(true);
-					citationChanged = true;
+					citationOrderChanged = true;
 				}
 			}
 		});
@@ -762,7 +763,6 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int selectedNmaeTypeIndex = comboEvents.getSelectedIndex();
 				nameEventType = nameTypes[selectedNmaeTypeIndex];
-				//System.out.println(" HG0509ManagePersonName changed event type: " + nameEventType);
 				btn_Save.setEnabled(true);
 				eventTypeChanged = true;
 			}
@@ -874,7 +874,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
  * @throws HBException
  */
 	public void resetCitationTable() throws HBException {
-		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");
+		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");	//$NON-NLS-1$
 		citeModel.setDataVector(objNameCiteData, citeHeaderData);
 	}
 /**

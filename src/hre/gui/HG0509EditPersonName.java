@@ -14,6 +14,7 @@ package hre.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
 import javax.swing.WindowConstants;
 
 import hre.bila.HB0711Logging;
@@ -48,7 +49,7 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		if (HGlobal.DEBUG)
 			System.out.println("HG0509EditPersonName initated");	//$NON-NLS-1$
-		
+
     	this.setResizable(true);
     // Setup screenID and helpName for 50600 as Help for this dialog is part of
     // managePerson Help and F1 has to select that (also this screen does not save to T302)
@@ -105,13 +106,12 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 
 				if (startDateOK)
 					pointPersonHandler.createNameDates(true, personNameTablePID, "START_HDATE_RPID", startHREDate);	//$NON-NLS-1$
-				
-				if (endDateOK)	 
+
+				if (endDateOK)
 					pointPersonHandler.createNameDates(true, personNameTablePID, "END_HDATE_RPID", endHREDate);			//$NON-NLS-1$
-				
-				if (nameChanged || eventTypeChanged || memoChanged || citationChanged) {
+
+				if (nameChanged || eventTypeChanged || memoChanged || citationOrderChanged) {
 					if (nameChanged || eventTypeChanged) {
-							//new TableModelEvent(tablePerson.getModel());
 						// Update best name in T401
 							if (setPrimary) {
 								pointPersonHandler.setNameEventType(nameEventType);
@@ -126,14 +126,14 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 							}
 						// Update name element table T403
 							pointPersonHandler.updateElementData(nameEventType);
-							
+
 						// Update all names table in manage person
 							pointPersonHandler.updateAllNameTable();
 							pointPersonHandler.managePersonScreen.resetAllNametable(pointOpenProject);
 							nameChanged = false;
 							eventTypeChanged = false;
 					}
-					
+
 					if (memoChanged) {
 						pointPersonHandler.updateSelectGUIMemo(memoNameText.getText(),
 																personNameTablePID,
@@ -141,18 +141,19 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 						memoChanged = false;
 					}
 
-					if (citationChanged) {
-						// Save the new citation in the DB - NOTE02
-						citationChanged = false;
+					// Redo citation sequence, but only if more than 1 citation left
+					if (citationOrderChanged && objNameCiteData.length > 1) {
+						pointCitationSourceHandler.updateCiteGUIseq(personNameTablePID, "T402", objNameCiteData);	//$NON-NLS-1$
+						citationOrderChanged = false;
 					}
-				}	
-				
+				}
+
 			// Reset personSelector and PersonManager(if running)
 				pointOpenProject.reloadT401Persons();
 				pointOpenProject.reloadT402Names();
 				pointPersonHandler.resetPersonManager();
 				pointPersonHandler.resetPersonSelect();
-				
+
 			} catch (HBException hbe) {
 				System.out.println("HG0509EditPersonName - Save error: " + hbe.getMessage());	//$NON-NLS-1$
 				hbe.printStackTrace();

@@ -17,7 +17,6 @@ package hre.gui;
  * NOTE04 implement Delete button
  * NOTE05 implement Save button
  * NOTE06 implement Show Inactive button
-
  ************************************************************************************/
 
 import java.awt.Component;
@@ -180,8 +179,8 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 													   "Source Select", 			// Source Select
 													   JOptionPane.ERROR_MESSAGE);
 			//dispose();
-		} 
-		
+		}
+
 	 	// Setup tableSource, model and renderer
 		if (tableSourceData != null) {
 			srcTableModel = new DefaultTableModel(
@@ -427,8 +426,8 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0565ManageSource");	//$NON-NLS-1$
-			// Dispose EditCitation
-				pointEditCitation.dispose();
+			// Dispose EditCitation if not null
+				if (!(pointEditCitation == null)) pointEditCitation.dispose();
 				dispose();
 			}
 		});
@@ -460,7 +459,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	            }
 	          }
 		});
-		
+
 	}	// End HG0565ManageSource constructor
 
 }  // End of HG0565ManageSource

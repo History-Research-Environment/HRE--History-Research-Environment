@@ -10,15 +10,17 @@ package hre.gui;
  *			  2024-03-30 Remove ability to select more than 1 person (D Ferguson)
  *			  2024-04-02 Fix method of selecting row in person table (D Ferguson)
  *			  2024-05-08 Setting up edit select person (N. Tolleshaug)
- *			  2024-07-31 Revised  HG0507SelectPerson buttons (N. Tolleshaug)
+ *			  2024-07-31 Revised HG0507SelectPerson buttons (N. Tolleshaug)
  *			  2024-11-05 Fix filter crashing issue (D Ferguson)
  * v0.04.0032 2024-12-31 Add citation select/up/down code (D Ferguson)
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
+ * 			  2025-04-24 Add citation add/delete/move code (D Ferguson)
+ * 			  2025-04-27 Add citation panel for Partners (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
  * NOTE04 need to pass in the initial person (focusPersIDX)	as a new parameter
- * NOTE06 need to get memo/citation data and enable edit/save
+ * NOTE06 need to get memo data and enable edit/save
  ************************************************************************************/
 
 import java.awt.Cursor;
@@ -36,6 +38,7 @@ import java.awt.event.WindowEvent;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.PatternSyntaxException;
 
@@ -64,8 +67,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -75,6 +76,7 @@ import javax.swing.table.TableRowSorter;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -105,6 +107,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	JPanel citePanel;
 	JPanel control2Panel;
 	boolean addRelation;
+	DefaultTableModel citeModel;
 
 	private String selectString = ""; //$NON-NLS-1$
 	private JCheckBox chkbox_Filter;
@@ -117,6 +120,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
     public HBPersonHandler pointPersonHandler;
     HG0507PersonSelect personSelect;
 	HBProjectOpenData pointOpenProject;
+	HG0507SelectPerson pointSelectPerson = this;
+	public HBCitationSourceHandler pointCitationSourceHandler;
 	HG0507SelectPerson personFrame = this;
     JScrollPane scrollTable;
 	JComboBox<String> comboBox_Subset;
@@ -124,9 +129,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
     JTextArea memoText; 				// accessed by update
 	DocumentListener memoTextChange;	// accessed by update
     boolean memoEdited = false; 		// Signals memo is edited
-    boolean citationChanged = false;	// Signals ciation edited
+    boolean citationOrderChanged = false;	// Signals citation added or order changed
 
-// Added for partner select
+    // Added for partner select
 	JComboBox<String> comboPartRole1, comboPartRole2;
 	int[] partnerEventType = null;
 	String[] partnerRoleList = null;
@@ -146,6 +151,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	Object[][] objCiteData;
 	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
 	Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
+	String[] tableCiteHeader;
+	String citeTableName = "";
 
 	JLabel lbl_Relate;
 	JComboBox<String> comboBox_Relationships;
@@ -166,7 +173,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
 		this.pointOpenProject = pointOpenProject;
 		this.pointPersonHandler = pointPersonHandler;
+		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 		this.addRelation = addRela;
+		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507SelectPerson");	//$NON-NLS-1$
 
 		// Setup references for HG0450
 		windowID = screenID;
@@ -186,7 +195,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		String[] tableHeaders = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
 
 		// Collect static GUI text from T204 for Citation table
-		String[] tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
+		tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 
 		// Setup final table column headers - just use ID, Name, Birth data, Death date
 		tablePersColHeads = new String[4];
@@ -195,9 +204,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		tablePersColHeads[2] = (String) tableHeaders[2];
 		tablePersColHeads[3] = (String) tableHeaders[4];
 
-		// Setup close and logging actions
+		// Setup close action
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507SelectPerson");	//$NON-NLS-1$
 
 		// Setup dialog
 		contents = new JPanel();
@@ -384,8 +392,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		JLabel lbl_Surety = new JLabel(HG05070Msgs.Text_138);	// Surety
 		citePanel.add(lbl_Surety, "cell 2 0");		//$NON-NLS-1$
 
-		// Create scrollpane and table for the Citations
-		DefaultTableModel citeModel = new DefaultTableModel(objCiteData, tableCiteHeader);
+		// Create scrollpane and table for the Citations; HG0507SelectParent/Partner will load the citation data
+		citeModel = new DefaultTableModel(objCiteData, tableCiteHeader);
 		JTable tableCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
 				@Override
@@ -401,7 +409,6 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 						return false;
 				}
 			};
-//		objCiteData = pointxxxxxxxxxxx							// NOTE06 get citation data
 		tableCite.getColumnModel().getColumn(0).setMinWidth(30);
 		tableCite.getColumnModel().getColumn(0).setPreferredWidth(70);
 		tableCite.getColumnModel().getColumn(1).setMinWidth(100);
@@ -528,6 +535,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
 		// Set the dialog visible with normal cursor
 		setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
 		// Focus Policy still to be setup!
 		pack();
 
@@ -726,7 +734,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for tablePersons row selection
+		// Listener for tablePersons row selection of a relation to be added
 		tablePersons.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent selectPer) {
 				if (!selectPer.getValueIsAdjusting()) {
@@ -759,6 +767,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				memoPanel.setVisible(true);
 				// but don't show citation panel for associates
 				if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
+				if (thisSelectPerson instanceof HG0507SelectPartner) citePanel.setVisible(true);
 				control2Panel.setVisible(true);
 
 			// Change the title from Select to Add
@@ -781,29 +790,32 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	           	if (me.getClickCount() == 2 && tableCite.getSelectedRow() != -1) {
 	           		int atRow = tableCite.getSelectedRow();
 	           		objCiteDataToEdit = objCiteData[atRow]; // select whole row
-	        	// Display Citation Editor (to be created)
-//	        		showXXXXXXXXXX(atRow, objCiteDataToEdit, false);
+		        	// Display HG0555EditCitation with this data
+						HG0555EditCitation citeScreen
+										= new HG0555EditCitation(false, pointOpenProject, citeTableName, (long)objCiteDataToEdit[3]);
+						citeScreen.pointSelectPerson = pointSelectPerson;
+						citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+						Point xyCite = lbl_Relate.getLocationOnScreen();
+						citeScreen.setLocation(xyCite.x, xyCite.y + 30);
+						citeScreen.setVisible(true);
+						btn_Save.setEnabled(true);
 	           	}
 	        }
 	    });
-
-		// Listener for changes made in tableCite
-		TableModelListener citeListener = new TableModelListener() {
-			@Override
-			public void tableChanged(TableModelEvent e) {
-				btn_Save.setEnabled(true);
-				citationChanged = true;
-			}
-		};
-		tableCite.getModel().addTableModelListener(citeListener);
 
 		// Listener for Add Citation button
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				pointCitationSourceHandler.setCitedTableData(citeTableName, personPID);
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeTableName);
+				citeScreen.pointSelectPerson = pointSelectPerson;
+				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyCite = lbl_Relate.getLocationOnScreen();
+				citeScreen.setLocation(xyCite.x, xyCite.y + 30);
+				citeScreen.setVisible(true);
 				btn_Save.setEnabled(true);
-				citationChanged = true;
-				// NOTE06 need code here show an HG0555EditCitation screen
+				citationOrderChanged = true;
 			}
 		});
 
@@ -811,9 +823,16 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Del.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				btn_Save.setEnabled(true);
-				citationChanged = true;
-				// NOTE06 need code here to delete selected Citation
+           		int atRow = tableCite.getSelectedRow();
+           		objCiteDataToEdit = objCiteData[atRow]; // select whole row
+           		try {
+					pointCitationSourceHandler.deleteCitationRecord((long) objCiteDataToEdit[3]);
+					citeModel.removeRow(atRow);
+					pack();
+				} catch (HBException hbe) {
+					System.out.println("HG0507SelectPerson delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -833,7 +852,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				//  Reset visible selected row
 				    tableCite.setRowSelectionInterval(selectedRow-1, selectedRow-1);
 				    btn_Save.setEnabled(true);
-					citationChanged = true;
+					citationOrderChanged = true;
 				}
 			}
 		});
@@ -855,12 +874,23 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				//  Reset visible selected row
 					tableCite.setRowSelectionInterval(selectedRow+1, selectedRow+1);
 					btn_Save.setEnabled(true);
-					citationChanged = true;
+					citationOrderChanged = true;
 				}
 			}
 		});
 
 	}	// End HG0507SelectPerson constructor
+
+/**
+ * resetCitationTable
+ * @aram tableName
+ * @throws HBException
+ */
+	public void resetCitationTable(String tableName) throws HBException {
+		objCiteData = pointCitationSourceHandler.getCitationSourceData(personPID, tableName);
+		Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
+		citeModel.setDataVector(objCiteData, tableCiteHeader);
+	}
 
 	public void setEditMode() {
 	// Hide the Find/Filter & Person panels
@@ -877,8 +907,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	// Display the Relationship/memo/Citation panels instead
 		persRolePanel.setVisible(true);
 		memoPanel.setVisible(true);
-	// but only show citation panel for Parents
+	// but only show citation panel for Parents/Partners
 		if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
+		if (thisSelectPerson instanceof HG0507SelectPartner) citePanel.setVisible(true);
 		control2Panel.setVisible(true);
 		btn_SaveEvent.setEnabled(true);
 		btn_SaveEvent.setVisible(true);

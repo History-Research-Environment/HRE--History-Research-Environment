@@ -5,7 +5,7 @@ package hre.bila;
  * Receives requests from User GUI to action methods
  * Sends requests to database over Database Layer API
  ************************************************************************************************
- * v0.00.0032 2025-02-12 - First version (N. Tolleshaug)
+ * v0.04.0032 2025-02-12 - First version (N. Tolleshaug)
  * 			  2025-02-13 - Modified source number (N. Tolleshaug)
  * 			  2025-02-17 - Created source list only first time (N. Tolleshaug)
  * 			  2025-02-21 - Populate citation data and update (N. Tolleshaug)
@@ -16,6 +16,7 @@ package hre.bila;
  *			  2025-03-20 - Added findAssessorName() (N. Tolleshaug)
  *			  2025-03-22 - Handling add citation if source table emplty (N. Tolleshaug)
  *			  2025-03-22 - Removed saveCitedData PID console print (N. Tolleshaug)
+ *			  202=-04-21 - Added code to pass CITN_GUI_SEQ and handle resetting it (D Ferguson)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -33,7 +34,8 @@ package hre.bila;
  * TMG = 3 - > HRE 'B'
  * TMG = 4 - > HRE 'C'
  * TMG = 5 - > HRE 'D'
- ***********************************************************************************************/
+ *********************************************************************************************/
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -57,7 +59,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	String sourceTypeName, sourceRefTable, sourceMemo, subSource, sourceText, sourceRemind;
 	int sourceNumber, majSource, sourceType, sourceRefId;
 
-	public String[] getAccoracyData() {
+	public String[] getAccuracyData() {
 		return accuracy;
 	}
 
@@ -97,14 +99,14 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  */
 	public long createCitationRecord(long sourceTablePID) throws HBException {
 		this.sourceTablePID = sourceTablePID;
-		ResultSet eventCitiationRS;
+		ResultSet eventCitationRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		nextCitationPID = lastRowPID(citationTable, pointOpenProject) + 1;
 		selectString = setSelectSQL("*", citationTable, " PID = " + (nextCitationPID - 1));
-		eventCitiationRS = requestTableData(selectString, dataBaseIndex);
-		addToCitationT735_CITN(nextCitationPID, eventCitiationRS);
+		eventCitationRS = requestTableData(selectString, dataBaseIndex);
+		addToCitationT735_CITN(nextCitationPID, eventCitationRS);
 		try {
-			eventCitiationRS.close();
+			eventCitationRS.close();
 		} catch (SQLException sqle) {
 			System.out.println(" createCitationRecord: " + sqle.getMessage());
 			sqle.printStackTrace();
@@ -118,14 +120,14 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public void deleteCitationRecord(long citationTablePID) throws HBException {
-		ResultSet eventCitiationRS;
+		ResultSet eventCitationRS;
 		this.citationTablePID = citationTablePID;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", citationTable, " PID = " + citationTablePID);
-		eventCitiationRS = requestTableData(selectString, dataBaseIndex);
+		eventCitationRS = requestTableData(selectString, dataBaseIndex);
 		try {
-			eventCitiationRS.first();
-			eventCitiationRS.deleteRow();
+			eventCitationRS.first();
+			eventCitationRS.deleteRow();
 		} catch (SQLException sqle) {
 			System.out.println(" deleteCitationRecord() error: " + sqle.getMessage());
 			sqle.printStackTrace();
@@ -140,7 +142,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public Object[][] getCitationSourceData(long eventPID, String tableName) throws HBException {
-		ResultSet eventCitiationRS, eventSourcRS;
+		ResultSet eventCitationRS, eventSourcRS;
 		int index = 0;
 		long sourcePID;
 		char name1Acc, name2Acc, dateAcc, locAcc, memoAcc;
@@ -148,21 +150,22 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		Object[][] citationTableData = null;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", citationTable, "CITED_RPID = " + eventPID + " AND OWNER_TYPE = '" + tableName + "'");
-		eventCitiationRS = requestTableData(selectString, dataBaseIndex);
+		eventCitationRS = requestTableData(selectString, dataBaseIndex);
 		try {
-			eventCitiationRS.last();
-			citationTableData = new Object[eventCitiationRS.getRow()][4];
-			eventCitiationRS.beforeFirst();
-			while (eventCitiationRS.next()) {
-				name1Acc = displayAcc(eventCitiationRS.getInt("CITN_ACC_NAME1"));
-				name2Acc = displayAcc(eventCitiationRS.getInt("CITN_ACC_NAME2"));
-				dateAcc = displayAcc(eventCitiationRS.getInt("CITN_ACC_DATE"));
-				locAcc = displayAcc(eventCitiationRS.getInt("CITN_ACC_LOCN"));
-				memoAcc = displayAcc(eventCitiationRS.getInt("CITN_ACC_MEMO"));
+			eventCitationRS.last();
+			citationTableData = new Object[eventCitationRS.getRow()][5];
+			eventCitationRS.beforeFirst();
+			while (eventCitationRS.next()) {
+				name1Acc = displayAcc(eventCitationRS.getInt("CITN_ACC_NAME1"));
+				name2Acc = displayAcc(eventCitationRS.getInt("CITN_ACC_NAME2"));
+				dateAcc = displayAcc(eventCitationRS.getInt("CITN_ACC_DATE"));
+				locAcc = displayAcc(eventCitationRS.getInt("CITN_ACC_LOCN"));
+				memoAcc = displayAcc(eventCitationRS.getInt("CITN_ACC_MEMO"));
 				citationTableData[index][2] = name1Acc + " "+  name2Acc + "  " + dateAcc + "  " + locAcc + "  " + memoAcc;
-				citationTableData[index][3] = eventCitiationRS.getLong("PID");
+				citationTableData[index][3] = eventCitationRS.getLong("PID");
+				citationTableData[index][4] = eventCitationRS.getInt("CITN_GUI_SEQ");
 			// Find source title
-				sourcePID = eventCitiationRS.getLong("SORC_RPID");
+				sourcePID = eventCitationRS.getLong("SORC_RPID");
 				selectString = setSelectSQL("*", sourceTable, "PID = " + sourcePID);
 				eventSourcRS = requestTableData(selectString, dataBaseIndex);
 				eventSourcRS.first();
@@ -207,7 +210,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public Object[][] getSourceList() throws HBException {
-		ResultSet eventCitiationRS, eventSourcRS;
+		ResultSet eventCitationRS, eventSourcRS;
 		String sourceTitle = "Edit New Source";
 		int citedNumber = 0, index = 0;
 		long sourcePID = null_RPID;
@@ -230,9 +233,9 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				sourceTitle = eventSourcRS.getString("SORC_ABBREV").trim();
 				sourcePID = eventSourcRS.getLong("PID");
 				selectString = setSelectSQL("*", citationTable, "SORC_RPID = " + sourcePID);
-				eventCitiationRS = requestTableData(selectString, dataBaseIndex);
-				eventCitiationRS.last();
-				citedNumber = eventCitiationRS.getRow();
+				eventCitationRS = requestTableData(selectString, dataBaseIndex);
+				eventCitationRS.last();
+				citedNumber = eventCitationRS.getRow();
 				tableSourceData[index][0] = eventSourcRS.getInt("SORC_REF");
 				tableSourceData[index][1] = sourceTitle;
 				tableSourceData[index][2] = citedNumber;
@@ -253,37 +256,36 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public Object[] getCitationEditData(long citationTablePID) throws HBException {
-		ResultSet eventCitiationRS, eventSourcRS;
+		ResultSet eventCitationRS, eventSourcRS;
 		long sourcePID, assessorRPID;
 		String sourceTitle, citationRefer,citationDetail, citationMemo = "", sourceFidelity = "";
 		int sourceREF = 0;
-		//accuracy = new String[5]; -
 
 		Object[] citationEditData = new Object[7];
 		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", citationTable, " PID = " + citationTablePID);
-		eventCitiationRS = requestTableData(selectString, dataBaseIndex);
+		eventCitationRS = requestTableData(selectString, dataBaseIndex);
 		try {
-			if (isResultSetEmpty(eventCitiationRS)) return citationEditData;
-			eventCitiationRS.first();
-			accuracy[0] =  "" + displayAcc(eventCitiationRS.getInt("CITN_ACC_NAME1"));
-			accuracy[1] =  "" + displayAcc(eventCitiationRS.getInt("CITN_ACC_NAME2"));
-			accuracy[2] =  "" + displayAcc(eventCitiationRS.getInt("CITN_ACC_DATE"));
-			accuracy[3] =  "" + displayAcc(eventCitiationRS.getInt("CITN_ACC_LOCN"));
-			accuracy[4] =  "" + displayAcc(eventCitiationRS.getInt("CITN_ACC_MEMO"));
-			citationRefer = eventCitiationRS.getString("CITN_REF").trim();
+			if (isResultSetEmpty(eventCitationRS)) return citationEditData;
+			eventCitationRS.first();
+			accuracy[0] =  "" + displayAcc(eventCitationRS.getInt("CITN_ACC_NAME1"));
+			accuracy[1] =  "" + displayAcc(eventCitationRS.getInt("CITN_ACC_NAME2"));
+			accuracy[2] =  "" + displayAcc(eventCitationRS.getInt("CITN_ACC_DATE"));
+			accuracy[3] =  "" + displayAcc(eventCitationRS.getInt("CITN_ACC_LOCN"));
+			accuracy[4] =  "" + displayAcc(eventCitationRS.getInt("CITN_ACC_MEMO"));
+			citationRefer = eventCitationRS.getString("CITN_REF").trim();
 
-			sourcePID = eventCitiationRS.getLong("SORC_RPID");
+			sourcePID = eventCitationRS.getLong("SORC_RPID");
 			selectString = setSelectSQL("*", sourceTable, "PID = " + sourcePID);
 			eventSourcRS = requestTableData(selectString, dataBaseIndex);
 			eventSourcRS.first();
 			sourceREF = eventSourcRS.getInt("SORC_REF");
 			sourceTitle = eventSourcRS.getString("SORC_ABBREV").trim();
 			sourceFidelity = eventSourcRS.getString("SORC_FIDELITY").trim();
-			citationDetail = pointHREmemo.readMemo(eventCitiationRS.getLong("CITN_DETAIL_RPID"));
-			citationMemo = pointHREmemo.readMemo(eventCitiationRS.getLong("CITN_MEMO_RPID"));
-			assessorRPID = eventCitiationRS.getLong("ASSESSOR_RPID");
+			citationDetail = pointHREmemo.readMemo(eventCitationRS.getLong("CITN_DETAIL_RPID"));
+			citationMemo = pointHREmemo.readMemo(eventCitationRS.getLong("CITN_MEMO_RPID"));
+			assessorRPID = eventCitationRS.getLong("ASSESSOR_RPID");
 /*
 			System.out.println(" getCitationEditData ref: " + citationRefer
 										+ " \n Title: " + sourceTitle
@@ -320,23 +322,23 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  */
 	public void saveCitedData(long citationTablePID, Object[] saveCitedData, int[] accuracySave) throws HBException{
 		//System.out.println(" saveCitedData PID: " + citationTablePID + "-" + saveCitedData[0] + "/" + accuracySave[0]);
-		ResultSet eventCitiationRS, eventSourcRS;
+		ResultSet eventCitationRS, eventSourcRS;
 		long sourcePID, memoTablePID;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		//accuracy = new String[5];
 		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 		selectString = setSelectSQL("*", citationTable, " PID = " + citationTablePID);
-		eventCitiationRS = requestTableData(selectString, dataBaseIndex);
+		eventCitationRS = requestTableData(selectString, dataBaseIndex);
 		try {
-			eventCitiationRS.first();
-			eventCitiationRS.updateInt("CITN_ACC_NAME1", accuracySave[0]);
-			eventCitiationRS.updateInt("CITN_ACC_NAME2", accuracySave[1]);
-			eventCitiationRS.updateInt("CITN_ACC_DATE", accuracySave[2]);
-			eventCitiationRS.updateInt("CITN_ACC_LOCN", accuracySave[3]);
-			eventCitiationRS.updateInt("CITN_ACC_MEMO", accuracySave[4]);
-			eventCitiationRS.updateString("CITN_REF", (String)saveCitedData[0]);
+			eventCitationRS.first();
+			eventCitationRS.updateInt("CITN_ACC_NAME1", accuracySave[0]);
+			eventCitationRS.updateInt("CITN_ACC_NAME2", accuracySave[1]);
+			eventCitationRS.updateInt("CITN_ACC_DATE", accuracySave[2]);
+			eventCitationRS.updateInt("CITN_ACC_LOCN", accuracySave[3]);
+			eventCitationRS.updateInt("CITN_ACC_MEMO", accuracySave[4]);
+			eventCitationRS.updateString("CITN_REF", (String)saveCitedData[0]);
 
-			sourcePID = eventCitiationRS.getLong("SORC_RPID");
+			sourcePID = eventCitationRS.getLong("SORC_RPID");
 			selectString = setSelectSQL("*", sourceTable, "PID = " + sourcePID);
 			eventSourcRS = requestTableData(selectString, dataBaseIndex);
 			eventSourcRS.first();
@@ -345,19 +347,19 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 			//eventSourcRS.updateString("SORC_FIDELITY", (String) saveCitedData[6]);
 	// Update or create detail text
-			memoTablePID = eventCitiationRS.getLong("CITN_DETAIL_RPID");
+			memoTablePID = eventCitationRS.getLong("CITN_DETAIL_RPID");
 			if (memoTablePID == null_RPID)
-				eventCitiationRS.updateLong("CITN_DETAIL_RPID", pointHREmemo.addMemoRecord((String)saveCitedData[3]));
+				eventCitationRS.updateLong("CITN_DETAIL_RPID", pointHREmemo.addMemoRecord((String)saveCitedData[3]));
 			else
 				pointHREmemo.findT167_MEMOrecord((String)saveCitedData[3], memoTablePID);
 	// Update or crete memo text
-			memoTablePID = eventCitiationRS.getLong("CITN_MEMO_RPID");
+			memoTablePID = eventCitationRS.getLong("CITN_MEMO_RPID");
 			if (memoTablePID == null_RPID)
-				eventCitiationRS.updateLong("CITN_MEMO_RPID", pointHREmemo.addMemoRecord((String)saveCitedData[4]));
+				eventCitationRS.updateLong("CITN_MEMO_RPID", pointHREmemo.addMemoRecord((String)saveCitedData[4]));
 			else
 				pointHREmemo.findT167_MEMOrecord((String)saveCitedData[4], memoTablePID);
 	// Update tables
-			eventCitiationRS.updateRow();
+			eventCitationRS.updateRow();
 			eventSourcRS.updateRow();
 
 		} catch (SQLException sqle) {
@@ -381,14 +383,23 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				CITN_MEMO_RPID BIGINT NOT NULL,
 				CITN_REF CHAR(30) NOT NULL,
 				CITN_GUI_SEQ SMALLINT NOT NULL,
-				CITN_ACC_NAME CHAR(1) NOT NULL,
-				CITN_ACC_DATE CHAR(1) NOT NULL,
-				CITN_ACC_LOCN CHAR(1) NOT NULL,
-				CITN_ACC_MEMO CHAR(1) NOT NULL
+				CITN_ACC_NAME1 TINYINT NOT NULL,
+				CITN_ACC_NAME2 TINYINT NOT NULL,
+				CITN_ACC_DATE TINYINT NOT NULL,
+				CITN_ACC_LOCN TINYINT NOT NULL,
+				CITN_ACC_MEMO TINYINT NOT NULL
  */
 	private void addToCitationT735_CITN(long T735tablePID, ResultSet hreTable) {
 		try {
-		    // moves cursor to the insert row
+			int guiSeq = 0;
+			// Find largest current CITN_GUI_SEQ value
+			hreTable.beforeFirst();
+			while (hreTable.next()) {
+				if (hreTable.getInt("CITN_GUI_SEQ") > guiSeq) {
+					guiSeq = hreTable.getInt("CITN_GUI_SEQ");
+				}
+			}
+		    // Move cursor to the insert row
 				hreTable.moveToInsertRow();
 			// Update new row in H2 database
 				hreTable.updateLong("PID", T735tablePID);
@@ -405,7 +416,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateLong("CITN_MEMO_RPID", null_RPID);
 
 				hreTable.updateString("CITN_REF", "");
-				hreTable.updateInt("CITN_GUI_SEQ", 1);
+				hreTable.updateInt("CITN_GUI_SEQ", guiSeq+1);
 				hreTable.updateInt("CITN_ACC_NAME1",-3);
 				hreTable.updateInt("CITN_ACC_NAME2",-3);
 				hreTable.updateInt("CITN_ACC_DATE", -3);
@@ -418,16 +429,45 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		}
 	}
 
-	//sourceFidelity = (String) citationEditData[6];
-/*
-	public String fidelityConvert(String fidelityText) {
-		String fidelityCode;
-		if (fidelityText.equals("Original")) fidelityCode = "A";
-		else if (fidelityText.equals("Copy")) fidelityCode = "B";
-		else if (fidelityText.equals("Transcript")) fidelityCode = "C";
-		else if (fidelityText.equals("Extract")) fidelityCode = "D";
-		else if (fidelityText.equals("Other")) fidelityCode = "E";
-		else fidelityCode = "O";
-		return fidelityCode;
-	}	*/
+/**
+ * updateCiteGUIseq()
+ * @param eventPID
+ * @param tableName
+ * @param objCiteData
+ * @throws HBException
+ */
+	public void updateCiteGUIseq(long eventPID, String tableName, Object objCiteData[][]) throws HBException {
+		int sourceNum = 0;
+		int rows = objCiteData.length;
+		ResultSet eventCitationRS, sourceRS;
+		long sourcePID;
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", citationTable, "CITED_RPID = " + eventPID + " AND OWNER_TYPE = '" + tableName + "'");
+		eventCitationRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			eventCitationRS.beforeFirst();
+			while (eventCitationRS.next()) {
+				// First, get the source record for this citation
+				sourcePID = eventCitationRS.getLong("SORC_RPID");
+				selectString = setSelectSQL("*", sourceTable, "PID = " + sourcePID);
+				sourceRS = requestTableData(selectString, dataBaseIndex);
+				sourceRS.first();
+				// Get its Source number
+				sourceNum = sourceRS.getInt("SORC_REF");
+				// Match this SourceNum field with a citeData source number field,
+				// and set its GUI_SEQ to match the row value in objCiteData
+				for (int i=0; i < rows; i++) {
+					if (sourceNum == (int)objCiteData[i][0]) {
+						eventCitationRS.updateInt("CITN_GUI_SEQ", i);
+						eventCitationRS.updateRow();
+						break;
+					}
+				}
+			}
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("HBCitationSourceHandler - " + sqle.getMessage());
+		}
+	}
+
 }

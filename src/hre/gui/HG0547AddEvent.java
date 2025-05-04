@@ -1,21 +1,9 @@
 package hre.gui;
 /*******************************************************************************
- * Update Event - Inherit from Specification 05.47 GUI_Edit Event
- * v0.03.0031 2024-02-27 first draft (N.Tolleshaug)
- *			  2024-03-22 New handling of date, location and memo (N. Tolleshaug)
- *		      2024-05-26 New handling event update (N. Tolleshaug)
- * 			  2024-07-23 NLS conversion (D Ferguson)
- * 			  2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
- * 			  2024-07-28 Updated for use of G0547TypeEvent (N Tolleshaug)
- * 			  2024-08-04 Updated create new location if not exist (N Tolleshaug)
- * 			  2024-11-17 Updated location style hendling (N. Tolleshaug)
- * 			  2024-11-18 Implemented location style update (N. Tolleshaug)
- * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
- * 			  2024-11-23 Updated event update for witnessed events (N. Tolleshaug)
- * 			  2024-11-28 Updated event location style handling (N. Tolleshaug)
- * 			  2024-12-01 Updated location name TAB handling (N. Tolleshaug)
- * 			  2024-12-05 Final update location name TAB handling (N. Tolleshaug)
- * 			  2024-04-21 Handle saving of changed citation sequence (D Ferguson)
+ * Add Event - Inherit from Specification 05.47 GUI_Add Event
+ * v0.03.0032 2025-04-26 first draft (N.Tolleshaug)
+ * 			  2025-04-27 Updated to create event record when initiated (N.Tolleshaug)
+ *			
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -38,30 +26,32 @@ import hre.nls.HG0547Msgs;
 /**
  * Update Event
  * @author N.Tolleshaug
- * @version v0.03.0031
- * @since 2024-02-26
+ * @version v0.03.0032
+ * @since 2025-04-26
  */
 
-public class HG0547UpdateEvent extends HG0547EditEvent {
+public class HG0547AddEvent extends HG0547EditEvent {
 	private static final long serialVersionUID = 1L;
+	private static long eventPID;
 	long null_RPID  = 1999999999999999L;
 	long locationNamePID;
 	boolean dateOK = false;
 	boolean locationChanged = false;
 
 	PropertyChangeListener propListener;
-	HG0547UpdateEvent pointUpdateEvent = this;
+	HG0547AddEvent pointUpdateEvent = this;
 
-	public HG0547UpdateEvent(HBProjectOpenData pointOpenProject, int eventNumber,
-									int roleNumber, long eventPID, boolean addHdate, long locNamePID) throws HBException {
+	public HG0547AddEvent(HBProjectOpenData pointOpenProject, int eventNumber,
+									int roleNumber) throws HBException {
 		super(pointOpenProject, eventNumber, roleNumber, eventPID);
-		this.locationNamePID = locNamePID;
+		//this.locationNamePID = locNamePID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;
 		partnerNames = pointWhereWhenHandler.getPartnerNames();
 
 		btn_Save.setText(HG0547Msgs.Text_70);	// Update
-		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
+		//setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
+		setTitle(" Add "  + eventName + HG0547Msgs.Text_51 + eventPersonName);
 
 		if (HGlobal.DEBUG)
 			System.out.println(" UpdateEvent: " + eventNumber + "/" + roleNumber); //$NON-NLS-1$ //$NON-NLS-2$
@@ -76,25 +66,25 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 
 	// Update event memo
 	// Disable memoText listener first
-		memoText.getDocument().removeDocumentListener(memoTextChange);
-		String memoString = pointWhereWhenHandler.readFromGUIMemo(eventPID);
-		memoText.append(memoString);
-		memoText.setCaretPosition(0);	// set scrollbar to top
+		//memoText.getDocument().removeDocumentListener(memoTextChange);
+		//String memoString = pointWhereWhenHandler.readFromGUIMemo(eventPID);
+		//memoText.append(memoString);
+		//memoText.setCaretPosition(0);	// set scrollbar to top
 	// and enable it again
 		memoText.getDocument().addDocumentListener(memoTextChange);
 
 	// Update content in date fields
 		// Disable dateText listeners first
-		dateText.getDocument().removeDocumentListener(dateTextChange);
-		sortDateText.getDocument().removeDocumentListener(sortTextChange);
+		//dateText.getDocument().removeDocumentListener(dateTextChange);
+		//sortDateText.getDocument().removeDocumentListener(sortTextChange);
 		// get the dates
-		String [] eventDates = pointWhereWhenHandler.getDates();
-		dateText.setText(" " + eventDates[0]);		//$NON-NLS-1$
-		sortDateText.setText(" " + eventDates[1]);	//$NON-NLS-1$
+		//String [] eventDates = pointWhereWhenHandler.getDates();
+		dateText.setText(" ");		//$NON-NLS-1$
+		sortDateText.setText(" ");	//$NON-NLS-1$
 		// and enable them again
 		dateText.getDocument().addDocumentListener(dateTextChange);
 		sortDateText.getDocument().addDocumentListener(sortTextChange);
-
+/*
 	// Update the location table
 	// Match the currently stored Style against the combo-box entries
 	// to be able to show the correct current values
@@ -112,18 +102,93 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 
 		pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID);
 		tableLocationData = pointWhereWhenHandler.getLocationNameTable();
-
+*/
 		DefaultTableModel tableModel = (DefaultTableModel) tableLocation.getModel();
 		tableModel.setNumRows(0);	// clear table
 		tableModel.setDataVector(tableLocationData, tableBirthHeader);
 	// reset table rows
 		tableModel.setRowCount(tableLocationData.length);
+		
+	// Create new event
+		newEventPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
+		
 	// reset screen size
 		pack();
+		
+/** 
+ * Listener for Save button
+ */
+		btn_Save.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// NOTE08 need code to check we have as many KEY_ASSOC roles selected as the Event requires
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: accepting updates and leaving HG0547EditEvent");		//$NON-NLS-1$
+				if (HGlobal.DEBUG)
+					System.out.println(" Edit event save button: " + selectedEventNum + "/" + selectedRoleNum); //$NON-NLS-1$ //$NON-NLS-2$
+				try {
+				// Check if data updated
+					if (locationElementUpdate || startDateOK || sortDateOK || memoEdited || changedLocationNameStyle) {
+
+					// If eventGroup is Death or Burial, we need to set Living Flag = N
+						if (eventGroup == 5 || eventGroup == 9)	{	// death, burial groups
+							// Get all of the person's current flag data. Table columns we need are:
+							// column 3 - FLAG_ID; 8 - FLAG_VALUES
+							objAllFlagData = pointPersonHandler.getManagedFlagTable();
+							// For flagID=2 (Living) we want to get the flag values
+							String flagValues =" ";		//$NON-NLS-1$
+							for (Object[] element : objAllFlagData) {
+								if ((int) (element[3]) ==2)
+									flagValues = (String) element[8];	// get the Flag values of Living flag
+							}
+							String[] values = flagValues.split(",");	//$NON-NLS-1$
+							// Save the 2nd value (the 'N' value)
+							pointPersonHandler.setPersonFlagSetting(2, values[1]);
+						}
+
+					//if update memo text
+						if (memoEdited)
+							pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
+
+					// Create a new set of HDATE records
+						if (startDateOK)
+							pointWhereWhenHandler.createEventDates(false, newEventPID, "START_HDATE_RPID", startHREDate);  //$NON-NLS-1$
+
+						if (sortDateOK)
+							pointWhereWhenHandler.createEventDates(false, newEventPID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
+
+					// Update location name style
+						if (changedLocationNameStyle && locationElementUpdate) {
+						//if (changedLocationNameStyle) {
+							selectedStyleIndex = locationNameStyles.getSelectedIndex();
+							locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
+							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
+						}
+
+					} else System.out.println(" HG0547EditEvent - No edited data for event!"); //$NON-NLS-1$
+
+					if (notAddAssoc) {
+				// Reload Person windows
+						pointOpenProject.reloadT401Persons();
+						pointOpenProject.reloadT402Names();
+						pointOpenProject.getPersonHandler().resetPersonSelect();
+						pointOpenProject.getPersonHandler().resetPersonManager();
+						pointEditEvent.dispose();
+					}
+
+				} catch (HBException hbe) {
+					System.out.println("HG0547EditEvent - Failed to edit event: " + hbe.getMessage());		//$NON-NLS-1$
+					JOptionPane.showMessageDialog(btn_Save, HG0547Msgs.Text_39 + hbe.getMessage(),
+							HG0547Msgs.Text_40, JOptionPane.ERROR_MESSAGE);
+					if (HGlobal.DEBUG)
+						hbe.printStackTrace();
+				}
+			}
+		});
 
 /**
  *  Action listener for Update date and sort
- */
+ 
 	// Listener for Save button
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
@@ -175,7 +240,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 								pointCitationSourceHandler.updateCiteGUIseq(eventPID, "T450", objEventCiteData);	//$NON-NLS-1$
 
 					} else
-						if (HGlobal.DEBUG) System.out.println(" HG0547UpdateEvent - No updated data for event!");	//$NON-NLS-1$
+						if (HGlobal.DEBUG) System.out.println(" HG0547AddEvent - No updated data for add event!");	//$NON-NLS-1$
 
 
 				// Reload Person windows
@@ -198,7 +263,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 				}
 			}
 		});
-
+*/
 		// On selection of a locn style update the Location table
 		locationNameStyles.addActionListener (new ActionListener() {
 			@Override
@@ -228,7 +293,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 					}
 					// Re-enable tableLocation listener
 					locationTableModel.addTableModelListener(eventLocationListener);
-					}
+				}
 			}
 		});
 
@@ -261,7 +326,8 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
  * @param eventPersonName
  */
 	public void setUpdateEventTitle(String eventPersonName) {
-		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
+		//setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
+		setTitle(" Add "  + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
 	}
 
-}	// End HG0547UpdateEvent
+}	// End HG0547AddEvent

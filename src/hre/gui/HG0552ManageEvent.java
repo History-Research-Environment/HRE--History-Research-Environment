@@ -25,6 +25,7 @@ package hre.gui;
  * 			  2025-01-17 Imlement add or edit event type (N. Tolleshaug)
  * 			  2025-01-20 Added Event deletion confirmation msgs (D Ferguson)
  * 			  2025-01-26 Fixed error in delete event type handling (N. Tolleshaug)
+ * 			  2025-04-27 Changed btn_Select.addActionListener to use activateAddEvent (N. Tolleshaug)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE04 need code to load disabled events
@@ -162,6 +163,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0552ManageEvent");}	//$NON-NLS-1$
 	    setTitle(HG0552Msgs.Text_0);	// Manage Events
 	    pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+	    //System.out.println(" HG0552ManageEvent! activated for person: " + forPerson);
 
 	 // Get all partner event type codes
 	    pointHBWhereWhenHandler.getEventTypeList(6);
@@ -1003,8 +1005,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 											selectedEventType, selectedRoleType, eventPersonPID, selectedPartnerTableRow);
 				else
 				// Add any other event
-					editEventScreen = pointHBWhereWhenHandler.activateEditEvent(pointOpenProject,
-											selectedEventType, selectedRoleType, eventPersonPID, -1);
+					editEventScreen = pointHBWhereWhenHandler.activateAddEvent(pointOpenProject,
+											selectedEventType, selectedRoleType, eventPersonPID);
 
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = secondPanel.getLocationOnScreen();
