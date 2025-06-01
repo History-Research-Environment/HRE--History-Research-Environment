@@ -38,7 +38,8 @@ package hre.tmgjava;
  * 			  2023-11-24 - line 653 fix for Parent Role into T405. (N. Tolleshaug)
  * 			  2024-03-16 - line 654 Corrected for parent type import to T405. (N. Tolleshaug)
  * 			  2024-06-17 - Added import of NAME_EVNT_TYPE to T402_PERS_NAME
- * v0.01.0032 2024-12-22 - Updated for v22c database
+ * v0.01.0032 2024-12-22 - Updated for v22c database (N. Tolleshaug)
+ * 			  2025-05-18 - Changed for T405 to PID = offset + s.recno (N. Tolleshaug)
  ***************************************************************************************
  * NOTES
  *********************************************************************
@@ -652,7 +653,9 @@ public class TMGpass_Persons {
 		try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
-			hreTable.updateLong("PID", proOffset + rowPID);
+			//hreTable.updateLong("PID", proOffset + rowPID);
+		// Modification 18.5.2025 to match S citation "F" records 
+			hreTable.updateLong("PID", proOffset + tmgFtable.getValueInt(rowPID,"RECNO"));
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateBoolean("HAS_CITATIONS", false);
 			hreTable.updateLong("PERSON_RPID", 

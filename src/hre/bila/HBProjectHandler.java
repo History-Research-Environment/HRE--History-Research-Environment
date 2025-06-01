@@ -46,6 +46,7 @@ package hre.bila;
  * 			  2024-12-22 Updated for new project B32 (N. Tolleshaug)
  * 			  2025-03-22 Updated for create citation/source tables (N. Tolleshaug)
  *			  2025-03-24 Create boolean IS_OWNER in T131 (N. Tolleshaug)
+ *			  2025-05-12 Complete IS_OWNER update code (D Ferguson)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -200,9 +201,8 @@ public class HBProjectHandler extends HBBusinessLayer {
 	public String[] getUserProjectByIndex(int i) throws HBException {
 		if (i < HGlobal.userProjects.size()) {
 			return HGlobal.userProjects.get(i);
-		} else {
-			throw new HBException("getUserProjectByIndex\nArrayList index out of range: " + i);
 		}
+		throw new HBException("getUserProjectByIndex\nArrayList index out of range: " + i);
 	}
 
 /**
@@ -257,11 +257,10 @@ public class HBProjectHandler extends HBBusinessLayer {
 	public String[][] getSummaryUserProjectAction(String projectName) throws HBException {
 		if (isProjectNameOpen(projectName)) {
 			return getSummaryOpenProjectAction(projectName);
-		} else {
-			int indexUserProject = getUserProjectByName(projectName);
-			String [] project = HGlobal.userProjects.get(indexUserProject);
-			return HGlobalCode.getSummaryData(project);
 		}
+		int indexUserProject = getUserProjectByName(projectName);
+		String [] project = HGlobal.userProjects.get(indexUserProject);
+		return HGlobalCode.getSummaryData(project);
 
 	}
 /**
@@ -329,8 +328,12 @@ public class HBProjectHandler extends HBBusinessLayer {
 						+ dataBaseFilePath);
 			}
 
-			if (pointLibraryResultSet.setDatabaseProjectName(newProjectName,dataBaseFilePath)) {
+			if (!pointLibraryResultSet.setDatabaseProjectName(newProjectName,dataBaseFilePath)) {
 
+			// Delete copied database file
+				pointLibraryBusiness.deleteFile(chosenFolder + File.separator + chosenFileName + ".mv.db");
+				return 3;
+			}
 			// Update user table data for project
 				pointLibraryResultSet.updateNewUserInProject(dataBaseFilePath, HGlobal.userCred);
 
@@ -338,8 +341,8 @@ public class HBProjectHandler extends HBBusinessLayer {
 				HBToolHandler pointToolHandler = (HBToolHandler) HG0401HREMain.pointBusinessLayer[8];
 
 			// Update user in database
-				pointToolHandler.createNewDatabaseUser(HGlobal.userCred[0],
-													   HGlobal.userCred[2],
+				pointToolHandler.createNewDatabaseUser((String)HGlobal.userCred[0],
+													   (String)HGlobal.userCred[2],
 													   dataBaseFilePath);
 
 			// Include new project name in user project list
@@ -352,15 +355,8 @@ public class HBProjectHandler extends HBBusinessLayer {
 				int errorCode = openProjectLocal(newProjectName);
 				if (errorCode == 0) {
 					return 0;
-				} else {
-					return 2;
 				}
-			} else {
-
-			// Delete copied database file
-				pointLibraryBusiness.deleteFile(chosenFolder + File.separator + chosenFileName + ".mv.db");
-				return 3;
-			}
+				return 2;
 
 		} catch(HBException hbe) {
 			if (HGlobal.DEBUG) {
@@ -435,48 +431,46 @@ public class HBProjectHandler extends HBBusinessLayer {
 				getOpenProjectByName(projectSelected[0]);
 				mainFrame.setStatusAction(1);
 				return 2;
-			} else  {
+			}
+			// Project not open - continue
+					int proIndex = HGlobal.userProjects.indexOf(projectSelected);
+					if (HGlobal.DEBUG) {
+						System.out.println("Project name: " + getUserProjectByIndex(proIndex)[0]);
+					}
 
-		// Project not open - continue
-				int proIndex = HGlobal.userProjects.indexOf(projectSelected);
-				if (HGlobal.DEBUG) {
-					System.out.println("Project name: " + getUserProjectByIndex(proIndex)[0]);
-				}
+					HBProjectOpenData openProject = new HBProjectOpenData(this);
+					openProject.openProject(remote, proIndex, loginData);
 
-				HBProjectOpenData openProject = new HBProjectOpenData(this);
-				openProject.openProject(remote, proIndex, loginData);
+				// Add the open project to the list of open projects
+					HGlobal.openProjects.add(openProject);
 
-			// Add the open project to the list of open projects
-				HGlobal.openProjects.add(openProject);
+			// New code for recording the selectedProject and update pointer
+					mainFrame.setSelectedOpenProject(HGlobalCode.pointOpenProjectByName(selectedProjectName));
 
-		// New code for recording the selectedProject and update pointer
-				mainFrame.setSelectedOpenProject(HGlobalCode.pointOpenProjectByName(selectedProjectName));
+			// Add to Number of open projects and set Status bar entries
+					HGlobal.numOpenProjects++;
+					if (remote) {
+						mainFrame.setStatusAction(9, openProject.getProjectData()[3]);
+					} else {
+						mainFrame.setStatusAction(2);
+					}
 
-		// Add to Number of open projects and set Status bar entries
-				HGlobal.numOpenProjects++;
-				if (remote) {
-					mainFrame.setStatusAction(9, openProject.getProjectData()[3]);
-				} else {
-					mainFrame.setStatusAction(2);
-				}
+					mainFrame.setStatusProject(selectedProjectName);
 
-				mainFrame.setStatusProject(selectedProjectName);
+					if (HGlobal.TIME) {
+						HGlobalCode.timeReport("complete open project: " + openProject.getProjectName());
+					}
 
-				if (HGlobal.TIME) {
-					HGlobalCode.timeReport("complete open project: " + openProject.getProjectName());
-				}
-
-		// Add new person if empty project
-				openProject.getT401Persons().last();
-				if (openProject.getT401Persons().getRow() == 0) {
-					HG0401HREMain.mainFrame.setSelectedOpenProject(openProject);
-					addFirstPerson();
-				}
-				else {
-					openProject.resetOpenWindows(); // Reopen windows previously open before HRE close
-				}
-				return 0;
-		    }
+			// Add new person if empty project
+					openProject.getT401Persons().last();
+					if (openProject.getT401Persons().getRow() == 0) {
+						HG0401HREMain.mainFrame.setSelectedOpenProject(openProject);
+						addFirstPerson();
+					}
+					else {
+						openProject.resetOpenWindows(); // Reopen windows previously open before HRE close
+					}
+					return 0;
 
 		} catch(HBException | SQLException hbe) {
 			if (HGlobal.DEBUG) {
@@ -502,15 +496,15 @@ public class HBProjectHandler extends HBBusinessLayer {
 
      // Modify columns T404_PARTNER
         int databaseIndex = pointOpenProject.getOpenDatabaseIndex();
- 
+
 	// Add IS_IMPORTED = FALSE to T126_PROJECTS
 		updateTableData("UPDATE T126_PROJECTS SET IS_IMPORTED = FALSE WHERE PROJECT_CODE = 1", databaseIndex);
-		
-	// Create boolean IS_OWNER in T131		
-		alterColumnInTable("T131_USER","IS_OWNER","BOOLEAN", databaseIndex);
+
+	// Create boolean IS_OWNER in T131
+//		alterColumnInTable("T131_USER","IS_OWNER","BOOLEAN", databaseIndex);
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
-		
-	// Create new citation table		
+
+	// Create new citation table
 		createTableInBase("T735_CITN","PID BIGINT NOT NULL,"
 							+ "CL_COMMIT_RPID BIGINT NOT NULL,"
 							+ "CITED_RPID BIGINT NOT NULL,"
@@ -526,10 +520,10 @@ public class HBProjectHandler extends HBBusinessLayer {
 							+ "CITN_ACC_DATE TINYINT,"
 							+ "CITN_ACC_LOCN TINYINT,"
 							+ "CITN_ACC_MEMO TINYINT", databaseIndex);
-		
+
 		updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);
-		
-	// Create new source table		
+
+	// Create new source table
 		createTableInBase("T736_SORC","PID BIGINT NOT NULL,"
 							+ "CL_COMMIT_RPID BIGINT NOT NULL,"
 							+ "IS_ACTIVE BOOLEAN NOT NULL,"
@@ -546,11 +540,11 @@ public class HBProjectHandler extends HBBusinessLayer {
 							+ "SORC_SHORTFORM VARCHAR(500) NOT NULL,"
 							+ "SORC_BIBLIOFORM VARCHAR(500) NOT NULL,"
 							+ "SORC_REMIND_RPID BIGINT NOT NULL", databaseIndex);
-			
-		updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);	
-		
+
+		updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);
+
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
-		
+
 		dateFormatSelect(); // set dateFormat index
 
      // Activate add new first person
@@ -591,20 +585,18 @@ public class HBProjectHandler extends HBBusinessLayer {
 				}
 
 		// If projectName equals "No name found" the project has no table with project name
-			if (!projectName.equals("No name found")) {
-				addProjectToList(newProjectArray);
-				int errorCode = openProjectLocal(projectName);
-				if (errorCode == 0) {
-
-			// Update userAUX and write log entry
-					HB0744UserAUX.writeUserAUXfile();
-					return 0;
-				} else {
-					return 2;
-				}
-			} else {
+			if (projectName.equals("No name found")) {
 				return 3;
 			}
+			addProjectToList(newProjectArray);
+			int errorCode = openProjectLocal(projectName);
+			if (errorCode == 0) {
+
+// Update userAUX and write log entry
+				HB0744UserAUX.writeUserAUXfile();
+				return 0;
+			}
+			return 2;
 
 		} catch (HBException hbe) {
 			if (HGlobal.DEBUG) {
@@ -734,30 +726,29 @@ public class HBProjectHandler extends HBBusinessLayer {
 				}
 			}
 	    // Remove from userProject list
-	    	if (HGlobal.userProjects.remove(projectSelected)) { // true if object in ArrayList and removed
-	    		if (HGlobal.DEBUG) {
-					System.out.println("Project named: " + selectedProjectName + " deleted");
-				}
-
-	    		// Update userAUX and write log entry
-	    		HB0744UserAUX.writeUserAUXfile();
-
-	    // If the last closed project is deleted, set last closed to "";
-	    		if (HGlobal.lastProjectClosed.trim().equals(projectSelected[0].trim())) {
-	    			if (HGlobal.DEBUG) {
-						System.out.println("Last open project deleted: "
-																+ HGlobal.lastProjectClosed);
-					}
-	    			HGlobal.lastProjectClosed = "";
-	    		}
-
-	    		if (HGlobal.writeLogs) {
-					HB0711Logging.logWrite("Action: delete HG0410 Deleted: " + selectedProjectName);
-				}
-	    		return 0;
-	    	} else { // true if object in ArrayList and removed
+	    	if (!HGlobal.userProjects.remove(projectSelected)) { // true if object in ArrayList and removed
 				return 2;
 			}
+			if (HGlobal.DEBUG) {
+				System.out.println("Project named: " + selectedProjectName + " deleted");
+			}
+
+			// Update userAUX and write log entry
+			HB0744UserAUX.writeUserAUXfile();
+
+   // If the last closed project is deleted, set last closed to "";
+			if (HGlobal.lastProjectClosed.trim().equals(projectSelected[0].trim())) {
+				if (HGlobal.DEBUG) {
+					System.out.println("Last open project deleted: "
+															+ HGlobal.lastProjectClosed);
+				}
+				HGlobal.lastProjectClosed = "";
+			}
+
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("Action: delete HG0410 Deleted: " + selectedProjectName);
+			}
+			return 0;
 
 		} catch(HBException hbe) {
 			if (HGlobal.DEBUG) {
@@ -1017,9 +1008,8 @@ public class HBProjectHandler extends HBBusinessLayer {
 		// Update userAUX
 				HB0744UserAUX.writeUserAUXfile();
 				return 0; // removed openProjectAction(newProjectName);
-			} else {
-				return 3;
 			}
+			return 3;
 
 		} catch(HBException hbe) {
 			if (HGlobal.DEBUG) {
@@ -1110,19 +1100,17 @@ public class HBProjectHandler extends HBBusinessLayer {
 				}
 				return 3;
 			}
-			else {
-				if (HGlobal.DEBUG) {
-					System.out.println("copyProjectAction - ERROR\n"
-							+ "Copy from: " + copyFrom.getName()
-							+ "\nCopy to: " + copyTo.getName()
-							+ "\nNew project: " + newProjectArray[0] );
-				}
-				if (HGlobal.writeLogs) {
-					HB0711Logging.logWrite("copyProjectProjectAction - copy failed");
-					HB0711Logging.printStackTraceToFile(hbe);
-				}
-				return 4;
+			if (HGlobal.DEBUG) {
+				System.out.println("copyProjectAction - ERROR\n"
+						+ "Copy from: " + copyFrom.getName()
+						+ "\nCopy to: " + copyTo.getName()
+						+ "\nNew project: " + newProjectArray[0] );
 			}
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("copyProjectProjectAction - copy failed");
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
+			return 4;
 		}
 	}
 } // End ProjectHandler

@@ -1350,9 +1350,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
 	        	int eventNumber = 1002, roleNumber = 1;
-	        	int rowInTable = tableEvents.getSelectedRow();
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateAddFixedEvent(pointOpenProject,
-												eventNumber, roleNumber, null_RPID, rowInTable);
+												eventNumber, roleNumber, null_RPID);
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
@@ -1395,9 +1394,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
 	        	int eventNumber = 1003, roleNumber = 1;
-	        	int rowInTable = tableEvents.getSelectedRow();
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateAddFixedEvent(pointOpenProject,
-													eventNumber, roleNumber, null_RPID, rowInTable);
+													eventNumber, roleNumber, null_RPID);
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
@@ -1410,9 +1408,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
 	        	int eventNumber = 1006, roleNumber = 1;
-	        	int rowInTable = tableEvents.getSelectedRow();
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateAddFixedEvent(pointOpenProject,
-												  eventNumber, roleNumber, null_RPID, rowInTable);
+												  eventNumber, roleNumber, null_RPID);
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);

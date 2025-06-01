@@ -4,7 +4,7 @@ package hre.gui;
  * ***********************************************************************************
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
  *			  2025-01-31 Add Delete button, implement Add button (D Ferguson)
-* *
+ *			  2025-05-26 Adjust miglayout settings (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -104,7 +104,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 	// Setup dialog
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 5", "[]10[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "[]10[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	   	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);

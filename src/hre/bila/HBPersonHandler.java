@@ -120,6 +120,7 @@ package hre.bila;
   * 		   2025-01-22 - Fixed error in event and roles processing(N. Tolleshaug)
   * 		   2025-04-17 - Only count children if bio relationship (Issue 31.67) (D Ferguson)
   * 		   2025-04-26 - If parent not known pass '---' parent-name in parentTable (D Ferguson)
+  *            2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -162,6 +163,7 @@ import hre.gui.HG0509EditPersonName;
 import hre.gui.HG0509ManagePersonName;
 import hre.gui.HG0512FlagManager;
 import hre.gui.HG0525ManagePersonNameStyles;
+import hre.gui.HG0547EditEvent;
 import hre.gui.HGlobal;
 import hre.gui.HGlobalCode;
 import hre.tmgjava.HCException;
@@ -198,7 +200,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public HBNameStyleManager pointStyleData;
 	public ManagePersonNameData pointManagePersonNameData;
 	public HG0507PersonSelect personSelectScreen = null;
-	public HG0507SelectPerson pointSelectAssociate = null;
+	//public HG0507SelectPerson pointSelectAssociate = null;
 	public HG0506ManagePerson managePersonScreen = null;
 	private HBProjectOpenData pointOpenProject;
 
@@ -1712,12 +1714,15 @@ public class HBPersonHandler extends HBBusinessLayer {
  * @return HG0507PersonSelectMin
  * @throws HBException
  */
-	public HG0507SelectPerson activateAssociateAdd(HBProjectOpenData pointOpenProject,
+	public HG0507SelectPerson activateAssociateAdd(HBProjectOpenData pointOpenProject, HG0547EditEvent pointerEditEvent, 
 			int eventNumber) throws HBException {
-		//HG0507SelectPerson pointSelectAssociate = null;
+		HG0507SelectPerson pointSelectAssociate = null;
 		try {
 			pointAddPersonRecord = new AddPersonRecord(pointDBlayer, pointOpenProject);
 			pointSelectAssociate = new HG0507SelectAssociate(this, pointOpenProject, eventNumber, -1, true);
+			if (pointerEditEvent == null) 
+				System.out.println("HBPersonHandler - activateAssociateAdd - pointEdotevent = null");
+			pointSelectAssociate.pointEditEvent = pointerEditEvent;
 			return pointSelectAssociate;
 		} catch (HBException hbe) {
 			System.out.println("HBPersonHandler - activateAssociateAdd: " + hbe.getMessage());
@@ -1732,12 +1737,15 @@ public class HBPersonHandler extends HBBusinessLayer {
  * @return HG0507PersonSelectMin
  * @throws HBException
  */
-	public HG0507SelectPerson activateAssociateEdit(HBProjectOpenData pointOpenProject,
+	public HG0507SelectPerson activateAssociateEdit(HBProjectOpenData pointOpenProject, HG0547EditEvent pointerEditEvent,
 								int eventNumber, int rowInTable) throws HBException {
 		HG0507SelectPerson pointSelectAssociate = null;
 		try {
 			pointAddPersonRecord = new AddPersonRecord(pointDBlayer, pointOpenProject);
 			pointSelectAssociate = new HG0507SelectAssociate(this, pointOpenProject, eventNumber, rowInTable, false);
+			if (pointerEditEvent == null) 
+				System.out.println("HBPersonHandler - activateAssociateAdd - pointEdotevent = null");
+			pointSelectAssociate.pointEditEvent = pointerEditEvent;
 			pointSelectAssociate.setEditMode();
 			((HG0507SelectAssociate) pointSelectAssociate).setAssocRoleEdit();
 			return pointSelectAssociate;

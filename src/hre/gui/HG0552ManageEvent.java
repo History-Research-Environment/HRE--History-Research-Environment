@@ -20,12 +20,13 @@ package hre.gui;
  * 			  2024-06-14 Remove Name radio-button selection (D Ferguson)
  * 			  2024-06-16 Place Partner user msg properly (D Ferguson)
  * 			  2024-07-21 NLS conversion (D Ferguson)
- * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * 			  2024-12-01 Replace JOptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2025-01-11 Rearranged processing of event and roles (N. Tolleshaug)
- * 			  2025-01-17 Imlement add or edit event type (N. Tolleshaug)
+ * 			  2025-01-17 Implement add or edit event type (N. Tolleshaug)
  * 			  2025-01-20 Added Event deletion confirmation msgs (D Ferguson)
  * 			  2025-01-26 Fixed error in delete event type handling (N. Tolleshaug)
  * 			  2025-04-27 Changed btn_Select.addActionListener to use activateAddEvent (N. Tolleshaug)
+ * 			  2025-05-22 Removed unused selectedRole/Event fields (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE04 need code to load disabled events
@@ -111,14 +112,12 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	// Lists for holding event/role data
 	private JList<String> eventList;
 	private JList<String> roleList;
-    private String selectedEvent = "";		//$NON-NLS-1$
 	String[] eventTypeList;
 	int[] eventTypeNumber;
 	String[] eventRoleList;
 	Object[][] eventRoleData;
 
     private int indexSelectedEvent;
-    private String selectedRole = "";		//$NON-NLS-1$
     private int selectedEventType;
     private int selectedRoleType;
     private int indexSelectedRole;
@@ -148,7 +147,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     public void setPartnerTableSelectedRow(int selectedPartnerTableIndex) {
     	selectedPartnerTableRow = selectedPartnerTableIndex;
     }
-    
+
 /**
  * Create the dialog
  * @throws HBException
@@ -818,7 +817,6 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					// Save the eventList index and selected value for use
 					indexSelectedEvent = eventList.getSelectedIndex();
 					if (indexSelectedEvent < 0) return;
-					selectedEvent =  eventList.getModel().getElementAt(indexSelectedEvent);
 					int[] eventTypes = pointHBWhereWhenHandler.getEventTypes();
 					selectedEventType = eventTypes[indexSelectedEvent];
 					try {
@@ -864,7 +862,6 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    			if (!roleList.getValueIsAdjusting()) {
 	    				// Save the roleList index and selected value for use
 	    				indexSelectedRole = roleList.getSelectedIndex();
-	    				selectedRole = (String) roleList.getModel().getElementAt(indexSelectedRole);
 	    				int[] eventRoleTypes = pointHBWhereWhenHandler.getEventRoleTypes();
 	    				selectedRoleType = eventRoleTypes[indexSelectedRole];
 	    				// Enable the Select action
@@ -1053,7 +1050,6 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     // Turn off RoleListener and clear role list
     	roleListenOn = false;
     	if(roleListmodel.size() > 0) {
-    		selectedRole = "";		//$NON-NLS-1$
     		roleListmodel.removeAllElements();
     		roleListmodel.clear();
     		roleList.removeAll();
@@ -1076,7 +1072,6 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
    	// Turn off RoleListener and clear role list
       	roleListenOn = false;
         if (roleListmodel != null && roleListmodel.size() > 0) {
-        	selectedRole = "";		//$NON-NLS-1$
             roleListmodel.removeAllElements();
             roleListmodel.clear();
             roleList.removeAll();
@@ -1084,7 +1079,6 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
         roleListenOn = true;
      // Clean out existing event list
         if (eventListmodel != null && eventListmodel.size() > 0) {
-        	selectedEvent = "";		//$NON-NLS-1$
             eventListmodel.removeAllElements();
             eventListmodel.clear();
             eventList.removeAll();

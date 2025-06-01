@@ -77,38 +77,38 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 
 				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("Action: accepting updates and leaving HG0547PartnerEvent");	//$NON-NLS-1$
-				
+
 				long newEventRecordPID;
 				try {
 				// Check if data updated
 					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited) {
 				//if update memo text
-						if (memoEdited) 
+						if (memoEdited)
 							pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
-						
+
 				// Create new event
 						newEventRecordPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
 				// Create a new set of HDATE records
 						if (startDateOK)
-							pointWhereWhenHandler.createEventDates(true, newEventRecordPID, "START_HDATE_RPID", 
-									startHREDate);	//$NON-NLS-1$			
+							pointWhereWhenHandler.createEventDates(true, newEventRecordPID,
+									"START_HDATE_RPID", startHREDate);	//$NON-NLS-1$
 						if (sortDateOK)
-							pointWhereWhenHandler.createEventDates(true, newEventRecordPID, "SORT_HDATE_RPID", 
-									sortHREDate);	//$NON-NLS-1$
-						
+							pointWhereWhenHandler.createEventDates(true, newEventRecordPID,
+									"SORT_HDATE_RPID", sortHREDate);	//$NON-NLS-1$
+
 				// Update partner table
 						pointWhereWhenHandler.updateEventPartnerTable(partnerTablePID, newEventRecordPID);
-						
-				// Update location name style	
+
+				// Update location name style
 						if (changedLocationNameStyle && locationElementUpdate) {
 							selectedStyleIndex = locationNameStyles.getSelectedIndex();
 							locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
-							System.out.println(" Partner event - location name PID: " + locationNamePID);
-							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID); 
+							System.out.println(" Partner event - location name PID: " + locationNamePID); //$NON-NLS-1$
+							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 						}
 
 					} else System.out.println(" HG0547PartnerEvent - No edited data for event!");	//$NON-NLS-1$
-					
+
 
 				// Reload GUI Managers
 					// Reload Person windows

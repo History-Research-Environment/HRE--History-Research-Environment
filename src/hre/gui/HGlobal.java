@@ -20,6 +20,7 @@ package hre.gui;
  * 			  2024-10-12 Added boolean reloadPS user option (D Ferguson)
  * 			  2024-11-15 Added boolean married name prompt option (D Ferguson)
  * v0.04.0032 2024-12-22 Updated for Build 32 and database v22c (N. Tolleshaug)
+ * 			  2025-05-12 Modified Object[] userCred = {"","","","", false} (D Ferguson)
  ************************************************************************/
 
 import java.awt.Color;
@@ -32,11 +33,11 @@ import hre.bila.HBProjectOpenData;
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author Don Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version Build 0.04.3225.0501
+ * @version Build 0.04.3225.0601
  */
 public class HGlobal {
-	public static String buildNo = "0.04.3225.0501";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "1 May 2025";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.04.3225.0601";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "1 June 2025";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "v22c";		    // Set Database DDL version //$NON-NLS-1$
 
@@ -117,7 +118,7 @@ public class HGlobal {
 	public static String fontName = "Dialog";				// for storing Font name; default=JTattoo's choice //$NON-NLS-1$
 
 	//Following items for user credentials
-	public static String[] userCred = {"","","",""};		// for storing userID, name, password, email address //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	public static Object[] userCred = {"","","","", false};		// storesg userID, name, password, email, owner //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 	// Following items are User application settings
 	public static boolean showWelcome = true;				// whether HRE Welcome screen shown at startup (default true)

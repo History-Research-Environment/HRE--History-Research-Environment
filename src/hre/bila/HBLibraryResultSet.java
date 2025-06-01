@@ -38,9 +38,12 @@ package hre.bila;
  * 			  2024-03-31 - Updated getEventTypeList for event group selection (N. Tolleshaug)
  * 			  2024-10-19 - getPersonBirthEventPID() returns null_RPID if no birth event(N. Tolleshaug)
  * 			  2024-10-21 - getEventGroup() checks only em-US for eventGroup (N. Tolleshaug)
- * 			  2024-11-11 - exstractPersonName - updated with "No name found" (N. Tolleshaug)
- * v0.03.0032 2025-03-20 - Added findActiveUser(int dataBaseIndex) (N. Tolleshaug)
- * 			  2025-03-25 - Updated addUserToTable wilth IS_OWNER = false (N. Tolleshaug)
+ * 			  2024-11-11 - extractPersonName - updated with "No name found" (N. Tolleshaug)
+ * v0.04.0032 2025-03-20 - Added findActiveUser(int dataBaseIndex) (N. Tolleshaug)
+ * 			  2025-03-25 - Updated addUserToTable with IS_OWNER = false (N. Tolleshaug)
+ * 			  2025-05-12 - Complete IS_OWNER update code (D Ferguson)
+ * 			  2025-05-25 - Add getKeyAssocMin routine (D Ferguson)
+ * 			  2025-05-26 - Add getUserName routine for assessorRPID lookup (D Ferguson)
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -64,7 +67,7 @@ import hre.gui.HGlobal;
 /**
  * HBLibraryResultSet contains ResultSet processing methods
  * @author Nils Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2019-12-09
  */
 public class HBLibraryResultSet {
@@ -90,7 +93,6 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public ResultSet getNameStylesTable(String tableName, String nameType, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet nameStyleTable;
@@ -99,7 +101,6 @@ public class HBLibraryResultSet {
 		nameStyleTable = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		return nameStyleTable;
 	}
-
 
 	public ResultSet getOutputStylesTable(String tableName, String nameType, long ownerPID, int dataBaseIndex) throws HBException {
 		String selectString;
@@ -110,7 +111,6 @@ public class HBLibraryResultSet {
 		return nameStyleTable;
 	}
 
-
 	public ResultSet getNameStyleElementTable(String nameType, String tableName, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet nameStyleElements;
@@ -119,7 +119,6 @@ public class HBLibraryResultSet {
 		nameStyleElements = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		return nameStyleElements;
 	}
-
 
 	public ResultSet getNameStyleElements(String tableName, String nameType, String langCode, int dataBaseIndex) throws HBException {
 		String selectString;
@@ -137,7 +136,6 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public String[] getNameStyleOutput(String tableName, long ownerRPID, String nameType, int selectNameStyleIndex, int dataBaseIndex) throws HBException {
 		String selectString = pointBusinessLayer.
 
@@ -181,7 +179,6 @@ public class HBLibraryResultSet {
 		ELEMNT_NAMES
 �		ELEMNT_CODES
 */
-
 	public void addNameStyleToTable(ResultSet pointResultSet, long lastPID, String nameType, String [] userData) throws HBException {
 
 		long startPID  = 1000000000000001L;
@@ -246,7 +243,6 @@ public class HBLibraryResultSet {
 �		OUT_NAME_STYLE_DESC
 �		OUT_ELEMNT_CODES
  */
-
 	public void addOutputStyleToTable(ResultSet pointResultSet, long lastPID,
 												long ownerRPID, String nameType,
 												String [] userData) throws HBException {
@@ -291,8 +287,8 @@ public class HBLibraryResultSet {
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - addNameStyleToTable: " + sqle.getMessage());
 		}
-
 	}
+
 /**
  * Update user to  T160
  * @param pointResultSet
@@ -310,7 +306,6 @@ public class HBLibraryResultSet {
 �	ELEMNT_NAMES
 �	ELEMNT_CODES
 */
-
 	public void updateNameStyleTable(ResultSet pointResultSet, String [] userData) throws HBException {
 		try {
 
@@ -344,7 +339,6 @@ public class HBLibraryResultSet {
  	DATA_STRING
  	DATA_CODES
  */
-
 	public void updateElementName(ResultSet pointResultSet, String dataString) throws HBException {
 		try {
 
@@ -359,7 +353,6 @@ public class HBLibraryResultSet {
 			throw new HBException("HBLibraryResultSet - updateElementName: " + sqle.getMessage());
 		}
 	}
-
 
 	public void updateElementList(ResultSet pointResultSet, String nameString, String codeString) throws HBException {
 		// Update data string in ResultSet
@@ -376,7 +369,6 @@ public class HBLibraryResultSet {
 
 		}
 	}
-
 
 /**
  *
@@ -395,7 +387,6 @@ public class HBLibraryResultSet {
 �		OUT_NAME_STYLE_DESC
 	�	OUT_ELEMNT_CODES
  */
-
 	public void updateOutputStyleTable(ResultSet pointResultSet, long ownerPID,  String [] userData) throws HBException {
 		try {
 			// Update new row in ResultSet
@@ -420,7 +411,6 @@ public class HBLibraryResultSet {
  * @param pointResultSet
  * @throws HBException
  */
-
 	public void deleteNameStyleRow(ResultSet pointResultSet, int selectIndex) throws HBException {
 		try {
 			if (HGlobal.DEBUG) {
@@ -451,7 +441,6 @@ public class HBLibraryResultSet {
  * @return String[] nameElements
  * @throws HBException
  */
-
 	public String[] selectPersNameElements(long namePID,
 								int dataBaseIndex)
 								throws HBException {
@@ -484,7 +473,6 @@ public class HBLibraryResultSet {
  * @param String[] personStyle)
  * return person name
  */
-
 	public String selectPersonName(long namePID,
 									int dataBaseIndex,
 									String[] personStyle) throws HBException {
@@ -534,7 +522,6 @@ public class HBLibraryResultSet {
 		}
 	}
 
-
 /**
  * selecLocationNameElements(long ownerRPID, int dataBaseIndex)
  * @param ownerRPID
@@ -542,8 +529,6 @@ public class HBLibraryResultSet {
  * @return String[][]
  * @throws HBException
  */
-
-
 	public String[] selectLocationNameElements(long ownerRPID, String[] elemntCodes, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet placeElementTable;
@@ -596,7 +581,6 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public HashMap<String,String> selectLocationNameElements(long ownerRPID, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet placeElementTable;
@@ -639,7 +623,6 @@ public class HBLibraryResultSet {
  * @return String
  * @throws HBException
  */
-
 	public String selectLocationName(long ownerRPID, String[] locationNameStyle, int dataBaseIndex) throws HBException {
 		String locationName = "";
 		String selectString;
@@ -699,13 +682,11 @@ public class HBLibraryResultSet {
 		}
 	}
 
-
 /**
  * Get database version from Table T10X_SCHEMA_DEFNS
  * @param dbIndex
  * @return
  */
-
 	public String getDatabaseVersion(ResultSet pointT10X_SCHEMA_DEFNS, int dataBaseIndex) throws HBException {
 
 		if (HGlobal.DEBUG) {
@@ -736,7 +717,6 @@ public class HBLibraryResultSet {
  * @return  true for success
  * @throws HBException
  */
-
 	public String getDatabaseProjectName(String dataBaseLoc) throws HBException {
 		int dataBaseIndex = -1;
 		String selectSQL;
@@ -793,7 +773,6 @@ public class HBLibraryResultSet {
  * @return  true for success
  * @throws HBException
  */
-
 	public boolean setDatabaseProjectName(String newProjectName, String dataBaseLoc) throws HBException {
 		int dataBaseIndex = -1;
 		String selectSQL;
@@ -845,7 +824,6 @@ public class HBLibraryResultSet {
 		}
 	}
 
-
 /**
  * exstractPersonName(long personPID)
  * @param personPID
@@ -853,7 +831,6 @@ public class HBLibraryResultSet {
  * @throws HBException
  * @throws SQLException
  */
-
 	protected String exstractPersonName(long personPID, String[] personStyle, int dataBaseIndex)  throws HBException  {
 		String selectSQL = null, personName = "";
 		long personNamePID;
@@ -868,7 +845,7 @@ public class HBLibraryResultSet {
 					nameSelected = pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex);
 					nameSelected.last();
 					if (nameSelected.getRow() == 0) return " --- ";
-					
+
 					nameSelected.first();
 					personNamePID = nameSelected.getLong("BEST_NAME_RPID");
 					visibleID = nameSelected.getInt("VISIBLE_ID");
@@ -880,7 +857,7 @@ public class HBLibraryResultSet {
  *  WARNING Name element not always == 1 - must be selected
  */
 					personName = personName + " ("+ visibleID + ")";
-				} else personName  = " No name pointer ";		
+				} else personName  = " No name pointer ";
 			} else personName  = " No name found";
 			return " " + personName;
 		} catch (SQLException sqle) {
@@ -895,26 +872,24 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public String exstractSortString(long hdatePID, int dataBaseIndex) throws HBException {
 		String selectString = null, sortString = "";
 		ResultSet hdateSelected;
 		if (hdatePID == null_RPID) {
 			return sortString;
-		} else {
-			try {
-				selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable,"PID = " + hdatePID);
-				hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				if (pointBusinessLayer.isResultSetEmpty(hdateSelected)) {
-					System.out.println( " Return sort string (exstractSortString) error for HDate PID: " + hdatePID);
-					return sortString;
-				}
-				hdateSelected.first();
-				return hdateSelected.getString("SORT_HDATE_CODE");
-			} catch (SQLException sqle) {
-				sqle.printStackTrace();
-				throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
+		}
+		try {
+			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable,"PID = " + hdatePID);
+			hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(hdateSelected)) {
+				System.out.println( " Return sort string (exstractSortString) error for HDate PID: " + hdatePID);
+				return sortString;
 			}
+			hdateSelected.first();
+			return hdateSelected.getString("SORT_HDATE_CODE");
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
 		}
 	}
 
@@ -924,30 +899,28 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public String exstractDate(long hdatePID, int dataBaseIndex) throws HBException {
 		String dateString = "", selectString = null;
 		ResultSet hdateSelected;
 		if (hdatePID == null_RPID) {
 			return dateString;
-		} else {
-			try {
-			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + hdatePID);
-			hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-			if (pointBusinessLayer.isResultSetEmpty(hdateSelected )) {
-				System.out.println( " Not found Hdate (exstractDate) error for HDate PID: " + hdatePID);
-				return dateString;
-			}
-			hdateSelected.first();
-			dateString = pointBusinessLayer.formatDateSelector(hdateSelected.getLong("MAIN_HDATE_YEARS"),
-					hdateSelected.getString("MAIN_HDATE_DETAILS"),
-					hdateSelected.getLong("HDATE_YEARS"),
-					hdateSelected.getString("HDATE_DETAILS"));
-				return dateString;
-			} catch (SQLException sqle) {
-				sqle.printStackTrace();
-				throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
-			}
+		}
+		try {
+		selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + hdatePID);
+		hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+		if (pointBusinessLayer.isResultSetEmpty(hdateSelected )) {
+			System.out.println( " Not found Hdate (exstractDate) error for HDate PID: " + hdatePID);
+			return dateString;
+		}
+		hdateSelected.first();
+		dateString = pointBusinessLayer.formatDateSelector(hdateSelected.getLong("MAIN_HDATE_YEARS"),
+				hdateSelected.getString("MAIN_HDATE_DETAILS"),
+				hdateSelected.getLong("HDATE_YEARS"),
+				hdateSelected.getString("HDATE_DETAILS"));
+			return dateString;
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
 		}
 
 	}
@@ -965,29 +938,26 @@ public class HBLibraryResultSet {
 		ResultSet hdateSelected;
 		if (hdatePID == null_RPID) {
 			return null;
-		} else {
-			try {
-				selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + hdatePID);
-				hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				if (pointBusinessLayer.isResultSetEmpty(hdateSelected )) {
-					System.out.println( " Convert to date (exstractDate) error for HDate PID: " + hdatePID);
-					return null;
-				}
-				hdateSelected.first();
-				dateHREDate[0] = hdateSelected.getLong("MAIN_HDATE_YEARS");
-				dateHREDate[1] = hdateSelected.getString("MAIN_HDATE_DETAILS");
-				dateHREDate[2] = hdateSelected.getLong("HDATE_YEARS");
-				dateHREDate[3] = hdateSelected.getString("HDATE_DETAILS");
-				dateHREDate[4] = hdateSelected.getString("SORT_HDATE_CODE");
-				return dateHREDate;
-			} catch (SQLException sqle) {
-				sqle.printStackTrace();
-				throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
-			}
 		}
-
+		try {
+			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + hdatePID);
+			hdateSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(hdateSelected )) {
+				System.out.println( " Convert to date (exstractDate) error for HDate PID: " + hdatePID);
+				return null;
+			}
+			hdateSelected.first();
+			dateHREDate[0] = hdateSelected.getLong("MAIN_HDATE_YEARS");
+			dateHREDate[1] = hdateSelected.getString("MAIN_HDATE_DETAILS");
+			dateHREDate[2] = hdateSelected.getLong("HDATE_YEARS");
+			dateHREDate[3] = hdateSelected.getString("HDATE_DETAILS");
+			dateHREDate[4] = hdateSelected.getString("SORT_HDATE_CODE");
+			return dateHREDate;
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
+		}
 	}
-
 
 /**
  * updateNewUserInProject (String dataBasePath, String[] userData)
@@ -995,8 +965,7 @@ public class HBLibraryResultSet {
  * @throws HDException
  * @throws HBException
  */
-
-	public void updateNewUserInProject (String dataBasePath, String[] userData) throws HBException {
+	public void updateNewUserInProject (String dataBasePath, Object[] userData) throws HBException {
 		int dataBaseIndex = -1;
 		String dataBaseEngine = pointBusinessLayer.getDefaultDatabaseEngine();
 
@@ -1042,7 +1011,6 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	protected String[] getTranslatedData(Boolean abbrev, String screenID, String tableIdent, String langCode, int dataBaseIndex) throws HBException {
 		String langCodeParam = "'" + langCode + "'"; // Setting up
 		String tableIdentParam = "'" + tableIdent + "'";
@@ -1114,7 +1082,6 @@ public class HBLibraryResultSet {
  * @return passWord for user ID
  * @throws HBException
  */
-
 	public String findPassword(String userIDname, ResultSet resSet) throws HBException {
 		   if (HGlobal.DEBUG) {
 			System.out.println("Find password: ");
@@ -1140,18 +1107,19 @@ public class HBLibraryResultSet {
 		   		throw new HBException("Find password - SQL error: \n" + exc.getMessage());
 		   	}
 	   }
-	
+
 /**
- * public String findActiveUser(int dataBaseIndex)	
+ * public Object getProjectOwner(int dataBaseIndex)
  * @return
- * @throws HBException 
- * @throws SQLException 
- * **************************************************************************
- * NOTE 1 need to select assessor acording to boolean marking in T131 table
- ****************************************************************************/
-	public String findActiveUser(int dataBaseIndex) throws HBException  {
+ * @throws SQLException
+ * *************************************************************************
+ * Select assessor from T131 table by finding IS_OWNER - return Name and PID
+ **************************************************************************/
+	public Object getProjectOwner(int dataBaseIndex) throws HBException  {
 		String selectSQL;
-		String userName = "No name!";
+		Object[] assessorData = new Object[2];
+		assessorData[0] = "??????";	// default language independent Name value
+		assessorData[1] = null_RPID;
 		ResultSet userTableRS;
 	// DATA from T131_USERS
 		selectSQL = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.userTable ,"");
@@ -1159,16 +1127,42 @@ public class HBLibraryResultSet {
 			userTableRS =  pointBusinessLayer.requestTableData(selectSQL, dataBaseIndex );
 			userTableRS.beforeFirst();
 			while (userTableRS.next())
-				if (userTableRS.getBoolean("IS_OWNER"))
-					userName = userTableRS.getNString("USER_NAME");
+				if (userTableRS.getBoolean("IS_OWNER")) {
+					assessorData[0] = userTableRS.getNString("USER_NAME");
+					assessorData[1] = userTableRS.getLong("PID");
+				}
 			userTableRS.close();
-			if (HGlobal.DEBUG) 
-				System.out.println("SQL active User Name: " + userName);
-			return userName;
+			return assessorData;
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException("findActiveUser error: " + sqle.getMessage());
-		}		
+		}
+	}
+
+/**
+ * getUserName(long userPID,  int dataBaseIndex)
+ * @param userPID
+ * @param dataBaseIndex
+ * @return
+ * @throws SQLException
+ * ************************************************
+ * For a given T131 table PID, return the user Name
+ **************************************************/
+	public String getUserName(long userPID,  int dataBaseIndex) throws HBException {
+		String userName = " ";
+		if (userPID == null_RPID) return userName;
+		ResultSet userTableRS;
+		try {
+			String selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.userTable, "PID = " + userPID);
+			userTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(userTableRS)) 	return userName;
+			userTableRS.first();
+			userName = userTableRS.getString("USER_NAME");
+			return userName;
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException("HBResultSet - userName lookup error " + sqle.getMessage());
+		}
 	}
 
 /**
@@ -1203,23 +1197,20 @@ public class HBLibraryResultSet {
 	   	} catch(SQLException exc) {
 	   		throw new HBException("buildTableModel - SQL error: \n" + exc.getMessage());
 	   	}
-
 	}
 
 /**
  * Update T131_USERS with user name etc
  * @param pointResultSet
+ * @param userData
  * @throws HBException
  */
-
-	protected void updateUserInTable(ResultSet pointResultSet, String [] userData) throws HBException {
+	protected void updateUserInTable(ResultSet pointResultSet, Object[] userData) throws HBException {
 		String logonID = "", userName, passWord;
 		try {
-
 			if (HGlobal.DEBUG) {
 				System.out.println("ResultSet - updateUserInTable Table T131");
 			}
-
 		// NOTE 03 - Position in ResultSet is set in calling method: ex. sqlTable.absolute(1);
 			logonID = pointResultSet.getNString("LOGON_NAME");
 			userName = pointResultSet.getNString("USER_NAME");
@@ -1228,19 +1219,19 @@ public class HBLibraryResultSet {
 				System.out.println("ResultSet - content UserInTable - row: "
 						+ pointResultSet.getRow() + " - " + logonID + "/" + userName);
 			}
-
-			pointResultSet.updateString("LOGON_NAME", userData[0]);
-			pointResultSet.updateString("USER_NAME", userData[1]);
-
+		// Update logonId and username
+			pointResultSet.updateString("LOGON_NAME", (String)userData[0]);
+			pointResultSet.updateString("USER_NAME", (String)userData[1]);
 		// Update user password if set
 			if (userData[2] != null) {
-				pointResultSet.updateString("PASSWORD", userData[2]);
+				pointResultSet.updateString("PASSWORD", (String)userData[2]);
 			} else {
 				pointResultSet.updateString("PASSWORD", passWord);
 			}
-
 	    // PASSWORD kept and not updated
-			pointResultSet.updateString("EMAIL", userData[3]);
+			pointResultSet.updateString("EMAIL", (String)userData[3]);
+		// Set IS_OWNER
+			pointResultSet.updateBoolean("IS_OWNER", (boolean)userData[4]);
 			pointResultSet.updateRow();
 
 		} catch (SQLException sqle) {
@@ -1257,7 +1248,6 @@ public class HBLibraryResultSet {
  * @param userData
  * @throws HBException
 */
-
 	public void addUserToTable(ResultSet pointResultSet, String [] userData) throws HBException {
 
 		long startPID  = 1000000000000001L;
@@ -1307,7 +1297,6 @@ public class HBLibraryResultSet {
  * @param pointResultSet
  * @throws HBException
  */
-
 	public void deleteUserInTable(ResultSet pointResultSet, int selectIndex) throws HBException {
 		try {
 			if (HGlobal.DEBUG) {
@@ -1340,7 +1329,6 @@ public class HBLibraryResultSet {
  * @return String age
  * @throws HBException
  */
-
 	public String calculateAge(long eventHDatePID,long selectPersonPID, int dataBaseIndex) throws HBException {
 		ResultSet dataSelected;
 		long eventYear = 0, birthYear;
@@ -1353,52 +1341,49 @@ public class HBLibraryResultSet {
 		try {
 
 	// Find event year
-			if (eventHDatePID != null_RPID ) {
-				selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + eventHDatePID);
-				dataSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				if (pointBusinessLayer.isResultSetEmpty(dataSelected)) {
-					System.out.println( " Return date string (calculateAge) error for HDate PID: " +  eventHDatePID);
-					return "";
-				}
-				dataSelected.first();
-				eventYear = dataSelected.getLong("MAIN_HDATE_YEARS");
-				detailEvent = dataSelected.getString("MAIN_HDATE_DETAILS");
-				qualifier = detailEvent.charAt(16);
-				if (qualifier != 'X') {
-					ca = '~';
-				}
-				eventDateDec = pointBusinessLayer.numericalDate(eventYear, detailEvent);
-			} else {
+			if (eventHDatePID == null_RPID ) {
 				return "";
 			}
+			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + eventHDatePID);
+			dataSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(dataSelected)) {
+				System.out.println( " Return date string (calculateAge) error for HDate PID: " +  eventHDatePID);
+				return "";
+			}
+			dataSelected.first();
+			eventYear = dataSelected.getLong("MAIN_HDATE_YEARS");
+			detailEvent = dataSelected.getString("MAIN_HDATE_DETAILS");
+			qualifier = detailEvent.charAt(16);
+			if (qualifier != 'X') {
+				ca = '~';
+			}
+			eventDateDec = pointBusinessLayer.numericalDate(eventYear, detailEvent);
 
 	// Find birth year
-			if (selectPersonPID != null_RPID ) {
-				selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.personTable, "PID = " + selectPersonPID);
-				dataSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				dataSelected.first();
-				birhHDatePID = dataSelected.getLong(pointBusinessLayer.personHDateBirthField);
-				if (birhHDatePID != null_RPID ) {
-					selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + birhHDatePID);
-					dataSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-					if (pointBusinessLayer.isResultSetEmpty(dataSelected)) {
-						System.out.println( " Return date string (calculateAge) error for HDate PID: " +  eventHDatePID);
-						return "";
-					}
-					dataSelected.first();
-					birthYear = dataSelected.getLong("MAIN_HDATE_YEARS");
-					detailBirth = dataSelected.getString("MAIN_HDATE_DETAILS");
-					qualifier = detailBirth.charAt(16);
-					if (qualifier != 'X') {
-						ca = '~';
-					}
-					birthDateDec = pointBusinessLayer.numericalDate(birthYear, detailBirth);
-				} else {
-					return "";
-				}
-			} else {
+			if (selectPersonPID == null_RPID ) {
 				return "";
 			}
+			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.personTable, "PID = " + selectPersonPID);
+			dataSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			dataSelected.first();
+			birhHDatePID = dataSelected.getLong(pointBusinessLayer.personHDateBirthField);
+			if (birhHDatePID == null_RPID ) {
+				return "";
+			}
+			selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.dateTable, "PID = " + birhHDatePID);
+			dataSelected = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(dataSelected)) {
+				System.out.println( " Return date string (calculateAge) error for HDate PID: " +  eventHDatePID);
+				return "";
+			}
+			dataSelected.first();
+			birthYear = dataSelected.getLong("MAIN_HDATE_YEARS");
+			detailBirth = dataSelected.getString("MAIN_HDATE_DETAILS");
+			qualifier = detailBirth.charAt(16);
+			if (qualifier != 'X') {
+				ca = '~';
+			}
+			birthDateDec = pointBusinessLayer.numericalDate(birthYear, detailBirth);
 
 	 // Compare month and day
 			age = eventDateDec[0] - birthDateDec[0];
@@ -1437,7 +1422,6 @@ public class HBLibraryResultSet {
  * @throws HBException
  * @throws SQLException
  */
-
 	public HashMap<Integer,Long> indexingPersonMapPID(ResultSet pointT401) throws HBException  {
 		long PID = 0;
 		int visibleId = 0;
@@ -1475,7 +1459,7 @@ public class HBLibraryResultSet {
 		return getRoleNameList(eventNumber, selectRoles, langCode, dataBaseIndex);
 
 	}
-	
+
 	public ResultSet getRoleNameList(int eventNumber, String selectRoles, String langCode, int dataBaseIndex) throws HBException {
 		ResultSet roleNameList;
 		//String langCode = HGlobal.dataLanguage;
@@ -1497,7 +1481,7 @@ public class HBLibraryResultSet {
 		String langCode = HGlobal.dataLanguage;
 		return getEventTypeList(eventGroup, langCode, dataBaseIndex);
 	}
-	
+
 	public ResultSet getEventTypeList( int eventGroup, String langCode, int dataBaseIndex) throws HBException {
 		ResultSet eventTypeList;
 		//String langCode = HGlobal.dataLanguage;
@@ -1543,12 +1527,38 @@ public class HBLibraryResultSet {
 		eventTypeList = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		try {
 			eventTypeList.last();
-			if (eventTypeList.getRow() == 0) return 99;	
+			if (eventTypeList.getRow() == 0) return 99;
 			eventTypeList.first();
 			return eventTypeList.getInt("EVNT_GROUP");
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" HBLibraryResultSet - getEventGroup error\n" + sqle.getMessage());
+		}
+	}
+
+/**
+ * public int getKeyAssocMin(int eventType, int dataBaseIndex)
+ * @param eventType
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
+	public int getKeyAssocMin(int eventType, int dataBaseIndex) throws HBException {
+		ResultSet eventTypeList;
+		String langCode = "en-US"; // en-US has entries for all eventtypes
+		String selectString = null;
+		selectString = 	pointBusinessLayer.setSelectSQL("*",
+				pointBusinessLayer.eventDefnTable,
+				"EVNT_TYPE = " + eventType + " AND LANG_CODE = '" + langCode + "'");
+		eventTypeList = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+		try {
+			eventTypeList.last();
+			if (eventTypeList.getRow() == 0) return 1; // 1 is safe default
+			eventTypeList.first();
+			return eventTypeList.getInt("EVNT_KEY_ASSOC_MIN");
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException(" HBLibraryResultSet - getKeyAssocMin error\n" + sqle.getMessage());
 		}
 	}
 
@@ -1576,6 +1586,7 @@ public class HBLibraryResultSet {
 			+ " Missing birth event for selected person: \n" + sqle.getMessage());
 		}
 	}
+
 /**
  * getRoleName
  * @param eventRoleCode
@@ -1585,7 +1596,6 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public String getRoleName(int eventRoleCode,
 			  int eventNumber,
 			  String langCode,
@@ -1601,24 +1611,23 @@ public class HBLibraryResultSet {
 			eventRoleSet.first();
 			if (eventRoleSet.getRow() > 0 ) {
 				return eventRoleSet.getString("EVNT_ROLE_NAME");
-			} else {
-				selectString = pointBusinessLayer.setSelectSQL("EVNT_ROLE_NAME",
-						pointBusinessLayer.eventRoleTable,
-						"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'"
-								+ " AND EVNT_ROLE_NUM  = '" + eventRoleCode + "'" );
-				eventRoleSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				eventRoleSet.last();
-				if (eventRoleSet.getRow() == 0) {
-					return " Not Found";
-				}
-				eventRoleSet.first();
-				return eventRoleSet.getString("EVNT_ROLE_NAME");
 			}
+			selectString = pointBusinessLayer.setSelectSQL("EVNT_ROLE_NAME",
+					pointBusinessLayer.eventRoleTable,
+					"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'"
+							+ " AND EVNT_ROLE_NUM  = '" + eventRoleCode + "'" );
+			eventRoleSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			eventRoleSet.last();
+			if (eventRoleSet.getRow() == 0) {
+				return " Not Found";
+			}
+			eventRoleSet.first();
+			return eventRoleSet.getString("EVNT_ROLE_NAME");
 		} catch (SQLException | HBException sqle) {
 			throw new HBException("SQL exception: " + sqle.getMessage()
 						+ "\nSQL string: " + selectString);
 		}
-}
+	}
 
 /**
  * getEventName(int eventNumber, String langCode, int dataBaseIndex)
@@ -1638,21 +1647,18 @@ public class HBLibraryResultSet {
 			if (eventTagSet.getRow() > 0 ) {
 				eventTagSet.first();
 				return eventTagSet.getString("EVNT_NAME");
-			} else {
-
-	// fall back to en-US translation
-				selectString = pointBusinessLayer.setSelectSQL("EVNT_NAME", pointBusinessLayer.eventDefnTable,
-						"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'");
-				eventTagSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				eventTagSet.last();
-				if (eventTagSet.getRow() > 0 ) {
-					eventTagSet.first();
-					return "*" + eventTagSet.getString("EVNT_NAME");
-				} else {
-					System.out.println(" Missing fall back to en-US event nr: " + eventNumber + "/" + langCode);
-					throw new HBException(" Missing fall back event name for en-US event nr: " + eventNumber + "/" + langCode);
-				}
 			}
+			// fall back to en-US translation
+						selectString = pointBusinessLayer.setSelectSQL("EVNT_NAME", pointBusinessLayer.eventDefnTable,
+								"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'");
+						eventTagSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+						eventTagSet.last();
+						if (eventTagSet.getRow() > 0 ) {
+							eventTagSet.first();
+							return "*" + eventTagSet.getString("EVNT_NAME");
+						}
+						System.out.println(" Missing fall back to en-US event nr: " + eventNumber + "/" + langCode);
+						throw new HBException(" Missing fall back event name for en-US event nr: " + eventNumber + "/" + langCode);
 		} catch (SQLException sqle) {
 			throw new HBException("SQL exception: " + sqle.getMessage()
 			+ "\nSQL string: " + selectString);
@@ -1665,7 +1671,6 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-
 	public String[] getLanguageCodes(String guiLang, int dataBaseIndex) throws HBException {
 		String[] langCodes = new String[4];
 		String selectString = pointBusinessLayer.
@@ -1689,7 +1694,6 @@ public class HBLibraryResultSet {
  * @param dataBaseIndex
  * @throws HBException
  */
-
 	public void setLanguageCodes(String guiLang, String[] langCodes, int dataBaseIndex) throws HBException {
 		String selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.languageUses,"LANG_CODE = '" + guiLang + "'");
@@ -1712,7 +1716,6 @@ public class HBLibraryResultSet {
  * @param ResSet input ResultSet
  * @throws HBException
  */
-
 	public void dumpResultSetData(ResultSet resSet) throws HBException {
 		try {
 			System.out.println("ResultSet Metadata:");

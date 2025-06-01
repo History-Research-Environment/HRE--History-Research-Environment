@@ -2,7 +2,7 @@ package hre.gui;
 /*******************************************************************************
  * Edit Repository
  * v0.04.0032 2025-02-01 First draft (D Ferguson)
- *
+ *			  2025-05-26 Adjust miglayout sub-panel sizes (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE00 - needs WhWhHandler etc defined to be able to pickup location styles and data
@@ -154,7 +154,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		fullNameTextScroll.getViewport().setOpaque(false);
 		fullNameTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		fullNameText.setCaretPosition(0);	// set scrollbar to top
-		namePanel.add(fullNameTextScroll, "cell 1 2, alignx left");	//$NON-NLS-1$
+		namePanel.add(fullNameTextScroll, "cell 1 2, grow, alignx left");	//$NON-NLS-1$
 
 		contents.add(namePanel, "cell 0 0");	//$NON-NLS-1$
 
@@ -208,7 +208,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 			};
 
 		// NOTE00 some dummy data to test the table display format - to be removed
-		tableLocationHeader = new String[] {"Location Element", "Value"};
+		tableLocationHeader = new String[] {"Location Element", "Value"};			// to come from T204
 		tableLocationData = new Object[][] {{"Addressee ", " "},	{"Detail", "test place"},
 										    {"City/Town ", " "},	{"County", " "},
 										    {"Country ", " "},	{"Postal", " "} };
@@ -227,7 +227,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		tableLocation.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);	//$NON-NLS-1$
 
 		tableLocation.getColumnModel().getColumn(0).setMinWidth(80);
-		tableLocation.getColumnModel().getColumn(0).setPreferredWidth(120);
+		tableLocation.getColumnModel().getColumn(0).setPreferredWidth(140);
 		tableLocation.getColumnModel().getColumn(1).setMinWidth(100);
 		tableLocation.getColumnModel().getColumn(1).setPreferredWidth(300);
 		tableLocation.setAutoCreateColumnsFromModel(false);	// preserve column setup
@@ -245,9 +245,9 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		if (tableLocation.getRowCount() > 0) {
 			JTableCellTabbing.setTabMapping(tableLocation, 0, tableLocation.getRowCount(), 1, 1);
 		}
-		locnPanel.add(nameScrollPane, "cell 0 1 2");	//$NON-NLS-1$
+		locnPanel.add(nameScrollPane, "cell 0 1 2, grow");	//$NON-NLS-1$
 
-		contents.add(locnPanel, "cell 0 1");	//$NON-NLS-1$
+		contents.add(locnPanel, "cell 0 1, grow");	//$NON-NLS-1$
 
 	// Setup Memo sub-panel
 		JPanel memoPanel = new JPanel();
@@ -275,7 +275,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		memoText.setCaretPosition(0);	// set scrollbar to top
 		memoPanel.add(memoTextScroll, "cell 0 1, grow, alignx left, aligny top");	//$NON-NLS-1$
 
-		contents.add(memoPanel, "cell 0 2");	//$NON-NLS-1$
+		contents.add(memoPanel, "cell 0 2, grow");	//$NON-NLS-1$
 
 /*******************************
  * Setup final control buttons

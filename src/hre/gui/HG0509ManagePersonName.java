@@ -31,6 +31,7 @@ package hre.gui;
  *  		  2025-02-26 Added add, edit and remove for name citations (N. Tolleshaug)
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  * 			  2025-04-21 Observe GUI Seq when loading citation data (D Ferguson)
+ * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE04 Sentence edit function missing
@@ -621,7 +622,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	           		int atRow = tableNameCite.getSelectedRow();
 	           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
-					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, "T402", (long)objCiteDataToEdit[3]);
+	           	// NB: keyAssocMin value defaulted to 1
+					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, "T402", 1, (long)objCiteDataToEdit[3]);
 					citeScreen.pointManagePersonName = pointManagePersonName;
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyCite = lbl_Style.getLocationOnScreen();
@@ -637,7 +639,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				pointCitationSourceHandler.setCitedTableData("T402", personNameTablePID);	//$NON-NLS-1$
-				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, "T402");
+				// NB: keyAssocMin value defaulted to 1 in following line
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, "T402", 1);
 				citeScreen.pointManagePersonName = pointManagePersonName;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Style.getLocationOnScreen();

@@ -35,8 +35,8 @@ package hre.gui;
  * 			  2024-11-30 Fix crash if cancel out of Browse action (D Ferguson)
  * v0.04.0032 2025-03-26 Add display of IS_OWNER setting (D Ferguson)
  * 			  2025-03-27 Reject duplicate and illegal LogonID entries (D Ferguson)
- ******************************************************************************************
-*/
+ * 			  2025-05-08 Complete IS_OWNER update code (D Ferguson)
+ ******************************************************************************************/
 
 import java.awt.Color;
 import java.awt.Cursor;
@@ -211,7 +211,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 		table_Users.setModel(new DefaultTableModel(
 								new String[][] {  },
 								new String[] {HG0403Msgs.Text_42, HG0403Msgs.Text_43, 		// Logon ID, User's Name
-											  HG0403Msgs.Text_44, "Is Owner?"}));			// E-mail, Owner?
+											  HG0403Msgs.Text_44, HG0403Msgs.Text_50}));			// Email, Is Owner?
 		table_Users.getColumnModel().getColumn(0).setMinWidth(80);
 		table_Users.getColumnModel().getColumn(0).setPreferredWidth(100);
 		table_Users.getColumnModel().getColumn(1).setMinWidth(80);
@@ -434,8 +434,8 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 						pointToolHand.openDatabase(HGlobal.projectFolder, HGlobal.projectFilename);
 					// Populate user table from project data
 						DefaultTableModel model = (DefaultTableModel) table_Users.getModel();
-						model.setDataVector(pointToolHand.presentTableUsersT131(),
-								new String[] {HG0403Msgs.Text_42,HG0403Msgs.Text_43, HG0403Msgs.Text_44, "Is Owner?"});	// Logon ID, User's Name, E-mail
+						model.setDataVector(pointToolHand.presentTableUsersT131(),			// Logon ID, User's Name, Email, Is Owner?
+								new String[] {HG0403Msgs.Text_42,HG0403Msgs.Text_43, HG0403Msgs.Text_44, HG0403Msgs.Text_50});
 					// Reset column sizes
 						table_Users.getColumnModel().getColumn(0).setMinWidth(80);
 						table_Users.getColumnModel().getColumn(0).setPreferredWidth(100);
@@ -458,17 +458,22 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 			}
 		});
 
-	// Table change lister
+	// Table change listener
 		table_Users.getModel().addTableModelListener(new TableModelListener() {
             @Override
 			public void tableChanged(TableModelEvent e) {
             	if (HGlobal.DEBUG)
             		System.out.println("Change Type: " + e.getType() + " Col: "  //$NON-NLS-1$ //$NON-NLS-2$
             				+ e.getColumn() + " Row: " + e.getFirstRow()); //$NON-NLS-1$
+             // Test if IS_OWNER checkbox column has changed.
+            	if (e.getColumn() == 3) {
+            		table_Users.setRowSelectionInterval(e.getFirstRow(), e.getFirstRow()); // Force this row as selected one
+            		tableUserRowSelected = e.getFirstRow();
+            		cellEdited = true;
+            	}
              // Single Cell edited and row updated in T131
-                if (e.getType() == 0 && e.getColumn() != -1) {
+                if (e.getType() == 0 && e.getColumn() != -1)
                 	cellEdited = true;
-    			}
             	if (e.getColumn() == 2) {
                 	if (HGlobal.DEBUG)
                 		System.out.println("E-mail changed: " + table_Users.getValueAt(e.getFirstRow(), 2));  //$NON-NLS-1$
@@ -517,11 +522,11 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: adding User in HG0403ProjectAdmin"); //$NON-NLS-1$
 				DefaultTableModel userModel = (DefaultTableModel) table_Users.getModel();
-			// Create Strings of new user info (Logon ID, User Name, password, email)
+			// Create Strings of new user info (Logon ID, User Name, password, email, let Owner default to false)
 				String[] newUserInfo = addUserInfo(btn_AddUser);
 				if (newUserInfo != null) {
 					try {
-					// Add new entry to database User table T131 (4 elements) and screen's TableModel (3 elements)
+					// Add new entry to database User table T131 and screen's TableModel
 						if (pointToolHand.addToUserTableAction (newUserInfo)) {
 							userModel.addRow( new Object[] { newUserInfo[0], newUserInfo[1], newUserInfo[3]});
 					// Now highlight the added row as selected
@@ -616,9 +621,9 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 		if (chgUserInfo[0] == null) return null; 		// user must have cancelled
 		if (chgUserInfo[0].length() == 0) return null;	// user pressed OK
 		// Test if LogonID contains blanks - will create illegal SQL is it does
-		if (chgUserInfo[0].contains(" ")) {
+		if (chgUserInfo[0].contains(" ")) {		//$NON-NLS-1$
 			JOptionPane.showMessageDialog(btn_AddUser,
-					"Logon ID must not contain blanks",
+					HG0403Msgs.Text_51,		// Logon ID must not contain blanks
 					chgUserInfo[1],
 					JOptionPane.ERROR_MESSAGE);
 			return null;
@@ -627,7 +632,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 		for(int i = 0; i < table_Users.getRowCount(); i++){
 			if(chgUserInfo[0].equals(table_Users.getModel().getValueAt(i, 0).toString().trim())) {
 				JOptionPane.showMessageDialog(btn_AddUser,
-						"Logon ID " + chgUserInfo[0] + " already in use",
+						HG0403Msgs.Text_52 + chgUserInfo[0] + HG0403Msgs.Text_53,		// Logon ID  // already in use
 						chgUserInfo[1],
 						JOptionPane.ERROR_MESSAGE);
 				return null;
@@ -665,7 +670,7 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
 					HG0403Msgs.Text_32, JOptionPane.ERROR_MESSAGE);		// Set Password
 			chgUserInfo[2] = "Hre_2021"; //$NON-NLS-1$
 		} else chgUserInfo[2] = passWord;
-
+		// Don't prompt for an IS_OWNER setting - let it be set to false
 		return chgUserInfo;
 	}
 
@@ -675,16 +680,17 @@ public class HG0403ProjectUserAdmin extends HG0450SuperDialog {
  */
 	public void saveUsedData(HBToolHandler pointToolHand, int tableUserRowSelected) {
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving User info in HG0403ProjectAdmin"); //$NON-NLS-1$
-		String chgUserInfo[] =  {null, null, null , null};
+		Object chgUserInfo[] =  {null, null, null, null, false};
     // Check if editor active and there is an edit in progress
 		if (table_Users.getCellEditor() != null) table_Users.getCellEditor().stopCellEditing();
 	// Check if row selected
 		if (tableUserRowSelected >= 0) {
 		// get selected user's current info
-			chgUserInfo[0] = (String) table_Users.getValueAt(tableUserRowSelected, 0);
-			chgUserInfo[1] = (String) table_Users.getValueAt(tableUserRowSelected, 1);
+			chgUserInfo[0] = (String) table_Users.getValueAt(tableUserRowSelected, 0);	// logonid
+			chgUserInfo[1] = (String) table_Users.getValueAt(tableUserRowSelected, 1);	// username
 			chgUserInfo[2] = passWord;
-			chgUserInfo[3] = (String) table_Users.getValueAt(tableUserRowSelected, 2);
+			chgUserInfo[3] = (String) table_Users.getValueAt(tableUserRowSelected, 2);	// email
+			chgUserInfo[4] = (boolean) table_Users.getValueAt(tableUserRowSelected, 3);	// IS_OWNER setting
 
 			try {
 			// action the changed user data

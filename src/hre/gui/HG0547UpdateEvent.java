@@ -16,6 +16,7 @@ package hre.gui;
  * 			  2024-12-01 Updated location name TAB handling (N. Tolleshaug)
  * 			  2024-12-05 Final update location name TAB handling (N. Tolleshaug)
  * 			  2024-04-21 Handle saving of changed citation sequence (D Ferguson)
+ * 			  2025-05-24 Changes to show key people and roles in screen top panel (D Ferguson)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -38,7 +39,7 @@ import hre.nls.HG0547Msgs;
 /**
  * Update Event
  * @author N.Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-02-26
  */
 
@@ -58,10 +59,9 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 		this.locationNamePID = locNamePID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;
-		partnerNames = pointWhereWhenHandler.getPartnerNames();
 
 		btn_Save.setText(HG0547Msgs.Text_70);	// Update
-		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
+		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonNamePri);	// Update ...... Event for ...
 
 		if (HGlobal.DEBUG)
 			System.out.println(" UpdateEvent: " + eventNumber + "/" + roleNumber); //$NON-NLS-1$ //$NON-NLS-2$
@@ -160,22 +160,26 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 								locationNamePID = pointWhereWhenHandler.createLocationRecord(eventPID);
 							pointWhereWhenHandler.updateLocationElementData(locationNamePID);
 						}
+
 					// Update event type and role
 						if (changeEventType)
 							pointWhereWhenHandler.
 									changeEventType(eventPID, selectedEventNum, selectedRoleNum);
+
 					// Update location name style
 						if (changedLocationNameStyle) {
 							selectedStyleIndex = locationNameStyles.getSelectedIndex();
 							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 						}
+
 					// Update GUI sequence of citations if order changed or citation added,
 					// but only if more than 1 citation left in table
 						if (citationOrderChanged && objEventCiteData.length > 1)
 								pointCitationSourceHandler.updateCiteGUIseq(eventPID, "T450", objEventCiteData);	//$NON-NLS-1$
 
 					} else
-						if (HGlobal.DEBUG) System.out.println(" HG0547UpdateEvent - No updated data for event!");	//$NON-NLS-1$
+						if (HGlobal.DEBUG)
+							System.out.println(" HG0547UpdateEvent - No updated data for event!");	//$NON-NLS-1$
 
 
 				// Reload Person windows
@@ -257,11 +261,13 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 	} // End HG0547UpdateEvent constructor
 
 /**
- * setUpdateEventTitle(String eventPersonName)
- * @param eventPersonName
+ * setUpdateEventOwnerData(String eventOwnersName)
+ * @param eventOwnersName
  */
-	public void setUpdateEventTitle(String eventPersonName) {
-		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Update Event for
+	public void setUpdateEventOwnerData(String eventOwnersName) {
+		// This is executed from WhWhHandler activateUpdateEvent when the managed person is a witness to the event
+		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventOwnersName);	// Update ...... Event for
+		lbl_PersonPri.setText(eventOwnersName);
 	}
 
 }	// End HG0547UpdateEvent

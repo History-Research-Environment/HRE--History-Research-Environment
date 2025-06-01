@@ -19,8 +19,10 @@ package hre.bila;
  * 			  2021-09-09 - Implemented SSL for TCP server   (N. Tolleshaug)
  * 			  2021-10-10 - Update password in T131 (N. Tolleshaug)
  * 			  2023-09-03 Implemented monitor flags and redirect console output (N.Tolleshaug)
- * v0.03.0030 2023-10-02 If import fails wrong file deleted or useProject error (D Ferguson)
- ************************************************************************************/
+ * v0.03.0030 2023-10-02 Fix import failure deleting wrong file or useProject error (D Ferguson)
+ * v0.04.0032 2025-05-08 Update T131 processing for new IS_OWNER field (D Ferguson)
+ *************************************************************************************/
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -39,12 +41,11 @@ import hre.tmgjava.TMGglobal;
 /**
   * HBToolHandler for Tool menu
   * @author Nils Tolleshaug
-  * @version v0.03.0030
+  * @version v0.04.0032
   * @since 2019-12-20
   */
 public class HBToolHandler extends HBBusinessLayer {
 
-	public JTable userTable;
     public JTable projectTable;
 
     protected ResultSet pointT131usersResultSet;
@@ -136,15 +137,14 @@ public class HBToolHandler extends HBBusinessLayer {
  * boolean stopTCPserver()
  */
 	public boolean stopTCPserver() {
-		if (HGlobal.numOpenProjects == 0) {
-			pointDBlayer.stopServer();
-			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("Action: TCP server stopped:  ");
-			}
-			return true;
-		} else {
+		if (HGlobal.numOpenProjects != 0) {
 			return false;
 		}
+		pointDBlayer.stopServer();
+		if (HGlobal.writeLogs) {
+			HB0711Logging.logWrite("Action: TCP server stopped:  ");
+		}
+		return true;
 	}
 
 /**
@@ -197,9 +197,8 @@ public class HBToolHandler extends HBBusinessLayer {
 	public String[] getUserProjectByIndex(int i) throws HBException {
 		if (i < HGlobal.userProjects.size()) {
 			return HGlobal.userProjects.get(i);
-		} else {
-			throw new HBException("ArrayList index out of range: " + i);
 		}
+		throw new HBException("ArrayList index out of range: " + i);
 	}
 
 /**
@@ -258,7 +257,7 @@ public class HBToolHandler extends HBBusinessLayer {
  * @param projectData
  * @throws HBException
  */
-	public String [][] presentTableUsersT131() throws HBException {
+	public Object[][] presentTableUsersT131() throws HBException {
 				int dataBaseIndex = currentDatabaseIndex;
 		        if (HGlobal.DEBUG) {
 					System.out.println("HBToolHandler - read from database nr: " + dataBaseIndex);
@@ -266,7 +265,6 @@ public class HBToolHandler extends HBBusinessLayer {
 		 // SELECT action to SQL base
 		        String selectSQL = setSelectSQL("*","T131_USER","");
 				pointT131usersResultSet = requestTableData(selectSQL, dataBaseIndex);
-				userTable = makeTableFromRS(pointT131usersResultSet);
 				if (HGlobal.DEBUG) {
 					dumpResultSetData(pointT131usersResultSet);
 				}
@@ -279,7 +277,7 @@ public class HBToolHandler extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-   private String [][] setUpUserTable(ResultSet table131ResultSet) throws HBException {
+   private Object[][] setUpUserTable(ResultSet table131ResultSet) throws HBException {
 	   if (HGlobal.DEBUG) {
 		System.out.println("Set up user Table : ");
 	}
@@ -291,13 +289,14 @@ public class HBToolHandler extends HBBusinessLayer {
 		   	table131ResultSet.last();
 		   	int size = table131ResultSet.getRow();
 		  // Initiate table array
-		   	String [][] userTable = new String[size][3];
+		   	Object[][] userTable = new Object[size][4];
 	   		int index = 0;
 	   		table131ResultSet.beforeFirst();
 		   	while (table131ResultSet.next()) {
 		   		userTable[index][0] = table131ResultSet.getString("LOGON_NAME");
 		   		userTable[index][1] = table131ResultSet.getString("USER_NAME");
 		   		userTable[index][2] = table131ResultSet.getString("EMAIL");
+		   		userTable[index][3] = table131ResultSet.getBoolean("IS_OWNER");
 		   		index++;
 		   	}
 		   	if (HGlobal.DEBUG) {
@@ -319,7 +318,7 @@ public class HBToolHandler extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-	public boolean changeUserTableAction(String[] userCred, int selectedRow) throws HBException {
+	public boolean changeUserTableAction(Object[] userCred, int selectedRow) throws HBException {
 		try {
 		// Position to current row in ResultSet
 			if (!pointT131usersResultSet.absolute(selectedRow + 1)) {
@@ -329,7 +328,7 @@ public class HBToolHandler extends HBBusinessLayer {
 		 // Update selected row
 			pointLibraryResultSet.updateUserInTable(pointT131usersResultSet, userCred);
 		// Update password for database user
-			return updateDatabaseUserPassWord(userCred[0], userCred[2]);
+			return updateDatabaseUserPassWord((String)userCred[0], (String)userCred[2]);
 		} catch (SQLException sqle) {
 			if (HGlobal.DEBUG) {
 				System.out.println("HBToolHandler - updateUserTable: \n" + sqle.getMessage());
@@ -404,15 +403,14 @@ public class HBToolHandler extends HBBusinessLayer {
    public boolean createNewDatabaseUser(String userid, String password, int dataBaseIndex) throws HBException {
 		String sqlRequest = "CREATE USER " + userid + " PASSWORD '" + password + "';"
 				+ " GRANT ALTER ANY SCHEMA TO " + userid + ";";
-		if (!userid.equals("SA")) {
-			try {
-				return pointDBlayer.updateTableData(sqlRequest, dataBaseIndex);
-			} catch (HDException hde) {
-				closeDatabase(dataBaseIndex);
-				throw new HBException("" + hde.getMessage());
-			}
-		} else {
+		if (userid.equals("SA")) {
 			throw new HBException("Cannot create new SA user! \n");
+		}
+		try {
+			return pointDBlayer.updateTableData(sqlRequest, dataBaseIndex);
+		} catch (HDException hde) {
+			closeDatabase(dataBaseIndex);
+			throw new HBException("" + hde.getMessage());
 		}
    }
 
@@ -424,15 +422,14 @@ public class HBToolHandler extends HBBusinessLayer {
  */
    public boolean deleteDatabaseUser(String userid) throws HBException {
 		String sqlRequest = "DROP USER IF EXISTS " + userid + ";";
-		if (!userid.equals("SA")) {
-			try {
-				return pointDBlayer.updateTableData(sqlRequest, currentDatabaseIndex);
-			} catch (HDException hde) {
-				throw new HBException("" + hde.getMessage());
-				//hde.printStackTrace();
-			}
-		} else {
+		if (userid.equals("SA")) {
 			throw new HBException("User SA cannot be changed! \n");
+		}
+		try {
+			return pointDBlayer.updateTableData(sqlRequest, currentDatabaseIndex);
+		} catch (HDException hde) {
+			throw new HBException("" + hde.getMessage());
+			//hde.printStackTrace();
 		}
    }
 
@@ -444,18 +441,16 @@ public class HBToolHandler extends HBBusinessLayer {
 */
   public boolean updateDatabaseUserPassWord(String userid, String passWord) throws HBException {
 		String sqlRequest = "ALTER USER " + userid + " SET PASSWORD '" + passWord + "';";
-		if (!userid.equals("SA")) {
-			if  (passWord != null) {
-				try {
-					return pointDBlayer.updateTableData(sqlRequest, currentDatabaseIndex);
-				} catch (HDException hde) {
-					throw new HBException("Update user database password error: \n" + hde.getMessage());
-				}
-			} else {
-				return false;
-			}
-		} else {
+		if (userid.equals("SA")) {
 			throw new HBException("User SA cannot be changed! \n");
+		}
+		if  (passWord == null) {
+			return false;
+		}
+		try {
+			return pointDBlayer.updateTableData(sqlRequest, currentDatabaseIndex);
+		} catch (HDException hde) {
+			throw new HBException("Update user database password error: \n" + hde.getMessage());
 		}
   }
 
@@ -495,34 +490,7 @@ public class HBToolHandler extends HBBusinessLayer {
 					+ dataBaseFilePath
 					+ "\nSeed database file: " + HGlobal.seedProjectFile);
 			}
-			if (pointLibraryResultSet.setDatabaseProjectName(newProjectName, dataBaseFilePath)) {
-
-		// Update user table data for project
-				HGlobal.userCred[2] = "Hre_2021"; // Set initial password for user!
-
-		// update T131 table with new user and new database user
-				pointLibraryResultSet.updateNewUserInProject(dataBaseFilePath, HGlobal.userCred);
-
-		// Include new project data in HGlobal.userProjects list
-				addProjectToList(newProjectArray);
-				if (HGlobal.DEBUG) {
-					System.out.println("HBToolHandler Prepared copy of new TMG project " + newProjectName);
-				}
-
-		// Update userAUX with new project data
-				HB0744UserAUX.writeUserAUXfile();
-
-		// start conversion
-				TMGHREprogressMonitor conv = new TMGHREprogressMonitor();
-				conv.startMonitor();
-				if (HGlobal.DEBUG) {
-					System.out.println("HBToolHandler importTmgToHreAction - Convert TMG to folder/file: "
-							+ chosenFolder + "/" + chosenFileName);
-				}
-				conv.startConversion(chosenFolder + File.separator + chosenFileName);
-				return 0;
-			}
-			else {
+			if (!pointLibraryResultSet.setDatabaseProjectName(newProjectName, dataBaseFilePath)) {
 		// Delete created database file
 				pointLibraryBusiness.deleteFile(chosenFolder + File.separator + chosenFileName + ".mv.db");
 			// Remove last project from HGlobal.userProjects list
@@ -531,6 +499,30 @@ public class HBToolHandler extends HBBusinessLayer {
 				HB0744UserAUX.writeUserAUXfile();
 				return 2;
 			}
+			// Update user table data for project
+					HGlobal.userCred[2] = "Hre_2021"; // Set initial password for user!
+
+			// update T131 table with new user and new database user
+					pointLibraryResultSet.updateNewUserInProject(dataBaseFilePath, HGlobal.userCred);
+
+			// Include new project data in HGlobal.userProjects list
+					addProjectToList(newProjectArray);
+					if (HGlobal.DEBUG) {
+						System.out.println("HBToolHandler Prepared copy of new TMG project " + newProjectName);
+					}
+
+			// Update userAUX with new project data
+					HB0744UserAUX.writeUserAUXfile();
+
+			// start conversion
+					TMGHREprogressMonitor conv = new TMGHREprogressMonitor();
+					conv.startMonitor();
+					if (HGlobal.DEBUG) {
+						System.out.println("HBToolHandler importTmgToHreAction - Convert TMG to folder/file: "
+								+ chosenFolder + "/" + chosenFileName);
+					}
+					conv.startConversion(chosenFolder + File.separator + chosenFileName);
+					return 0;
 
 		} catch(HBException hbe) {
 			if (HGlobal.DEBUG) {

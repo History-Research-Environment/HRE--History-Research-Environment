@@ -9,6 +9,7 @@ package hre.gui;
  * 			  2024-05-20 Add and edit associate and memo (N. Tolleshaug)
  * 			  2024-07-31 Revised HG0507SelectAssociate buttons (N. Tolleshaug)
  * 			  2024-08-24 NLS conversion (D Ferguson)-
+ * 			  2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
  **************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -35,6 +36,7 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 
 	HBWhereWhenHandler pointWhereWhenHandler;
 	HG0507SelectAssociate pointSelectAssociate = this;
+	//HG0547EditEvent pointEditEvent;
 	Object[][] roleData;
 	String[] assocRoleList;
 	int[] assocRoleNumber;
@@ -54,6 +56,8 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 													int eventNumber, int indexInAssocTable, boolean addAssoc) throws HBException {
 		super(pointPersonHandler, pointOpenProject, addAssoc);
 		this.addRelation = addAssoc;
+		
+		//HG0547EditEvent pointEditEvent = null;
 	// Set titles for Associate Select
 		selectTitle = HG05070Msgs.Text_150;	// Select New Associate
 		newTitle = HG05070Msgs.Text_151;	// New Associate:
@@ -123,12 +127,14 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 								(long)assocRelationData[0], pointPersonHandler.eventAssocTable);
 						pointWhereWhenHandler.updateAssocTableRow((long)assocRelationData[0], roleNumber);
 					}
+					
+					if (pointEditEvent != null) 
+						pointEditEvent.resetAssociateTable(assocTablePID);
+					else System.out.println(" HG0507SelectAssociate pointEditEvent == null");
 
 					persRolePanel.setVisible(false);
 					persRolePanel.remove(pointSelectAssociate);
-					pointPersonHandler.resetPersonManager();		
-				// Reset Update event
-					pointWhereWhenHandler.resetUpdateEvent(pointOpenProject);
+					//pointPersonHandler.resetPersonManager();		
 
 				} catch (HBException hbe) {
 					System.out.println(" HG0507SelectAssociate error: " + hbe.getMessage());	//$NON-NLS-1$

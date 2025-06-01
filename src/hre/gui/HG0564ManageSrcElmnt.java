@@ -127,7 +127,7 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 	 	// Get Source Type data
 		// load some dummy data for test & display - to be removed
 		tableSrcElmntColHeads = new String[] {"Source Elements" };			// T204 data eventually
-		tableSrcElmntData = new Object[][] {{"[AUTHOR]"}, {"{AGENCY]"}};
+		tableSrcElmntData = new Object[][] {{"[AUTHOR]"}, {"[AGENCY]"}};
 //			tableSrcElmntData = pointzzzzzzz.xxxxxxxxxxxxxxxxxxxx		<<< load Source Elements from T738
 		if (tableSrcElmntData == null ) {
 			JOptionPane.showMessageDialog(tableSrcElmnt, "No data found in HRE database\n"	// No data found in HRE database\n

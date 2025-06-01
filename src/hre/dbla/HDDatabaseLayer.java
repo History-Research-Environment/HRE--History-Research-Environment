@@ -11,20 +11,19 @@ package hre.dbla;
 * v0.00.0016 2020-03-19 - removed updateTableData as update is handled with
 * 						  operations on ResultSet
 * v0.00.0022 2020-05-23 - Corrected error in close database (N. Tolleshaug)
-* v0.00.0026 2021-05-27 - Added code for start/stop server (N. Tolleshaug)
+* v0.01.0026 2021-05-27 - Added code for start/stop server (N. Tolleshaug)
 * 			 2021-05-28 - Added code for commit command (N. Tolleshaug)
 * 			 2021-09-09 - Implemented SSL for TCP server   (N. Tolleshaug)
 * 			 2021-10-01 - Handling of local/remote connect to database (N. Tolleshaug)
 * 			 2021-10-03 - Transfer of remote connect to OpenProjectData (N. Tolleshaug)
-* v0.00.0026 2022-01-02 - Added new method requestTableRows (N. Tolleshaug)
-* v0.00.0032 2025-01-22 - Added test for database index = 0 problem (N. Tolleshaug)
-* v0.00.0032 2025-01-22 - Modified test for database index = 0 problem (N. Tolleshaug)
+* 			 2022-01-02 - Added new method requestTableRows (N. Tolleshaug)
+* v0.04.0032 2025-01-22 - Added test for database index = 0 problem (N. Tolleshaug)
+* 			 2025-03-22 - Modified test for database index = 0 problem (N. Tolleshaug)
 ****************************************************************************************/
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import hre.bila.HB0711Logging;
@@ -101,8 +100,8 @@ public class HDDatabaseLayer {
 		try {
 		   // Connect to SQL database
 	        if (HGlobal.DEBUG) System.out.println("DatabaseLayer -  Connect to SQL Database: " + logonData[0]);
-	        if (logonData[0].startsWith("H2")) {
-	        // Remote = true - call tcp server
+	        if (!logonData[0].startsWith("H2")) throw new HDException("DatabaseLayer - Not known SQL database - " + logonData[0] + " : \n");
+			// Remote = true - call tcp server
 	        	if (remote) {
 	        		String [] data = logonData[0].split("/");
 	        		iPportNr = data[1];
@@ -119,7 +118,6 @@ public class HDDatabaseLayer {
 	        					logonData[1],
 	        					logonData[2]};
 	        	pointSQLhandler = new HDDatabaseH2handler(remote, projectH2loc, serverLogon, tcpServ);
-	        } else throw new HDException("DatabaseLayer - Not known SQL database - " + logonData[0] + " : \n");
 
 /**
  *  Include the open Database into ArrayList openDatabases
@@ -188,14 +186,14 @@ public class HDDatabaseLayer {
 		ResultSet pointResultSet = null;
 		// Adjust SQL request string according to setting in DatabaseAbstraction
 		String updatedString = HDDatabaseAbstraction.updateSqlString(sqlSearchString);
-		if (HGlobal.DEBUG) 
+		if (HGlobal.DEBUG)
 			 System.out.println("HDDatabaseLayer Request SQL: " + sqlSearchString + " Index: " + dbIndex);
 		try {
 			if (connectedDataBases.get(dbIndex) != null)
 				pointResultSet = connectedDataBases.get(dbIndex).requestSQLdata(updatedString);
-			else System.out.println(" HDDatabaseLayer Request ERROR!" + " \n Arraylist connected db's: " + connectedDataBases.size() 
+			else System.out.println(" HDDatabaseLayer Request ERROR!" + " \n Arraylist connected db's: " + connectedDataBases.size()
 																+ " DB index: " + dbIndex + "\n SQL: " + sqlSearchString);
-	        if (HGlobal.DEBUG) 
+	        if (HGlobal.DEBUG)
 	        	System.out.println("HDDatabaseLayer - requestTableData\nDatabase path: "
 					+ connectedDataBases.get(dbIndex).getDatabaseConnectPath() + " \nRequest SQL: " + sqlSearchString);
 
@@ -251,7 +249,7 @@ public class HDDatabaseLayer {
 			throw new HDException("updateTableData - SQL error: \n" + exc.getMessage());
 		}
 	}
-	
+
 /**
  * Create table in H2 base
  * @param tableName
@@ -259,7 +257,7 @@ public class HDDatabaseLayer {
  * @throws HCException
  */
 	public boolean createTableInBase(String tableName, String columnStructure, int dbIndex) throws HDException {
-		
+
 		String sqlRequest = "CREATE TABLE " + tableName + "(" + columnStructure + ");";
 		// Adjust SQL request string according to setting in DatabaseAbstraction
 		String updatedString = HDDatabaseAbstraction.updateSqlString(sqlRequest);

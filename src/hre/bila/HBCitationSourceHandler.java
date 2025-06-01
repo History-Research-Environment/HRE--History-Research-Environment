@@ -16,7 +16,9 @@ package hre.bila;
  *			  2025-03-20 - Added findAssessorName() (N. Tolleshaug)
  *			  2025-03-22 - Handling add citation if source table emplty (N. Tolleshaug)
  *			  2025-03-22 - Removed saveCitedData PID console print (N. Tolleshaug)
- *			  202=-04-21 - Added code to pass CITN_GUI_SEQ and handle resetting it (D Ferguson)
+ *			  2025-04-21 - Add code to pass CITN_GUI_SEQ and handle resetting it (D Ferguson)
+ *			  2025-05-26 - Add SORC_FIDELITY into tableSourceData (D Ferguson)
+ *			  2025-05-29 - Add assessor data into citationEditData (D Ferguson)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -38,6 +40,8 @@ package hre.bila;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import hre.gui.HGlobal;
 
 public class HBCitationSourceHandler extends HBBusinessLayer {
 
@@ -81,15 +85,17 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	public void setCitedTableData(String citedTableName, long citedRecordRPID) {
 		this.citedTableName = citedTableName;
 		this.citedRecordRPID = citedRecordRPID;
+		if (HGlobal.DEBUG)
+			System.out.println(" setCitedTableData table/recordPID: " + citedTableName + "/" + citedRecordRPID);
 	}
 
 /**
- * public String findAssessorName()
+ * public Object getAssessorData()
  * @return
  * @throws HBException
  */
-	public String findAssessorName() throws HBException {
-		return pointLibraryResultSet.findActiveUser(dataBaseIndex);
+	public Object getAssessorData() throws HBException {
+		return pointLibraryResultSet.getProjectOwner(dataBaseIndex);
 	}
 
 /**
@@ -214,6 +220,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		String sourceTitle = "Edit New Source";
 		int citedNumber = 0, index = 0;
 		long sourcePID = null_RPID;
+		String sourceFID = "E";
 
 	// Load pre populated list if done before
 		if (tableSourceData != null) return tableSourceData;
@@ -227,7 +234,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			if (isResultSetEmpty(eventSourcRS)) return null;
 		// Continue
 			eventSourcRS.last();
-			tableSourceData = new Object[eventSourcRS.getRow()][4];
+			tableSourceData = new Object[eventSourcRS.getRow()][5];
 			eventSourcRS.beforeFirst();
 			while (eventSourcRS.next()) {
 				sourceTitle = eventSourcRS.getString("SORC_ABBREV").trim();
@@ -236,10 +243,12 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				eventCitationRS = requestTableData(selectString, dataBaseIndex);
 				eventCitationRS.last();
 				citedNumber = eventCitationRS.getRow();
+				sourceFID = eventSourcRS.getString("SORC_FIDELITY");
 				tableSourceData[index][0] = eventSourcRS.getInt("SORC_REF");
 				tableSourceData[index][1] = sourceTitle;
 				tableSourceData[index][2] = citedNumber;
 				tableSourceData[index][3] = sourcePID;
+				tableSourceData[index][4] = sourceFID;
 				index++;
 			}
 		} catch (SQLException sqle) {
@@ -261,7 +270,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		String sourceTitle, citationRefer,citationDetail, citationMemo = "", sourceFidelity = "";
 		int sourceREF = 0;
 
-		Object[] citationEditData = new Object[7];
+		Object[] citationEditData = new Object[8];
 		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", citationTable, " PID = " + citationTablePID);
@@ -286,25 +295,15 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			citationDetail = pointHREmemo.readMemo(eventCitationRS.getLong("CITN_DETAIL_RPID"));
 			citationMemo = pointHREmemo.readMemo(eventCitationRS.getLong("CITN_MEMO_RPID"));
 			assessorRPID = eventCitationRS.getLong("ASSESSOR_RPID");
-/*
-			System.out.println(" getCitationEditData ref: " + citationRefer
-										+ " \n Title: " + sourceTitle
-										+ " \n Detail: " + citationDetail
-										+ " \n Fidelity: " + sourceFidelity
-										+ " \n Memo: " + citationMemo);
-			System.out.println(" Accuracy:");
-			System.out.println(" 1 2 D P M ");
-			for (int i = 0; i < accuracy.length; i ++)
-				System.out.print(" " + accuracy[i]);
-			System.out.println();
-*/
+
 			citationEditData[0] = citationRefer;
 			citationEditData[1] = sourceREF;
 			citationEditData[2] = sourceTitle;
 			citationEditData[3] = citationDetail;
 			citationEditData[4] = citationMemo;
-			citationEditData[5] = assessorRPID;
-			citationEditData[6] = sourceFidelity;
+			citationEditData[5] = pointLibraryResultSet.getUserName(assessorRPID, dataBaseIndex);
+			citationEditData[6] = assessorRPID;
+			citationEditData[7] = sourceFidelity;
 
 		} catch (SQLException sqle) {
 			System.out.println(" getCitationEditData() error: " + sqle.getMessage());
@@ -325,7 +324,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		ResultSet eventCitationRS, eventSourcRS;
 		long sourcePID, memoTablePID;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		//accuracy = new String[5];
 		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 		selectString = setSelectSQL("*", citationTable, " PID = " + citationTablePID);
 		eventCitationRS = requestTableData(selectString, dataBaseIndex);
@@ -337,7 +335,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			eventCitationRS.updateInt("CITN_ACC_LOCN", accuracySave[3]);
 			eventCitationRS.updateInt("CITN_ACC_MEMO", accuracySave[4]);
 			eventCitationRS.updateString("CITN_REF", (String)saveCitedData[0]);
-
+			eventCitationRS.updateLong("ASSESSOR_RPID", (long)saveCitedData[5]);
 			sourcePID = eventCitationRS.getLong("SORC_RPID");
 			selectString = setSelectSQL("*", sourceTable, "PID = " + sourcePID);
 			eventSourcRS = requestTableData(selectString, dataBaseIndex);
@@ -345,14 +343,13 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			eventSourcRS.updateInt("SORC_REF", (int)saveCitedData[1]);
 			eventSourcRS.updateString("SORC_ABBREV", (String) saveCitedData[2]);
 
-			//eventSourcRS.updateString("SORC_FIDELITY", (String) saveCitedData[6]);
 	// Update or create detail text
 			memoTablePID = eventCitationRS.getLong("CITN_DETAIL_RPID");
 			if (memoTablePID == null_RPID)
 				eventCitationRS.updateLong("CITN_DETAIL_RPID", pointHREmemo.addMemoRecord((String)saveCitedData[3]));
 			else
 				pointHREmemo.findT167_MEMOrecord((String)saveCitedData[3], memoTablePID);
-	// Update or crete memo text
+	// Update or create memo text
 			memoTablePID = eventCitationRS.getLong("CITN_MEMO_RPID");
 			if (memoTablePID == null_RPID)
 				eventCitationRS.updateLong("CITN_MEMO_RPID", pointHREmemo.addMemoRecord((String)saveCitedData[4]));

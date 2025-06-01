@@ -13,6 +13,7 @@ package hre.tmgjava;
  * 			   2025-02-11 - Updated code for citation/source tables (N. Tolleshaug)
  * 			   2025-02-14 - Updated code name/location tables import (N. Tolleshaug)
  * 			   2025-03-19 - Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
+ * 			   2025-05-17 - Added import of "F" partner citations (N. Tolleshaug)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -23,7 +24,7 @@ package hre.tmgjava;
  * 	space = -2 no accuracy recorded
  * 	empty = -3 No data available
  * ********************************************************************************************
- * For Fidelity, TMG set it as 
+ * For Fidelity, TMG set it as
  * 1 = Other, 2 = Original, 3 = Photocopy, 4 = Transcript, 5 = Extract :
  * TMG = 1 - > HRE 'E'
  * TMG = 2 - > HRE 'A'
@@ -60,21 +61,21 @@ public class TMGpass_Source {
 	// On/off dump of source
 	boolean sourceDump = false;
 	//boolean sourceDump = true;
-	
+
 	long citedRecordRPID, citationTablePID;
 	String citedTableName, sourceTitle, abbrevTitle, ctnDetail, ctnMemo;
 	String sourceTypeName, sourceRefTable, sourceMemo, subSource, sourceText, sourceRemind;
 	int sourceNumber, majSource, sourceType, sourceRefId;
-	
+
 // Counters for citation table types
-	int names, relationships, sources, events, places, citations; 
-	
-	 
+	int names, relationships, sources, events, places, citations;
+
+
 	 ResultSet tableT735_CITN, tableT736_SORC;
-	 
+
 // Index for TMG to HRE PID for events
 	public HashMap<Integer,Long> eventIndexPID = new HashMap<Integer, Long>();
-	
+
 /**
  * Constructor TMGpass_V22a_Source
  * @param pointHREbase
@@ -84,7 +85,7 @@ public class TMGpass_Source {
 		tableT735_CITN = TMGglobal.T735;
 		tableT736_SORC = TMGglobal.T736;
 	}
-	
+
 	public void initSourceTables() {
 		tmgAtable = TMGglobal.tmg_A_table;
 		tmgMtable = TMGglobal.tmg_M_table;
@@ -93,17 +94,17 @@ public class TMGpass_Source {
 		tmgUtable = TMGglobal.tmg_U_table;
 		tmgWtable = TMGglobal.tmg_W_table;
 	}
-	
-	
-	
+
+
+
 /**
  * public void addToCitationTable()
- * Citation record types 
- * N=name, 
- * F=relationship, 
- * M=source, 
- * E=event, 
- * P=Place, 
+ * Citation record types
+ * N=name,
+ * F=relationship,
+ * M=source,
+ * E=event,
+ * P=Place,
  * C=Citation.
  */
 	public void addToCitationTable(TMGHREconverter tmgHreConverter) {
@@ -117,25 +118,25 @@ public class TMGpass_Source {
 			try {
 				sourceNumber = tmgStable.getValueInt(index_S_Table,"RECNO");
 				referedRecord = tmgStable.getValueInt(index_S_Table,"REFREC");
-				
+
 				majSource = tmgStable.getValueInt(index_S_Table,"MAJSOURCE");
-				sourceRefTable = tmgStable.getValueString(index_S_Table,"STYPE");	
+				sourceRefTable = tmgStable.getValueString(index_S_Table,"STYPE");
 				sourceTypeName = tmgAtable.findValueString(sourceType,"NAME");
 				sourceMemo = tmgStable.getValueString(index_S_Table,"CITMEMO");
 				subSource = tmgStable.getValueString(index_S_Table,"SUBSOURCE");
-				
+
 				citationTablePID = sourceNumber + proOffset;
 				citedTableName = "----";
-				
-				// Test printout citations		
+
+				// Test printout citations
 				if (majSource == majorTestSource)
-					if (sourceDump) System.out.println(" " + currentRow  + " Source ref/type: " + sourceRefTable   
-							+ "/" + sourceType + "  Title: " + abbrevTitle 
+					if (sourceDump) System.out.println(" " + currentRow  + " Source ref/type: " + sourceRefTable
+							+ "/" + sourceType + "  Title: " + abbrevTitle
 							+ "\n    SourceTitle: " + sourceTitle  + "  Text: " + sourceText
 							+ "\n    SourceType: " + sourceTypeName + "  SubSource: " + subSource);
-				
+
 		/**
-		 * Citation record type (N=name, F=relationship, M=source, E=event, P=Place, C=Citation	)		
+		 * Citation record type (N=name, F=relationship, M=source, E=event, P=Place, C=Citation	)
 		 */
 				if (sourceRefTable.equals("N")) {
 					citedRecordRPID = referedRecord + proOffset;
@@ -143,8 +144,11 @@ public class TMGpass_Source {
 					addToCitationT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);
 					names++;
 					continue;
-				} else
+				}
 				if (sourceRefTable.equals("F")) {
+					citedRecordRPID = referedRecord + proOffset;
+					citedTableName = "T405";
+					addToCitationT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);
 					relationships++;
 					continue;
 				} else
@@ -155,7 +159,7 @@ public class TMGpass_Source {
 				if (sourceRefTable.equals("E")) {
 					citedRecordRPID = eventIndexPID.get(referedRecord);
 					citedTableName = "T450";
-					addToCitationT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);	
+					addToCitationT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);
 					events++;
 					continue;
 				} else
@@ -171,18 +175,18 @@ public class TMGpass_Source {
 					citations++;
 					continue;
 				} else System.out.println(" " + currentRow + " not found type: " + sourceRefTable);
-				
+
 			} catch (HCException hce) {
 				System.out.println("Source error: " + hce.getMessage());
 				hce.printStackTrace();
 			}
-			if (sourceDump)  System.out.println( "PID: " + citationTablePID + " Event " 
+			if (sourceDump)  System.out.println( "PID: " + citationTablePID + " Event "
 						+ citedTableName + " Cited PID: " + citedRecordRPID);
 		}
 	}
-	
+
 /**
- * void addToSourceTable()	
+ * void addToSourceTable()
  */
 	public void addToSourceTable(TMGHREconverter tmgHreConverter) {
 		this.tmgHreConverter = tmgHreConverter;
@@ -193,11 +197,11 @@ public class TMGpass_Source {
 			try {
 				sourceTablePID = tmgMtable.getValueInt(index_M_Table, "MAJNUM") + proOffset;
 				sourceRefId = tmgMtable.getValueInt(index_M_Table, "REF_ID");
-				sourceTitle = tmgMtable.getValueString(index_M_Table, "TITLE");			
+				sourceTitle = tmgMtable.getValueString(index_M_Table, "TITLE");
 				abbrevTitle = tmgMtable.getValueString(index_M_Table, "ABBREV");
 				sourceType = tmgMtable.getValueInt(index_M_Table, "TYPE");
 				sourceText = tmgMtable.getValueString(index_M_Table,"TEXT");
-			// Add new source record	
+			// Add new source record
 				addToSourceT736_SORC(index_M_Table, sourceTablePID, tableT736_SORC);
 			} catch (HCException hce) {
 				System.out.println("Source error: " + hce.getMessage());
@@ -205,13 +209,13 @@ public class TMGpass_Source {
 			}
 		}
 	}
-	
+
 	public void testReposTables() {
 		if (sourceDump) System.out.println("\n**** Repos table: *******************************************");
 		int nrOftmgRRows = tmgRtable.getNrOfRows();
 		for (int index_R_Table = 0; index_R_Table < nrOftmgRRows; index_R_Table++) {
 			try {
-				String name = tmgRtable.getValueString(index_R_Table,"NAME").trim();	
+				String name = tmgRtable.getValueString(index_R_Table,"NAME").trim();
 				String abbrev = tmgRtable.getValueString(index_R_Table,"ABBREV").trim();
 				if (sourceDump) System.out.println(" " + index_R_Table  + " Repos: " + name + " - " + abbrev);
 			} catch (HCException hce) {
@@ -220,12 +224,12 @@ public class TMGpass_Source {
 			}
 		}
 	}
-	
+
 /**
- * addToCitationT735_CITN(long indexPID, ResultSet hreTable)	
+ * addToCitationT735_CITN(long indexPID, ResultSet hreTable)
  * @param indexPID
  * @param hreTable
- * CREATE TABLE T735_CITN( 
+ * CREATE TABLE T735_CITN(
 				PID BIGINT NOT NULL,
 				CL_COMMIT_RPID BIGINT NOT NULL,
 				CITED_RPID BIGINT NOT NULL,
@@ -239,34 +243,34 @@ public class TMGpass_Source {
 				CITN_ACC_NAME CHAR(1) NOT NULL,
 				CITN_ACC_DATE CHAR(1) NOT NULL,
 				CITN_ACC_LOCN CHAR(1) NOT NULL,
-				CITN_ACC_MEMO CHAR(1) NOT NULL 
+				CITN_ACC_MEMO CHAR(1) NOT NULL
  */
-	private void addToCitationT735_CITN(int index_S_Table, long T735tablePID, ResultSet hreTable) {	
-		try {				
+	private void addToCitationT735_CITN(int index_S_Table, long T735tablePID, ResultSet hreTable) {
+		try {
 		    // moves cursor to the insert row
 				hreTable.moveToInsertRow();
 			// Update new row in H2 database
 				hreTable.updateLong("PID", T735tablePID);
 				hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 				hreTable.updateLong("CITED_RPID", citedRecordRPID);
-				hreTable.updateString("OWNER_TYPE", citedTableName );	
+				hreTable.updateString("OWNER_TYPE", citedTableName );
 				hreTable.updateLong("SORC_RPID", majSource + proOffset);
-				hreTable.updateLong("ASSESSOR_RPID", null_RPID);
-				
+				hreTable.updateLong("ASSESSOR_RPID", proOffset + 1L);
+
 			//Create a T167_MEMO_SET record with citiation detials
 				ctnDetail = HREmemo.returnStringContent(tmgStable.getValueString(index_S_Table,"SUBSOURCE"));
 			// Processing detial to T167_MEMO_SET
 				if (ctnDetail.length() == 0) hreTable.updateLong("CITN_DETAIL_RPID", null_RPID);
 				else hreTable.updateLong("CITN_DETAIL_RPID",
 						tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(ctnDetail));
-				
+
 			//Create a T167_MEMO_SET record with the citation memo
 				ctnMemo = HREmemo.returnStringContent(tmgStable.getValueString(index_S_Table,"CITMEMO"));
 			// Processing memo to T167_MEMO_SET
 				if (ctnMemo.length() == 0) hreTable.updateLong("CITN_MEMO_RPID", null_RPID);
 				else hreTable.updateLong("CITN_MEMO_RPID",
 						tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(ctnMemo));
-				
+
 				hreTable.updateString("CITN_REF", tmgStable.getValueString(index_S_Table,"CITREF"));
 				hreTable.updateInt("CITN_GUI_SEQ", tmgStable.getValueInt(index_S_Table,"SEQUENCE"));
 				hreTable.updateInt("CITN_ACC_NAME1", accConvert(tmgStable.getValueString(index_S_Table,"SNSURE")));
@@ -276,27 +280,27 @@ public class TMGpass_Source {
 				hreTable.updateInt("CITN_ACC_MEMO", accConvert(tmgStable.getValueString(index_S_Table,"SFSURE")));
 			// Test
 				//hreTable.updateInt("CITN_ACC_P2NAME", -1);
-				
+
 			//Insert row
 				hreTable.insertRow();
 		} catch (SQLException sqle) {
-			
+
 			sqle.printStackTrace();
 			errorCount++;
 		} catch (HCException hce) {
 
 			hce.printStackTrace();
-		}	
+		}
 	}
-	
+
 /**
- * accConvert(String acc)	
+ * accConvert(String acc)
  * @param acc
  * @return
  */
 	private int accConvert(String acc) {
 		if (acc.equals("3")) return 3;
-		else if (acc.equals("2")) return 2;
+		if (acc.equals("2")) return 2;
 		else if (acc.equals("1")) return 1;
 		else if (acc.equals("0")) return 0;
 		else if (acc.equals("-")) return -1;
@@ -305,10 +309,10 @@ public class TMGpass_Source {
 		return -4;
 	}
 /**
- * 		
+ *
  * @param indexPID
  * @param hreTable
- * CREATE TABLE T736_SORC( 
+ * CREATE TABLE T736_SORC(
 				PID BIGINT NOT NULL,
 				CL_COMMIT_RPID BIGINT NOT NULL,
 				IS_ACTIVE BOOLEAN NOT NULL,
@@ -345,27 +349,27 @@ public class TMGpass_Source {
 				else if (sourceFidleity == 5) hreTable.updateString("SORC_FIDELITY","D");
 				else if (sourceFidleity < 1 || sourceFidleity > 5)
 					System.out.println(" Fidelity: " + sourceFidleity + " not found");
-				
+
 				//Create a T167_MEMO_SET record with the citation memo
 				sourceMemo = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"TEXT"));
 			// Processing memo to T167_MEMO_SET
 				if (sourceMemo.length() == 0) hreTable.updateLong("SORC_TEXT_RPID", null_RPID);
 				else hreTable.updateLong("SORC_TEXT_RPID",
 						tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(sourceMemo));
-				
-		//Check the following RPID value towards PID for T401 
-				hreTable.updateLong("SORC_AUTHOR_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"SPERNO"));				
-				hreTable.updateLong("SORC_EDITOR_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"EDITORID"));		
+
+		//Check the following RPID value towards PID for T401
+				hreTable.updateLong("SORC_AUTHOR_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"SPERNO"));
+				hreTable.updateLong("SORC_EDITOR_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"EDITORID"));
 				hreTable.updateLong("SORC_COMPILER_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"COMPILERID"));
-		// End		
-				hreTable.updateString("SORC_ABBREV",tmgMtable.getValueString(index_M_Table,"ABBREV"));  
-				hreTable.updateString("SORC_TITLE",tmgMtable.getValueString(index_M_Table,"TITLE"));	
+		// End
+				hreTable.updateString("SORC_ABBREV",tmgMtable.getValueString(index_M_Table,"ABBREV"));
+				hreTable.updateString("SORC_TITLE",tmgMtable.getValueString(index_M_Table,"TITLE"));
 				hreTable.updateString("SORC_FULLFORM",
 						HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"FFORM")));
 				hreTable.updateString("SORC_SHORTFORM",
 						HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"SFORM")));
 				hreTable.updateString("SORC_BIBLIOFORM",
-						HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"BFORM")));	
+						HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"BFORM")));
 			//Create a T167_MEMO_SET record with the remider
 				sourceRemind = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"TEXT"));
 			// Processing memo to T167_MEMO_SET
@@ -373,7 +377,7 @@ public class TMGpass_Source {
 				else hreTable.updateLong("SORC_REMIND_RPID",
 						tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(sourceRemind));
 			//Insert row
-				hreTable.insertRow();		
+				hreTable.insertRow();
 			} catch (SQLException sqle) {
 				// TODO Auto-generated catch block
 				sqle.printStackTrace();
@@ -387,7 +391,7 @@ public class TMGpass_Source {
  */
 	public void citationStat() {
 		// int names, relationships, sources, events, places, citations;
-		System.out.println(" Sources/Citiations stats: "); 
+		System.out.println(" Sources/Citiations stats: ");
 		System.out.println(" Names: " + names);
 		System.out.println(" Relations: " + relationships);
 		System.out.println(" Sources: " + sources);

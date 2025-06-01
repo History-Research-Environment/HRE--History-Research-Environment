@@ -38,6 +38,7 @@ package hre.bila;
  *			  2024-10-12 add save/restore of 'PS reload' User option (D Ferguson)
  *			  2024-11-15 add save/restore of 'prompt Marr Name' User option (D Ferguson)
  *			  2024-11-24 improve log messages written by this code (D Ferguson)
+ * v0.03.0031 2025-05-12 Complete IS_OWNER update code (D Ferguson)
  ************************************************************************************************************
  * Structure of HB0744UserAUX consists of 3 methods, namely:
  * 	(i)  initUserAUXfile: if the /username/HRE/ folder doesn't exist, this
@@ -167,11 +168,11 @@ public class HB0744UserAUX {
 		         	user.appendChild(userID);
 		           	// create UserName element
 		         	Element userName = doc.createElement("username");
-		         	userName.appendChild(doc.createTextNode(HGlobal.userCred[1]));		//set userName as gathered by Welcome screen
+		         	userName.appendChild(doc.createTextNode((String) HGlobal.userCred[1]));	//set userName as gathered by Welcome screen
 		         	user.appendChild(userName);
 		           	// create UserEmail element
 		         	Element userEmail = doc.createElement("useremail");
-		         	userEmail.appendChild(doc.createTextNode(HGlobal.userCred[3]));		//set user's email address as gathered by Welcome screen
+		         	userEmail.appendChild(doc.createTextNode((String) HGlobal.userCred[3])); //set user's email address as gathered by Welcome screen
 		         	user.appendChild(userEmail);
 
 		         	// create preferences elements

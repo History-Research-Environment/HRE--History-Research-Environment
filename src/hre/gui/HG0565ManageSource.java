@@ -10,6 +10,7 @@ package hre.gui;
  *			  2025-02-18 Add Save button (D Ferguson)
  *			  2025-03-01 Make Select button dispose this screen (D Ferguson)
  *			  2025-03-22 Handling add citation if source table emplty (N. Tolleshaug)
+  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -130,7 +131,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	// Define panel for Action buttons
 		JPanel actionPanel = new JPanel();
 		actionPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		actionPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		actionPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JButton btn_Add = new JButton("Add");		// Add
 		btn_Add.setEnabled(true);
 		actionPanel.add(btn_Add, "cell 0 0, alignx center, grow"); //$NON-NLS-1$
@@ -157,7 +158,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	// Define panel for Source list
 		JPanel sourcePanel = new JPanel();
 		sourcePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		sourcePanel.setLayout(new MigLayout("insets 5", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		sourcePanel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Setup JTable to show Source data
 		JTable tableSource = new JTable() {
@@ -303,13 +304,13 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	// Define control buttons
 		JButton btn_Save = new JButton("Save");		// Save
 		btn_Save.setEnabled(false);
-		contents.add(btn_Save, "cell 2 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
+		contents.add(btn_Save, "cell 1 1 2, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 		JButton btn_Cancel = new JButton("Cancel");		// Cancel
 		btn_Cancel.setEnabled(true);
-		contents.add(btn_Cancel, "cell 2 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
+		contents.add(btn_Cancel, "cell 1 1 2, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
 		JButton btn_Select = new JButton("Select");		// Select
 		btn_Select.setEnabled(false);
-		contents.add(btn_Select, "cell 2 1, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
+		contents.add(btn_Select, "cell 1 1 2, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
 
 	// End of Panel Definitions
 

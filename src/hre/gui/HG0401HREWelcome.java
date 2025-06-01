@@ -242,7 +242,7 @@ public class HG0401HREWelcome extends JDialog {
             }
             protected void updateNameState() {
             	HGlobal.userCred[1] = txtNameEntry.getText().trim();
-            	if (HGlobal.userCred[1].length() == 0 ) {
+            	if (((String) HGlobal.userCred[1]).length() == 0 ) {
             			nameValid = false;
             			txtNameEntry.setBackground(Color.YELLOW);
             			}
@@ -283,7 +283,7 @@ public class HG0401HREWelcome extends JDialog {
             }
             protected void updateEmailState() {
             	HGlobal.userCred[3] = txtEmailEntry.getText().trim();
-            	if (HGlobal.userCred[3].length() == 0 ) {
+            	if (((String) HGlobal.userCred[3]).length() == 0 ) {
             			emailValid = false;
             			txtEmailEntry.setBackground(Color.YELLOW);
             			}
@@ -362,7 +362,7 @@ public class HG0401HREWelcome extends JDialog {
 				if (notNewUser) dispose();
 				nameValid = false;				// assume the worst first
 				emailValid = false;
-            	if (!HGlobalCode.isNameValid(HGlobal.userCred[1])) {
+            	if (!HGlobalCode.isNameValid((String) HGlobal.userCred[1])) {
             		txtNameEntry.setBackground(Color.YELLOW);
             		txtNameEntry.setForeground(Color.BLACK);
             		JOptionPane.showMessageDialog(txtNameEntry , HG0401WMsgs.Text_21,
@@ -373,7 +373,7 @@ public class HG0401HREWelcome extends JDialog {
 						  txtNameEntry.setForeground(Color.BLACK);
 						  }
 
-            	if (!HGlobalCode.isEmailValid(HGlobal.userCred[3])) {
+            	if (!HGlobalCode.isEmailValid((String) HGlobal.userCred[3])) {
             		txtEmailEntry.setBackground(Color.YELLOW);
             		txtEmailEntry.setForeground(Color.BLACK);
             		JOptionPane.showMessageDialog(txtEmailEntry , HG0401WMsgs.Text_23,

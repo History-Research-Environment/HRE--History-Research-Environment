@@ -16,6 +16,8 @@ package hre.gui;
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  * 			  2025-04-24 Add citation add/delete/move code (D Ferguson)
  * 			  2025-04-27 Add citation panel for Partners (D Ferguson)
+ * 			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
+ * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -95,9 +97,17 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 
 	public static final String screenID = "50700"; //$NON-NLS-1$
-	public String selectTitle, newTitle, addTitle;
-	HG0507SelectPerson thisSelectPerson = this;
 
+	HG0507SelectPerson thisSelectPerson = this;
+	public HG0547EditEvent pointEditEvent;
+    public HBPersonHandler pointPersonHandler;
+    HG0507PersonSelect personSelect;
+	HBProjectOpenData pointOpenProject;
+	HG0507SelectPerson pointSelectPerson = this;
+	public HBCitationSourceHandler pointCitationSourceHandler;
+	HG0507SelectPerson personFrame = this;
+
+	public String selectTitle, newTitle, addTitle;
 	private JPanel contents;
 	JPanel persRolePanel;
 	JPanel findPanel;
@@ -117,12 +127,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	public long personPID;
 	private String idText, allColumnsText1, allColumnsText2;
 	String[] tablePersColHeads = null;
-    public HBPersonHandler pointPersonHandler;
-    HG0507PersonSelect personSelect;
-	HBProjectOpenData pointOpenProject;
-	HG0507SelectPerson pointSelectPerson = this;
-	public HBCitationSourceHandler pointCitationSourceHandler;
-	HG0507SelectPerson personFrame = this;
+
     JScrollPane scrollTable;
 	JComboBox<String> comboBox_Subset;
 
@@ -790,9 +795,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	           	if (me.getClickCount() == 2 && tableCite.getSelectedRow() != -1) {
 	           		int atRow = tableCite.getSelectedRow();
 	           		objCiteDataToEdit = objCiteData[atRow]; // select whole row
-		        	// Display HG0555EditCitation with this data
+		        	// Display HG0555EditCitation with this data - keyAssocMin = 1 by default
 						HG0555EditCitation citeScreen
-										= new HG0555EditCitation(false, pointOpenProject, citeTableName, (long)objCiteDataToEdit[3]);
+										= new HG0555EditCitation(false, pointOpenProject, citeTableName, 1, (long)objCiteDataToEdit[3]);
 						citeScreen.pointSelectPerson = pointSelectPerson;
 						citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 						Point xyCite = lbl_Relate.getLocationOnScreen();
@@ -808,7 +813,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				pointCitationSourceHandler.setCitedTableData(citeTableName, personPID);
-				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeTableName);
+				// NB keyAssocMin = 1 by default as follows
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeTableName, 1);
 				citeScreen.pointSelectPerson = pointSelectPerson;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Relate.getLocationOnScreen();

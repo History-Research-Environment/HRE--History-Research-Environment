@@ -3,7 +3,7 @@ package hre.gui;
  * Edit Citation
  * ***********************************************************************************
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
- *			  2025-01-19 Add Visualize button; add Listeners for text fields (D Ferguson)
+ *			  2025-01-19 Add Preview button; add Listeners for text fields (D Ferguson)
  *			  2025-01-31 Add ability to select Source by ### (D Ferguson)
  *			  2025-02-10 Change textAreas to textPanes (D Ferguson)
  *			  2025-02-20 Add Assessor field & ActionListeners (D Ferguson)
@@ -21,7 +21,13 @@ package hre.gui;
  *            2025-03-23 Removed console print of fidelity (N. Tolleshaug)
  *            2025-04-10 Add parsing routine to display footnote/biblio output (D Ferguson)
  *            2025-04-28 Adjust editable Surety values based on citation owner type (D Ferguson)
- *            2025-04-29 Allow added source selection by number entry (D Ferguson)
+ *            2025-05-09 Allow added source selection by number entry (D Ferguson)
+ *            2025-05-19 NLS all code (D Ferguson)
+ *            2025-05-25 Use EVNT_KEY_ASSOC_MIN to set acc2 use (D Ferguson)
+ *            2025-05-26 Make Preview panel disappear on 2nd click of button (D Ferguson)
+ *            2025-05-26 Fix Fidelity not set on screen if new citation (D Ferguson)
+ *            2025-05-27 Fix handling of Assessor Name and PID in Citations (D Ferguson)
+ *            2025-05-29 Make Assessor name = current owner if Surety changed (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 footnote/biblio templates not yet loaded from source data
@@ -36,6 +42,7 @@ import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
@@ -73,10 +80,13 @@ import javax.swing.text.DefaultCaret;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.NumberFormatter;
 
+import org.apache.commons.lang3.StringUtils;
+
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
+import hre.nls.HG0555Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -103,14 +113,22 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	private JPanel contents;
 	boolean outputVisible = false;
 
-	String citationRefer = "", sourceTitle = "", citationDetail = "", citationMemo = "", assessorName;
+	String citationRefer = ""; //$NON-NLS-1$
+	String sourceTitle = ""; //$NON-NLS-1$
+	String citationDetail = ""; //$NON-NLS-1$
+	String citationMemo = ""; //$NON-NLS-1$
+	Object[] ownerAssessorData;
+	String assessorName;
+	long assessorPID;
+	int keyAssocMin;
 	int sourceREF = 0;
-	String[] accuracyData;
-	String fidelityData = "";
+	String[] accuracyData = {" ", " ", " ", " ", " "}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+	String fidelityData = ""; //$NON-NLS-1$
 	int[] accuracyEdited = null;
 	Object[] citationEditData;
 	Object[] citationSaveData;
 	Object[][] objSourceData;
+	JTextField fidelityText;
 
 	long citationTablePID = null_RPID;
 	long sourceTablePID = null_RPID;
@@ -125,41 +143,48 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	JTextField sourceTitleText, refText, acc1, acc2, accD, accP, accM;
 	JFormattedTextField srcNum;
 
-	String templateFullFootnote, templateShortFootnote, templateBibliography = "";  // NOTE02 data still to be loaded
+	String templateFullFootnote, templateShortFootnote, templateBibliography = "";  // NOTE02 data still to be loaded //$NON-NLS-1$
 
 	JButton btn_Save;
 
 	public void setSourceSelectedData(Object[] objSourceDataToEdit) {
 		sourceTablePID = (long) objSourceDataToEdit[3];
 		sourceTitleText.setText((String) objSourceDataToEdit[1]);
-		srcNum.setText((String) objSourceDataToEdit[0]);
+		srcNum.setText(""+objSourceDataToEdit[0]); 		//$NON-NLS-1$
+		fidelityData = (String) objSourceDataToEdit[4];
+		fidelityText.setText(" " + fidAnalyse()); 		//$NON-NLS-1$
 	}
 
 /**
- * Create the dialog
+ * Create the entry points
  */
-	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, String citeOwnerType)  {
+	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, String citeOwnerType,
+							  int keyAssocMin)  {
 		this.pointOpenProject = pointOpenProject;
+		this.keyAssocMin = keyAssocMin;
 		createGUI(addCitationRecord, citeOwnerType);
 	}
 
-	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject,
-							  String citeOwnerType, long citationTablePID)  {
+	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, String citeOwnerType,
+							  int keyAssocMin, long citationTablePID)  {
 		this.pointOpenProject = pointOpenProject;
+		this.keyAssocMin = keyAssocMin;
 		this.citationTablePID = citationTablePID;
 		createGUI(addCitationRecord, citeOwnerType);
 	}
-
+/**
+ * Create the dialog
+*/
 	private void createGUI(boolean addCitationRecord, String citeOwnerType) {
-		if (addCitationRecord) setTitle("Add Citation");
-		else setTitle("Edit Citation");
+		if (addCitationRecord) setTitle(HG0555Msgs.Text_7);		// Add Citiation
+		else setTitle(HG0555Msgs.Text_8);		// Edit Citation
 
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "editcitation";		 //$NON-NLS-1$
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 
-	// Collect citationData
+	// Collect citationData if NOT an Add Citation case
 		try {
 			if (!addCitationRecord) {
 				citationEditData = pointCitationSourceHandler.getCitationEditData(citationTablePID);
@@ -168,13 +193,20 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				sourceTitle = (String) citationEditData[2];
 				citationDetail = (String) citationEditData[3];
 				citationMemo = (String) citationEditData[4];
-				//assessorName = (String) citationEditData[5];
-				fidelityData = (String) citationEditData[6];
+				assessorName = (String) citationEditData[5];
+				assessorPID = (long) citationEditData[6];
+				fidelityData = (String) citationEditData[7];
+				accuracyData = pointCitationSourceHandler.getAccuracyData();
 			}
-			accuracyData = pointCitationSourceHandler.getAccuracyData();
-			assessorName = " " + pointCitationSourceHandler.findAssessorName();
+	// For ANY case, get the current Project IS_OWNER data (needed for an ADD or if Surety changes)
+			ownerAssessorData = (Object[]) pointCitationSourceHandler.getAssessorData();
+	// Then for ADD Citation case, use this current Project Assessor name and PID
+			if (addCitationRecord) {
+				assessorName = (String) ownerAssessorData[0];
+				assessorPID = (long) ownerAssessorData[1];
+			}
 		} catch (HBException hbe) {
-			System.out.println(" HG0555EditCitation error: " + hbe.getMessage());
+			System.out.println(" HG0555EditCitation data load error: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 
@@ -204,7 +236,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		citePanel.setLayout(new MigLayout("", "[]10[]", "[]10[]10[]10[]10[]5[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JButton btn_sorcSelect = new JButton("Select Source");	// Select Source
+		JButton btn_sorcSelect = new JButton(HG0555Msgs.Text_11);	// Select Source
 		citePanel.add(btn_sorcSelect, "cell 0 0, alignx right");	//$NON-NLS-1$
 
 	    NumberFormat format = NumberFormat.getInstance();
@@ -213,7 +245,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	    formatter.setMinimum(1);
 	    formatter.setMaximum(99999);
 	    srcNum = new JFormattedTextField(formatter);
-	    srcNum.setText("" + sourceREF);
+	    srcNum.setText("" + sourceREF); //$NON-NLS-1$
 	    srcNum.setColumns(5);
 	    srcNum.setHorizontalAlignment(SwingConstants.CENTER);
 	    citePanel.add(srcNum, "cell 1 0, alignx left");		//$NON-NLS-1$
@@ -226,7 +258,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citePanel.add(sourceTitleText, "cell 1 0, gapx 10, alignx left");	//$NON-NLS-1$
 
 	// Citation text fields
-		JLabel citeDetail = new JLabel("Citation Detail:");
+		JLabel citeDetail = new JLabel(HG0555Msgs.Text_13);		// Citation Detail:
 		citePanel.add(citeDetail, "cell 0 1, alignx right");	//$NON-NLS-1$
 		citeDetailText = new JTextArea();
 		citeDetailText.append(citationDetail);
@@ -245,8 +277,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citeDetailText.setCaretPosition(0);	// set scrollbar to top
 		citePanel.add(citeDetailTextScroll, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-		JLabel citeMemo = new JLabel("Citation Memo:");
-		citePanel.add(citeMemo, "cell 0 2, alignx right");	//$NON-NLS-1$
+		JLabel citeMemo = new JLabel(HG0555Msgs.Text_14);		// Citation Memo:
+		citePanel.add(citeMemo, "cell 0 2, alignx right");		//$NON-NLS-1$
 		citeMemoText = new JTextArea();
 		citeMemoText.append(citationMemo);
 		citeMemoText.setWrapStyleWord(true);
@@ -264,29 +296,31 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citeMemoText.setCaretPosition(0);	// set scrollbar to top
 		citePanel.add(citeMemoTextScroll, "cell 1 2, alignx left");	//$NON-NLS-1$
 
-		JLabel ref = new JLabel("Reference:");
+		JLabel ref = new JLabel(HG0555Msgs.Text_15);	// Reference:
 		citePanel.add(ref, "cell 0 3, alignx right");	//$NON-NLS-1$
 		refText = new JTextField(citationRefer);
 		refText.setColumns(30);
 		citePanel.add(refText, "cell 1 3, alignx left");	//$NON-NLS-1$
 
-		JLabel assess = new JLabel("Assessor:");
+		JLabel assess = new JLabel(HG0555Msgs.Text_16);		// Assessor:
 		citePanel.add(assess, "cell 0 4, alignx right");	//$NON-NLS-1$
 		JTextField assessText = new JTextField();
 		assessText.setColumns(30);
 		assessText.setText(assessorName);
+		assessText.setEditable(false);
+		assessText.setFocusable(false);
 		citePanel.add(assessText, "cell 1 4, alignx left");	//$NON-NLS-1$
 
-		JLabel sure = new JLabel("Surety:");
+		JLabel sure = new JLabel(HG0555Msgs.Text_17);	// Surety:
 		citePanel.add(sure, "cell 0 5, alignx right");	//$NON-NLS-1$
 
-		JLabel srcFidLbl = new JLabel("Source Fidelity: ");
+		JLabel srcFidLbl = new JLabel(HG0555Msgs.Text_18);	// Source Fidelity:
 		citePanel.add(srcFidLbl, "cell 0 6, alignx right");	//$NON-NLS-1$
-		JTextField fidelityText = new JTextField();
+		fidelityText = new JTextField();
 		fidelityText.setColumns(15);
 		fidelityText.setEditable(false);
 		fidelityText.setFocusable(false);
-		fidelityText.setText(" " + fidAnalyse());
+		fidelityText.setText(" " + fidAnalyse()); //$NON-NLS-1$
 		citePanel.add(fidelityText, "cell 1 6, alignx left");	//$NON-NLS-1$
 
 	// Define Surety panel
@@ -294,15 +328,15 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		surePanel.setLayout(new MigLayout("", "[]5[]5[]5[]5[]20[]", "[]0[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel sure1 = new JLabel("1");		//$NON-NLS-1$
-		surePanel.add(sure1, "cell 0 0,alignx center");	//$NON-NLS-1$
+		surePanel.add(sure1, "cell 0 0,alignx center");		//$NON-NLS-1$
 		JLabel sure2 = new JLabel("2");		//$NON-NLS-1$
-		surePanel.add(sure2, "cell 1 0,alignx center");	//$NON-NLS-1$
-		JLabel sureD = new JLabel("D");
-		surePanel.add(sureD, "cell 2 0,alignx center");	//$NON-NLS-1$
-		JLabel sureP = new JLabel("P");
-		surePanel.add(sureP, "cell 3 0,alignx center");	//$NON-NLS-1$
-		JLabel sureM = new JLabel("M");
-		surePanel.add(sureM, "cell 4 0,alignx center");	//$NON-NLS-1$
+		surePanel.add(sure2, "cell 1 0,alignx center");		//$NON-NLS-1$
+		JLabel sureD = new JLabel(HG0555Msgs.Text_20);		// D
+		surePanel.add(sureD, "cell 2 0,alignx center");		//$NON-NLS-1$
+		JLabel sureP = new JLabel(HG0555Msgs.Text_21);		// P
+		surePanel.add(sureP, "cell 3 0,alignx center");		//$NON-NLS-1$
+		JLabel sureM = new JLabel(HG0555Msgs.Text_22);		// M
+		surePanel.add(sureM, "cell 4 0,alignx center");		//$NON-NLS-1$
 
 		acc1 = new JTextField(1);
 		acc1.setColumns(1);
@@ -314,6 +348,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		acc2.setColumns(1);
 		acc2.setHorizontalAlignment(SwingConstants.CENTER);
 		acc2.setText(accuracyData[1]);
+		acc2.setEnabled(false);
 		surePanel.add(acc2, "cell 1 1");	//$NON-NLS-1$
 
 		accD = new JTextField();
@@ -337,27 +372,28 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		// The above Surety values of 1, 2, D, P, M do not apply for all events
 		// For Names (ownertype=T402) only 1, M apply
 		// For Parent relationship (T405) only 1, D, M apply
-		// For all except some T450, only 1, D, P, M apply
+		// For all others only 1, D, P, M apply EXCEPT if keyAssocMin = 2.
+		// Hence acc2 is disabled by default, unless keyAssocMin is > 1.
 		// So set appropriate values non-enabled to enforce these rules
-		if (!citeOwnerType.equals("T450")) acc2.setEnabled(false);
-		if (citeOwnerType.equals("T402")) {
+		if (keyAssocMin > 1) acc2.setEnabled(true);
+		if (citeOwnerType.equals("T402")) { //$NON-NLS-1$
 			accD.setEnabled(false);
 			accP.setEnabled(false);
 		}
-		if (citeOwnerType.equals("T405")) accP.setEnabled(false);
+		if (citeOwnerType.equals("T405")) accP.setEnabled(false); //$NON-NLS-1$
 
-		JLabel accHint = new JLabel("(Valid values are 3, 2, 1, 0, minus, blank)");
+		JLabel accHint = new JLabel(HG0555Msgs.Text_26);		// (Valid values are 3, 2, 1, 0, minus, blank)
 		surePanel.add(accHint, "cell 5 1");	//$NON-NLS-1$
 
 		citePanel.add(surePanel, "cell 1 5, alignx left");	//$NON-NLS-1$
 		contents.add(citePanel, "cell 0 0, aligny top"); //$NON-NLS-1$
 
-	// Setup Output panel for display of how citation looks
+	// Setup Output panel for display of how citation footnote/biblio will look
 		JPanel outputPanel = new JPanel();
 		outputPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		outputPanel.setLayout(new MigLayout("", "[]", "[]5[]10[]5[]10[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel fullFoot = new JLabel("Full footnote");
+		JLabel fullFoot = new JLabel(HG0555Msgs.Text_27);	// Full footnote
 		outputPanel.add(fullFoot, "cell 0 0, alignx left");	//$NON-NLS-1$
 		JTextPane fullFootText = new JTextPane();
 		fullFootText.setContentType("text/html"); //$NON-NLS-1$
@@ -371,7 +407,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		fullFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		outputPanel.add(fullFootTextScroll, "cell 0 1, alignx left");	//$NON-NLS-1$
 
-		JLabel shortFoot = new JLabel("Short footnote");
+		JLabel shortFoot = new JLabel(HG0555Msgs.Text_28);		// Short footnote
 		outputPanel.add(shortFoot, "cell 0 2, alignx left");	//$NON-NLS-1$
 		JTextPane shortFootText = new JTextPane();
 		shortFootText.setContentType("text/html"); //$NON-NLS-1$
@@ -385,7 +421,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		shortFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		outputPanel.add(shortFootTextScroll, "cell 0 3, alignx left");	//$NON-NLS-1$
 
-		JLabel biblio = new JLabel("Bibliography");
+		JLabel biblio = new JLabel(HG0555Msgs.Text_29);		// Bibliography
 		outputPanel.add(biblio, "cell 0 4, alignx left");	//$NON-NLS-1$
 		JTextPane biblioText = new JTextPane();
 		biblioText.setContentType("text/html"); //$NON-NLS-1$
@@ -403,13 +439,13 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		outputPanel.setVisible(false);
 
 	// Define control buttons
-		JButton btn_Cancel = new JButton("Cancel");		// Cancel
+		JButton btn_Cancel = new JButton(HG0555Msgs.Text_30);		// Cancel
 		btn_Cancel.setEnabled(true);
 		contents.add(btn_Cancel, "cell 0 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		JButton btn_Display = new JButton("Visualise");		// Visualise
-		btn_Display.setEnabled(true);
-		contents.add(btn_Display, "tag left,cell 0 1,alignx right,gapx 10"); //$NON-NLS-1$
-		btn_Save = new JButton("Save");		// Save
+		JButton btn_Preview = new JButton(HG0555Msgs.Text_31);		// Preview
+		btn_Preview.setEnabled(true);
+		contents.add(btn_Preview, "tag left,cell 0 1,alignx right,gapx 10"); //$NON-NLS-1$
+		btn_Save = new JButton(HG0555Msgs.Text_32);					// Save
 		btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 0 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
@@ -493,59 +529,54 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				Point xySorc = btn_sorcSelect.getLocationOnScreen();
 				sorcScreen.setLocation(xySorc.x - 100, xySorc.y - 100);
 				sorcScreen.setVisible(true);
-				btn_Display.setEnabled(true);
+				btn_Preview.setEnabled(true);
 				setCursor(Cursor.getDefaultCursor());
 				btn_Save.setEnabled(true);
 			}
 		});
 
-		// Listener for pressing Enter after entering a Source number
+		// Listener to detect srcNum entry has been exited without pressing enter
+		srcNum.addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+            	// Get whatever has been entered so far and process it
+            	if (StringUtils.isNumeric(srcNum.getText()))
+            					sourceNumberEntry(Integer.valueOf(srcNum.getText()));
+            	else sourceNumberEntry(0);		// else pass across 0 to force error msg
+            }
+        });
+
+		// Listener for pressing Enter after Selecting a Source number
 		srcNum.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				int enteredNum = ((Integer) srcNum.getValue()).intValue();
-	        	if (enteredNum > 0) {
-	        		try {
-	        			// Get source number, title, cited, PID
-						objSourceData = pointCitationSourceHandler.getSourceList();
-					} catch (HBException hse) {
-						System.out.println(" HG0555EditCitation get source data error: " + hse.getMessage());
-						hse.printStackTrace();
-					}
-	        		// Get the PID and title of the entered source number
-	        		for (int i = 0; i < objSourceData.length; i++) {
-	        			if ((int)objSourceData[i][0] == enteredNum) {
-	        				sourceTablePID = (long) objSourceData[i][3];
-	        				sourceTitleText.setText((String) objSourceData[i][1]);
-	        				btn_Save.setEnabled(true);
-	        				sourceFound = true;
-	        				break;
-	        			}
-	        		}
-	        	}
-        		// No source number matched
-				if (!sourceFound) JOptionPane.showMessageDialog(srcNum,
-																"No Source exists with number: " + enteredNum,
-																"Select Source", JOptionPane.ERROR_MESSAGE);
-				// reset for next time
-				sourceFound = false;
+				// Get the Src number and process it
+				int num = ((Integer) srcNum.getValue()).intValue();
+				sourceNumberEntry(num);
 	        }
 		});
 
-		// Listener for Display (Visualise) button
-		btn_Display.addActionListener(new ActionListener() {
+		// Listener for Preview button
+		btn_Preview.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-			// Unhide the Output panel
-				outputPanel.setVisible(true);
-				outputVisible = true;
-				pack();
-			// Parse the full Footnote text into its output area
-				fullFootText.setText(parseNoteBiblio(templateFullFootnote));
-			// Parse the short Footnote text into its output area
-				shortFootText.setText(parseNoteBiblio(templateShortFootnote));
-			// Parse the Bibliography text into its output area
-				biblioText.setText(parseNoteBiblio(templateBibliography));
+				if (!outputVisible) {
+				// Unhide the Output panel
+					outputPanel.setVisible(true);
+					outputVisible = true;
+					pack();
+				// Parse the full Footnote text into its output area
+					fullFootText.setText(parseNoteBiblio(templateFullFootnote));
+				// Parse the short Footnote text into its output area
+					shortFootText.setText(parseNoteBiblio(templateShortFootnote));
+				// Parse the Bibliography text into its output area
+					biblioText.setText(parseNoteBiblio(templateBibliography));
+				}
+				else {
+				// Hide the output panel if Preview button clicked again
+					outputPanel.setVisible(false);
+					outputVisible = false;
+					pack();
+				}
 			}
 		});
 
@@ -555,18 +586,18 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// Close reminder display, if open
 				if (reminderDisplay != null) reminderDisplay.dispose();
-				long newCitationTablePID;
+				long newCitationTablePID = null_RPID;
 				try {
 					if (addCitationRecord) {
 						newCitationTablePID = pointCitationSourceHandler.createCitationRecord(sourceTablePID);
 						pointCitationSourceHandler.saveCitedData(newCitationTablePID, citationSaveData(), accuracyEdited);
 					} else pointCitationSourceHandler.saveCitedData(citationTablePID, citationSaveData(), accuracyEdited);
-					if (pointEditEvent != null) pointEditEvent.resetCitationTable();
+					if (pointEditEvent != null) pointEditEvent.resetCitationTable(newCitationTablePID);
 					if (pointManagePersonName != null) pointManagePersonName.resetCitationTable();
 					if (pointSelectPerson != null) pointSelectPerson.resetCitationTable(citeOwnerType);
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0555EditCitation save error: " + hbe.getMessage());
+					System.out.println(" HG0555EditCitation save error: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit HG0555EditCitation");	//$NON-NLS-1$
@@ -607,13 +638,19 @@ public class HG0555EditCitation extends HG0450SuperDialog {
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
                 // Allow only valid characters and ensure the field has max 1 character
-                if (text != null && text.length() <= 1 && ("3210-".contains(text) || text.isBlank())) {
+                if (text != null && text.length() <= 1 && ("3210-".contains(text) || text.isBlank())) { //$NON-NLS-1$
                     fb.replace(0, fb.getDocument().getLength(), text, attrs); // Replace everything with the new character
                 }
+              // If this is NOT an ADD citation, recognise a Surety change by resetting the Assessor Name/PID to be saved
+    			if (!addCitationRecord) {
+	  				assessorName = (String) ownerAssessorData[0];
+					assessorPID = (long) ownerAssessorData[1];
+					assessText.setText(assessorName);
+    			}
             }
             @Override
             public void insertString(FilterBypass fb, int offset, String text, AttributeSet attrs) throws BadLocationException {
-                replace(fb, offset, 0, text, attrs); // Redirect to replace to ensure only 1 char ever acceptedc
+            	replace(fb, offset, 0, text, attrs); // Redirect to replace to ensure only 1 char ever acceptedc
             }
         };
         ((AbstractDocument) acc1.getDocument()).setDocumentFilter(accDocFilter);
@@ -654,12 +691,13 @@ public class HG0555EditCitation extends HG0450SuperDialog {
  */
 	private Object[] citationSaveData() {
 		accuracyEdited = new int[5];
-		citationSaveData = new Object[5];
+		citationSaveData = new Object[6];
 		citationSaveData[0] = refText.getText();
 		citationSaveData[1] = Integer.parseInt(srcNum.getText().trim());
 		citationSaveData[2] = sourceTitleText.getText();
 		citationSaveData[3] = citeDetailText.getText();
 		citationSaveData[4] = citeMemoText.getText();
+		citationSaveData[5] = assessorPID;
 		accuracyEdited[0] = inputAccConvert(acc1.getText());
 		accuracyEdited[1] = inputAccConvert(acc2.getText());
 		accuracyEdited[2] = inputAccConvert(accD.getText());
@@ -673,14 +711,14 @@ public class HG0555EditCitation extends HG0450SuperDialog {
  * @return fidelity text
  */
 	private String fidAnalyse() {
-		String fidText = "-";
-		if (fidelityData.equals("A")) fidText = "Original";
-		else if (fidelityData.equals("B")) fidText = "Copy";
-		else if (fidelityData.equals("C")) fidText = "Transcript";
-		else if (fidelityData.equals("D")) fidText = "Extract";
-		else if (fidelityData.equals("E")) fidText = "Other";
+		String fidText = "-"; //$NON-NLS-1$
+		if (fidelityData.equals("A")) fidText = HG0555Msgs.Text_37; 		//$NON-NLS-1$		// Original
+		else if (fidelityData.equals("B")) fidText = HG0555Msgs.Text_39; 	//$NON-NLS-1$		// Copy
+		else if (fidelityData.equals("C")) fidText = HG0555Msgs.Text_41; 	//$NON-NLS-1$		// Transcript
+		else if (fidelityData.equals("D")) fidText = HG0555Msgs.Text_43; 	//$NON-NLS-1$		// Extract
+		else if (fidelityData.equals("E")) fidText = HG0555Msgs.Text_45; 	//$NON-NLS-1$		// Other
 		else
-			if (HGlobal.DEBUG) System.out.println(" Soruce fidelity not defined for code: " + fidelityData);
+			if (HGlobal.DEBUG) System.out.println(" Soruce fidelity not defined for code: " + fidelityData); //$NON-NLS-1$
 		return fidText;
 	}
 
@@ -690,14 +728,48 @@ public class HG0555EditCitation extends HG0450SuperDialog {
  * @return
  */
 	private int inputAccConvert(String acc) {
-		if (acc.equals("3")) return 3;
-		if (acc.equals("2")) return 2;
-		if (acc.equals("1")) return 1;
-		if (acc.equals("0")) return 0;
-		if (acc.equals("-")) return -1;
-		if (acc.equals(" ")) return -2;
+		if (acc.equals("3")) return 3; 		//$NON-NLS-1$
+		if (acc.equals("2")) return 2; 		//$NON-NLS-1$
+		if (acc.equals("1")) return 1; 		//$NON-NLS-1$
+		if (acc.equals("0")) return 0; 		//$NON-NLS-1$
+		if (acc.equals("-")) return -1; 	//$NON-NLS-1$
+		if (acc.equals(" ")) return -2; 	//$NON-NLS-1$
 		if (acc.isEmpty()) return -3;
 		return -4;
+	}
+
+/**
+ * private sourceNumberEntry(int enteredNum)
+ * @param entered source number
+ */
+	private void sourceNumberEntry(int enteredNum) {
+    	if (enteredNum > 0) {
+    		try {
+    			// Get source number, title, cited, PID, fidelity
+				objSourceData = pointCitationSourceHandler.getSourceList();
+			} catch (HBException hse) {
+				System.out.println(" HG0555EditCitation get source data error: " + hse.getMessage()); //$NON-NLS-1$
+				hse.printStackTrace();
+			}
+    		// Get the PID and title of the entered source number
+    		for (int i = 0; i < objSourceData.length; i++) {
+    			if ((int)objSourceData[i][0] == enteredNum) {
+    				sourceTablePID = (long) objSourceData[i][3];
+    				sourceTitleText.setText((String) objSourceData[i][1]);
+    				fidelityData = (String) objSourceData[i][4];
+    				fidelityText.setText(" " + fidAnalyse()); 		//$NON-NLS-1$
+    				btn_Save.setEnabled(true);
+    				sourceFound = true;
+    				break;
+    			}
+    		}
+    	}
+		// No source number matched
+		if (!sourceFound) JOptionPane.showMessageDialog(srcNum,
+														HG0555Msgs.Text_54 + enteredNum,	// No Source exists with number:
+														HG0555Msgs.Text_55, JOptionPane.ERROR_MESSAGE); // Select Source
+		// reset for next time
+		sourceFound = false;
 	}
 
 /**
@@ -715,7 +787,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		int tokenNumPh2 = 0;
 		int tokenNumPh3 = 0;
 		// and work string
-		String workText = "";
+		String workText = ""; //$NON-NLS-1$
 
 		// If no input, return nothing
 		if (inputText == null || inputText.isEmpty()) {
@@ -729,7 +801,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		// Both TMG/HRE templates and HTML use < > markers for different purposes, so we need to replace all
 		// such markers in the input string to enable use of HTML formatting codes.
 		// We have chosen to replace the template < and > markers with ≤ and ≥ - we do this now.
-		String markers = inputText.replace("<", "≤").replace(">", "≥");
+		String markers = inputText.replace("<", "≤").replace(">", "≥"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 		// The format of input string can include TMG formatting values which should never be
 		// part of citations. These are [SCAP:] [INDEX:] [SIZE:] and need to be removed.
@@ -737,34 +809,34 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		// HTML equivalents.
 		// To do this we use an iterative regex.
 		Map<String, String> repl = new HashMap<>();
-		repl.put("[BOLD:]", "<b>");
-		repl.put("[:BOLD]", "</b>");
-		repl.put("[ITAL:]", "<i>");
-		repl.put("[:ITAL]", "</i>");
-		repl.put("[UND:]", "<u>");
-		repl.put("[:UND]", "</u>");
-		repl.put("[SUP:]", "<sup>");
-		repl.put("[:SUP]", "</sup>");
-		repl.put("[SUB:]", "<sub>");
-		repl.put("[:SUB]", "</sub>");
-		repl.put("[HID:]", "<!");
-		repl.put("[:HID]", "->");
-		repl.put("[CAP:]", "<p style=\"text-transform: uppercase;\">");
-		repl.put("[:CAP]", "</p>");
-		repl.put("[HTML:]", "");
-		repl.put("[:HTML]", "");
-		repl.put("[WEB:]", "");
-		repl.put("[:WEB]", "");
-		repl.put("[EMAIL:]", "<a href=mailto:");
-		repl.put("[:EMAIL]", "></a>");
-		repl.put("[INDEX:]", "");
-		repl.put("[:INDEX]", "");
-		repl.put("[SIZE:]", "");
-		repl.put("[:SIZE]", "");
-		repl.put("[SCAP:]", "");
-		repl.put("[:SCAP]", "");
+		repl.put("[BOLD:]", "<b>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:BOLD]", "</b>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[ITAL:]", "<i>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:ITAL]", "</i>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[UND:]", "<u>"); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:UND]", "</u>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[SUP:]", "<sup>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:SUP]", "</sup>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[SUB:]", "<sub>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:SUB]", "</sub>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[HID:]", "<!"); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:HID]", "->"); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[CAP:]", "<p style=\"text-transform: uppercase;\">"); //$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:CAP]", "</p>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[HTML:]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:HTML]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[WEB:]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:WEB]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[EMAIL:]", "<a href=mailto:"); //$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:EMAIL]", "></a>"); 		//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[INDEX:]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:INDEX]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[SIZE:]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:SIZE]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[SCAP:]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:SCAP]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
 		Pattern pattern1 = Pattern.compile
-			("\\[BOLD:\\]|\\[:BOLD\\]|\\[ITAL:\\]|\\[:ITAL\\]|\\[UND:\\]|\\[:UND\\]|\\[SUP:\\]|\\[:SUP\\]|\\[SUB:\\]|\\[:SUB\\]|\\[HID:\\]|\\[:HID\\]|\\[CAP:\\]|\\[:CAP\\]|\\[HTML:\\]|\\[:HTML\\]|\\[WEB:\\]|\\[:WEB\\]|\\[EMAIL:\\]|\\[:EMAIL\\]|\\[INDEX:\\]|\\[:INDEX\\]|\\[SIZE:\\]|\\[:SIZE\\]|\\[SCAP:\\]|\\[:SCAP\\]");
+			("\\[BOLD:\\]|\\[:BOLD\\]|\\[ITAL:\\]|\\[:ITAL\\]|\\[UND:\\]|\\[:UND\\]|\\[SUP:\\]|\\[:SUP\\]|\\[SUB:\\]|\\[:SUB\\]|\\[HID:\\]|\\[:HID\\]|\\[CAP:\\]|\\[:CAP\\]|\\[HTML:\\]|\\[:HTML\\]|\\[WEB:\\]|\\[:WEB\\]|\\[EMAIL:\\]|\\[:EMAIL\\]|\\[INDEX:\\]|\\[:INDEX\\]|\\[SIZE:\\]|\\[:SIZE\\]|\\[SCAP:\\]|\\[:SCAP\\]"); //$NON-NLS-1$
 		Matcher matcher1 = pattern1.matcher(markers);
 		StringBuffer buffer1 = new StringBuffer();
 		while(matcher1.find())
@@ -780,7 +852,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		// In Phase 2 we want to break the revised input string into an array of 'tokens',
 		// each containing just 1 component of the input string.
 		// So we setup a regex to break the text string into 'tokens' in tokensPh2[]
-		String regex2 = "\\[[^\\]]*\\]|\\≤[^\\≥]*\\≥|[^≤≥\\[\\]]+";
+		String regex2 = "\\[[^\\]]*\\]|\\≤[^\\≥]*\\≥|[^≤≥\\[\\]]+"; 	//$NON-NLS-1$
 		Pattern pattern2 = Pattern.compile(regex2);
         Matcher matcher2 = pattern2.matcher(workText);
         // This regex will extract each string enclosed in [ ] or ≤ ≥ or plain text
@@ -801,17 +873,17 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	 **********************************************************/
         // This phase transfers all tokens to tokensPh3, ignoring null/empty tokens and tokens wrapped in ≤ ≥ (for now).
         for (int i=0; i < tokenNumPh2; i++) {
-        	if (tokensPh2[i].trim().length() > 0 && tokensPh2[i] != null && !tokensPh2[i].substring(0, 1).equals("≤")) {
+        	if (tokensPh2[i].trim().length() > 0 && tokensPh2[i] != null && !tokensPh2[i].substring(0, 1).equals("≤")) { //$NON-NLS-1$
         		tokensPh3[tokenNumPh3] = tokensPh2[i];
         		tokenNumPh3++;
         	}
             // Now break apart all ≤  ≥ entries in tokensPh2 to expose [  ] entries they
         	// will contain and load them into tokensPh3 as separate tokens
-        	if (tokensPh2[i].startsWith("≤")) {
+        	if (tokensPh2[i].startsWith("≤")) { //$NON-NLS-1$
         		// Remove the ≤, ≥ characters from beginning/end of this token
     			workText = tokensPh2[i].substring(1, tokensPh2[i].length() - 1);
     			// add the ≤ into tokensPh3
-    			tokensPh3[tokenNumPh3] = "≤";
+    			tokensPh3[tokenNumPh3] = "≤"; //$NON-NLS-1$
     			tokenNumPh3++;
     			// Break apart the ≤ ≥ contents using the previous regex pattern (now
     			// applied to workText) and add these into tokensPh3.
@@ -821,7 +893,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
                     tokenNumPh3++ ;
                 }
     			// add the ending ≥
-    			tokensPh3[tokenNumPh3] ="≥";
+    			tokensPh3[tokenNumPh3] ="≥"; //$NON-NLS-1$
     			tokenNumPh3++;
         	}
         }
@@ -855,11 +927,11 @@ public class HG0555EditCitation extends HG0450SuperDialog {
     	int startMarker = 0;
     	int stopMarker = 0;
 		for (int i = 0; i < tokenNumPh3; i++) {
-			if (tokensPh3[i].startsWith("≤")) {
+			if (tokensPh3[i].startsWith("≤")) { //$NON-NLS-1$
 				startMarker = i;
 				// Once "≤" is found, look for a "≥"
 				for (int j = i; j < tokenNumPh3; j++) {
-					if (tokensPh3[j].startsWith("≥")) {
+					if (tokensPh3[j].startsWith("≥")) { //$NON-NLS-1$
 						stopMarker = j;
 						break;
 					}
@@ -867,9 +939,9 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				// Now check within the range of the start/stopMarkers for a  [  ] token.
 				// If one exists, it hasn't been substituted, so delete the whole ≤ ≥ range.
 				for (int k = startMarker+1; k < stopMarker; k++) {
-					if (tokensPh3[k].startsWith("[")) {
+					if (tokensPh3[k].startsWith("[")) { //$NON-NLS-1$
 						for (int x = startMarker; x < stopMarker+1; x++) {
-							tokensPh3[x] = "";
+							tokensPh3[x] = ""; //$NON-NLS-1$
 						}
 					}
 				}
@@ -886,23 +958,23 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	 * PHASE 6 - build final output string
 	 ****************************************************/
         // Build the tokens into our workText string, ignoring blank tokens
-		workText = "";
+		workText = ""; //$NON-NLS-1$
         for (int i=0; i < tokenNumPh3; i++) {
-        	if (!tokensPh3[i].equals("")) workText = workText + tokensPh3[i] + " ";
+        	if (!tokensPh3[i].equals("")) workText = workText + tokensPh3[i] + " "; //$NON-NLS-1$ //$NON-NLS-2$
         }
         // Now clean the output of double blanks, blanks before/after punctuation and
         // the ≤ ≥ markers remaining after valid substitutions were made.
         // Use another iterative regex to do this.
 		Map<String, String> clean = new HashMap<>();
-		clean.put("  ", " ");		// change double blank to blank
-		clean.put("( ", "(");		// remove blank after (
-		clean.put(" )", ")");		// remove blank before )
-		clean.put(" :", ":");		// remove blank before :
-		clean.put(" ;", ";");		// remove blank before ;
-		clean.put(" ,", ",");		// remove blank before ,
-		clean.put(" .", ".");		// remove blank before .
-		clean.put("≤", "");			// remove leftover ≤ marker
-		clean.put("≥", "");			// remove leftover ≥ marker
+		clean.put("  ", " ");		// change double blank to blank //$NON-NLS-1$ //$NON-NLS-2$
+		clean.put("( ", "(");		// remove blank after ( 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(" )", ")");		// remove blank before ) 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(" :", ":");		// remove blank before : 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(" ;", ";");		// remove blank before ; 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(" ,", ",");		// remove blank before , 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(" .", ".");		// remove blank before . 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put("≤", "");			// remove leftover ≤ marker 	//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put("≥", "");			// remove leftover ≥ marker 	//$NON-NLS-1$ //$NON-NLS-2$
 		StringBuffer buffer3 = new StringBuffer(workText);
 		for (Map.Entry<String, String> entry : clean.entrySet()) {
 	        // Create the regex pattern from the map key

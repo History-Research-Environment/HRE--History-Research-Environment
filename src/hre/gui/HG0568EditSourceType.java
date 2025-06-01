@@ -3,7 +3,7 @@ package hre.gui;
  * EditSourceType -
  * ***********************************************************************************
  * v0.04.0032 2025-01-31 Original draft (D Ferguson)
- *
+  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
  *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
@@ -104,7 +104,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		fullFootTextScroll.getViewport().setOpaque(false);
 		fullFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		fullFootText.setCaretPosition(0);	// set scrollbar to top
-		contents.add(fullFootTextScroll, "cell 1 1, alignx left");	//$NON-NLS-1$
+		contents.add(fullFootTextScroll, "cell 1 1, grow, alignx left");	//$NON-NLS-1$
 
 		JLabel shortFoot = new JLabel("Short footnote");
 		contents.add(shortFoot, "cell 0 2, alignx right");	//$NON-NLS-1$
@@ -122,7 +122,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		shortFootTextScroll.getViewport().setOpaque(false);
 		shortFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		shortFootText.setCaretPosition(0);	// set scrollbar to top
-		contents.add(shortFootTextScroll, "cell 1 2, alignx left");	//$NON-NLS-1$
+		contents.add(shortFootTextScroll, "cell 1 2, grow, alignx left");	//$NON-NLS-1$
 
 		JLabel biblio = new JLabel("Bibliography");
 		contents.add(biblio, "cell 0 3, alignx right");	//$NON-NLS-1$
@@ -140,7 +140,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		biblioTextScroll.getViewport().setOpaque(false);
 		biblioTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		biblioText.setCaretPosition(0);	// set scrollbar to top
-		contents.add(biblioTextScroll, "cell 1 3, alignx left");	//$NON-NLS-1$
+		contents.add(biblioTextScroll, "cell 1 3, grow, alignx left");	//$NON-NLS-1$
 
 		JLabel remind = new JLabel("Reminder");
 		contents.add(remind, "cell 0 4, alignx right");	//$NON-NLS-1$
@@ -158,7 +158,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		remindTextScroll.getViewport().setOpaque(false);
 		remindTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		remindText.setCaretPosition(0);	// set scrollbar to top
-		contents.add(remindTextScroll, "cell 1 4, alignx left");	//$NON-NLS-1$
+		contents.add(remindTextScroll, "cell 1 4, grow, alignx left");	//$NON-NLS-1$
 
 	// Define control buttons
 		JButton btn_Cancel = new JButton("Cancel");		// Cancel
