@@ -1,7 +1,6 @@
 package hre.gui;
 /**************************************************************************************
- * HG0507SelectPartner - Original Specs 05.07 GUI_EntitySelect 2019-09-16
- * User GUI for add/edit partner table
+ * HG0507SelectPartner - extends HG0507SelectPerson for add/edit partner table
  * ***********************************************************************************
  * v0.03.0031 2024-04-05 First version (N. Tolleshaug)
  * 			  2024-04-05 Handling of partner select (N. Tolleshaug)
@@ -12,6 +11,7 @@ package hre.gui;
  *            2024-07-31 Revised HG0507SelectPartner buttons (N. Tolleshaug)
  * 			  2024-08-24 NLS conversion (D Ferguson)-
  * v0.04.0032 2025-04-27 Add handling of citations (D Ferguson)
+ * 			  2025-06-05 Address minor layout errors (D Ferguson)
  *************************************************************************************/
 
 import java.awt.Point;
@@ -32,7 +32,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectPartner
  * @author N Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-04-05
  */
 
@@ -107,8 +107,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 			resetCitationTable(citeTableName);
 		}
 
-	// Add code for select partner role and activate save button
-		lbl_Relate.setText(HG05070Msgs.Text_174);		//  Set Event Type
+	// Get the partner details
 		partnerTypeList = pointPersonHandler.getPartnerEventList(partnerEventGroup);
 		partnerTypeNumbers = pointPersonHandler.getPartnerEventTypes();
 
@@ -130,12 +129,15 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		}
 		lbl_nRole1.setText("" + pointPersonHandler.getManagedPersonName());	//$NON-NLS-1$
 
-		persRolePanel.add(lbl_nRole1, "cell 0 5");		//$NON-NLS-1$
+	// Tailor the persRolePanel for partners
+		lbl_Parent.setText(HG05070Msgs.Text_145);		//  Edit partner/event
+		lbl_Relate.setText(HG05070Msgs.Text_174);		//  Set Event Type
+		persRolePanel.add(lbl_nRole1, "cell 0 2");		//$NON-NLS-1$
 		comboPartRole1 = new JComboBox<>(partnerRoleList);
-		persRolePanel.add(comboPartRole1, "cell 0 5, gapx 10");		//$NON-NLS-1$
-		persRolePanel.add(lbl_nRole2, "cell 1 5");		//$NON-NLS-1$
+		persRolePanel.add(comboPartRole1, "cell 0 2, gapx 10");		//$NON-NLS-1$
+		persRolePanel.add(lbl_nRole2, "cell 1 2");		//$NON-NLS-1$
 		comboPartRole2 = new JComboBox<>(partnerRoleList);
-		persRolePanel.add(comboPartRole2, "cell 1 5, gapx 10");		//$NON-NLS-1$
+		persRolePanel.add(comboPartRole2, "cell 1 2, gapx 10");		//$NON-NLS-1$
 
 	// Modify the Save buttons in the control panel
 		btn_SaveEvent.setText(HG05070Msgs.Text_175);		// Add Partner & Event

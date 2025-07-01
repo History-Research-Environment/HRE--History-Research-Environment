@@ -4,6 +4,7 @@ package hre.bila;
  * v0.00.0015 2019-12-07 initial implementation of Oracle Help (D Ferguson)
  * v0.01.0025 2021-01-29 fix file separator error (D Ferguson)
  * v0.01.0027 2022-09-04 Added English(UK) support (D Ferguson)
+ * v0.04.0032 2025-06-02 Check for being passed a null topic ID (D Ferguson)
  ***************************************************************************/
 
 import java.awt.Component;
@@ -22,7 +23,7 @@ import oracle.help.library.helpset.HelpSet;
 /**
  * HRE Help system driver
  * @author D Ferguson
- * @version v0.01.0025
+ * @version v0.04.0032
  * @since 2019-12-07
  */
 
@@ -97,6 +98,7 @@ public class HB0614Help {
  */
 	public static void contextHelp(Window winInst, Component helpCaller, String topicID)
 	{
+		if (topicID.equals("nullnull")) return;	// for F1 being clicked when no Help exists for that screen
 		Help.registerClientWindow(winInst); 		// register the window to set modality correctly
 		contextManager = new CSHManager(hreHelp);
 	    contextManager.addComponent(helpCaller, hreBook, topicID);
@@ -104,4 +106,4 @@ public class HB0614Help {
 	    Help.unregisterClientWindow(winInst);
 	    }
 
-}  // End of HG0514
+}  // End of HB0614

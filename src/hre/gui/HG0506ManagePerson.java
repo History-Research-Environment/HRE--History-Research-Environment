@@ -66,19 +66,14 @@ package hre.gui;
  * 		 	  2025-03-20 Modify top of screen to enable primary Image to be shown (D Ferguson)
  * 			  2025-04-25 Fix parent teble popup menu structure; correct picPanel size (D Ferguson)
  * 			  2025-04-26 Setup NLS of null parent table data (D Ferguson)
+ * 			  2025-06-30 Make all double-click actions consistent (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
  * NOTE07 need listener and code for handling DNA data
  * NOTE09 need to load new audio/video media or delete existing
  * NOTE15 need copy/renumber actions added
- **********************************************************************************************
- * EXTERNALIZE STRINGS ERROR
- * The 'Externalise Strings' command in Eclipse does not work due to a particular text string
- * at about line 960, which reads: txt_Text = new JTextArea("\""+listText+" ...\"");
- * This needs to be commented out (temporalily) to execute Externalize Strings.
  *********************************************************************************************/
-
 
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -164,7 +159,6 @@ import net.miginfocom.swing.MigLayout;
  * @version v0.04.0032
  * @since 2020-08-09
  */
-
 public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	private static final long serialVersionUID = 001L;
 	public static final String screenID = "50600";	//$NON-NLS-1$
@@ -383,7 +377,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		// Pre-process the Parent data to check for 2 unknown parents, in which case set
 		// the 'Father', 'Mother', 'Not recorded' text in correct language
 		if (objParentData.length == 2) {
-			if (((String) objParentData[0][1]).trim().equals("---") && ((String) objParentData[1][1]).trim().equals("---")) {
+			if (((String) objParentData[0][1]).trim().equals("---") && ((String) objParentData[1][1]).trim().equals("---")) { //$NON-NLS-1$ //$NON-NLS-2$
 				objParentData[0][0] = HG0506Msgs.Text_87;		// Father
 				objParentData[1][0] = HG0506Msgs.Text_88;		// Mother
 				objParentData[0][1] = HG0506Msgs.Text_89;		// Not recorded
@@ -392,8 +386,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			}
 		}
 		tableParents.setModel(new DefaultTableModel(objParentData,
-										pointPersonHandler.setTranslatedData(screenID, "1", false)	//$NON-NLS-1$  // Role, Name, Surety
-				 					));
+									pointPersonHandler.setTranslatedData(screenID, "1", false)	//$NON-NLS-1$  // Role, Name, Surety
+				 			));
 		tableParents.getColumnModel().getColumn(0).setMinWidth(70);
 		tableParents.getColumnModel().getColumn(0).setPreferredWidth(120);
 		tableParents.getColumnModel().getColumn(1).setMinWidth(200);
@@ -1469,7 +1463,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    ActionListener popAL7 = new ActionListener() {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
-		// The right-clicked row is passed here in rowClicked
+	        // The right-clicked (or double-clicked) row is passed here in rowClicked
         		int rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
 	        	HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable, true);
@@ -1532,13 +1526,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    tableEvents.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
+				// Detect RIGHT-CLICK - show popup menu OR Name screen if its a Name event
                 if (me.getButton() == MouseEvent.BUTTON3) {
-                // RIGHT-CLICK
                 	rowClicked = tableEvents.rowAtPoint(me.getPoint());
-                // if not within list of Events, use popupMenuAny
-                	if (tableEvents.rowAtPoint(me.getPoint()) < 0) {
-						popupMenuAny.show(me.getComponent(), me.getX(), me.getY());
-					} else {if (objEventData[rowClicked][5].equals(HG0506Msgs.Text_66)) {		// N
+                	// if not within list of Events, use popupMenuAny
+                	if (tableEvents.rowAtPoint(me.getPoint()) < 0)
+										popupMenuAny.show(me.getComponent(), me.getX(), me.getY());
+                	// Else, first check for a Name-Var event
+					else {if (objEventData[rowClicked][5].equals(HG0506Msgs.Text_66)) {		// N
 	                	 	HG0509ManagePersonName pointSelectPersonName = null;
 	        	        	try {
 	        					pointSelectPersonName = pointPersonHandler.activatePersonNameEdit(pointOpenProject, rowClicked,false);
@@ -1550,11 +1545,31 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        					System.out.println("HG0506ManagePerson - Edit Name error: " + hbe.getMessage());	//$NON-NLS-1$
 	        					hbe.printStackTrace();
 	        				}
-                		} else {
-                				popupMenu.show(me.getComponent(), me.getX(), me.getY());
                 		}
+					// Otherwise, just use the popMenu for event edits
+						else popupMenu.show(me.getComponent(), me.getX(), me.getY());
                 	}
                 }
+           		// Detect DOUBLE-CLICK - edit this event (but note Name-Var handled by different process)
+	           	if (me.getClickCount() == 2 && tableEvents.getSelectedRow() != -1) {
+	           		rowClicked = tableEvents.rowAtPoint(me.getPoint());
+	           		// First, check for a Name-Var event edit
+	           		if (objEventData[rowClicked][5].equals(HG0506Msgs.Text_66)) {		// N
+                	 	HG0509ManagePersonName pointSelectPersonName = null;
+        	        	try {
+        					pointSelectPersonName = pointPersonHandler.activatePersonNameEdit(pointOpenProject, rowClicked,false);
+        		        	pointSelectPersonName.setModalityType(ModalityType.APPLICATION_MODAL);
+        					Point xyShow = tableEvents.getLocationOnScreen();
+        					pointSelectPersonName.setLocation(xyShow.x, xyShow.y);
+        					pointSelectPersonName.setVisible(true);
+        				} catch (HBException hbe) {
+        					System.out.println("HG0506ManagePerson - Edit Name error: " + hbe.getMessage());	//$NON-NLS-1$
+        					hbe.printStackTrace();
+        				}
+            		}
+	           		// Othewise, just do edit of the event
+	           		else popMenu7.doClick();
+	           	}
             }
         });
 
@@ -1655,17 +1670,18 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    tableParents.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
+                // Action RIGHT-CLICK
                 if (me.getButton() == MouseEvent.BUTTON3) {
-                // RIGHT-CLICK
                 	rowClicked = tableParents.rowAtPoint(me.getPoint());
                 	if (rowClicked == -1 || canOnlyAddParent)
                 		popupMenuParentNew.show(me.getComponent(), me.getX(), me.getY());
                 	else
                 		popupMenuParent.show(me.getComponent(), me.getX(), me.getY());
                 }
+                // Action DOUBLE-CLICK - edit the parent
 	           	if (me.getClickCount() == 2 && tableParents.getSelectedRow() != -1) {
-	           		// DOUBLE-CLICK - maybe edit the tag
 	           		rowClicked = tableParents.getSelectedRow();
+	           		popMenuParentEdit.doClick();
 	            }
             }
         });
@@ -1754,16 +1770,16 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    tablePartners.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
+                // Action RIGHT-CLICK
                 if (me.getButton() == MouseEvent.BUTTON3) {
-                // RIGHT-CLICK
                 	rowClicked = tablePartners.rowAtPoint(me.getPoint());
-                	if (tablePartners.rowAtPoint(me.getPoint()) < 0) {
+                	if (tablePartners.rowAtPoint(me.getPoint()) < 0)
 						popupMenuPartnerAdd.show(me.getComponent(), me.getX(), me.getY());
-					} else
+					else
 						popupMenuPartner.show(me.getComponent(), me.getX(), me.getY());
                 }
+                // Action DOUBLE-CLICK - edit the partner
 	           	if (me.getClickCount() == 2 && tablePartners.getSelectedRow() != -1) {
-	           		// DOUBLE-CLICK - edit the tag
 	           		rowClicked = tablePartners.getSelectedRow();
 	           		popMenuPartnerP1.doClick();
 	            }
@@ -1822,7 +1838,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	      };
 
 	// Define Names popup menu items and actions
-	     popMenuNamesEdit = new JMenuItem(HG0506Msgs.Text_73);	// Edit this Name
+	     popMenuNamesEdit = new JMenuItem(HG0506Msgs.Text_73);			// Edit this Name
 	    popMenuNamesEdit.addActionListener(popNameEdit);
 	    JMenuItem popMenuNamesDel = new JMenuItem(HG0506Msgs.Text_74);	// Delete this Name
 	    popMenuNamesDel.addActionListener(popNameDelete);
@@ -1843,8 +1859,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    tableNames.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
+                // Action RIGHT-CLICK
                 if (me.getButton() == MouseEvent.BUTTON3) {
-                // RIGHT-CLICK
                 	rowClicked = tableNames.rowAtPoint(me.getPoint());
                 	// if clicked outside table entries, just show Add Name option
                 	if (tableNames.rowAtPoint(me.getPoint()) < 0) {
@@ -1853,8 +1869,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 						popupMenuName.show(me.getComponent(), me.getX(), me.getY());
 					}
                 }
+                // Action DOUBLE-CLICK - edit the name
 	           	if (me.getClickCount() == 2 && tableNames.getSelectedRow() != -1) {
-	           		// DOUBLE-CLICK - edit the name
 	           		rowClicked = tableNames.getSelectedRow();
 	           		popMenuNamesEdit.doClick();
 	            }
@@ -1890,9 +1906,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	            try {
 					pointPersonHandler.setPersonFlagSetting(flagID, newValue);
 					// Reset the Birth Sex label in case it was the Flag that changed
-					if ((int) objReqFlagData[clickedRow][3] == 1) {
-						birthSex.setText(newValue);
-					}
+					if ((int) objReqFlagData[clickedRow][3] == 1) birthSex.setText(newValue);
 				} catch (HBException hbe) {
 					System.out.println("HG0506ManagePerson flag update error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();

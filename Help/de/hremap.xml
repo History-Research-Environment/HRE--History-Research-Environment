@@ -42,6 +42,7 @@
 <mapID target="55100defineevent" url="Define_Event.html" />
 <mapID target="55200manageevent" url="Manage_Event.html" />
 <mapID target="55500editcitation" url="Edit_Citation.html" />
+<mapID target="54800editsentence" url="Edit_Sentence.html" />
 
 <mapID target="56400managesourceelement" url="Manage_SourceElement.html" />
 <mapID target="56500managesource" url="Manage_Source.html" />

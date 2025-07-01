@@ -5,12 +5,12 @@ package hre.gui;
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
  *			  2025-01-31 Add Delete button (D Ferguson)
  *			  2025-02-01 Invoke HG0570 from Add button (D Ferguson)
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
  * NOTE03 implement Copy button
  * NOTE04 implement Delete button
- *
  ************************************************************************************/
 
 import java.awt.Component;
@@ -50,6 +50,7 @@ import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
 
@@ -74,7 +75,9 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 /**
  * Create the dialog
  */
-	public HG0569ManageRepos()  {
+	public HG0569ManageRepos(HBProjectOpenData pointOpenProject)  {
+		this.pointOpenProject = pointOpenProject;
+
 		setTitle("Manage Repositories");
 	// Setup references for HG0450
 		windowID = screenID;
@@ -256,7 +259,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0570EditRepository repoScreen = new HG0570EditRepository();
+				HG0570EditRepository repoScreen = new HG0570EditRepository(pointOpenProject);
 				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyRepo = btn_Add.getLocationOnScreen();
 				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);
@@ -268,7 +271,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE02 does nothing yet
+				// NOTE02 does nothing yet - should drive HG0570 with data pre-populated
 			}
 		});
 
@@ -300,6 +303,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0569ManageRepos");	//$NON-NLS-1$
 				dispose();
 			}

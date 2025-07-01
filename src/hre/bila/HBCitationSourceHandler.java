@@ -19,6 +19,7 @@ package hre.bila;
  *			  2025-04-21 - Add code to pass CITN_GUI_SEQ and handle resetting it (D Ferguson)
  *			  2025-05-26 - Add SORC_FIDELITY into tableSourceData (D Ferguson)
  *			  2025-05-29 - Add assessor data into citationEditData (D Ferguson)
+ *			  2025-06-15 - For new project with empty source table add default Source (N. Tolleshaug)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -224,14 +225,19 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 	// Load pre populated list if done before
 		if (tableSourceData != null) return tableSourceData;
-
+		
 	// Continue with loading source list
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", sourceTable, "");
 		eventSourcRS = requestTableData(selectString, dataBaseIndex);
 		try {
 		// Return null to HG0555EditCitation
-			if (isResultSetEmpty(eventSourcRS)) return null;
+			if (isResultSetEmpty(eventSourcRS)) {
+				addToSourceT736_SORC(proOffset + 1, eventSourcRS);
+				selectString = setSelectSQL("*", sourceTable, "");
+				eventSourcRS = requestTableData(selectString, dataBaseIndex);
+				//return null;
+			}
 		// Continue
 			eventSourcRS.last();
 			tableSourceData = new Object[eventSourcRS.getRow()][5];
@@ -413,7 +419,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateLong("CITN_MEMO_RPID", null_RPID);
 
 				hreTable.updateString("CITN_REF", "");
-				hreTable.updateInt("CITN_GUI_SEQ", guiSeq+1);
+				hreTable.updateInt("CITN_GUI_SEQ", guiSeq + 1);
 				hreTable.updateInt("CITN_ACC_NAME1",-3);
 				hreTable.updateInt("CITN_ACC_NAME2",-3);
 				hreTable.updateInt("CITN_ACC_DATE", -3);
@@ -425,6 +431,91 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sqle.printStackTrace();
 		}
 	}
+	
+	
+/**
+ * private void addToSourceT736_SORC(long T736tablePID, ResultSet hreTable)	
+ * @param T736tablePID
+ * @param hreTable
+ *  * CREATE TABLE T736_SORC( 
+	PID BIGINT NOT NULL,
+	CL_COMMIT_RPID BIGINT NOT NULL,
+	IS_ACTIVE BOOLEAN NOT NULL,
+	SORC_REF SMALLINT NOT NULL,
+	SORC_TYPE SMALLINT NOT NULL,
+	SORC_FIDELITY CHAR(1) NOT NULL,
+	SORC_TEXT_RPID BIGINT NOT NULL,
+	SORC_AUTHOR_RPID BIGINT NOT NULL,
+	SORC_EDITOR_RPID BIGINT NOT NULL,
+	SORC_COMPILER_RPID BIGINT NOT NULL,
+	SORC_ABBREV CHAR(50) NOT NULL,
+	SORC_TITLE VARCHAR(400) NOT NULL,
+	SORC_FULLFORM VARCHAR(500) NOT NULL,
+	SORC_SHORTFORM VARCHAR(500) NOT NULL,
+	SORC_BIBLIOFORM VARCHAR(500) NOT NULL,
+	SORC_REMIND_RPID BIGINT NOT NULL
+ */
+	private void addToSourceT736_SORC(long T736tablePID, ResultSet hreTable) {
+		int sourceReference = 0;
+		String sourceTitle = "Default Source", sourceAbbrev = "Default Source";
+		try {
+			hreTable.beforeFirst();
+			while (hreTable.next()) {
+				if (hreTable.getInt("SORC_REF") > sourceReference) {
+					sourceReference = hreTable.getInt("SORC_REF");
+				}
+			}
+			
+		// Move cursor to the insert row
+				hreTable.moveToInsertRow();
+		// Update new row in H2 database
+				hreTable.updateLong("PID", T736tablePID);
+				hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
+				hreTable.updateBoolean("IS_ACTIVE", true);
+				hreTable.updateInt("SORC_REF", sourceReference + 1);
+				hreTable.updateInt("SORC_TYPE",1);
+				hreTable.updateString("SORC_FIDELITY","C");			
+				hreTable.updateLong("SORC_TEXT_RPID",null_RPID);
+				hreTable.updateLong("SORC_AUTHOR_RPID",null_RPID);
+				hreTable.updateLong("SORC_EDITOR_RPID",null_RPID);
+				hreTable.updateLong("SORC_COMPILER_RPID",null_RPID);
+				hreTable.updateString("SORC_ABBREV", sourceAbbrev);
+				hreTable.updateString("SORC_TITLE", sourceTitle);
+				hreTable.updateString("SORC_FULLFORM", sourceTitle);
+				hreTable.updateString("SORC_SHORTFORM", sourceTitle);
+				hreTable.updateString("SORC_BIBLIOFORM", sourceTitle);		
+				hreTable.updateLong("SORC_REMIND_RPID",null_RPID);
+			//Insert row
+				hreTable.insertRow();
+				
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+/*
+CREATE TABLE T737_SORC_DEFN( 
+	PID BIGINT NOT NULL,
+	CL_COMMIT_RPID BIGINT NOT NULL,
+	SORC_DEFN_TYPE SMALLINT NOT NULL,
+	SORC_DEFN_NAME CHAR(66) NOT NULL,
+	SORC_LANG CHAR(5) NOT NULL,
+	SORC_DEFN_FULLFOOT VARCHAR(500) NOT NULL,
+	SORC_DEFN_SHORTFOOT VARCHAR(500) NOT NULL,
+	SORC_DEFN_BIBLIO VARCHAR(500) NOT NULL,
+	SORC_DEFN_REMIND_RPID BIGINT NOT NULL
+	);
+ALTER TABLE T737_SORC_DEFN ADD PRIMARY KEY (PID);
+
+CREATE TABLE T738_SORC_ELMNT( 
+	PID BIGINT NOT NULL,
+	CL_COMMIT_RPID BIGINT NOT NULL,
+	SORC_ELMNT_NUM CHAR(5) NOT NULL,
+	SORC_ELMNT_LANG CHAR(5) NOT NULL,
+	SORC_ELMNT_NAME CHAR(30) NOT NULL
+	);
+ALTER TABLE T738_SORC_ELMNT ADD PRIMARY KEY (PID);
+ */
 
 /**
  * updateCiteGUIseq()

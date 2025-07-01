@@ -88,6 +88,7 @@ package hre.gui;
  * 			  2025-01-18 Enable Event menu (D Ferguson)
  * 			  2025-01-21 Removed extension.setBusinessLayerPointer(pointBusinessLayer) (N Tolleshaug)
  * 			  2025-02-08 Add new Evidence Source Elements menu item (D Ferguson)
+ * 			  2025-06-29 Set calls to Evidence screens with pointOpenProject (D Ferguson)
  *****************************************************************************************/
 
 import java.awt.BorderLayout;
@@ -1496,7 +1497,8 @@ public class HG0401HREMain extends JFrame {
 		menuSourceTypes.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				HG0567ManageSourceType sourceTypeScreen = new HG0567ManageSourceType();
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
+				HG0567ManageSourceType sourceTypeScreen = new HG0567ManageSourceType(pointOpenProject);
 				sourceTypeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xySourceT = menuEvidence.getLocationOnScreen();
 				sourceTypeScreen.setLocation(xySourceT.x, xySourceT.y + 30);
@@ -1508,9 +1510,10 @@ public class HG0401HREMain extends JFrame {
 		menuSourceElmnts.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 				HG0564ManageSrcElmnt srcElmntScreen;
 				try {
-					srcElmntScreen = new HG0564ManageSrcElmnt();
+					srcElmntScreen = new HG0564ManageSrcElmnt(pointOpenProject);
 					srcElmntScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xySourceE = menuEvidence.getLocationOnScreen();
 					srcElmntScreen.setLocation(xySourceE.x, xySourceE.y + 30);
@@ -1525,7 +1528,8 @@ public class HG0401HREMain extends JFrame {
 		menuRepository.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				HG0569ManageRepos repoScreen = new HG0569ManageRepos();
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
+				HG0569ManageRepos repoScreen = new HG0569ManageRepos(pointOpenProject);
 				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyRepo = menuEvidence.getLocationOnScreen();
 				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);

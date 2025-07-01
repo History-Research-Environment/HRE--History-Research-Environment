@@ -18,6 +18,7 @@ package hre.gui;
  * 			  2025-04-27 Add citation panel for Partners (D Ferguson)
  * 			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
  * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
+ * 			  2025-06-05 Partial fix to layout issues with large fonts (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -96,8 +97,6 @@ import net.miginfocom.swing.MigLayout;
 public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 
-	public static final String screenID = "50700"; //$NON-NLS-1$
-
 	HG0507SelectPerson thisSelectPerson = this;
 	public HG0547EditEvent pointEditEvent;
     public HBPersonHandler pointPersonHandler;
@@ -159,7 +158,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	String[] tableCiteHeader;
 	String citeTableName = "";
 
-	JLabel lbl_Relate;
+	JLabel lbl_Relate, lbl_Parent;
 	JComboBox<String> comboBox_Relationships;
 	int[] eventRoleTypes;
 
@@ -182,40 +181,36 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		this.addRelation = addRela;
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507SelectPerson");	//$NON-NLS-1$
 
-		// Setup references for HG0450
-		windowID = screenID;
-		helpName = "selectperson";		 //$NON-NLS-1$
+	// Set focus person that will be first in table
+		focusPersIDX = pointOpenProject.getSelectedPersonIndex();  // see NOTE04 - not active yet
 		lbl_nRole2 = new JLabel(HG05070Msgs.Text_130);	// New Selected?
 
-		// Set focus person that will be first in table
-		focusPersIDX = pointOpenProject.getSelectedPersonIndex();  // see NOTE04 - not active yet
-
-		// Collect static GUI text from T204 for filter drop-down
-		String[] translatedTexts = pointPersonHandler.setTranslatedData(screenID, "0", false);		//$NON-NLS-1$
+	// Collect static GUI text from T204 for filter drop-down
+		String[] translatedTexts = pointPersonHandler.setTranslatedData("50700", "0", false);		//$NON-NLS-1$
 		idText = translatedTexts[0];
 		allColumnsText1 = translatedTexts[1];
 		allColumnsText2 = translatedTexts[2];
 
-		// Collect static GUI text from T204 for Person table
-		String[] tableHeaders = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
+	// Collect static GUI text from T204 for Person table
+		String[] tableHeaders = pointPersonHandler.setTranslatedData("50700", "1", false);		//$NON-NLS-1$
 
-		// Collect static GUI text from T204 for Citation table
+	// Collect static GUI text from T204 for Citation table
 		tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 
-		// Setup final table column headers - just use ID, Name, Birth data, Death date
+	// Setup final table column headers - just use ID, Name, Birth data, Death date
 		tablePersColHeads = new String[4];
 		tablePersColHeads[0] = (String) tableHeaders[0];
 		tablePersColHeads[1] = (String) tableHeaders[1];
 		tablePersColHeads[2] = (String) tableHeaders[2];
 		tablePersColHeads[3] = (String) tableHeaders[4];
 
-		// Setup close action
+	// Setup close action
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 
-		// Setup dialog
+	// Setup main panel
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 5", "[]10[]", "[][][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 5", "[grow]10[grow]", "[][][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Define panel for Find/Filter controls
 		findPanel = new JPanel();
@@ -268,16 +263,16 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
 		for (int i = 1; i < tablePersColHeads.length; i++) {
 			comboBox_Subset.addItem(tablePersColHeads[i]);
-		}
+			}
 		comboBox_Subset.addItem(idText);					// ID
 		comboBox_Subset.addItem(allColumnsText1);			// All Columns
 		findPanel.add(comboBox_Subset, "cell 1 2"); //$NON-NLS-1$
-
 		contents.add(findPanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$
+		findPanel.setVisible(true);
 
 	// Define panel for Person list
 		personPanel = new JPanel();
-		personPanel.setLayout(new MigLayout("insets 0", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		personPanel.setLayout(new MigLayout("insets 0", "[grow]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		// scrollPane contains the Person Select picklist
 		scrollTable = new JScrollPane();
 		scrollTable.setPreferredSize(new Dimension(570, 400));
@@ -296,6 +291,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					JTableCellTabbing.setTabMapping(tablePersons, 0, tablePersons.getRowCount(), 1, 3);
 		personPanel.add(scrollTable, "cell 0 0"); //$NON-NLS-1$
 		contents.add(personPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$
+		personPanel.setVisible(true);
 
 	// Define panel for first control button set
 		control1Panel = new JPanel();
@@ -307,14 +303,14 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		JButton btn_Select = new JButton(HG05070Msgs.Text_132);		// Select
 		btn_Select.setEnabled(false);
 		control1Panel.add(btn_Select, "cell 0 0, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
-		contents.add(control1Panel, "cell 0 3, align right, hidemode 3"); //$NON-NLS-1$
+		contents.add(control1Panel, "cell 0 3, alignx right, hidemode 3"); //$NON-NLS-1$
+		control1Panel.setVisible(true);
 
-	// Define Alternate panels for use after Select button clicked
-	// Define panel for Person name and role
+	// Define Alternate panels for use after Select button clicked (visibility false initially)
+	// Define panel for Person/Partner name(s)/role(s)
 		persRolePanel = new JPanel();
-		persRolePanel.setVisible(false);
-		persRolePanel.setLayout(new MigLayout("insets 5", "[]50[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		JLabel lbl_Parent = new JLabel();
+		persRolePanel.setLayout(new MigLayout("insets 5", "[]20[]", "[][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		lbl_Parent = new JLabel();
 		lbl_Parent.setText(newTitle); // Set new title for window
 		lbl_Parent.setFont(lbl_Parent.getFont().deriveFont(lbl_Parent.getFont().getStyle() | Font.BOLD));
 		persRolePanel.add(lbl_Parent, "cell 0 0, alignx left"); //$NON-NLS-1$
@@ -329,12 +325,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		comboBox_Relationships = new JComboBox<>();
 		persRolePanel.add(comboBox_Relationships, "cell 1 1, alignx left"); //$NON-NLS-1$
 		contents.add(persRolePanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$
+		persRolePanel.setVisible(false);
 
 	// Define panel for Memo
 		memoPanel = new JPanel();
-		memoPanel.setVisible(false);
 		memoPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		memoPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		memoPanel.setLayout(new MigLayout("insets 5", "[grow]", "[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_Memo = new JLabel(HG05070Msgs.Text_134);		// Memo:
 		lbl_Memo.setFont(lbl_Memo.getFont().deriveFont(lbl_Memo.getFont().getStyle() | Font.BOLD));
 		memoPanel.add(lbl_Memo, "cell 0 0, alignx left"); //$NON-NLS-1$
@@ -354,12 +350,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		memoTextScroll.getViewport().setOpaque(false);
 		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoText.setCaretPosition(0);	// set scrollbar to top
-		memoPanel.add(memoTextScroll, "cell 0 1, aligny top"); //$NON-NLS-1$
+		memoPanel.add(memoTextScroll, "cell 0 1, grow, aligny top"); //$NON-NLS-1$
 		contents.add(memoPanel, "cell 0 1, grow, hidemode 3"); //$NON-NLS-1$
+		memoPanel.setVisible(false);
 
-	// Define panel for Citations (for Parents only)
+	// Define panel for Citations (for Parents/Partners only)
 		citePanel = new JPanel();
-		citePanel.setVisible(false);
 		citePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		citePanel.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]5[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JLabel lbl_Citation = new JLabel(HG05070Msgs.Text_135);		// Citations:
@@ -440,23 +436,24 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		if (tableCite.getRowCount() > 0)
 					JTableCellTabbing.setTabMapping(tableCite, 0, tableCite.getRowCount(), 1, 2);
 		// Add to citePanel
-		citePanel.add(citeScrollPane, "cell 0 1 3 1, alignx left, aligny top");	//$NON-NLS-1$
+		citePanel.add(citeScrollPane, "cell 0 1 3 1, grow, alignx left, aligny top");	//$NON-NLS-1$
 		contents.add(citePanel, "cell 0 2, grow, hidemode 3"); //$NON-NLS-1$
+		citePanel.setVisible(false);
 
 	// Define panel for second control button set
 		control2Panel = new JPanel();
-		control2Panel.setVisible(false);
-		control2Panel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		control2Panel.setLayout(new MigLayout("insets 10", "[grow]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		btn_SaveEvent = new JButton(HG05070Msgs.Text_139);		// Partner & Event
 		btn_SaveEvent.setEnabled(false);
 		if (addRelation)
-			control2Panel.add(btn_SaveEvent, "cell 0 0, align right, gapx 10, tag ok"); //$NON-NLS-1$
+			control2Panel.add(btn_SaveEvent, "cell 0 0, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 		btn_Save = new JButton(HG05070Msgs.Text_140);		// Save
-			control2Panel.add(btn_Save, "cell 0 0, align right, gapx 10, tag ok");	//$NON-NLS-1$
+			control2Panel.add(btn_Save, "cell 0 0, alignx right, gapx 10, tag ok");	//$NON-NLS-1$
 		JButton btn_Cancel2 = new JButton(HG05070Msgs.Text_141);	// Cancel
 		btn_Cancel2.setEnabled(true);
-		control2Panel.add(btn_Cancel2, "cell 0 0, align right, gapx 10, tag cancel"); //$NON-NLS-1$
-		contents.add(control2Panel, "cell 0 3, align right, hidemode 3"); //$NON-NLS-1$
+		control2Panel.add(btn_Cancel2, "cell 0 0, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
+		contents.add(control2Panel, "cell 0 3, grow, alignx right, hidemode 3"); //$NON-NLS-1$
+		control2Panel.setVisible(false);
 	// End of Panel Definitions
 
  	// Set project Name Display Index
@@ -542,6 +539,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
 		// Focus Policy still to be setup!
+
 		pack();
 
 /*****************************
@@ -728,7 +726,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// On selection of a Subset perform appropriate action
+	// On selection of a Subset perform appropriate action
 		comboBox_Subset.addActionListener (new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
@@ -739,7 +737,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for tablePersons row selection of a relation to be added
+	// Listener for tablePersons row selection of a relation to be added
 		tablePersons.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent selectPer) {
 				if (!selectPer.getValueIsAdjusting()) {
@@ -758,7 +756,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
         });
 
-		// Listener for Select button
+	// Listener for Select button
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
@@ -781,7 +779,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Citation table mouse clicks
+	// Listener for Citation table mouse clicks
 		tableCite.addMouseListener(new MouseAdapter() {
 			@Override
 	        public void mousePressed(MouseEvent me) {
@@ -808,7 +806,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	        }
 	    });
 
-		// Listener for Add Citation button
+	// Listener for Add Citation button
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -825,7 +823,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Delete Citation button
+	// Listener for Delete Citation button
 		btn_Del.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -842,7 +840,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for move Citation up button
+	// Listener for move Citation up button
 		btn_Up.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -863,7 +861,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for move Citation down button
+	// Listener for move Citation down button
 		btn_Down.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -898,11 +896,16 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		citeModel.setDataVector(objCiteData, tableCiteHeader);
 	}
 
+/**
+ * setEditMode	- revise the panel layout to the second set of panels (invoked from HBPersonHandler)
+ */
 	public void setEditMode() {
-	// Hide the Find/Filter & Person panels
+	// Hide the original Find/Filter & Person panels of SelectPerson
 		findPanel.setVisible(false);
 		personPanel.setVisible(false);
 		control1Panel.setVisible(false);
+
+	// Reset the title as appropriate
 		if (thisSelectPerson instanceof HG0507SelectParent)
 			if (!addRelation) addTitle = HG05070Msgs.Text_142;		// Edit Parent
 		if (thisSelectPerson instanceof HG0507SelectPartner)
@@ -910,7 +913,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		if (thisSelectPerson instanceof HG0507SelectAssociate)
 			if (!addRelation) addTitle = HG05070Msgs.Text_144;		// Edit Associate
 
-	// Display the Relationship/memo/Citation panels instead
+	// Display the Relationship/Memo/Citation panels instead
 		persRolePanel.setVisible(true);
 		memoPanel.setVisible(true);
 	// but only show citation panel for Parents/Partners
@@ -923,8 +926,10 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Save.setEnabled(true);
 		btn_Save.setVisible(true);
 		btn_Save.setText(HG05070Msgs.Text_146);		// Update Partner
-	// Change the title from Select to Add
+
+	// Change the title to be as set
 		setTitle(addTitle);
+	// Pack the new layout
 		pack();
 	}
 

@@ -9,8 +9,9 @@ package hre.gui;
  *			  2025-02-14 Activated Source list table (N. Tolleshaug)
  *			  2025-02-18 Add Save button (D Ferguson)
  *			  2025-03-01 Make Select button dispose this screen (D Ferguson)
- *			  2025-03-22 Handling add citation if source table emplty (N. Tolleshaug)
+ *			  2025-03-22 Handling add citation if source table empty (N. Tolleshaug)
   *			  2025-05-26 Adjust miglayout settings (D Ferguson)
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -95,6 +96,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
  * Create the dialog
  */
 	public HG0565ManageSource( HBProjectOpenData pointOpenProject, HG0555EditCitation pointEditCitation)  {
+		this.pointOpenProject = pointOpenProject;
 		this.pointEditCitation = pointEditCitation;
 		setTitle("Manage Sources");
 	// Setup references for HG0450
@@ -179,7 +181,6 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 													 + "Source Select error",		// Source Select error
 													   "Source Select", 			// Source Select
 													   JOptionPane.ERROR_MESSAGE);
-			//dispose();
 		}
 
 	 	// Setup tableSource, model and renderer
@@ -329,6 +330,18 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			}
 		});
 
+		// Listener for Cancel button
+		btn_Cancel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent actEvent) {
+			// Dispose EditCitation, Reminder if not null
+				if (!(pointEditCitation == null)) pointEditCitation.dispose();
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0565ManageSource");	//$NON-NLS-1$
+				dispose();
+			}
+		});
+
 		// Listener for tableSource row selection
 		tableSource.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent selectSrc) {
@@ -353,7 +366,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0567ManageSourceType sourceTypeScreen = new HG0567ManageSourceType();
+				HG0567ManageSourceType sourceTypeScreen = new HG0567ManageSourceType(pointOpenProject);
 				sourceTypeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xySourceT = btn_Add.getLocationOnScreen();
 				sourceTypeScreen.setLocation(xySourceT.x, xySourceT.y + 30);
@@ -418,17 +431,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 				int selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
            		objSourceDataToEdit = tableSourceData[selectedRowInTable]; // select whole row
 				pointEditCitation.setSourceSelectedData(objSourceDataToEdit);
-				dispose();
-			}
-		});
-
-		// Listener for Cancel button
-		btn_Cancel.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent actEvent) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0565ManageSource");	//$NON-NLS-1$
-			// Dispose EditCitation if not null
-				if (!(pointEditCitation == null)) pointEditCitation.dispose();
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				dispose();
 			}
 		});

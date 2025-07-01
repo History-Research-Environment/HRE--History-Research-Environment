@@ -45,9 +45,10 @@ package hre.gui;
  *            2025-05-17 Updated partner event roles (N. Tolleshaug)
   * 		  2025-05-24 Changes to show key people & roles in screen top panel (D Ferguson)
   * 		  2025-05-25 Get EvntKeyAssocMin and pass to HG0555EditCitations (D Ferguson)
+  * 		  2025-06-15 Changed from string sep with "/" to String[] (N. Tolleshaug)
+  * 		  2025-06-24 Load editSentence GUI via btn_Sentence (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
- * NOTE03 need to perform sentence editing
  * NOTE07 needs code to handle adding/deleting media items
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
  * NOTE09 add Flags support for Events
@@ -227,7 +228,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	Object[] sortHREDate;
 	boolean sortDateOK = false;
 	long sortHDatePID;
-	String partnerNames = " - ";	//$NON-NLS-1$
+	String[] partnerNames;
 
 /**
  * String getClassName()
@@ -323,18 +324,16 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		roleData = pointWhereWhenHandler.getEventRoleData(eventNumber, "");		//$NON-NLS-1$
 
     	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
-    		// Get and extract the partner names and roles - separated by a / marker
-    		partnerNames = pointWhereWhenHandler.getPartnerNames().trim();
-    		String[] partners = partnerNames.split("/");	//$NON-NLS-1$
-			eventPersonNamePri = partners[0].trim();
-    		eventPersonNameSec = partners[1].trim();
-			roleNamePri = "(" + partners[2] + ")";			//$NON-NLS-1$ //$NON-NLS-2$
-    		roleNameSec = "(" + partners[3] + ")";			//$NON-NLS-1$ //$NON-NLS-2$
-    		}
-		else {
+    // Get and extract the partner names and roles - separated by a / marker
+    		partnerNames = pointWhereWhenHandler.getPartnerNames();
+    			eventPersonNamePri = partnerNames[0].trim();
+    			eventPersonNameSec = partnerNames[1].trim();
+    			roleNamePri = "(" + partnerNames[2] + ")";			//$NON-NLS-1$ //$NON-NLS-2$
+    			roleNameSec = "(" + partnerNames[3] + ")";			//$NON-NLS-1$ //$NON-NLS-2$
+    	} else {
 			eventPersonNamePri = eventPersonName;
 			roleNamePri = "(" + pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber) + ")"; //$NON-NLS-1$ //$NON-NLS-2$
-			}
+		}
 	    if (HGlobal.DEBUG)
 	    	System.out.println(" Event " + eventName + " partners " + eventPersonNamePri + ", " + eventPersonNameSec); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -1041,13 +1040,17 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 		// Listener for Sentence Editor button
-			btn_Sentence.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent arg0) {
-					// NOTE03 need code here to allow sentence editing
-					JOptionPane.showMessageDialog(btn_Sentence, "This function is not yet implemented");	//$NON-NLS-1$
-				}
-			});
+		btn_Sentence.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, eventNum, pointEditEvent);
+				sentenceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				// Anchor new screen at actualEvent JLabel
+				Point xyShow = lbl_actualEvent.getLocationOnScreen();
+				sentenceScreen.setLocation(xyShow.x, xyShow.y);
+				sentenceScreen.setVisible(true);
+			}
+		});
 
 		// Listener for Citation table mouse clicks
 		tableCite.addMouseListener(new MouseAdapter() {
@@ -1423,5 +1426,4 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		sortHREDate[4] = sortSortCode;
 		sortDateOK = true;
 	}
-
 }  // End of HG0547EditEvent

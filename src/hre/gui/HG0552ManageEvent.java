@@ -27,6 +27,8 @@ package hre.gui;
  * 			  2025-01-26 Fixed error in delete event type handling (N. Tolleshaug)
  * 			  2025-04-27 Changed btn_Select.addActionListener to use activateAddEvent (N. Tolleshaug)
  * 			  2025-05-22 Removed unused selectedRole/Event fields (D Ferguson)
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
+ * 			  2025-06-30 Correctly handle partner events when invoked from menu (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE04 need code to load disabled events
@@ -153,6 +155,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  * @throws HBException
  */
 	public HG0552ManageEvent(HBProjectOpenData pointOpenProject, String forPerson) throws HBException {
+		this.pointOpenProject = pointOpenProject;
+
 	// Setup references
 		windowID = screenID;
 		helpName = "manageevent";	//$NON-NLS-1$
@@ -413,7 +417,17 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
 	    		 btn_Cancel.doClick();
-			} // return
+			}
+		});
+
+		// Listener for Cancel button
+		btn_Cancel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0552ManageEvent"); //$NON-NLS-1$
+				dispose();
+			}
 		});
 
 	// Listeners for std radio-button group items, to show event and rolePanel data
@@ -821,23 +835,17 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					selectedEventType = eventTypes[indexSelectedEvent];
 					try {
 						if (testForPartnerEvent(selectedEventType)) {
-							if (HGlobal.DEBUG)
-								System.out.println(" Partner event detected: " + selectedEventType);	//$NON-NLS-1$
-							if (selectedPartnerTableRow < 0) {
-								JOptionPane.showMessageDialog(radio_Address,
-															HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
-															HG0552Msgs.Text_62, // Add Partner Event
-															JOptionPane.INFORMATION_MESSAGE);
-								dispose();
-							} else {
-								btn_Select.setEnabled(true);
-								partnerEventDetected = true;
-							}
+							JOptionPane.showMessageDialog(radio_Address,
+														HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
+														HG0552Msgs.Text_62, // Add Partner Event
+														JOptionPane.INFORMATION_MESSAGE);
+							if (reminderDisplay != null) reminderDisplay.dispose();
+							if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to partner event"); //$NON-NLS-1$
+							dispose();
 						} else {
 							resetRoleList(selectedEventType);
 							btn_Select.setEnabled(false);
 						}
-
 					} catch (HBException hbe) {
 						System.out.println(" HG0552ManageEvent - eventlist: " + hbe.getMessage());	//$NON-NLS-1$
 						hbe.printStackTrace();
@@ -889,6 +897,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				newEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
 				newEventType.setLocation(xymainPane.x, xymainPane.y);
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to define new Event"); //$NON-NLS-1$
 				dispose();
 				newEventType.setVisible(true);
 			}
@@ -916,6 +926,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				editEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
 				editEventType.setLocation(xymainPane.x, xymainPane.y);
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to edit Event"); //$NON-NLS-1$
 				dispose();
 				editEventType.setVisible(true);
 			}
@@ -947,6 +959,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				} catch (HBException e) {
 					e.printStackTrace();
 				}
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent after Delete"); //$NON-NLS-1$
 				dispose();
 			}
 		});
@@ -958,6 +972,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 
 				// NOTE05 need code here to reverse T460 IS_ACTIVE true/false setting
 
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent after Disable"); //$NON-NLS-1$
 				dispose();
 			}
 		});
@@ -1008,17 +1024,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = secondPanel.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to edit Event"); //$NON-NLS-1$
 				dispose();
 				editEventScreen.setVisible(true);
-			}
-		});
-
-		// Listener for Cancel button
-		btn_Cancel.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent"); //$NON-NLS-1$
-				dispose();
 			}
 		});
 

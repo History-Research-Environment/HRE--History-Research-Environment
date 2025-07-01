@@ -20,14 +20,15 @@ package hre.tmgjava;
  * v0.00.0032 2024-12-21 - Build 32 (N. Tolleshaug)
  * 			  2024-12-22 - Updated for v22c database
  * 			  2025-02-11 - Added parameteres for initiate citation/source import (N. Tolleshaug)
+ * 			  2025-06-29 - Added parameter public static ResultSet T168 = null;
  *****************************************************************************************/
 
 import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "22.12.2024";				// Set Build number
-	public static String releaseDate = "22 Des. 2024";		// and release date
+	public static String buildNo = "30.06.2025";				// Set Build number
+	public static String releaseDate = "30 Jun. 2025";		// and release date
 
 	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
 	public static String databaseVersion = "v22c 2024-12-19";	// Database version DDL
@@ -144,6 +145,7 @@ public class TMGglobal {
 	public static ResultSet T160 = null;
 	public static ResultSet T162 = null;
 	public static ResultSet T167 = null;
+	public static ResultSet T168 = null;
 	public static ResultSet T170 = null;
 	public static ResultSet T204 = null; // T204_FLAG_TRAN
 	public static ResultSet T251 = null;

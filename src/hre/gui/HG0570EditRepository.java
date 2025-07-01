@@ -3,6 +3,7 @@ package hre.gui;
  * Edit Repository
  * v0.04.0032 2025-02-01 First draft (D Ferguson)
  *			  2025-05-26 Adjust miglayout sub-panel sizes (D Ferguson)
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE00 - needs WhWhHandler etc defined to be able to pickup location styles and data
@@ -52,6 +53,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
 import net.miginfocom.swing.MigLayout;
@@ -88,7 +90,8 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 /**
  * Create the dialog
  */
-	public HG0570EditRepository()  {
+	public HG0570EditRepository(HBProjectOpenData pointOpenProject)  {
+		this.pointOpenProject = pointOpenProject;
 
 	// Setup references
 		windowID = screenID;
@@ -397,15 +400,13 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("Action: accepting updates and leaving HG0570EditRepository");		//$NON-NLS-1$
 
 				// NOTE01 perform save actions
 
-
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0570EditRepository");		//$NON-NLS-1$
 			}
 		});
-
 
 	// Listener for Close button
 		btn_Close.addActionListener(new ActionListener() {
@@ -424,8 +425,8 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 							dispose();
 						}
 				} else {
-					if (HGlobal.writeLogs) 	HB0711Logging.logWrite("Action: exiting HG0570EditRepository"); //$NON-NLS-1$
 					if (reminderDisplay != null) reminderDisplay.dispose();
+					if (HGlobal.writeLogs) 	HB0711Logging.logWrite("Action: exiting HG0570EditRepository"); //$NON-NLS-1$
 					dispose();
 				}
 			}

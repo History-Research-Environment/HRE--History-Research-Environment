@@ -9,16 +9,20 @@ package hre.gui;
  * v0.01.0026 2021-09-15 Apply tag codes to screen control buttons (D Ferguson)
  * v0.03.0030 2023-08-05 Enable update status bar - on/off (N. Tolleshaug)
  * v0.03.0031 2024-11-11 Fix enable/disable of header/footer and sizing (D Ferguson)
+ * v0.04.0032 2025-06-24 Change output to write PDF file or print the tree (D Ferguson)
  ***************************************************************************************/
 
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.text.NumberFormat;
 
 import javax.swing.Box;
@@ -31,15 +35,15 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.SwingConstants;
-import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.EtchedBorder;
 import javax.swing.text.NumberFormatter;
 
-import hre.bila.HB0631OutputComponent;
+import hre.bila.HB0631OutputJTreeToFile;
+import hre.bila.HB0631OutputJTreeToPrinter;
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
@@ -49,9 +53,10 @@ import hre.bila.HBTreeCreator.GenealogyTree;
 import hre.nls.HG0660Msgs;
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Class HG0660AncestorDescendant
- * @version 0.03.0031
+ * @version 0.04.0032
  * @since 2020-09-02
  */
 public class HG0660AncestorDescendant extends HG0450SuperDialog implements ActionListener {
@@ -111,7 +116,12 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		JButton btn_Print = new JButton(HG0660Msgs.Text_17);
 		btn_Print.setEnabled(false);
 		btn_Print.setMargin(new Insets(2, 16, 2, 16));
-	    contents.add(btn_Print, "cell 1 1, align right, gapx 15, tag apply"); //$NON-NLS-1$
+	    contents.add(btn_Print, "cell 1 1, align right, gapx 15, tag yes"); //$NON-NLS-1$
+
+		JButton btn_File = new JButton(HG0660Msgs.Text_60);			// Write to File
+		btn_File.setEnabled(false);
+		btn_File.setMargin(new Insets(2, 16, 2, 16));
+	    contents.add(btn_File, "cell 1 1, align right, gapx 15, tag yes"); //$NON-NLS-1$
 
 		JButton btn_Close = new JButton(HG0660Msgs.Text_15);
 		btn_Close.setMargin(new Insets(2, 16, 2, 16));
@@ -119,11 +129,11 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 
 		// Layout the left and right panes
 	    leftPane = new JPanel();
-	    leftPane.setBorder(UIManager.getBorder("FileChooser.listViewBorder")); //$NON-NLS-1$
-		leftPane.setLayout(new MigLayout("insets 10", "[]", "[]10[]10[]10[]10[]10[]10[]10[]10[]10[]10[]10")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	    leftPane.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		leftPane.setLayout(new MigLayout("insets 10", "[]", "[]10[]10[]10[]10[]10[]10[]10[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	    rightPane = new JPanel();
-	    rightPane.setBorder(UIManager.getBorder("ScrollPane.border")); //$NON-NLS-1$
+	    rightPane.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		rightPane.setLayout(new MigLayout("insets 10", "[grow, fill]", "[]10[grow]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		// Leftpane contents
@@ -191,13 +201,6 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 	    collapseOne.setActionCommand(COLLAPSE_CMD);
 	    leftPane.add(collapseOne, "cell 0 9, grow"); //$NON-NLS-1$
 
-		JTextArea reportNote = new JTextArea(HG0660Msgs.Text_52);
-		reportNote.setFont(reportNote.getFont().deriveFont(reportNote.getFont().getStyle() | Font.ITALIC));
-		reportNote.setEditable(false);
-		reportNote.setColumns(15);
-		reportNote.setLineWrap(true);
-		reportNote.setWrapStyleWord(true);
-		leftPane.add(reportNote, "cell 0 10"); //$NON-NLS-1$
 		contents.add(leftPane, "cell 0 0, top"); //$NON-NLS-1$
 
 	    // Rightpane contents
@@ -245,41 +248,90 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		    }
 		});
 
-		// Listener for Print button - print the rightPanel
+		// Listener for Print button
 		btn_Print.addActionListener(new ActionListener() {
 		    @Override
 		    public void actionPerformed(ActionEvent arg0) {
-		    	// If Header or Footer are used, print the panel; else print the tree
 		    	try {
-		    	if (headerField.getText().isEmpty() && footerField.getText().isEmpty()) new HB0631OutputComponent(tree);
-		    		else new HB0631OutputComponent(rightPane);
-		    	} catch (HBException hbe) {
+		    		Container originalParent = tree.getParent();
+		    		JScrollPane originalScroll = (JScrollPane) originalParent.getParent();
+		    		originalScroll.setViewportView(null);
+		    		new HB0631OutputJTreeToPrinter(tree, headerField.getText(), footerField.getText());
+		    		originalScroll.setViewportView(tree);
+
+		    	} catch (Exception hbe) {
 					  JOptionPane.showMessageDialog(btn_Print, "Printer error: " + hbe.getMessage(),  //$NON-NLS-1$
 							  						"Print Error", JOptionPane.ERROR_MESSAGE);  //$NON-NLS-1$
 		    	}
 		    }
 		});
 
+		// Listener for Output to PDF File button
+		btn_File.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// Open fileChooser to set a location for the file
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				HG0577FileChooser chooseFile
+						= new HG0577FileChooser(HG0660Msgs.Text_61, 		// Select
+								"PDF files (*.pdf)",									//$NON-NLS-1$
+								"pdf", HG0660Msgs.Text_62, HGlobal.pathHREreports, 1); //$NON-NLS-1$
+				chooseFile.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xy = leftTitle.getLocationOnScreen();      // Gets leftTitle location on screen
+				chooseFile.setLocation(xy.x, xy.y);     		 // Sets chooser screen top-left corner relative to that
+				chooseFile.setVisible(true);
+				setCursor(Cursor.getDefaultCursor());
+				// Chosen filename and folder are stored in 'chosen' fields - if something there, proceed
+				if (!HGlobal.chosenFilename.isEmpty() )  {
+					String lower = HGlobal.chosenFilename.toLowerCase();  								//make filename all lower case
+					int test = lower.lastIndexOf(".pdf");	//$NON-NLS-1$								// test if it ends in .pdf
+					if (test == -1)  HGlobal.chosenFilename = HGlobal.chosenFilename + ".pdf";  		// if not, add .pdf		//$NON-NLS-1$
+					File outFile = new File(HGlobal.chosenFolder+File.separator+HGlobal.chosenFilename);
+				// Check if file exists - if user wants to, over-write it
+					if (outFile.exists()) {
+							if (JOptionPane.showConfirmDialog(btn_File,
+											HG0660Msgs.Text_63,	// File already exists. Do you want to over-write it?
+											HG0660Msgs.Text_60,		// Write to File
+											JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) return;  	// NO, so exit
+							}
+				// All OK, proceed to write the file
+					try {
+						Container originalParent = tree.getParent();
+						JScrollPane originalScroll = (JScrollPane) originalParent.getParent();
+						originalScroll.setViewportView(null);
+						new HB0631OutputJTreeToFile(tree, headerField.getText(), footerField.getText(), outFile);
+						originalScroll.setViewportView(tree);
+				       	JOptionPane.showMessageDialog(btn_File,
+				       								  HGlobal.chosenFilename + HG0660Msgs.Text_64,  //  successfuly written
+				       								  HG0660Msgs.Text_65,							// PDF File Output
+				       								  JOptionPane.INFORMATION_MESSAGE);
+					} catch (Exception hbe) {
+						// do nothing here as HG0631Output will have trapped it first anyway
+					}
+				}
+				// If chosenFileName was empty, do nothing....
+			}
+		});
+
 		// Listener to handle the selected Person
 		inputPerson.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				// Set (or reset) Tree for the selected person
 				focusPerson = ((Integer) inputPerson.getValue()).intValue();
 
 				// Set name Display index for this instance of HBTreeCreator
 				int nameDisplayIndex = openProject.getNameDisplayIndex();
-
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				try {
 					pointPersonHandler.enableUpdateMonitor(false);
 		     		pointPersonHandler.initiatePersonData(5, pointOpenProject);
 					pointTree = new HBTreeCreator(openProject, focusPerson, nameDisplayIndex, null);
-					setCursor(Cursor.getDefaultCursor());
 				} catch (HBException hbe) {
 					System.out.println("HBTreeCreator call error");  //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
+				setCursor(Cursor.getDefaultCursor());
 				int errorCode = pointTree.initateTree();
 
 				if (errorCode > 0) {
@@ -287,6 +339,7 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 					return;
 				}
 				tree = pointTree.getTree();
+				tree.setFont(new Font("HELVETICA", Font.PLAIN, 12)); // Set font so display font = output font //$NON-NLS-1$
 				scrollTree.setViewportView(tree);
 				// Now enable all buttons
 				headerBox.setEnabled(true);
@@ -298,6 +351,7 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 				collapseAll.setEnabled(true);
 				collapseOne.setEnabled(true);
 				btn_Print.setEnabled(true);
+				btn_File.setEnabled(true);
 			}
 		});
 

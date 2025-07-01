@@ -4,7 +4,7 @@ package hre.gui;
  * ***********************************************************************************
  * v0.04.0032 2025-02-07 Original draft (D Ferguson)
  *			  2025-02-10 Change textAreas to textPanes; add Preview buttons (D Ferguson)
- *
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 allow editing/saving of the Source's data
@@ -78,7 +78,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	public static final String screenID = "56600"; //$NON-NLS-1$
 
 	private JPanel contents;
-	HBProjectOpenData pointOpenProject;
 
 	private String[] tableSrcElmntColHeads = null;
 	private Object[][] tableSrcElmntData;
@@ -571,6 +570,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0566EditSource");	//$NON-NLS-1$
 				dispose();
 			}
@@ -650,7 +650,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				try {
 					setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				// Show HG0564ManageSrcElmnt code to allow selection of new Element into the Source Element table
-					HG0564ManageSrcElmnt elmntSelectScreen = new HG0564ManageSrcElmnt();
+					HG0564ManageSrcElmnt elmntSelectScreen = new HG0564ManageSrcElmnt(pointOpenProject);
 					elmntSelectScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 					Point xyElmnt = srcAbbrev.getLocationOnScreen();
 					elmntSelectScreen.setLocation(xyElmnt.x+100, xyElmnt.y);
@@ -771,7 +771,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		btn_repoAdd.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				HG0569ManageRepos repoScreen = new HG0569ManageRepos();
+				HG0569ManageRepos repoScreen = new HG0569ManageRepos(pointOpenProject);
 				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyRepo = btn_srcAdd.getLocationOnScreen();
 				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);

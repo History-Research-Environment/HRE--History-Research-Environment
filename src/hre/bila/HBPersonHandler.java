@@ -1881,7 +1881,7 @@ public class HBPersonHandler extends HBBusinessLayer {
  */
 	public  HG0509ManagePersonName activatePersonNameEdit(HBProjectOpenData pointOpenProject,
 													int nameTableIndex, boolean nameTable) throws HBException {
-		long personNamePID;
+		long personNamePID = null_RPID;
 
 		HG0509ManagePersonName pointManagePersonNameScreen = null;
 		//int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
@@ -1899,7 +1899,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 		}
 
 		if (HGlobal.DEBUG)
-			System.out.println("initiateManagePersonOtherName: " + personNamePID);
+			System.out.println(" activatePersonNameEdit: " + personNamePID);
 
 
 		pointManagePersonNameData.updateManagePersonNameTable(personNamePID);
@@ -2492,10 +2492,10 @@ class ManagePersonData extends HBBusinessLayer {
 	protected HBMediaHandler pointMediaHandler = null;
 	protected HBProjectOpenData pointOpenProject;
 
-	HashMap<Integer,Long> flagDefinMapPID;
-	HashMap<Integer,Long> eventPIDhash;
-	HashMap<Integer,Long> personNamePIDhash;
-	HashMap<Integer,Object[]> parentDataHash;
+	HashMap<Integer, Long> flagDefinMapPID;
+	HashMap<Integer, Long> eventPIDhash;
+	HashMap<Integer, Long> personNamePIDhash;
+	HashMap<Integer, Object[]> parentDataHash;
 	HashMap<Integer, Object[]>partnerDataHash;
 /**
  * List over already included events

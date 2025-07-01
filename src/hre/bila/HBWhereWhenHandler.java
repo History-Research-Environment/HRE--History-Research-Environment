@@ -72,14 +72,16 @@ package hre.bila;
   *			   2024-11-20 - Updated findLocationNameTablePID to return null_RPID (N. Tolleshaug)
   *			   2024-11-23 - Updated event update for witnessed events (N. Tolleshaug)
   *			   2024-11-28 - Updated event location style handling (N. Tolleshaug)
-  * v0.03.0032 2025-01-11 - Rearranged processing of event and roles (N. Tolleshaug)
-  * 		   2025-01-30 - Updated setting og language code for role/event (N. Tolleshaug)
+  * v0.04.0032 2025-01-11 - Rearranged processing of event and roles (N. Tolleshaug)
+  * 		   2025-01-30 - Updated setting of language code for role/event (N. Tolleshaug)
   * 		   2025-02-18 - Fixed warning unused code (N. Tolleshaug)
   * 		   2025-04-27 - Added activation code for activateAddEvent (N. Tolleshaug)
   * 		   2025-05-08 - Updated for save data for new event (N.Tolleshaug)
   * 		   2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
   * 		   2025-05-11 - Update event close remove only added assocs and citations (N. Tolleshaug)
   *			   2025-05-24 - Change activateUpdateEvent for EditEvent key person display (D Ferguson)
+  *			   2025-06-02 - Correct over-pruning of assocs in prepareAssocTable (D Ferguson)
+  *			   2025-06-15 - Changed from string sep with "/" to String[] (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -263,7 +265,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		return pointEditEventRecord.getAssocTableData(indexInTable);
 	}
 
-	public String getPartnerNames() {
+	public String[] getPartnerNames() {
 		return pointEditEventRecord.getPartnerNames();
 	}
 
@@ -1050,7 +1052,9 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		ResultSet selectedEventTable, partnerTableRS;
 		long priPartnerPID, secPartnerPID, primAssocPID = null_RPID, locationTablePID, locationNamePID, eventTablePID, hdateDate, hdateSort;
 		int priRoleNum, secRoleNum;
-		String selectString, personPartners = " - ", primAssocName;
+		//String selectString, personPartners = " - ", primAssocName;
+		String selectString, primAssocName;
+		String[] personPartners = new String[4];
 		int eventGroup, eventNumber = 0, roleNumber = 0;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectedEventTableRow = tableRow;
@@ -1082,11 +1086,13 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				secRoleNum = partnerTableRS.getInt("SEC_ROLE");
 				eventNumber = partnerTableRS.getInt("PARTNER_TYPE");
 				partnerTableRS.close();
-			// Build list of both names, both roles separated by / so HG0547EditEvent can split them
-				personPartners = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex)
-						+ "/" + pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex)
-						+ "/" + getEventRoleName(eventNumber, priRoleNum)
-						+ "/" + getEventRoleName(eventNumber, secRoleNum);
+				
+			// Build list of both names, both roles for HG0547EditEvent			
+				personPartners[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
+				personPartners[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
+				personPartners[2] = getEventRoleName(eventNumber, priRoleNum).trim();
+				personPartners[3] = getEventRoleName(eventNumber, secRoleNum).trim();
+				
 			} else {
 				eventNumber = selectedEventTable.getInt("EVNT_TYPE");
 				roleNumber = selectedEventTable.getInt("PRIM_ASSOC_ROLE_NUM");
@@ -1254,8 +1260,9 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 								int eventNumber, int roleNumber, long partnerTablePID, int partnerTableRow) {
 		ResultSet partnerTableRS;
 		long priPartnerPID, secPartnerPID;
+		int priRoleNum, secRoleNum;
 		int eventType = eventNumber;
-		String partnerNames;
+		String[] partnerNames = new String[4];
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointPersonMannager = pointOpenProject.getPersonHandler();
 		String selectString = setSelectSQL("*", personPartnerTable, "PID = " + partnerTablePID);
@@ -1269,12 +1276,17 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			}
 			priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
 			secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
+			priRoleNum = partnerTableRS.getInt("PRI_ROLE");
+			secRoleNum = partnerTableRS.getInt("SEC_ROLE");
 			eventType = partnerTableRS.getInt("PARTNER_TYPE");
 			partnerTableRS.close();
 			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
-			partnerNames = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex)
-					+ " & " + pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex);
-
+			
+			partnerNames[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
+			partnerNames[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
+			partnerNames[2] = getEventRoleName(eventNumber, priRoleNum).trim();
+			partnerNames[3] = getEventRoleName(eventNumber, secRoleNum).trim();
+			
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, null_RPID);
 			pointEditEventRecord.setPartnerNames(partnerNames);
@@ -2974,7 +2986,7 @@ class EditEventRecord extends HBBusinessLayer {
 
     String[] eventDates = new String[2];
     String startTMGdate = "", sortTMGdate = "";
-    String personPartnerNames;
+    String[] personPartnerNames;
 	String[] eventTypeList;
 	int[] eventTypeNumber;
 	String[] eventRoleList;
@@ -3029,11 +3041,11 @@ class EditEventRecord extends HBBusinessLayer {
 		return associateTable;
 	}
 
-	public String getPartnerNames() {
+	public String[] getPartnerNames() {
 		return personPartnerNames;
 	}
 
-	public void setPartnerNames(String personPartnerNames) {
+	public void setPartnerNames(String[] personPartnerNames) {
 		this.personPartnerNames = personPartnerNames;
 	}
 
@@ -3408,23 +3420,18 @@ class EditEventRecord extends HBBusinessLayer {
 		assocDataHash = new HashMap<>();
 		asociateList = new ArrayList<>();
 		String personName = "", eventRole = "";
-		int assocRows = 0, eventNumber = 0, eventRoleCode, selfAssocCount = 0;
-		long eventPID, assocPersonPID, assocTablePID, selectedPersonPID;
+		int assocRows = 0, eventNumber = 0, eventRoleCode;
+		long eventPID, assocPersonPID, assocTablePID;
 
-		/**
-		 * Test for duplicate assoc person - 5-11-2024
-		 */
 		Vector<Long> assocPersonDuplicateList = new Vector<>(100,10);
 
-		selectedPersonPID = pointOpenProject.getSelectedPersonPID();
 		try {
-
 		// Get associate persons with the events in list
 			selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + selectedEventPID);
 			eventAssocSelected = requestTableData(selectString, dataBaseIndex);
 			eventAssocSelected.beforeFirst();
-			while (eventAssocSelected.next()) {
 
+			while (eventAssocSelected.next()) {
 				assocTablePID = eventAssocSelected.getLong("PID");
 				eventPID = eventAssocSelected.getLong("EVNT_RPID");
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
@@ -3436,59 +3443,38 @@ class EditEventRecord extends HBBusinessLayer {
 
 			// The focus person can also be a witness to another event
 			// if edit vitnessed event check primary assoc from event table
-				if (primAssocPID != null_RPID) selectedPersonPID = primAssocPID;
-
-				if (assocPersonPID != selectedPersonPID) {
 			// Get event data
-					selectString = setSelectSQL("*", eventTable, "PID = " + eventPID);
-					eventSelected = requestTableData(selectString, dataBaseIndex);
-					eventSelected.beforeFirst();
-					while (eventSelected.next()) {
-				/**
-				 * assocRelationData interpretation
-				 * 0 = assocTablePID, 1 = assocRole, 2 = assocName
-				 */
-						assocRelationData = new Object[3];
-						eventNumber = eventSelected.getInt("EVNT_TYPE");
-						eventRole = pointLibraryResultSet.getRoleName(eventRoleCode,
-							  			eventNumber,
-							  			langCode,
-							  			dataBaseIndex);
-						personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
-						//System.out.println(" Associate: " + assocTablePID + " Event PID: " + eventPID + " Type: " + eventNumber
-						//					+ " Event: " + eventName + " Name: " + personName + " Role: " + eventRole);
+				selectString = setSelectSQL("*", eventTable, "PID = " + eventPID);
+				eventSelected = requestTableData(selectString, dataBaseIndex);
+				eventSelected.beforeFirst();
 
-						Object[] asociates = new String[2];
-						asociates[0] = " " + personName.trim();
-						asociates[1] = " " + eventRole.trim();
-						asociateList.add(asociates);
+				while (eventSelected.next()) {
+					// assocRelationData interpretation
+					// 0 = assocTablePID, 1 = assocRole, 2 = assocName
+					assocRelationData = new Object[3];
+					eventNumber = eventSelected.getInt("EVNT_TYPE");
+					eventRole = pointLibraryResultSet.getRoleName(eventRoleCode,
+						  			eventNumber,
+						  			langCode,
+						  			dataBaseIndex);
+					personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
+					//System.out.println(" Associate: " + assocTablePID + " Event PID: " + eventPID + " Type: " + eventNumber
+					//					+ " Name: " + personName + " Role: " + eventRole);
 
-					// **********
-						assocRelationData[0] = assocTablePID;
-						assocRelationData[1] = eventRoleCode;
-						assocRelationData[2] = personName.trim();
-						assocDataHash.put(assocRows, assocRelationData);
-					//************
-						assocRows++;
-					}
-				} else {
-					selfAssocCount++;
-					if (HGlobal.DEBUG) {
-						System.out.println(" HBWhereWhenHandler - Self assoc: " + selfAssocCount
-													  + " Event PID: " + eventPID
-													  + " RoleCode: " + eventRoleCode
-													  + " Assoc per: " + assocPersonPID);
-					}
+					Object[] asociates = new String[2];
+					asociates[0] = " " + personName.trim();
+					asociates[1] = " " + eventRole.trim();
+					asociateList.add(asociates);
+
+					assocRelationData[0] = assocTablePID;
+					assocRelationData[1] = eventRoleCode;
+					assocRelationData[2] = personName.trim();
+					assocDataHash.put(assocRows, assocRelationData);
+					assocRows++;
 				}
 			}
 
-			if (HGlobal.DEBUG) {
-				if (selfAssocCount > 0) {
-					System.out.println(" Number of self assocs: " + selfAssocCount);
-				}
-			}
-
-		// Set number of row in asscociate table
+		// Set number of rows in asscociate table
 			asociateRows = asociateRows + assocRows;
 			associateTable = new Object[asociateRows][2];
 			for (int i = 0; i < asociateRows; i++) {

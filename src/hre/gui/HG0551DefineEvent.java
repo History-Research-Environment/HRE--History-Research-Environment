@@ -11,6 +11,8 @@ package hre.gui;
  * 			  2025-01-30 Added processing of event hints (N. Tolleshaug)
  * 			  2025-02-03 Added NLS enabled error message (N. Tolleshaug)
  * 			  2025-02-22 Change role table col 0 to checkbox (D Ferguson)
+ * 			  2025-06-01 Add test for Add vs. Edit of existing event (D Ferguson)
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE01 code needed to load all sentences for Event
@@ -71,7 +73,6 @@ import net.miginfocom.swing.MigLayout;
  * @version v0.04.0032
  * @since 2022-04-20
  */
-
 public class HG0551DefineEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 
@@ -155,9 +156,11 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
     public HG0551DefineEvent(HBEventRoleManager pointEventRoleManager, HBProjectOpenData pointOpenProject,
     									boolean addNewEventType) throws HBException {
     	selectedEventName = "";		//$NON-NLS-1$
+    	this.pointOpenProject = pointOpenProject;
     	this.pointEventRoleManager = pointEventRoleManager;
     	constructDefineEvent(addNewEventType, true);
     }
+
 /**
  *
  * @param pointOpenProject
@@ -168,11 +171,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	public HG0551DefineEvent(HBEventRoleManager pointEventRoleManager, HBProjectOpenData pointOpenProject,
 					boolean addNewEventType, int selectedEventType) throws HBException {
 		this.selectedEventType = selectedEventType;
+		this.pointOpenProject = pointOpenProject;
 		this.pointEventRoleManager = pointEventRoleManager;
 		constructDefineEvent(addNewEventType, true);
 	}
 
 /**
+ * Construct the dialog screen
  * 	constructDefineEvent();
  * @throws HBException
  */
@@ -213,7 +218,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		// Populate role list for selected event
 			tableRoleData = new Object[eventRoleList.length][3];
 			for (int i = 0; i < eventRoleList.length; i++)  {
-//				tableRoleData[i][0] = yes;
 				tableRoleData[i][1] = " " + eventRoleList[i].trim();	//$NON-NLS-1$
 				tableRoleData[i][2] = eventRoleNumbers[i];
 			}
@@ -232,7 +236,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Set up data in HBEventRoleManager
 		pointEventRoleManager.prepareNewEventType(addNewEventType);
-
 
 /***********************************
  * Setup main panel and top row
@@ -317,7 +320,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		validPanel.setBorder(BorderFactory.createTitledBorder ("Event Validity - Associates and Years"));
 		validPanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_MinKeyAssoc = new JLabel("Minimum Key Associates:");
+		JLabel lbl_MinKeyAssoc = new JLabel("Minimum Primary Associates:");
 		validPanel.add(lbl_MinKeyAssoc, "cell 0 0, alignx right");	//$NON-NLS-1$
 
 		text_minAssoc = new JTextField("1");	//$NON-NLS-1$
@@ -394,7 +397,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_MoveDown.setEnabled(false);
 		rolePanel.add(btn_MoveDown, "cell 0 6, alignx left, aligny top, growx");		//$NON-NLS-1$
 
-	// Create scrollpane and table for the Roles with checkbox in column 0
+	// Create scrollpane and table for the Roles with Primary yes/no checkbox in column 0
 		roleModel = new DefaultTableModel(tableRoleData,tableRoleHeader);
 		tableRole = new JTable(roleModel) {
 			private static final long serialVersionUID = 1L;
@@ -410,8 +413,8 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		// Link checkbox listener to the table
 		tableRole.getModel().addTableModelListener(new checkBoxModelListener());
 		// Define table
-		tableRole.getColumnModel().getColumn(0).setMinWidth(25);
-		tableRole.getColumnModel().getColumn(0).setPreferredWidth(50);
+		tableRole.getColumnModel().getColumn(0).setMinWidth(50);
+		tableRole.getColumnModel().getColumn(0).setPreferredWidth(70);
 		tableRole.getColumnModel().getColumn(1).setMinWidth(80);
 		tableRole.getColumnModel().getColumn(1).setPreferredWidth(150);
 		tableRole.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -424,7 +427,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	// Setup scrollpane and add to Role panel
 		tableRole.setFillsViewportHeight(true);
 		JScrollPane roleScrollPane = new JScrollPane(tableRole);
-		tableRole.setPreferredScrollableViewportSize(new Dimension(200, 300));
+		tableRole.setPreferredScrollableViewportSize(new Dimension(230, 300));
 
 		rolePanel.add(roleScrollPane, "cell 1 0 1 7");	//$NON-NLS-1$
 		roleSentPanel.add(rolePanel, "cell 0 0 1 2");	//$NON-NLS-1$
@@ -546,23 +549,29 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_Cancel.setToolTipText("Cancel changes and exit");
 		contents.add(btn_Cancel, "cell 1 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$
 
-	// Set up data for gui from database or default data
-		try {
-		//System.out.println( " Set up Define event! " + selectedEventType + " LangCode: " + selectedLangCode);
-		updateEventTypeData(pointEventRoleManager.getEventTypeTransfer(selectedEventType),addNewEventType );
-		} catch (HBException hbe) {
-			if (hbe.getMessage().startsWith("ERR1"))
-							userInfoEditEvent("Event does not exist in the  "
-									+ comboLanguage.getSelectedItem() + "language.\n"
-									+ "Do you wish to create this event in " + comboLanguage.getSelectedItem() + "?");
-			pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
-			comboLanguage.setSelectedIndex(languageIndexDefault);
-			constructDefineEvent(addNewEventType, false);
+		// Set up data for gui from database if editing existing event
+		// NOTE reason for this code is unclear and it may not be setup correctly.
+		// Was moved into the IF as otherwise it created a JOptionPan msg that looped!!!!
+		if (!addNewEventType) {
+			try {
+			updateEventTypeData(pointEventRoleManager.getEventTypeTransfer(selectedEventType),addNewEventType );
+			} catch (HBException hbe) {
+				if (hbe.getMessage().startsWith("ERR1")) {
+					String errMsg = "Event does not exist in the " + comboLanguage.getSelectedItem() + " language.\n"
+									+ "Do you wish to create this event in " + comboLanguage.getSelectedItem() + "?";
+					int result = JOptionPane.showConfirmDialog(contents, errMsg,
+							"Define Event", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+							if (result != JOptionPane.YES_OPTION) {
+								pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+								comboLanguage.setSelectedIndex(languageIndexDefault);
+								constructDefineEvent(addNewEventType, false);
+							}
+				}
+			}
+			selectedRoleNumber = 1; //Initial select row 1
+			tableRole.setRowSelectionInterval(0, 0);
+			updateEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventType, selectedRoleNumber), addNewEventType);
 		}
-
-		selectedRoleNumber = 1; //Initial select row 1
-		tableRole.setRowSelectionInterval(0, 0);
-		updateEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventType, selectedRoleNumber), addNewEventType);
 
 	// Display the screen
 		pack();
@@ -578,7 +587,17 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		    }
 		});
 
-   // Language checkbox listener
+		// Listener for Cancel button
+		btn_Cancel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0551DefineEvent"); //$NON-NLS-1$
+				dispose();
+			}
+		});
+
+		// Language checkbox listener
 		comboLanguage.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -601,8 +620,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				//int atRow = 0;
-				selectedRoleName = JOptionPane.showInputDialog("Enter new Role name").trim();
+				selectedRoleName = JOptionPane.showInputDialog("Enter new Role name");
 				if (selectedRoleName != null) {
 					//System.out.println(" New Role for event: " + selectedRole);
 					try {
@@ -731,63 +749,52 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Listener for Save button - add new event type - save the data and exit
 		if (addNewEventType)
-		btn_Save.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				newEventName = text_EventName.getText();
-				selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
-				try {
-				// Tranfer data to EventRoleManager
-					pointEventRoleManager.saveEventTypeData(saveEventTypeData());
-					pointEventRoleManager.addNewEventType(newEventName, selectedGroup);
-				} catch (HBException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				// NOTE04 save the edited event info
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved new event type from HG0551DefineEvent"); //$NON-NLS-1$
-				dispose();
+			btn_Save.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					newEventName = text_EventName.getText();
+					selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
+					try {
+					// Tranfer data to EventRoleManager
+						pointEventRoleManager.saveEventTypeData(saveEventTypeData());
+						pointEventRoleManager.addNewEventType(newEventName, selectedGroup);
+					} catch (HBException e) {
+						e.printStackTrace();
+					}
+					if (reminderDisplay != null) reminderDisplay.dispose();
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved new event type from HG0551DefineEvent"); //$NON-NLS-1$
+					dispose();
 
 			}
 		});
 
 	// Listener for Save button - edit event type -save the data and exit
 		if (!addNewEventType)
-		btn_Save.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				int atRow;
-				try {
-					newEventName = text_EventName.getText();
-					selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
-					pointEventRoleManager.saveEventTypeData(saveEventTypeData());
-					pointEventRoleManager.editEventType(newEventName, selectedEventType, selectedGroup, eventTypeTransfer);
-	           // Save data for selected role
-					atRow = tableRole.getSelectedRow();
-					if (atRow != -1) {
-		           		selectedRoleData = tableRoleData[atRow]; // select whole row
-		           		selectedRoleName = ((String) selectedRoleData[1]).trim();
-		           		selectedRoleNumber = (int) selectedRoleData[2];
-						pointEventRoleManager.editEventRole(selectedEventType, selectedRoleNumber, saveEventRoleData());
-					} else System.out.println( " No role selection!" + atRow);
+			btn_Save.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					int atRow;
+					try {
+						newEventName = text_EventName.getText();
+						selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
+						pointEventRoleManager.saveEventTypeData(saveEventTypeData());
+						pointEventRoleManager.editEventType(newEventName, selectedEventType, selectedGroup, eventTypeTransfer);
+		           // Save data for selected role
+						atRow = tableRole.getSelectedRow();
+						if (atRow != -1) {
+			           		selectedRoleData = tableRoleData[atRow]; // select whole row
+			           		selectedRoleName = ((String) selectedRoleData[1]).trim();
+			           		selectedRoleNumber = (int) selectedRoleData[2];
+							pointEventRoleManager.editEventRole(selectedEventType, selectedRoleNumber, saveEventRoleData());
+						} else System.out.println( " No role selection!" + atRow);
 
-				} catch (HBException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					} catch (HBException e) {
+						e.printStackTrace();
+					}
+					if (reminderDisplay != null) reminderDisplay.dispose();
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved edited event type from HG0551DefineEvent"); //$NON-NLS-1$
+					dispose();
 				}
-				// NOTE04 save the edited event info
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved edit event type from HG0551DefineEvent"); //$NON-NLS-1$
-				dispose();
-			}
-		});
-
-		// Listener for Cancel button
-		btn_Cancel.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0551DefineEvent"); //$NON-NLS-1$
-				dispose();
-			}
 		});
 
 	}	// End HG0551DefineEvent constructor
@@ -830,19 +837,18 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		return eventRoleTransfer;
 	}
 
-	/**
-	 * updateEventTypeData(Object[] eventTypeData, boolean addNewEventType)
-	 * @param eventTypeTransfer
-	 * @param addNewEventType
-	 */
-
+/**
+ * updateEventTypeData(Object[] eventTypeData, boolean addNewEventType)
+ * @param eventTypeTransfer
+ * @param addNewEventType
+ */
 	private void updateEventTypeData(Object[] eventTypeTransfer, boolean addNewEventType) {
 		if (addNewEventType) {
 			abbrev = "abr.";
 			pasttense = " sentence";
 			text_gedTag.setText("GEDCOM");	//$NON-NLS-1$
 			text_minYear.setText("0");		//$NON-NLS-1$
-			text_maxYear.setText("2000");	//$NON-NLS-1$
+			text_maxYear.setText("3000");	//$NON-NLS-1$
 		} else {
 			//System.out.println( " updateEventTypeData index: " + eventTypeTransfer[2]);
 			for (int i = 0; i <  eventGroupIndex.length; i++)
@@ -890,7 +896,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		// Populate role list for selected event
 		tableRoleData = new Object[newRoleList.length][3];
 		for (int i = 0; i < newRoleList.length; i++)  {
-//			tableRoleData[i][0] = yes;
 			tableRoleData[i][1] = " " + newRoleList[i].trim();	//$NON-NLS-1$
 			tableRoleData[i][2] = eventRoles[i];
 		}
@@ -898,16 +903,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		DefaultTableModel persModel = (DefaultTableModel) tableRole.getModel();
 		persModel.setDataVector(tableRoleData,tableRoleHeader);
 		pack();
-	}
-
-	private void userInfoEditEvent(String errorMessage) {
-			int result = JOptionPane.showConfirmDialog(contents, errorMessage,
-										" Define Event",
-										JOptionPane.YES_NO_OPTION,
-							            JOptionPane.QUESTION_MESSAGE);
-			if(result == JOptionPane.YES_OPTION) {
-	             // copy the current event data to new record with chosen language code
-			}
 	}
 
 /*

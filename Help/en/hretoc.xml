@@ -39,6 +39,7 @@
 <tocitem text="Define Event" target="55100defineevent"/>
 <tocitem text="Manage Event" target="55200manageevent"/>
 <tocitem text="Edit Citations" target="55500editcitation"/>
+<tocitem text="Edit Sentences" target="54800editsentence"/>
 </tocitem>
 
 <tocitem text="Evidence">

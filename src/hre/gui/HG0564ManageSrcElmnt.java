@@ -3,12 +3,12 @@ package hre.gui;
  * ManageSourceElements
  * ***********************************************************************************
  * v0.04.0032 2025-02-07 Original draft (D Ferguson)
- *
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Add button
- * NOTE03 implement Delte button
+ * NOTE03 implement Delete button
  *
  ************************************************************************************/
 
@@ -45,6 +45,7 @@ import javax.swing.table.TableRowSorter;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
 
@@ -70,7 +71,8 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 /**
  * Create the dialog
  */
-	public HG0564ManageSrcElmnt() throws HBException  {
+	public HG0564ManageSrcElmnt(HBProjectOpenData pointOpenProject) throws HBException  {
+		this.pointOpenProject = pointOpenProject;
 
 	// NOTE this can be called directly from 'Evidence' on mainMenu OR from HG0566EditSource
 		setTitle("Source Elements");
@@ -259,6 +261,7 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 
 				// pass the selected element back to the caller
 
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				dispose();
 			}
 		});
@@ -267,11 +270,11 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0564ManageSrcElmnt");	//$NON-NLS-1$
 				dispose();
 			}
 		});
-
 
 	}	// End HG0564ManageSrcElmnt constructor
 

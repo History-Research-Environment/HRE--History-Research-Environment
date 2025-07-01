@@ -21,16 +21,21 @@ public class HG0660Msgs extends NLS {
 	public static String Text_46;
 	public static String Text_48;
 	public static String Text_50;
-	public static String Text_52;
 	public static String Text_53;
 	public static String Text_54;
 	public static String Text_55;
-	
-	
+
+	public static String Text_60;
+	public static String Text_61;
+	public static String Text_62;
+	public static String Text_63;
+	public static String Text_64;
+	public static String Text_65;
+
 	public HG0660Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG0660-" + guiLanguage;  //$NON-NLS-1$
 		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, HG0660Msgs.class);					
+		NLS.initializeMessages(BUNDLE_NAME, HG0660Msgs.class);
 	}
 }

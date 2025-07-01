@@ -9,9 +9,10 @@ package hre.gui;
  * v0.01.0026 2021-05-01 add option for TSV file output (D Ferguson)
  * v0.03.0030 2023-06-10 Allow CSV files to have commas in fields (D Ferguson)
  * 		      2023-06-19 Add iText-based PDF output file option (D Ferguson)
- * 			  2023-08-09 Add iText legal notice and page number (D Ferguson)
+ * 			  2023-08-09 Add iText note and page number (D Ferguson)
  * 			  2023-09-28 Implement NLS (D Ferguson)
  * v0.03.0031 2024-10-01 Clean whitespace (D Ferguson)
+ * v0.04.0032 2025-06-14 Modify headerfooter eventHandler for iText v9.2.0 (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Cursor;
@@ -21,7 +22,6 @@ import java.awt.event.ActionListener;
 import java.awt.print.PrinterException;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -41,14 +41,9 @@ import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 
-//iText imports for PDF output
-import com.itextpdf.commons.actions.IEvent;
-import com.itextpdf.commons.actions.IEventHandler;
 import com.itextpdf.commons.exceptions.ITextException;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.events.Event;
-import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.geom.Rectangle;
@@ -57,6 +52,9 @@ import com.itextpdf.kernel.pdf.PdfDocumentInfo;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.event.AbstractPdfDocumentEvent;
+import com.itextpdf.kernel.pdf.event.AbstractPdfDocumentEventHandler;
+import com.itextpdf.kernel.pdf.event.PdfDocumentEvent;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
@@ -70,13 +68,15 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Output (to print or file)
  * @author R Thompson
- * @version v0.03.0030
+ * @version v0.04.0032
  * @since 2019-02-22
+ *
+ * Using iText v9.2 (AGPL version) for PDF file output
  */
 
 public class HG0531Output extends JDialog {
-
 	private static final long serialVersionUID = 001L;
+
 	private JPanel contents;
 	private JTextField headerField;
 	private JTextField footerField;
@@ -87,8 +87,8 @@ public class HG0531Output extends JDialog {
 
 /**
  * Create the Dialog.
- * @param callingWindow the calling Window's Title
- * @param tableToOutput the JTable to be output to print or a file
+ * @param callingWindow - the calling Window's Title
+ * @param tableToOutput - the JTable to be output to print or a file
  **/
 	public HG0531Output(String callingWindow,  JTable tableToOutput) {
 		this.tableToOutput = tableToOutput;
@@ -454,10 +454,10 @@ public class HG0531Output extends JDialog {
 	}	// End createXSV
 
 /**
- * Routine to handle IEvents from iText 3rd-party product code below
+ * Routine to handle docEvents for Header/Footer in iText 3rd-party product code below
  */
-	protected class headerFooterEventHandler implements IEventHandler, com.itextpdf.kernel.events.IEventHandler  {
-	    public void handleEvent(Event event) {
+	protected class headerFooterEventHandler  extends AbstractPdfDocumentEventHandler {
+		public void onAcceptedEvent(AbstractPdfDocumentEvent event) {
 	        PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
 	        PdfDocument pdfDoc = docEvent.getDocument();
 	        PdfPage page = docEvent.getPage();
@@ -471,47 +471,45 @@ public class HG0531Output extends JDialog {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-	        //Add document name header and legal notice/page number footer
+	        //Add document name header and an iText note/page number footer
 	        pdfCanvas.beginText()
 	        		// Position header and show it (PDFs use 72 points/inch)
 	                .moveText(pageSize.getWidth()/2-60, pageSize.getTop()-20)
 	                .showText(docHeader)
+	                // Position footer and show it
 	                .moveText(-(pageSize.getWidth()/2-100), -pageSize.getTop()+40)
-	                .showText(HG0531Msgs.Text_45)			// PDF output formatted by iText   (NB: this is a legal reqmt)
+	                .showText(HG0531Msgs.Text_45)			// PDF output formatted by iText
 	                .moveText(pageSize.getWidth()/2-60, 0)
 	                .showText(String.valueOf(pageNumber))
 	                .endText();
 	        pdfCanvas.release();
 	    }
-		@Override
-		public void onEvent(IEvent arg0) {
-			// TODO Auto-generated method stub
-		}
 	}
 
 /**
  * Routine to write the JTable in PDF format via iText 3rd-party product
  * @param outFile - file destination
  * @throws IOException
- * @throws FileNotFoundException
  * @throws ITextException
  */
-	public void createPDF(File outFile) throws IOException, FileNotFoundException, ITextException {
+	public void createPDF(File outFile) throws IOException, ITextException {
 		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		int numCols = tableToOutput.getColumnCount();
 		int numRows = tableToOutput.getRowCount();
 		PdfDocument pdfDoc = new PdfDocument(new PdfWriter(outFile));
 		Document doc;
-		// Set the PDF metadata to mention iText
+
+		// Set the PDF metadata to mention iText (NB: AGPL version of iText sets copyright producer line by itself)
 		PdfDocumentInfo info = pdfDoc.getDocumentInfo();
 		info.setTitle(docHeader);
-		info.setAuthor(HG0531Msgs.Text_46);			// HRE using iText software by apryse   (NB: this is a legal reqmt)
+		info.setAuthor(HG0531Msgs.Text_46);			// HRE using iText software by apryse
 
 		// Force landscape mode for large number of columns (could add code to set pagesize/rotation?)
 		if (numCols > 6) doc = new Document(pdfDoc, PageSize.A4.rotate());
 			else doc = new Document(pdfDoc, PageSize.A4);
 
 		// Add event handler to create header/footer text
+		pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new headerFooterEventHandler());
 		pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, new headerFooterEventHandler());
 
 		// Define a pdf table to put the data into

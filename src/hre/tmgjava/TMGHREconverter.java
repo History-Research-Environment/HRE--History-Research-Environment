@@ -48,6 +48,7 @@ package hre.tmgjava;
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  *			  2024-12-12 - Updated for seed v22c database (N. Tolleshaug)
  *v0.01.0032  2025-02-11 - Code for initiate citation/source import (N. Tolleshaug)
+ *			  2025-06-30 - Added lines for build number (N. Tolleshaug)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -213,6 +214,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	private void startConvert() {
 
 		try {
+			processMonitor.setContextOfAction(" Processing with build: " + TMGglobal.buildNo);
 			processMonitor.setContextOfAction(" Processing with rel: " + TMGglobal.releaseDate);
 			processMonitor.setContextOfAction(" Database version: " + TMGglobal.databaseVersion);
 			if (TMGglobal.DEBUG) System.out.println(" *** Choose TMG folder!");

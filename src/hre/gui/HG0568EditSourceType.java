@@ -3,8 +3,8 @@ package hre.gui;
  * EditSourceType -
  * ***********************************************************************************
  * v0.04.0032 2025-01-31 Original draft (D Ferguson)
-  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
- *
+ *			  2025-05-26 Adjust miglayout settings (D Ferguson)
+ * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 action Save button
@@ -35,6 +35,7 @@ import javax.swing.WindowConstants;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBProjectOpenData;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -54,7 +55,9 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 /**
  * Create the dialog
  */
-	public HG0568EditSourceType()  {
+	public HG0568EditSourceType(HBProjectOpenData pointOpenProject)  {
+		this.pointOpenProject = pointOpenProject;
+
 		setTitle("Edit Source Type");
 	// Setup references for HG0450
 		windowID = screenID;
@@ -191,6 +194,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// NOTE01 save all data
 
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit of HG0568EditSourceType");	//$NON-NLS-1$
 				dispose();
 			}
@@ -200,6 +204,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0568EditSourceType");	//$NON-NLS-1$
 				dispose();
 			}

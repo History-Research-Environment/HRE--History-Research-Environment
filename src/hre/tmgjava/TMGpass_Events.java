@@ -65,6 +65,7 @@ package hre.tmgjava;
  * v0.03.0032 2025-01-30 - Added import of event reminder text (N. Tolleshaug)
  * 			  2025-01-31 - Removed console print messages (N. Tolleshaug)
  * 			  2025-02-11 - Added code to cross ref T450 PID with RECNO (N. Tolleshaug)
+ * 			  2025-06-29 - Added TMG sentence addToT168_SENTENCE_SET (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -91,7 +92,8 @@ class TMGpass_Events  {
 	long proOffset = 1000000000000000L;
 	long null_RPID  = 1999999999999999L;
 	// control of role sentence console printout
-	boolean printRoleSentence = false;
+	//boolean printRoleSentence = false;
+	boolean printRoleSentence = true;
 	// Control of trace date for event defs table gnereation
 	boolean trace = TMGglobal.DEBUG;
 	
@@ -102,6 +104,7 @@ class TMGpass_Events  {
 	private static String eventRoleTable = "T461_EVNT_ROLE";
 	private static int marrGroup = 6, divorceGroup = 7, birthGroup = 4;
 
+	ResultSet tableT168;
 	ResultSet tableT170;
 	ResultSet tableT404;
 	ResultSet tableT405;
@@ -152,6 +155,7 @@ class TMGpass_Events  {
 	private long locationTablePID = proOffset + 1;
 	private long eventDefnPID = proOffset;
 	private long eventRolePID = proOffset;
+	private long eventSentencPID = proOffset;
 
 	// Set the number of lines printed
 	//int maxNrPrint = 500;
@@ -175,6 +179,7 @@ class TMGpass_Events  {
 		tmgEtable = TMGglobal.tmg_E_table;
 		tmgGtable = TMGglobal.tmg_G_table;
 		tmgTtable = TMGglobal.tmg_T_table;
+		tableT168 = TMGglobal.T168;
 		try {
 			eventDefnPID = pointHREbase.lastRowPID(eventDefnTable);
 			eventRolePID = pointHREbase.lastRowPID(eventRoleTable);
@@ -211,9 +216,9 @@ class TMGpass_Events  {
 /**
  *  Reset reloaded ResultSet HRE tables
  */
+		tableT170 = TMGglobal.T170;
 		tableT404 = TMGglobal.T404;
 		tableT450 = TMGglobal.T450;
-		tableT170 = TMGglobal.T170;
 
 /**
  * Start convert Event
@@ -416,9 +421,9 @@ class TMGpass_Events  {
 		//Insert row
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			System.out.println("TMGPass_Names - addTo table T450_EVNT - error: " + sqle.getMessage());
+			System.out.println("TMGpass_Events - addTo table T450_EVNT - error: " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T450_EVNT - error: " + sqle.getMessage());
+			throw new HCException("TMGpass_Events - addTo table T450_EVNT - error: " + sqle.getMessage());
 		}
 	}
 
@@ -499,10 +504,10 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGPass_Names - addTo table addToT404_PARTNER - error: "
+			System.out.println("TMGpass_Events - addTo table addToT404_PARTNER - error: "
 					+ sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table addToT404_PARTNER - error: "
+			throw new HCException("TMGpass_Events - addTo table addToT404_PARTNER - error: "
 					+ sqle.getMessage());
 		}
     }
@@ -647,32 +652,52 @@ class TMGpass_Events  {
  * @param eventTypeNr
  * @param etypeName
  * @param roleString
+ * @throws HCException 
  */
-	private void extractRoleSentence(int eventTypeNr, String etypeName, String roleString) {
-		System.out.println(" ROLES for EVENT nr: " + eventTypeNr + " name: " + etypeName);
+	private void extractRoleSentence(int eventTypeNr, String etypeName, String roleString) throws HCException {
+		
 		String roleSentenceString;
-		int pos = roleString.indexOf("[:LABELS]");
+		String roleTextNumber = "";
+		String roleTMGsentence = "";
+		boolean printControl = false;
+		int endposValue, roleNumber = 0;
+		int posLabel = roleString.indexOf("[:LABELS]");
 		if (roleString.length() == 0) return;
-		roleSentenceString = roleString.substring(pos, roleString.length());
+		roleSentenceString = roleString.substring(posLabel, roleString.length());
 		roleSentenceString = roleSentenceString.replace("[:LABELS]"," ");
 		String[] sentenceLaguages = roleSentenceString.split("L=");
+		
+		if (printControl) System.out.println(" ROLES for EVENT nr: " + eventTypeNr + " name: " + etypeName);
 		if (sentenceLaguages.length > 0)
 		for (int i = 1; i < sentenceLaguages.length; i++) {
 			String stringLine = sentenceLaguages[i].substring(0, sentenceLaguages[i].length() - 1);
-			//System.out.println(i + " - " + stringLine);
-			String[] roleSentence = stringLine.split("R=");
-			String language = roleSentence[0].substring(0, roleSentence[0].length() - 2);
-			if (getLangCode(language).equals("en-US")) {
-				System.out.println(" Language: " + i + " - " + language + " Code: " + getLangCode(language));
-				for (int j = 1; j < roleSentence.length; j++) {
-					String roleNumber = roleSentence[j].substring(0,5);
-					System.out.print(" Role: " + roleNumber);
-					int endposValue;
-					if (j < roleSentence.length-1) endposValue = 1; else  endposValue = 0;
-					String roleTMGsentence = roleSentence[j].substring(6, roleSentence[j].length() - endposValue);
-					System.out.println("  Sentence: " + roleTMGsentence);
-				}
-			}
+				if (stringLine.length() > 20) {
+					//System.out.println(i + " - " + stringLine);
+					String[] roleSentence = stringLine.split("R=");
+					String language = roleSentence[0].substring(0, roleSentence[0].length() - 2);	
+					if (printControl) System.out.println(" Language: " + i + " - " + language + " Code: " + getLangCode(language));
+					for (int j = 1; j < roleSentence.length; j++) {
+						roleTextNumber = " ";
+						if (roleSentence[j].length() > 2) {
+							roleTextNumber = roleSentence[j].substring(0,5);
+							if (printControl) System.out.print(" Role: " + roleTextNumber);
+							if (j < roleSentence.length-1) endposValue = 1; else  endposValue = 0;
+							roleTMGsentence = roleSentence[j].substring(6, roleSentence[j].length() - endposValue);
+							if (printControl) System.out.println("  Sentence: " + roleTMGsentence);
+							if (HREhdate.isInteger(roleTextNumber)) {
+								roleNumber = Integer.parseInt(roleTextNumber);
+								eventSentencPID = eventSentencPID + 1;
+								addToT168_SENTENCE_SET(tableT168, eventSentencPID, getLangCode(language), eventTypeNr, 
+										roleNumber, roleTMGsentence);
+							} else System.out.println(" ** ROLE NUMBER NOT FOUND for: " + language + " Event: " + etypeName 
+									+ " Evnr: " + eventTypeNr + " Role sentence: [R=" + roleSentence[j]);
+							
+						} else System.out.print(" ** MISSING ROLE NUMBER for: " + language + " Event: " + etypeName 
+								+ " Evnr: " + eventTypeNr + " Role sentence: [R=" + roleSentence[j]);
+					}
+				//} else System.out.print(" ** ERROR in Language: " + language + " Event: " + etypeName 
+				} else System.out.print(" ** INCOMPLETE SENTENCE for Event: " + etypeName 
+							+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
 		}
 	}
 
@@ -790,7 +815,57 @@ class TMGpass_Events  {
 		}
 		return  " ";
 	}
-
+	
+/**
+ * 
+ * @param hreTable
+ * @param primaryPID
+ * @param lang_code
+ * @param etypeNumber
+ * @param roleNumber
+ * @param TMGsentence
+ * @throws HCException
+ * 	 T168_SENTENCE_SET
+	 PID
+	 BIGINT
+	 CL_COMMIT_RPID
+	 BIGINT
+	 IS_LONG
+	 SHORT_SENT
+	 LONG_SENT
+	 LANG_CODE
+	 EVNT_TYPE
+	 EVNT_ROLE_NUM
+ */
+	
+	protected void addToT168_SENTENCE_SET(ResultSet hreTable, long primaryPID, String lang_code, int etypeNumber, 
+											int roleNumber, String TMGsentence) throws HCException {
+		try {
+		// moves cursor to the insert row
+			hreTable.moveToInsertRow();
+		// update
+			hreTable.updateLong("PID", primaryPID);
+			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
+			hreTable.updateString("LANG_CODE", lang_code);
+			hreTable.updateInt("EVNT_TYPE", etypeNumber);
+			hreTable.updateInt("EVNT_ROLE_NUM", roleNumber);
+			if (TMGsentence.length() <= 500) {
+				hreTable.updateBoolean("IS_LONG", false);
+				hreTable.updateString("SHORT_SENT", TMGsentence);
+			} else {
+				hreTable.updateBoolean("IS_LONG", true);
+				hreTable.updateClob("LONG_SENT", pointHREbase.createNClob(TMGsentence));
+			}
+			
+		//Insert row
+			hreTable.insertRow();
+			
+		} catch (SQLException sqle) {
+			System.out.println("TMGPass_events - addToT168_SENTENCE_SET - error: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HCException("TMGPass_events - addToT168_SENTENCE_SET - error: " + sqle.getMessage());
+		}
+	}
 /**
  * updateT460_EVNT_DEFS(int etypeNumber, int origeType, String etypeName)
  * @param etypeNumber
@@ -835,8 +910,8 @@ class TMGpass_Events  {
 			}
 		} catch (SQLException sqle) {
 			if (TMGglobal.DEBUG)
-				System.out.println(" updateT460_EVNT_DEFS error: " + sqle.getMessage());
-			throw new HCException(" updateT460_EVNT_DEFS error: " + sqle.getMessage());
+				System.out.println(" TMGpass_Events updateT460_EVNT_DEFS error: " + sqle.getMessage());
+			throw new HCException(" TMGpass_Events updateT460_EVNT_DEFS error: " + sqle.getMessage());
 		}
 
 	}
@@ -896,9 +971,9 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGPass_Names - addTo table T460_EVNT_DEFN - error: " + sqle.getMessage());
+			System.out.println("TMGpass_Events - addTo table T460_EVNT_DEFN - error: " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T460_EVNT_DEFN - error: " + sqle.getMessage());
+			throw new HCException("TMGpass_Events - addTo table T460_EVNT_DEFN - error: " + sqle.getMessage());
 		}
 	}
 
@@ -946,7 +1021,7 @@ class TMGpass_Events  {
 		} catch (SQLException sqle) {
 			System.out.println("Not able to update table - T461_EVNT_ROLE" + " Event role name: " + eventRoleName);
 			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T461_EVNT_ROLE - error: "
+			throw new HCException("TMGpass_Events - addTo table T461_EVNT_ROLE - error: "
 					+ sqle.getMessage());
 		}
 	}
@@ -1185,9 +1260,9 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGPass_Names - addTo table T451_EVNT_ASSOC - error: " + sqle.getMessage());
+			System.out.println("TMGpass_Events - addTo table T451_EVNT_ASSOC - error: " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T451_EVNT_ASSOC - error: " + sqle.getMessage());
+			throw new HCException("TMGpass_Events - addTo table T451_EVNT_ASSOC - error: " + sqle.getMessage());
 		}
     }
 
@@ -1214,7 +1289,7 @@ class TMGpass_Events  {
 	    	if (TMGglobal.TRACE)
 	    		if (missingPartRole > 0)System.out.println(" Missing partner roles: " + missingPartRole);
 		} catch (SQLException sqle) {
-			System.out.println(" Update updatePartnerRoles(): " + sqle.getMessage());
+			System.out.println(" TMGpass_Events Update updatePartnerRoles(): " + sqle.getMessage());
 			sqle.printStackTrace();
 		}
     }

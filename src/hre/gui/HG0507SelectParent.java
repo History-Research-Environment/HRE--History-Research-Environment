@@ -1,6 +1,6 @@
 package hre.gui;
 /**************************************************************************************
- * HG0507SelectParent - Original Specs 05.07 GUI_EntitySelect 2019-09-16
+ * HG0507SelectParent - extends HG0507SelectPerson for add/edit parent table in edit event
  * ***********************************************************************************
  * v0.03.0031 2024-04-05 Extended dialog for parent add and edit (N. Tolleshaug)
  * 			  2024-05-08 Setting up edit selected parent (N. Tolleshaug)
@@ -9,6 +9,7 @@ package hre.gui;
  * 			  2024-08-24 NLS conversion (D Ferguson)
  * 			  2024-10-03 Added reset T401/402 and PS/PM reset (N. Tolleshaug)
  * 			  2025-04-25 Add Citation load and GUI seq reset code (D Ferguson)
+ * v0.04.0032 2025-06-05 Address minor layout errors (D Ferguson)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
@@ -20,15 +21,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
 
-/**************************************************************************************
- * HG0507SelectParent - extends HG0507SelectPerson
- * User GUI for add/edit  parent table in edit event
- * ************************************************************************************
- * v0.03.0031 2024-04-05 First version (N. Tolleshaug)
- * 			  2024-04-05 Handling of parent select (N. Tolleshaug)
-  **************************************************************************************
- * NOTE - Code activate for parent select
- **************************************************************************************/
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 
@@ -40,7 +32,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectParent
  * @author N Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-04-05
  */
 public class HG0507SelectParent extends HG0507SelectPerson {
@@ -85,7 +77,7 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 
 	// Set parent name in window
 		if (parentRelationData != null) {
-			lbl_ParentName.setText(HG05070Msgs.Text_165 + (String) parentRelationData[1]);	// Edit parent:
+			lbl_ParentName.setText((String) parentRelationData[1]);	// Edit parent:
 		}
 		parentRoleList = pointPersonHandler.getRolesForParent(parentEventGroup);
 		parentRoleType = pointPersonHandler.getRolesTypeParent();

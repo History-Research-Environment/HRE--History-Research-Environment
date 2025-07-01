@@ -56,6 +56,7 @@ import javax.swing.table.TableRowSorter;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
 
@@ -82,7 +83,8 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 /**
  * Create the dialog
  */
-	public HG0567ManageSourceType()  {
+	public HG0567ManageSourceType(HBProjectOpenData pointOpenProject)  {
+		this.pointOpenProject = pointOpenProject;
 
 	// NOTE this can be called directly from 'Evidence' on mainMenu , when title should be 'Manage Source types'
 	// OR from HG0565ManageSource, when the title should be 'Select Source Type'
@@ -327,7 +329,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0568EditSourceType typeScreen = new HG0568EditSourceType();
+				HG0568EditSourceType typeScreen = new HG0568EditSourceType(pointOpenProject);
 				typeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyType = btn_Add.getLocationOnScreen();
 				typeScreen.setLocation(xyType.x, xyType.y + 30);
@@ -371,6 +373,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0567ManageSourceType");	//$NON-NLS-1$
 				dispose();
 			}
