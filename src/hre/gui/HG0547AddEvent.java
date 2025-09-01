@@ -34,8 +34,6 @@ import hre.nls.HG0547Msgs;
 public class HG0547AddEvent extends HG0547EditEvent {
 	private static final long serialVersionUID = 1L;
 	private static long null_RPID = 1999999999999999L;
-	//private static long eventPID;
-	//long null_RPID  = 1999999999999999L;
 	long locationNamePID = null_RPID;
 	boolean dateOK = false;
 	boolean locationChanged = false;
@@ -44,8 +42,8 @@ public class HG0547AddEvent extends HG0547EditEvent {
 	HG0547AddEvent pointUpdateEvent = this;
 
 	public HG0547AddEvent(HBProjectOpenData pointOpenProject, int eventNumber,
-									int roleNumber) throws HBException {
-		super(pointOpenProject, eventNumber, roleNumber, null_RPID);
+									int roleNumber, String sexCode) throws HBException {
+		super(pointOpenProject, eventNumber, roleNumber, null_RPID, sexCode);
 
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;

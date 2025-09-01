@@ -47,6 +47,8 @@ package hre.gui;
   * 		  2025-05-25 Get EvntKeyAssocMin and pass to HG0555EditCitations (D Ferguson)
   * 		  2025-06-15 Changed from string sep with "/" to String[] (N. Tolleshaug)
   * 		  2025-06-24 Load editSentence GUI via btn_Sentence (D Ferguson)
+  * 		  2025-07-06 Pass roleName to HG0548EditSentence (D Ferguson)
+  * 		  2025-07-13 Pass sexCode to HG0548EditSentence (D Ferguson
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -158,6 +160,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	String roleNameSec = "";	//$NON-NLS-1$
 	String eventPersonName;
 	String eventPersonNamePri = "", eventPersonNameSec = "";	//$NON-NLS-1$ //$NON-NLS-2$
+	String sexCode;
 
 	DocumentListener dateTextChange;	// accessed by update
 	DocumentListener sortTextChange;	// accessed by update
@@ -242,7 +245,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  * Create the dialog
  * @throws HBException
  */
-	public HG0547EditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber, long eventpointPID) throws HBException {
+	public HG0547EditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
+							long eventpointPID, String sexCode) throws HBException {
 		if (HGlobal.DEBUG)
 			System.out.println(" EditEvent: " + eventNumber + "/" + roleNumber + "-" + eventPID);	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -251,6 +255,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		this.eventRoleNum = roleNumber;
 		this.eventNum = eventNumber;
 		this.eventPID = eventpointPID;
+		this.sexCode = sexCode;
 	// Setup references
 		windowID = screenID;
 		helpName = "editevent";	//$NON-NLS-1$
@@ -328,11 +333,11 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     		partnerNames = pointWhereWhenHandler.getPartnerNames();
     			eventPersonNamePri = partnerNames[0].trim();
     			eventPersonNameSec = partnerNames[1].trim();
-    			roleNamePri = "(" + partnerNames[2] + ")";			//$NON-NLS-1$ //$NON-NLS-2$
-    			roleNameSec = "(" + partnerNames[3] + ")";			//$NON-NLS-1$ //$NON-NLS-2$
+    			roleNamePri = partnerNames[2];
+    			roleNameSec = "(" +partnerNames[3] + ")";	//$NON-NLS-1$ //$NON-NLS-2$
     	} else {
 			eventPersonNamePri = eventPersonName;
-			roleNamePri = "(" + pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber) + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+			roleNamePri = pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber);
 		}
 	    if (HGlobal.DEBUG)
 	    	System.out.println(" Event " + eventName + " partners " + eventPersonNamePri + ", " + eventPersonNameSec); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -416,7 +421,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		lbl_PersonSec = new JLabel(eventPersonNameSec);
 		topEvntPanel.add(lbl_PersonSec, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-		lbl_rolePri = new JLabel(roleNamePri);
+		lbl_rolePri = new JLabel("(" + roleNamePri + ")");		//$NON-NLS-1$ //$NON-NLS-2$
 		topEvntPanel.add(lbl_rolePri, "cell 2 0, alignx left");	//$NON-NLS-1$
 		lbl_roleSec = new JLabel(roleNameSec);
 		topEvntPanel.add(lbl_roleSec, "cell 2 1, alignx left");	//$NON-NLS-1$
@@ -1043,7 +1048,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Sentence.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, eventNum, pointEditEvent);
+				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, pointEditEvent,
+																		   eventNum, roleNamePri, sexCode);
 				sentenceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				// Anchor new screen at actualEvent JLabel
 				Point xyShow = lbl_actualEvent.getLocationOnScreen();

@@ -47,6 +47,7 @@ package hre.bila;
  * 			  2025-03-22 Updated for create citation/source tables (N. Tolleshaug)
  *			  2025-03-24 Create boolean IS_OWNER in T131 (N. Tolleshaug)
  *			  2025-05-12 Complete IS_OWNER update code (D Ferguson)
+ *			  2025-08-25 Update T168 table to add missing new fields (D Ferguson)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -82,7 +83,6 @@ public class HBProjectHandler extends HBBusinessLayer {
 /**
  *  NOTE defaultDatabaseEngine must be set by user ???
  */
-
 /** Popular SQL database engines and filetypes
  *   #1) Oracle RDBMS - filetype .dbf
  *   #2) IBM DB2
@@ -497,14 +497,18 @@ public class HBProjectHandler extends HBBusinessLayer {
      // Modify columns T404_PARTNER
         int databaseIndex = pointOpenProject.getOpenDatabaseIndex();
 
-	// Add IS_IMPORTED = FALSE to T126_PROJECTS
+	// Set IS_IMPORTED = FALSE in T126_PROJECTS
 		updateTableData("UPDATE T126_PROJECTS SET IS_IMPORTED = FALSE WHERE PROJECT_CODE = 1", databaseIndex);
 
-	// Create boolean IS_OWNER in T131
-//		alterColumnInTable("T131_USER","IS_OWNER","BOOLEAN", databaseIndex);
+	// Set boolean IS_OWNER in T131
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
 
-	// Create new citation table
+	// Add 3 new fields to T168 (until they are added to the Seed)
+		updateTableInBase("T168_SENTENCE_SET", "ALTER TABLE", "ADD LANG_CODE CHAR(5)", databaseIndex);
+		updateTableInBase("T168_SENTENCE_SET", "ALTER TABLE", "ADD EVNT_TYPE SMALLINT", databaseIndex);
+		updateTableInBase("T168_SENTENCE_SET", "ALTER TABLE", "ADD EVNT_ROLE_NUM SMALLINT", databaseIndex);
+
+	// Create new citation table (until Seed contains it)
 		createTableInBase("T735_CITN","PID BIGINT NOT NULL,"
 							+ "CL_COMMIT_RPID BIGINT NOT NULL,"
 							+ "CITED_RPID BIGINT NOT NULL,"
@@ -520,13 +524,13 @@ public class HBProjectHandler extends HBBusinessLayer {
 							+ "CITN_ACC_DATE TINYINT,"
 							+ "CITN_ACC_LOCN TINYINT,"
 							+ "CITN_ACC_MEMO TINYINT", databaseIndex);
-
 		updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);
 
-	// Create new source table
+	// Create new source table (until Seed contains it)
 		createTableInBase("T736_SORC","PID BIGINT NOT NULL,"
 							+ "CL_COMMIT_RPID BIGINT NOT NULL,"
 							+ "IS_ACTIVE BOOLEAN NOT NULL,"
+							+ "SORC_DEF_RPID BIGINT NOT NULL,"
 							+ "SORC_REF SMALLINT NOT NULL,"
 							+ "SORC_TYPE SMALLINT NOT NULL,"
 							+ "SORC_FIDELITY CHAR(1) NOT NULL,"
@@ -540,7 +544,6 @@ public class HBProjectHandler extends HBBusinessLayer {
 							+ "SORC_SHORTFORM VARCHAR(500) NOT NULL,"
 							+ "SORC_BIBLIOFORM VARCHAR(500) NOT NULL,"
 							+ "SORC_REMIND_RPID BIGINT NOT NULL", databaseIndex);
-
 		updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);
 
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9

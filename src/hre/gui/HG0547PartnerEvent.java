@@ -42,10 +42,11 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 	static long eventPID = null_RPID;
 	long  partnerTablePID = null_RPID;
 	int selectedEventNum = 1004, selectedRoleNum = 1;
+	static String sexCode = "U";
 
 	public HG0547PartnerEvent(HBProjectOpenData pointOpenProject, int selectedRowInTable, int eventNumber,
-														int roleNumber , long createdPartnerTablePID) throws HBException {
-		super(pointOpenProject, eventNumber, roleNumber, eventPID);
+								int roleNumber , long createdPartnerTablePID) throws HBException {
+		super(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
 		this.partnerTablePID = createdPartnerTablePID;
 
 		partnerRelationData = pointPersonHandler.getPartnerTableData(selectedRowInTable);

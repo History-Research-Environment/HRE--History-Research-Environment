@@ -21,18 +21,21 @@ package hre.tmgjava;
  * 			  2024-12-22 - Updated for v22c database
  * 			  2025-02-11 - Added parameteres for initiate citation/source import (N. Tolleshaug)
  * 			  2025-06-29 - Added parameter public static ResultSet T168 = null;
+ * 			  2025-07-06 - Udated from nils to bruker (N. Tolleshaug)
+ * 			  2025-07-12 - Added remaining source_def/elemnt, repo and link tables (N. Tolleshaug)
+ * 			  2025-07-22 - Added T734_SORC_DATA table (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "30.06.2025";				// Set Build number
-	public static String releaseDate = "30 Jun. 2025";		// and release date
+	public static String buildNo = "30.09.2025";			// Set Build number
+	public static String releaseDate = "30 Sep 2025";		// and release date
 
 	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
 	public static String databaseVersion = "v22c 2024-12-19";	// Database version DDL
-	
+
 	//public static String databaseBuild = "v22c 2024-11-01"; // Updated T20X tables
 	//public static String databaseBuild = "v22c 2024-11-01"; // Updated for v22c / v22c 2024-11-01
 	public static String databaseBuild = "v22c 2024-12-19"; // Updated for v22c / SQL: DDL v22c 2024-12-19
@@ -43,13 +46,13 @@ public class TMGglobal {
 	//public static boolean DEBUG = true;	 // DEBUG variable - to be set in App settings
 	public static boolean TRACE = false;	 // Set up stack trace for debug to external file
 	//public static boolean TRACE = true;	 // Set up stack trace for debug to external file
-	
-	// Switches for process monitor Output	
+
+	// Switches for process monitor Output
 	//public static boolean TMGTRACE = false; // Controls TMG table load messages
 	public static boolean TMGTRACE = true; // Controls TMG table load messages
 	//public static boolean HRETRACE = false; // Controls HRE table load and index messages
 	public static boolean HRETRACE = true; // Controls HRE table load and index messages
-	
+
 	public static boolean DUMP = false;		 // Dump meta data to System.out.println
 	//public static boolean DUMP = true;     // Dump meta data to System.out.println
 	public static boolean TRHDATE = false; // Dump Special HDATES to System.out.println
@@ -68,10 +71,10 @@ public class TMGglobal {
 	//public static boolean FLAGCHECK = true; // Statistics from exhibit processing
 	public static boolean EXHCHECK = false; // Statistics from exhibit processing
 	//public static boolean EXHCHECK = true;    //Statistics from exhibit processing
-	
+
 	//public static boolean CONVERT_EXH_PATH = false; // Set new folder path for exhibits
 	public static boolean CONVERT_EXH_PATH = true; // Set new folder path for exhibits
-	
+
 // ---------------------------------------------
 
 	public static String systemLanguage;					// running OS System language code (e.g.'en-AU')
@@ -83,7 +86,7 @@ public class TMGglobal {
 	public static String userName = "";						// User name as known by the OS
 
 	// New exhibit path for test NTo
-	public static String newExhibitFolderPath = "C:\\Users\\nils\\Documents\\The Master Genealogist v9\\Exhibits\\Ferguson\\";
+	public static String newExhibitFolderPath = "C:\\Users\\bruker\\Documents\\The Master Genealogist v9\\Exhibits\\Ferguson\\";
 
 	// path to HRE Help sub-folders	(Production)
 	public static String helpPath = "file:\\C:\\Program Files\\HRE\\Help\\";
@@ -93,18 +96,18 @@ public class TMGglobal {
 
 	// Path to last selected folder
 	public static String pathProjectFolder = null;
-	
+
 // ****** Log file for for console output from converter enabled by TRACE
 // ******-- Specific for user NTo - need to general for all Users ---********
-	public static String logFile = "C:\\Users\\nils\\HRE\\NTo-B31-Log.txt";
+	public static String logFile = "C:\\Users\\bruker\\HRE\\NTo-B31-Log.txt";
 // **************************************************************************
-	public static String tmgStartFolder = "C:\\Users\\nils\\Documents\\The Master Genealogist v9\\Projects\\";
+	public static String tmgStartFolder = "C:\\Users\\bruker\\Documents\\The Master Genealogist v9\\Projects\\";
 // DDL 22c **************************************************************************
-	public static String tmghreBase22c = "C:/Users/nils/HRE/Project/HRE-TMG-v22c";
+	public static String tmghreBase22c = "C:/Users/bruker/HRE/Project/HRE-TMG-v22c";
 //****************************************************************************************
-	public static String seedBase = "C:\\Users\\nils\\HRE\\HRE Seed database.mv.db";
-// DDL 22c ************************** 	
-	public static String seedBase22c = "C:\\Users\\nils\\HRE\\HRE Seed database v22c.mv.db";
+	public static String seedBase = "C:\\Users\\bruker\\HRE\\HRE Seed database.mv.db";
+// DDL 22c **************************
+	public static String seedBase22c = "C:\\Users\\bruker\\HRE\\HRE Seed database v22c.mv.db";
 
 /**
  * Table objects for TMG tables
@@ -167,8 +170,13 @@ public class TMGglobal {
 	public static ResultSet T553 = null;
 	public static ResultSet T676 = null;
 	public static ResultSet T677 = null;
+	public static ResultSet T734 = null;
 	public static ResultSet T735 = null;
 	public static ResultSet T736 = null;
+	public static ResultSet T737 = null;
+	public static ResultSet T738 = null;
+	public static ResultSet T739 = null;
+	public static ResultSet T740 = null;
 
 	public static int numOpenProjects = 0;					// count of number of currently open projects
 

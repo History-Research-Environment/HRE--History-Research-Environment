@@ -4,7 +4,7 @@ package hre.gui;
  * ***********************************************************************************
  * v0.04.0032 2025-02-07 Original draft (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
- *
+ *			  2025-08-16 Get table header from T204 (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Add button
@@ -45,6 +45,7 @@ import javax.swing.table.TableRowSorter;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
@@ -59,33 +60,36 @@ import net.miginfocom.swing.MigLayout;
 public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 
+	HBPersonHandler pointPersonHandler;
 	public static final String screenID = "56400"; //$NON-NLS-1$
 
 	private JPanel contents;
 
-	private String[] tableSrcElmntColHeads = null;
-	private Object[][] tableSrcElmntData;
+	String[] tableSrcElmntColHeads = null;
+	Object[][] tableSrcElmntData;
 	DefaultTableModel srcElmntTableModel = null;
 
 	String newElementName = null;
+
 /**
  * Create the dialog
+ * NOTE: this can be called directly from mainMenu 'Evidence' OR from HG0566EditSource
  */
 	public HG0564ManageSrcElmnt(HBProjectOpenData pointOpenProject) throws HBException  {
 		this.pointOpenProject = pointOpenProject;
+		pointPersonHandler = pointOpenProject.getPersonHandler();
 
-	// NOTE this can be called directly from 'Evidence' on mainMenu OR from HG0566EditSource
 		setTitle("Source Elements");
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "managesourceelement";		 //$NON-NLS-1$
 
-	// Collect static GUI text from T204 for Source type table (T204 data still to be preloaded)
-//		String[] tableSrcElmntColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-
-		// Setup close and logging actions
+	// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0564ManageSrcElmnt");	//$NON-NLS-1$
+
+	// Collect static GUI text from T204 for Source Element table
+		tableSrcElmntColHeads = pointPersonHandler.setTranslatedData("56400", "1", false);	// Source Elements //$NON-NLS-1$ //$NON-NLS-2$
 
 	// Setup dialog
 		contents = new JPanel();
@@ -128,9 +132,8 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 			}};
 	 	// Get Source Type data
 		// load some dummy data for test & display - to be removed
-		tableSrcElmntColHeads = new String[] {"Source Elements" };			// T204 data eventually
 		tableSrcElmntData = new Object[][] {{"[AUTHOR]"}, {"[AGENCY]"}};
-//			tableSrcElmntData = pointzzzzzzz.xxxxxxxxxxxxxxxxxxxx		<<< load Source Elements from T738
+//		tableSrcElmntData = pointzzzzzzz.xxxxxxxxxxxxxxxxxxxx		<<< load Source Elements from T738
 		if (tableSrcElmntData == null ) {
 			JOptionPane.showMessageDialog(tableSrcElmnt, "No data found in HRE database\n"	// No data found in HRE database\n
 													 + "Source Element load error",		// Source Element load error

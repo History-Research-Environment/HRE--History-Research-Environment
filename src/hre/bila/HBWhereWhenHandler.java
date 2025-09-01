@@ -82,6 +82,8 @@ package hre.bila;
   *			   2025-05-24 - Change activateUpdateEvent for EditEvent key person display (D Ferguson)
   *			   2025-06-02 - Correct over-pruning of assocs in prepareAssocTable (D Ferguson)
   *			   2025-06-15 - Changed from string sep with "/" to String[] (N. Tolleshaug)
+  *			   2025-07-02 - Added set language to HBEventRoleManager (N. Tolleshaug)
+  *			   2025-07-13 - Handle passing of sexCode through to all HG0547s (D Ferguson)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -238,6 +240,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	}
 
 	public String[] getEventRoleList(int eventType, String selectRoles) throws HBException {
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 		return pointEventRoleManager.getRolesForEvent(eventType, selectRoles);
 	}
 
@@ -246,7 +249,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	}
 
 	public int[] getEventRoleTypes() {
-		return pointEventRoleManager.getEventRoleTypes();
+		return pointEventRoleManager.getEventRoleNumbers();
 	}
 
 /**
@@ -1042,17 +1045,18 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	}
 
 /**
- * activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow, boolean updateEvent)
+ * activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow, boolean updateEvent, String sexCode)
  * @param pointOpenProject
  * @param tableRow
  * @param updateEvent
+ * @param sexCode
  * @return
  */
-	public HG0547EditEvent activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow, boolean updateEvent) {
+	public HG0547EditEvent activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow,
+												boolean updateEvent, String sexCode) {
 		ResultSet selectedEventTable, partnerTableRS;
 		long priPartnerPID, secPartnerPID, primAssocPID = null_RPID, locationTablePID, locationNamePID, eventTablePID, hdateDate, hdateSort;
 		int priRoleNum, secRoleNum;
-		//String selectString, personPartners = " - ", primAssocName;
 		String selectString, primAssocName;
 		String[] personPartners = new String[4];
 		int eventGroup, eventNumber = 0, roleNumber = 0;
@@ -1086,13 +1090,13 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				secRoleNum = partnerTableRS.getInt("SEC_ROLE");
 				eventNumber = partnerTableRS.getInt("PARTNER_TYPE");
 				partnerTableRS.close();
-				
-			// Build list of both names, both roles for HG0547EditEvent			
+
+			// Build list of both names, both roles for HG0547EditEvent
 				personPartners[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
 				personPartners[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
 				personPartners[2] = getEventRoleName(eventNumber, priRoleNum).trim();
 				personPartners[3] = getEventRoleName(eventNumber, secRoleNum).trim();
-				
+
 			} else {
 				eventNumber = selectedEventTable.getInt("EVNT_TYPE");
 				roleNumber = selectedEventTable.getInt("PRIM_ASSOC_ROLE_NUM");
@@ -1126,7 +1130,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 	// Start update event
 			pointEditEvent = new HG0547UpdateEvent(pointOpenProject, eventNumber, roleNumber,
-					eventTablePID, addHdate, locationNamePID);
+					eventTablePID, addHdate, locationNamePID, sexCode);
 
 	// If witnessed event set primary assoc name for an Update event
 			if (primAssocPID != null_RPID) {
@@ -1144,15 +1148,16 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 /**
  * activateEditEvent(HBProjectOpenData pointOpenProject, String eventName,
- * 						String roleName, String eventPerson)
+ * 						String roleName, String eventPerson, String sexCode)
  * @param pointOpenProject
  * @param eventName
  * @param roleName
  * @param eventPerson
+ * @param sexCode
  * @return
  */
-	public HG0547EditEvent activateEditEvent(HBProjectOpenData pointOpenProject,
-											int eventNumber, int roleNumber, long eventPersonPID, int tableRow) {
+	public HG0547EditEvent activateEditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
+											long eventPersonPID, int tableRow, String sexCode) {
 		long eventPID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		dateFormatSelect();
@@ -1161,7 +1166,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			eventPID = pointPersonMannager.getEventPID(tableRow);
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
-			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID);
+			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
 			return pointEditEvent;
 		} catch (HBException hbe) {
 			System.out.println("HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
@@ -1171,16 +1176,17 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	}
 
 /**
- * public HG0547EditEvent activateAddEvent(HBProjectOpenData pointOpenProject,
-											int eventNumber, int roleNumber, long eventPersonPID)
+ * public HG0547EditEvent activateAddEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
+											 long eventPersonPID, String sexCode)
  * @param pointOpenProject
  * @param eventNumber
  * @param roleNumber
  * @param eventPersonPID
+ * @param sexCode
  * @return
  */
-	public HG0547EditEvent activateAddEvent(HBProjectOpenData pointOpenProject,
-											int eventNumber, int roleNumber, long eventPersonPID) {
+	public HG0547EditEvent activateAddEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
+											long eventPersonPID, String sexCode) {
 		long eventPID = 0;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		dateFormatSelect();
@@ -1189,7 +1195,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			//eventPID = pointPersonMannager.getEventPID(tableRow);
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
-			pointEditEvent = new HG0547AddEvent(pointOpenProject, eventNumber, roleNumber);
+			pointEditEvent = new HG0547AddEvent(pointOpenProject, eventNumber, roleNumber, sexCode);
 			return pointEditEvent;
 		} catch (HBException hbe) {
 			System.out.println("HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
@@ -1227,10 +1233,11 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @param eventNumber
  * @param roleNumber
  * @param eventPersonPID
+ * @param sexCode
  * @return
  */
 	public HG0547EditEvent activateAddFixedEvent(HBProjectOpenData pointOpenProject,
-								int eventNumber, int roleNumber, long eventPersonPID) {
+								int eventNumber, int roleNumber, long eventPersonPID, String sexCode) {
 
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointPersonMannager = pointOpenProject.getPersonHandler();
@@ -1239,7 +1246,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
 			pointCreateEventRecord = new CreateEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject);
-			pointEditEvent = new HG0547AddEvent(pointOpenProject, eventNumber, roleNumber);
+			pointEditEvent = new HG0547AddEvent(pointOpenProject, eventNumber, roleNumber, sexCode);
 			return pointEditEvent;
 		} catch (HBException hbe) {
 			System.out.println(" HBWhereWhenHandler - activateAddDefinedEvent error: " + hbe.getMessage());
@@ -1256,8 +1263,8 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @param eventPerson
  * @return
  */
-	public HG0547EditEvent activateAddPartnerEvent(HBProjectOpenData pointOpenProject,
-								int eventNumber, int roleNumber, long partnerTablePID, int partnerTableRow) {
+	public HG0547EditEvent activateAddPartnerEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
+								long partnerTablePID, int partnerTableRow) {
 		ResultSet partnerTableRS;
 		long priPartnerPID, secPartnerPID;
 		int priRoleNum, secRoleNum;
@@ -1281,12 +1288,12 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			eventType = partnerTableRS.getInt("PARTNER_TYPE");
 			partnerTableRS.close();
 			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
-			
+
 			partnerNames[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
 			partnerNames[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
 			partnerNames[2] = getEventRoleName(eventNumber, priRoleNum).trim();
 			partnerNames[3] = getEventRoleName(eventNumber, secRoleNum).trim();
-			
+
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, null_RPID);
 			pointEditEventRecord.setPartnerNames(partnerNames);
@@ -1758,6 +1765,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  */
 	public HG0547EditEvent editEventManager(HBProjectOpenData pointOpenProject, int tableRow) throws HBException {
 		int eventNumber = 1001, roleNumber = 1;
+		String sexCode = "U";
 		pointPersonMannager = pointOpenProject.getPersonHandler();
 		long eventPID = pointPersonMannager.getEventPID(tableRow);
 
@@ -1766,7 +1774,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 																pointOpenProject);
 		pointEventManager.editEventData();
 		HG0547EditEvent editEventScreen = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber,
-												eventPID);
+												eventPID, sexCode);
 		return editEventScreen;
 	}
 

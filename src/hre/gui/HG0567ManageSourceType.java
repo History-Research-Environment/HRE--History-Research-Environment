@@ -5,6 +5,7 @@ package hre.gui;
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
  *			  2025-01-31 Add Delete button, implement Add button (D Ferguson)
  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
+ *			  2025-08-16 Get table header from T204 (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -56,6 +57,7 @@ import javax.swing.table.TableRowSorter;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
@@ -69,13 +71,14 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0567ManageSourceType extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	HBPersonHandler pointPersonHandler;
 
 	public static final String screenID = "56700"; //$NON-NLS-1$
 
 	private JPanel contents;
 
-	private String[] tableSourceTypeColHeads = null;
-	private Object[][] tableSourceTypeData;
+	String[] tableSourceTypeColHeads = null;
+	Object[][] tableSourceTypeData;
 	DefaultTableModel srcTableModel = null;
 
 	JTextArea fullFootText, shortFootText, biblioText;
@@ -85,6 +88,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
  */
 	public HG0567ManageSourceType(HBProjectOpenData pointOpenProject)  {
 		this.pointOpenProject = pointOpenProject;
+		pointPersonHandler = pointOpenProject.getPersonHandler();
 
 	// NOTE this can be called directly from 'Evidence' on mainMenu , when title should be 'Manage Source types'
 	// OR from HG0565ManageSource, when the title should be 'Select Source Type'
@@ -93,12 +97,13 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		windowID = screenID;
 		helpName = "managesourcetype";		 //$NON-NLS-1$
 
-	// Collect static GUI text from T204 for Source type table (T204 data still to be preloaded)
-//		String[] tableSourceTypeColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-
 		// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0567ManageSourceType");	//$NON-NLS-1$
+
+
+	// Collect static GUI text from T204 for Source type table
+		tableSourceTypeColHeads = pointPersonHandler.setTranslatedData("56700", "1", false); // Source Type	//$NON-NLS-1$ //$NON-NLS-2$
 
 	// For Text area font setting
 	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
@@ -237,7 +242,6 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 
  	// Get Source Type data
 		// load some dummy data for test & display - to be removed
-		tableSourceTypeColHeads = new String[] {"Source Type" };
 		tableSourceTypeData = new Object[][] {{"Source type A "}, {"Source type B"}};
 //		tableSourceTypeData = pointPersonHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Source data
 		if (tableSourceTypeData == null ) {

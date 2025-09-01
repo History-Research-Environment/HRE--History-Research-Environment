@@ -67,6 +67,7 @@ package hre.gui;
  * 			  2025-04-25 Fix parent teble popup menu structure; correct picPanel size (D Ferguson)
  * 			  2025-04-26 Setup NLS of null parent table data (D Ferguson)
  * 			  2025-06-30 Make all double-click actions consistent (D Ferguson)
+ *			  2025-07-13 Handle passing of sexCode through to HG0547 (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
@@ -399,9 +400,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		tableParents.setFillsViewportHeight(true);
 		// Table may need to expand for Father/Mother-adopt or -foster but minimum 2 rows
 		int nProws = tableParents.getRowCount();
-		if (nProws < 2) {
-			nProws = 2;
-		}
+		if (nProws < 2) nProws = 2;
+
 		// Calculate pane Height based on #rows*(row height + divider height) + header heights
 		int height = (nProws+1)*(tableParents.getRowHeight()+1) + tableParents.getTableHeader().getHeight()+2;
 		JScrollPane scrollParents = new JScrollPane(tableParents);
@@ -783,9 +783,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		// Now count the number of Active Flags to be able to set size of objReqFlagData
 		int activeFlags = 0;
 		for (Object[] element : objAllFlagData) {
-			if ((boolean) (element[1])) {
-				activeFlags++;
-			}
+			if ((boolean) (element[1])) activeFlags++;
 		}
 
 		// Now build only the Active Flag data into objReqFlagData. Required table columns are:
@@ -819,20 +817,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		String[] splitSexValues = sexValues.split(",");	//$NON-NLS-1$
 		sexMaleValue = splitSexValues[2];
 		sexFemValue = splitSexValues[1];
-		if (birthSex.getText().equals(sexMaleValue))
-		 {
-			sexCode = "M";	//$NON-NLS-1$
-		}
-		if (birthSex.getText().equals(sexFemValue))
-		 {
-			sexCode = "F";	//$NON-NLS-1$
-		}
+		if (birthSex.getText().equals(sexMaleValue)) sexCode = "M";	//$NON-NLS-1$
+		if (birthSex.getText().equals(sexFemValue)) sexCode = "F";	//$NON-NLS-1$
 
 		// Define the flag table to be displayed - needs comboboxes of flag data
 		// in 2nd column, initialised with the possible and actual setting of each flag
 		DefaultTableModel flagModel = new DefaultTableModel(objReqFlagData,
-				pointPersonHandler.setTranslatedData(screenID, "5", false)	//$NON-NLS-1$   // Flag, Setting
-				);
+				pointPersonHandler.setTranslatedData(screenID, "5", false));	//$NON-NLS-1$   // Flag, Setting
 		JTable tableFlags = new JTable(flagModel) {
 			private static final long serialVersionUID = 1L;
 			@Override
@@ -843,9 +834,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			// Make only col 1 of the table editable (the flag setting)
 			@Override
 			public boolean isCellEditable(int row, int col) {
-				if (col == 1) {
-					return true;
-				}
+				if (col == 1) return true;
 				return false;
 			}
 			// Now change the Flag Settings to comboboxes of the Flag Values, so user can reset flags
@@ -923,10 +912,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 	// Define a media JPanel
     	JPanel mediaPanel = new JPanel();
-//		HBMediaHandler pointMediaHandler = pointOpenProject.getMediaHandler();
 	// Add Person Images to mediaPanel
-//		listImages = pointMediaHandler.getImageList();
-//		listImagesCaptions = pointMediaHandler.getImageCaptionList();
 		if (HGlobal.DEBUG)
 			System.out.println(" number of Images: " + pointMediaHandler.getNumberOfImages());	//$NON-NLS-1$
 
@@ -937,9 +923,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    		imagePanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 	            JLabel image = new JLabel();
 	            ImageIcon exhibitImage = listImages.get(i);
-	        	if (exhibitImage != null) {
-					image = new JLabel(exhibitImage);
-				}
+	        	if (exhibitImage != null) image = new JLabel(exhibitImage);
 	    		imagePanel.add(image, "cell 0 0, alignx center");	//$NON-NLS-1$
 	    	// Collect image captions
 	    		JTextArea txt_Image = new JTextArea(listImagesCaptions.get(i));
@@ -948,9 +932,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
         		txt_Image.setEditable(false);
 	    		txt_Image.setSize(200,22);
 	    		int lines = txt_Image.getLineCount();
-	    		if (lines > 5) {
-					lines = 5;
-				}
+	    		if (lines > 5) lines = 5;
 	    		JScrollPane captionPane = new JScrollPane(txt_Image);
 	    		captionPane.setPreferredSize(new Dimension(200, 22*lines));
 	    		imagePanel.add(captionPane, "cell 0 1");		//$NON-NLS-1$
@@ -985,9 +967,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
         	// If text is NOT a Filepath string, enclose it in quotes
         		if (!listText.startsWith("Filepath:")) { //$NON-NLS-1$
 					txt_Text = new JTextArea("\""+listText+" ...\"");	//$NON-NLS-1$ //$NON-NLS-2$
-				} else {
-					txt_Text = new JTextArea(listText);
-				}
+				} else txt_Text = new JTextArea(listText);
+
         		txt_Text.setLineWrap(true);
         		txt_Text.setWrapStyleWord(true);
         		txt_Text.setEditable(false);
@@ -1104,8 +1085,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		personManagerFrame.addInternalFrameListener(new InternalFrameAdapter() {
 	    	 @Override
 			public void internalFrameClosed(InternalFrameEvent c)  {
-				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("Action: exiting HG0506ManagePerson"); //$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0506ManagePerson"); //$NON-NLS-1$
 
 	    	// As we exit, update the Recently Accessed person list under the Person menu,
 	    	// and disable the Add other Persons main menu items, BUT only if this ManagePerson
@@ -1174,8 +1154,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					HG0401HREMain.mainFrame.deleteRecentPerson(personPID);
 
     			// close reminder display
-					if (reminderDisplay != null)
-						reminderDisplay.dispose();
+					if (reminderDisplay != null) reminderDisplay.dispose();
 
 			    // Set frame size in GUI data
 					Dimension frameSize = getSize();
@@ -1195,13 +1174,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				} catch (HBException hbe) {
 					if (HGlobal.DEBUG)
 						System.out.println(" ERROR in PersonHandler deletePersonInTable: " + hbe.getMessage());	//$NON-NLS-1$
-
 					JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_60 + persName.getText()		// ERROR: failed to delete
 					 			+ hbe.getMessage(),
 								HG0506Msgs.Text_49, JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG)
-						hbe.printStackTrace();
-
+					if (HGlobal.DEBUG) hbe.printStackTrace();
 				}
 			}
 		});
@@ -1231,8 +1207,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 							HB0711Logging.logWrite("Action: reset HG0506ManagePerson"); //$NON-NLS-1$
 
     				// close reminder display
-    					if (reminderDisplay != null)
-							reminderDisplay.dispose();
+    					if (reminderDisplay != null) reminderDisplay.dispose();
 
     			    // Set frame size in GUI data
     					Dimension frameSize = getSize();
@@ -1345,7 +1320,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent e) {
 	        	int eventNumber = 1002, roleNumber = 1;
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateAddFixedEvent(pointOpenProject,
-												eventNumber, roleNumber, null_RPID);
+												eventNumber, roleNumber, null_RPID, sexCode);
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
@@ -1389,7 +1364,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent e) {
 	        	int eventNumber = 1003, roleNumber = 1;
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateAddFixedEvent(pointOpenProject,
-													eventNumber, roleNumber, null_RPID);
+													eventNumber, roleNumber, null_RPID, sexCode);
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
@@ -1403,7 +1378,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent e) {
 	        	int eventNumber = 1006, roleNumber = 1;
 				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateAddFixedEvent(pointOpenProject,
-												  eventNumber, roleNumber, null_RPID);
+												  eventNumber, roleNumber, null_RPID, sexCode);
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = persName.getLocationOnScreen();
 				editEventScreen.setLocation(xyShow.x, xyShow.y);
@@ -1439,15 +1414,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		       		eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 		       		if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
 						pointPersonHandler.deletePartnerEvent(eventPID);
-					} else {
-						pointOpenProject.getWhereWhenHandler().deleteSingleEvent(eventPID);
-					}
+					} else pointOpenProject.getWhereWhenHandler().deleteSingleEvent(eventPID);
 					pointOpenProject.getPersonHandler().resetPersonManager();
 				} catch (HBException | SQLException hbe) {
 					System.out.println("HG0506ManagePerson delete event error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
 				}
-	        	JOptionPane.showMessageDialog(tableEvents, HG0506Msgs.Text_64 + eventName.trim() + HG0506Msgs.Text_65); // Deleted '    // ' event
+	        	JOptionPane.showMessageDialog(tableEvents,
+	        			HG0506Msgs.Text_64 + eventName.trim() + HG0506Msgs.Text_65); // Deleted '    // ' event
 	        }
 	      };
 
@@ -1466,7 +1440,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        // The right-clicked (or double-clicked) row is passed here in rowClicked
         		int rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
 	        	HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable, true);
+				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable,
+																							  true, sexCode);
 				if (editEventScreen != null) {
 					editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyShow = persName.getLocationOnScreen();
@@ -1951,11 +1926,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		    @Override
 			public void actionPerformed(ActionEvent e) {
 		        boolean state;
-		        if (checkWitness.isSelected()) {
-					state = true;
-				} else {
-					state = false;
-				}
+		        if (checkWitness.isSelected())state = true;
+				else state = false;
 		      	try {
 					pointPersonHandler.setWitnessState(state);
 				// Reset table data

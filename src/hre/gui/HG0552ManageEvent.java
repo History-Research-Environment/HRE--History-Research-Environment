@@ -28,7 +28,8 @@ package hre.gui;
  * 			  2025-04-27 Changed btn_Select.addActionListener to use activateAddEvent (N. Tolleshaug)
  * 			  2025-05-22 Removed unused selectedRole/Event fields (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
- * 			  2025-06-30 Correctly handle partner events when invoked from menu (D Ferguson)
+ * 			  2025-07-03 Correctly handle partner events when invoked from menu (D Ferguson)
+ * 			  2025-07-16 Load HG0551 with corrected position and modality (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE04 need code to load disabled events
@@ -833,23 +834,14 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					if (indexSelectedEvent < 0) return;
 					int[] eventTypes = pointHBWhereWhenHandler.getEventTypes();
 					selectedEventType = eventTypes[indexSelectedEvent];
+					// Load the rolelist for this event
 					try {
-						if (testForPartnerEvent(selectedEventType)) {
-							JOptionPane.showMessageDialog(radio_Address,
-														HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
-														HG0552Msgs.Text_62, // Add Partner Event
-														JOptionPane.INFORMATION_MESSAGE);
-							if (reminderDisplay != null) reminderDisplay.dispose();
-							if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to partner event"); //$NON-NLS-1$
-							dispose();
-						} else {
-							resetRoleList(selectedEventType);
-							btn_Select.setEnabled(false);
-						}
-					} catch (HBException hbe) {
-						System.out.println(" HG0552ManageEvent - eventlist: " + hbe.getMessage());	//$NON-NLS-1$
+						resetRoleList(selectedEventType);
+					}  catch (HBException hbe) {
+						System.out.println(" HG0552ManageEvent - eventlist load: " + hbe.getMessage());	//$NON-NLS-1$
 						hbe.printStackTrace();
 					}
+					btn_Select.setEnabled(false);
 					// Enable all the relevant action buttons
 					btn_Edit.setEnabled(true);
 					btn_Delete.setEnabled(true);
@@ -868,7 +860,22 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    	public void valueChanged(ListSelectionEvent selectRole) {
 	    		if (roleListenOn) {
 	    			if (!roleList.getValueIsAdjusting()) {
-	    				// Save the roleList index and selected value for use
+	    				// If a Partner event/role selected, direct user to Partners area
+	    				try {
+							if (testForPartnerEvent(selectedEventType)) {
+								JOptionPane.showMessageDialog(radio_Address,
+															HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
+															HG0552Msgs.Text_62, // Add Partner Event
+															JOptionPane.INFORMATION_MESSAGE);
+								if (reminderDisplay != null) reminderDisplay.dispose();
+								if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to partner event"); //$NON-NLS-1$
+								dispose();
+							}
+						} catch (HBException hbe) {
+							System.out.println(" HG0552ManageEvent - eventlist select: " + hbe.getMessage());	//$NON-NLS-1$
+							hbe.printStackTrace();
+						}
+	    				// Otherwise, save the roleList index and selected value for use
 	    				indexSelectedRole = roleList.getSelectedIndex();
 	    				int[] eventRoleTypes = pointHBWhereWhenHandler.getEventRoleTypes();
 	    				selectedRoleType = eventRoleTypes[indexSelectedRole];
@@ -894,9 +901,9 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				String selectedLangCode = HGlobal.dataLanguage;
 				pointEventRoleManager.setSelectedLanguage(selectedLangCode);
 				HG0551DefineEvent newEventType = pointEventRoleManager.activateDefineNewEventType();
-				newEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
+				newEventType.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
-				newEventType.setLocation(xymainPane.x, xymainPane.y);
+				newEventType.setLocation(xymainPane.x-100, xymainPane.y);
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to define new Event"); //$NON-NLS-1$
 				dispose();
@@ -923,9 +930,9 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				String selectedLangCode = HGlobal.dataLanguage;
 				pointEventRoleManager.setSelectedLanguage(selectedLangCode);
 				HG0551DefineEvent editEventType = pointEventRoleManager.activateEditEventType(selectedEventType);
-				editEventType.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
+				editEventType.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
-				editEventType.setLocation(xymainPane.x, xymainPane.y);
+				editEventType.setLocation(xymainPane.x-100, xymainPane.y);
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to edit Event"); //$NON-NLS-1$
 				dispose();
@@ -1017,9 +1024,9 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					editEventScreen = pointHBWhereWhenHandler.activateAddPartnerEvent(pointOpenProject,
 											selectedEventType, selectedRoleType, eventPersonPID, selectedPartnerTableRow);
 				else
-				// Add any other event
+				// Add any other event with undefined sexCode "U"
 					editEventScreen = pointHBWhereWhenHandler.activateAddEvent(pointOpenProject,
-											selectedEventType, selectedRoleType, eventPersonPID);
+											selectedEventType, selectedRoleType, eventPersonPID, "U"); //$NON-NLS-1$
 
 				editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyShow = secondPanel.getLocationOnScreen();

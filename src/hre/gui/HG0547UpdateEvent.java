@@ -53,9 +53,9 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 	PropertyChangeListener propListener;
 	HG0547UpdateEvent pointUpdateEvent = this;
 
-	public HG0547UpdateEvent(HBProjectOpenData pointOpenProject, int eventNumber,
-									int roleNumber, long eventPID, boolean addHdate, long locNamePID) throws HBException {
-		super(pointOpenProject, eventNumber, roleNumber, eventPID);
+	public HG0547UpdateEvent(HBProjectOpenData pointOpenProject, int eventNumber,int roleNumber, long eventPID,
+									 boolean addHdate, long locNamePID, String sexCode) throws HBException {
+		super(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
 		this.locationNamePID = locNamePID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;

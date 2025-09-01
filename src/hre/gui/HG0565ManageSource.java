@@ -10,8 +10,9 @@ package hre.gui;
  *			  2025-02-18 Add Save button (D Ferguson)
  *			  2025-03-01 Make Select button dispose this screen (D Ferguson)
  *			  2025-03-22 Handling add citation if source table empty (N. Tolleshaug)
-  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
+ *			  2025-05-26 Adjust miglayout settings (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
+ *			  2025-08-16 Get table header from T204 (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -66,6 +67,7 @@ import javax.swing.text.DefaultCaret;
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
+import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
@@ -83,10 +85,11 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	public static final String screenID = "56500"; //$NON-NLS-1$
 	public HBCitationSourceHandler pointCitationSourceHandler;
 	public HG0555EditCitation pointEditCitation;
+	HBPersonHandler pointPersonHandler;
 
 	private JPanel contents;
 
-	private String[] tableSourceColHeads = null;
+	String[] tableSourceColHeads = null;
 	private Object[][] tableSourceData;
 	DefaultTableModel srcTableModel = null;
 
@@ -98,20 +101,19 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	public HG0565ManageSource( HBProjectOpenData pointOpenProject, HG0555EditCitation pointEditCitation)  {
 		this.pointOpenProject = pointOpenProject;
 		this.pointEditCitation = pointEditCitation;
+		pointPersonHandler = pointOpenProject.getPersonHandler();
 		setTitle("Manage Sources");
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "managesource";		 //$NON-NLS-1$
-
-	// Collect static GUI text from T204 for Source table (T204 data still to be preloaded)
-//		String[] tableSourceColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-		// load some dummy data for test & display - to be removed when T204 loaded
-		tableSourceColHeads = new String[] {"ID", "Source", "Cited" };
-
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
-		// Setup close and logging actions
+
+	// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0565ManageSource");	//$NON-NLS-1$
+
+	// Collect static GUI text from T204 for Source table
+		tableSourceColHeads = pointPersonHandler.setTranslatedData("56500", "1", false); // ID, Source, Cited  //$NON-NLS-1$ //$NON-NLS-2$
 
 	// For Text area font setting
 	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$

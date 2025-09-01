@@ -12,22 +12,26 @@ package hre.tmgjava;
  * v0.00.0026 2021-07-09 - Removed fields added to DDL21a (N. Tolleshaug)
  * v0.00.0027 2022-02-27 - Implemented handling event tags, witness and roles(N. Tolleshaug)
  * v0.00.0028 2023-03-10 - Added "CAPTION" to T676_DIGT (N. Tolleshaug)
- * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-07-02 - Removed alterColumnInTable("T450_EVNT","EVNT_PERS_RPID".. (N. Tolleshaug)
+ * v0.02.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
+ * v0.02.0030 2023-07-02 - Removed alterColumnInTable("T450_EVNT","EVNT_PERS_RPID".. (N. Tolleshaug)
  * 			  2023-07-06 - Added new indexing of tables (N. Tolleshaug)
  * 			  2023-07-10 - Removed alterColumnInTable("T404_PARTNER","LAST_PARTNER".. (N. Tolleshaug)
- * v0.01.0031 2023-10-20 - Updated for v22b database
+ * v0.03.0031 2023-10-20 - Updated for v22b database
  * 			  2023-10-20 - Added new role fields for T404_PARTNER
  * 			  2024-04-12 - Added boolean "IS_IMPORTED" for T126_Projects
  * 			  2024-08-06 - Added alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
  * 			  2024-08-06 - Added alterColumnInTable("T450_EVNT","IMP_TMG","BOOLEAN");
  * 			  2024-09-04 - Removed alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
- * v0.01.0032 2024-12-22 - Updated for v22c database
+ * v0.04.0032 2024-12-22 - Updated for v22c database
  * 			  2025-02-11 - Added code for initiate citation/source import (N. Tolleshaug)
  * 			  2025-03-19 - Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
  * 			  2025-03-24 - Create boolean IS_OWNER in T131 (N. Tolleshaug)
  * 			  2025-05-12 - New seed - removed alterColumnInTable("T131_USER","IS_OWNER","BOOLEAN"); (N. Tolleshaug)
  * 			  2025-06-29 - Added TMG sentence handling (N. Tolleshaug)
+ * 			  2025-07-12 - Added source_def source_elemnt, repo and link tables (N. Tolleshaug)
+ * 			  2025-07-22 - Added T734_SORC_DATA table for sorc element data (N. Tolleshaug)
+ * 			  2025-08-24 - Remove drop of C5 tables as they don't exist (D Ferguson)
+ *
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -45,7 +49,7 @@ public class HREloader_V22c {
 	String urlH2loc;
 	TMGHREconverter tmgHreConverter;
 	ResultSet HRE_Tables;
-	
+
 	long proOffset = 1000000000000000L;
 
 /**
@@ -54,24 +58,21 @@ public class HREloader_V22c {
  * @throws HCException
  */
 	public HREloader_V22c(String urlH2loc, TMGHREconverter tmgHreConverter) throws HCException {
-		int nrOfTables = 27;
+		int nrOfTables = 32;
 		int completed = 0;
 		this.urlH2loc = urlH2loc;
 		this.tmgHreConverter = tmgHreConverter;
 		try {
-
 			System.out.println(" HREloader database: v22c - HRE database connected!");
-
 			pointHREbase = new HREdatabaseHandler(urlH2loc);
-			
+
 	// Update table T126 - IS_IMPORTED
-			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");	
-			
-	// Create boolean IS_OWNER in T131		
-			//alterColumnInTable("T131_USER","IS_OWNER","BOOLEAN");
+			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");
+
+	// Set boolean IS_OWNER in T131
 			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
-		
-/**			T168_SENTENCE_SET modifications
+
+/**			T168_SENTENCE_SET modifications - 3 additions until they are added to the Seed
  			 PID BIGINT
  			 CL_COMMIT_RPID  BIGINT
 			 IS_LONG BOOLEAN
@@ -81,15 +82,26 @@ public class HREloader_V22c {
 			 EVNT_TYPE SMALLINT - added
 			 EVNT_ROLE_NUM SMALLINT - added
 */
-			
 			alterColumnInTable("T168_SENTENCE_SET","LANG_CODE","CHAR(5)");
 			alterColumnInTable("T168_SENTENCE_SET","EVNT_TYPE","SMALLINT");
 			alterColumnInTable("T168_SENTENCE_SET","EVNT_ROLE_NUM","SMALLINT");
-			
-	//Delete all rows in T461_EVNT_ROLE but keep table header
+
+	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");
-			
-	// Create new citation table		
+
+	// Add all Evidence tables (untill they are added to the Seed)
+	/**	Create a new table T734 where each record would contain the (a) a pointer to the
+	 * owning T736; (b) the number of an element; (c) the element’s data
+	 */
+			createTableInBase("T734_SORC_DATA","PID BIGINT NOT NULL,"
+							  + "CL_COMMIT_RPID BIGINT NOT NULL,"
+							  + "SORC_OWNER_RPID BIGINT NOT NULL,"
+							  + "SORC_ELMNT_LANG CHAR(5) NOT NULL,"
+							  + "SORC_ELMNT_NUM CHAR(5) NOT NULL,"
+							  + "SORC_ELMNT_DATA VARCHAR(400) NOT NULL");
+			updateTableInBase("T734_SORC_DATA", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
+
+	// Create new citation table
 			createTableInBase("T735_CITN","PID BIGINT NOT NULL,"
 								+ "CL_COMMIT_RPID BIGINT NOT NULL,"
 								+ "CITED_RPID BIGINT NOT NULL,"
@@ -105,13 +117,13 @@ public class HREloader_V22c {
 								+ "CITN_ACC_DATE TINYINT,"
 								+ "CITN_ACC_LOCN TINYINT,"
 								+ "CITN_ACC_MEMO TINYINT");
-			
 			updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-			
-	// Create new source table		
+
+	// Create new source table
 			createTableInBase("T736_SORC","PID BIGINT NOT NULL,"
 								+ "CL_COMMIT_RPID BIGINT NOT NULL,"
 								+ "IS_ACTIVE BOOLEAN NOT NULL,"
+								+ "SORC_DEF_RPID BIGINT NOT NULL,"
 								+ "SORC_REF SMALLINT NOT NULL,"
 								+ "SORC_TYPE SMALLINT NOT NULL,"
 								+ "SORC_FIDELITY CHAR(1) NOT NULL,"
@@ -125,8 +137,45 @@ public class HREloader_V22c {
 								+ "SORC_SHORTFORM VARCHAR(500) NOT NULL,"
 								+ "SORC_BIBLIOFORM VARCHAR(500) NOT NULL,"
 								+ "SORC_REMIND_RPID BIGINT NOT NULL");
-					
-				updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)");	
+				updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
+
+	// Create new source definition table
+				createTableInBase("T737_SORC_DEFN","PID BIGINT NOT NULL,"
+									+ "CL_COMMIT_RPID BIGINT NOT NULL,"
+									+ "SORC_DEFN_TYPE SMALLINT NOT NULL,"
+									+ "SORC_DEFN_NAME CHAR(66) NOT NULL,"
+									+ "SORC_LANG CHAR(5) NOT NULL,"
+									+ "SORC_DEFN_FULLFOOT VARCHAR(500) NOT NULL,"
+									+ "SORC_DEFN_SHORTFOOT VARCHAR(500) NOT NULL,"
+									+ "SORC_DEFN_BIBLIO VARCHAR(500) NOT NULL,"
+									+ "SORC_DEFN_REMIND_RPID BIGINT NOT NULL");
+				updateTableInBase("T737_SORC_DEFN", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
+
+	// Create new Source element table
+				createTableInBase("T738_SORC_ELMNT","PID BIGINT NOT NULL,"
+									+ "CL_COMMIT_RPID BIGINT NOT NULL,"
+									+ "SORC_ELMNT_NUM CHAR(5) NOT NULL,"
+									+ "SORC_LANG CHAR(5) NOT NULL,"
+									+ "SORC_ELMNT_NAME CHAR(30) NOT NULL");
+				updateTableInBase("T738_SORC_ELMNT", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
+
+	// Create new Repository table
+				createTableInBase("T739_REPO","PID BIGINT NOT NULL,"
+									+ "CL_COMMIT_RPID BIGINT NOT NULL,"
+									+ "REPO_MEMO_RPID BIGINT NOT NULL,"
+									+ "REPO_ADDR_RPID BIGINT NOT NULL,"
+									+ "REPO_ABBREV CHAR(50) NOT NULL,"
+									+ "REPO_REF SMALLINT NOT NULL,"
+									+ "REPO_NAME VARCHAR(500) NOT NULL");
+				updateTableInBase("T739_REPO", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
+
+	// Create new Source link table
+				createTableInBase("T740_SORC_LINK","PID BIGINT NOT NULL,"
+						+ "IS_PRIMARY BOOLEAN NOT NULL,"
+						+ "SORC_RPID BIGINT NOT NULL,"
+						+ "REPO_RPID BIGINT NOT NULL,"
+						+ "REPO_REF CHAR(25) NOT NULL");
+				updateTableInBase("T740_SORC_LINK", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
 
 /**
  * Create new user - remove when moved to HRE
@@ -138,8 +187,8 @@ public class HREloader_V22c {
 			tmgHreConverter.setStatusMessage(" Created user " + "Don" + " with all rights ");
 
 
-	// Delete/Drop all tables with _CL_ in table name
-			HRE_Tables = pointHREbase.requestTableList();
+		// Delete/Drop all tables with _CL_ in table name - removed as Seed doesn't contain C5 tables
+/*			HRE_Tables = pointHREbase.requestTableList();
 			try {
 				HRE_Tables.beforeFirst();
 				int nrOfTablesDeleted = 0;
@@ -157,6 +206,7 @@ public class HREloader_V22c {
 				System.out.println("HREloader - Delete CL table error: " + sqle.getMessage());
 				sqle.printStackTrace();
 			}
+*/
 
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T102 = tableLoader("T102_PACKAGE_DEFN");
@@ -177,27 +227,27 @@ public class HREloader_V22c {
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T162 = tableLoader("T162_NAME_STYLE_OUTPUT");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T167 = tableLoader("T167_MEMO_SET");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T168 = tableLoader("T168_SENTENCE_SET");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T170 = tableLoader("T170_DATE");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T204 = tableLoader("T204_FLAG_TRAN");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T251 = tableLoader("T251_FLAG_DEFN");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T252 = tableLoader("T252_FLAG_VALU");
 			completed++;
@@ -213,7 +263,7 @@ public class HREloader_V22c {
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T403 = tableLoader("T403_PERS_NAME_ELEMNTS");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T404 = tableLoader("T404_PARTNER");
 			completed++;
@@ -253,19 +303,39 @@ public class HREloader_V22c {
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T676 = tableLoader("T676_DIGT");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T677 = tableLoader("T677_DIGT_NAME");
 			completed++;
-			
+
+			reportProgress(completed, nrOfTables);
+			TMGglobal.T734 = tableLoader("T734_SORC_DATA");
+			completed++;
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T735 = tableLoader("T735_CITN");
 			completed++;
-			
+
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T736 = tableLoader("T736_SORC");
 			completed++;
-			
+
+			TMGglobal.T737 = tableLoader("T737_SORC_DEFN");
+			completed++;
+			reportProgress(completed, nrOfTables);
+
+			TMGglobal.T738 = tableLoader("T738_SORC_ELMNT");
+			completed++;
+			reportProgress(completed, nrOfTables);
+
+			TMGglobal.T739 = tableLoader("T739_REPO");
+			completed++;
+			reportProgress(completed, nrOfTables);
+
+			TMGglobal.T740 = tableLoader("T740_SORC_LINK");
+			completed++;
+			reportProgress(completed, nrOfTables);
+
 			reportProgress(completed, nrOfTables);
 
 			if (TMGglobal.DUMP)
@@ -279,7 +349,7 @@ public class HREloader_V22c {
 
 			if (TMGglobal.DUMP)
 				dumpDataBaseMetadata(TMGglobal.T450);
-			
+
 			if (TMGglobal.DUMP)
 				dumpDataBaseMetadata(TMGglobal.T451);
 
@@ -299,7 +369,7 @@ public class HREloader_V22c {
 				System.out.println();
 
 		} catch(HCException hde) {
-			if (TMGglobal.DEBUG) 			
+			if (TMGglobal.DEBUG)
 				System.out.println("HREloader - H2 Database error: " + hde.getMessage());
 			hde.printStackTrace();
 			throw new HCException ("HREloader - H2 Database error: " + hde.getMessage());
@@ -384,10 +454,10 @@ public class HREloader_V22c {
 	protected void updateTableInBase(String tableName, String sqlCommand, String condition) throws HCException {
 		pointHREbase.updateTableInBase(tableName, sqlCommand, condition);
 	}
-	
+
 	protected void updateTableInBase(String tableName, String sqlCommand) throws HCException {
 		pointHREbase.updateTableInBase(tableName, sqlCommand);
-	}	
+	}
 
 /**
  * public void createNewUser
@@ -465,15 +535,15 @@ public class HREloader_V22c {
  */
 	public void reloadHreTables() throws HCException {
 
-		int nrOfTables = 24;
+		int nrOfTables = 29;
 		int completed = 0;
 		if (TMGglobal.DEBUG) System.out.println("Updated HRE tables:");
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T102 = tableLoader("T102_PACKAGE_DEFN");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T104 = tableLoader("T104_SCHEMA_DEFN");
 		completed++;
 		reportProgress(completed, nrOfTables);
@@ -481,11 +551,11 @@ public class HREloader_V22c {
 		TMGglobal.T131 = tableLoader("T131_USER");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T167 = tableLoader("T167_MEMO_SET");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		reportProgress(completed, nrOfTables);
 		TMGglobal.T168 = tableLoader("T168_SENTENCE_SET");
 		completed++;
@@ -493,11 +563,11 @@ public class HREloader_V22c {
 		TMGglobal.T170 = tableLoader("T170_DATE");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		reportProgress(completed, nrOfTables);
 		TMGglobal.T251 = tableLoader("T251_FLAG_DEFN");
 		completed++;
-		
+
 		reportProgress(completed, nrOfTables);
 		TMGglobal.T252 = tableLoader("T252_FLAG_VALU");
 		completed++;
@@ -513,7 +583,7 @@ public class HREloader_V22c {
 		TMGglobal.T403 = tableLoader("T403_PERS_NAME_ELEMNTS");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		reportProgress(completed, nrOfTables);
 		TMGglobal.T404 = tableLoader("T404_PARTNER");
 		completed++;
@@ -525,7 +595,7 @@ public class HREloader_V22c {
 		TMGglobal.T450 = tableLoader("T450_EVNT");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T451 = tableLoader("T451_EVNT_ASSOC");
 		completed++;
 		reportProgress(completed, nrOfTables);
@@ -533,11 +603,11 @@ public class HREloader_V22c {
 		TMGglobal.T460 = tableLoader("T460_EVNT_DEFN");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T461 = tableLoader("T461_EVNT_ROLE");
 		completed++;
 		reportProgress(completed, nrOfTables);
-			
+
 		TMGglobal.T551 = tableLoader("T551_LOCN");
 		completed++;
 		reportProgress(completed, nrOfTables);
@@ -545,7 +615,7 @@ public class HREloader_V22c {
 		TMGglobal.T552 = tableLoader("T552_LOCN_NAME");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T553 = tableLoader("T553_LOCN_ELEMNTS");
 		completed++;
 		reportProgress(completed, nrOfTables);
@@ -553,16 +623,36 @@ public class HREloader_V22c {
 		TMGglobal.T676 = tableLoader("T676_DIGT");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T677 = tableLoader("T677_DIGT_NAME");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
+		reportProgress(completed, nrOfTables);
+		TMGglobal.T734 = tableLoader("T734_SORC_DATA");
+		completed++;
+
 		TMGglobal.T735 = tableLoader("T735_CITN");
 		completed++;
 		reportProgress(completed, nrOfTables);
-		
+
 		TMGglobal.T736 = tableLoader("T736_SORC");
+		completed++;
+		reportProgress(completed, nrOfTables);
+
+		TMGglobal.T737 = tableLoader("T737_SORC_DEFN");
+		completed++;
+		reportProgress(completed, nrOfTables);
+
+		TMGglobal.T738 = tableLoader("T738_SORC_ELMNT");
+		completed++;
+		reportProgress(completed, nrOfTables);
+
+		TMGglobal.T739 = tableLoader("T739_REPO");
+		completed++;
+		reportProgress(completed, nrOfTables);
+
+		TMGglobal.T740 = tableLoader("T740_SORC_LINK");
 		completed++;
 		reportProgress(completed, nrOfTables);
 
@@ -578,30 +668,30 @@ public class HREloader_V22c {
 		String eventRole = "T461_EVNT_ROLE";
 		String locationNameElements = "T553_LOCN_ELEMNTS";
 		String hdateTable = "T170_DATE";
-		
+
 		createIndexTable("T170_PID", hdateTable,"PID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + hdateTable);
-		
+
 		createIndexTable("T402_OWNRPID", personNames, "OWNER_RPID");
 		createIndexTable("T402_PID", personNames, "PID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + personNames);
-		
+
 		createIndexTable("T403_OWNRPID", personNameElements, "OWNER_RPID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + personNameElements);
-		
+
 		createIndexTable("T450_EVENTPID", personEvent, "PID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + personEvent);
-		
+
 		createIndexTable("T451_EVENASSOC", eventAssoc, "EVNT_RPID");
 		createIndexTable("T451_PERSASSOC", eventAssoc, "ASSOC_RPID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + eventAssoc);
-		
+
 		createIndexTable("T460_EVNTDEFN", eventDefs, "EVNT_TYPE");
 		tmgHreConverter.setStatusMessage(" Indexed - " + eventDefs);
-		
+
 		createIndexTable("T461_EVNTROLE", eventRole, "EVNT_ROLE_NUM");
 		tmgHreConverter.setStatusMessage(" Indexed - " + eventRole);
-		
+
 		createIndexTable("T553_OWNRPID", locationNameElements, "OWNER_RPID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + locationNameElements);
 
@@ -610,113 +700,138 @@ public class HREloader_V22c {
  */
 		tmgHreConverter.setStatusMessage(" Start print HRE table size");
 		if (TMGglobal.HRETRACE)
-			
+
 		try {
-			
+
 			TMGglobal.T167.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T167_MEMO_SET size: " + TMGglobal.T167.getRow());
 			tmgHreConverter.setStatusMessage(" T167_MEMO_SET  size: " + TMGglobal.T167.getRow());
-			
+
 			TMGglobal.T168.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T168_SENTENCE_SET size: " + TMGglobal.T168.getRow());
 			tmgHreConverter.setStatusMessage(" T168_SENTENCE_SET  size: " + TMGglobal.T168.getRow());
-			
+
 			TMGglobal.T170.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T170_HDATES size: " + TMGglobal.T170.getRow());
 			tmgHreConverter.setStatusMessage(" T170_HDATES  size: " + TMGglobal.T170.getRow());
-			
+
 			TMGglobal.T251.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T251_FLAG_DEFN size: " + TMGglobal.T251.getRow());
 			tmgHreConverter.setStatusMessage(" T251_FLAG_DEFN  size: " + TMGglobal.T251.getRow());
-			
+
 			TMGglobal.T252.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T252_FLAG_VALU size: " + TMGglobal.T252.getRow());
 			tmgHreConverter.setStatusMessage(" T252_FLAG_VALU  size: " + TMGglobal.T252.getRow());
-			
+
 			TMGglobal.T401.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T401_PERS size: " + TMGglobal.T401.getRow());
 			tmgHreConverter.setStatusMessage(" T401_PERS size: " + TMGglobal.T401.getRow());
-			
+
 			TMGglobal.T402.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T402_PERS_NAME size: " + TMGglobal.T402.getRow());
 			tmgHreConverter.setStatusMessage(" T402_PERS_NAME size: " + TMGglobal.T402.getRow());
-			
+
 			TMGglobal.T403.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T403_PERS_NAME_ELEMNTS size: " + TMGglobal.T403.getRow());
 			tmgHreConverter.setStatusMessage(" T403_PERS_NAME_ELEMNTS size: " + TMGglobal.T403.getRow());
-			
+
 			TMGglobal.T404.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T404_PARTNER size: " + TMGglobal.T404.getRow());
 			tmgHreConverter.setStatusMessage(" T404_PARTNER size: " + TMGglobal.T404.getRow());
-			
+
 			TMGglobal.T405.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T405_PARENT_RELATION size: " + TMGglobal.T405.getRow());
 			tmgHreConverter.setStatusMessage(" T405_PARENT_RELATION size: " + TMGglobal.T405.getRow());
-			
+
 			TMGglobal.T450.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T450_EVNT size: " + TMGglobal.T450.getRow());
 			tmgHreConverter.setStatusMessage(" T450_EVNT size: " + TMGglobal.T450.getRow());
-			
+
 			TMGglobal.T451.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T451_EVNT_ASSOC size: " + TMGglobal.T451.getRow());
 			tmgHreConverter.setStatusMessage(" T451_EVNT_ASSOC size: " + TMGglobal.T451.getRow());
-			
+
 			TMGglobal.T460.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T460_EVNT_DEFS size: " + TMGglobal.T460.getRow());
 			tmgHreConverter.setStatusMessage(" T460_EVNT_DEFS size: " + TMGglobal.T460.getRow());
-			
+
 			TMGglobal.T461.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T461_EVENT_ROLE size: " + TMGglobal.T461.getRow());
 			tmgHreConverter.setStatusMessage(" T461_EVENT_ROLE size: " + TMGglobal.T461.getRow());
-			
+
 			TMGglobal.T551.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T551_LOCN size: " + TMGglobal.T551.getRow());
 			tmgHreConverter.setStatusMessage(" T551_LOCN size: " + TMGglobal.T551.getRow());
-			
+
 			TMGglobal.T552.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T552_LOCN_NAME size: " + TMGglobal.T552.getRow());
 			tmgHreConverter.setStatusMessage(" T552_LOCN_NAME size: " + TMGglobal.T552.getRow());
-			
+
 			TMGglobal.T553.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T553_LOCN_NAME_ELEMNTS size: " + TMGglobal.T553.getRow());
 			tmgHreConverter.setStatusMessage(" T553_LOCN_NAME_ELEMNTS  size: " + TMGglobal.T553.getRow());
-			
+
 			TMGglobal.T676.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T676_DIGT size: " + TMGglobal.T676.getRow());
 			tmgHreConverter.setStatusMessage(" T676_DIGT  size: " + TMGglobal.T676.getRow());
-			
+
 			TMGglobal.T677.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
 			tmgHreConverter.setStatusMessage(" T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
-			
+
+			TMGglobal.T734.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T734_SORC_DATA size: " + TMGglobal.T734.getRow());
+			tmgHreConverter.setStatusMessage(" T734_SORC_DATA size: " + TMGglobal.T734.getRow());
+
 			TMGglobal.T735.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T735_CITN size: " + TMGglobal.T735.getRow());
 			tmgHreConverter.setStatusMessage(" T735_CITN size: " + TMGglobal.T735.getRow());
-			
+
 			TMGglobal.T736.last();
 			if (TMGglobal.DEBUG)
 				System.out.println("New HRE - T736_SORC size: " + TMGglobal.T736.getRow());
 			tmgHreConverter.setStatusMessage(" T736_SORC size: " + TMGglobal.T736.getRow());
+
+			TMGglobal.T737.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T737_SORC_DEF size: " + TMGglobal.T737.getRow());
+			tmgHreConverter.setStatusMessage(" T737_SORC_DEF size: " + TMGglobal.T737.getRow());
+
+			TMGglobal.T738.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T738_SORC_ELMNT size: " + TMGglobal.T738.getRow());
+			tmgHreConverter.setStatusMessage(" T738_SORC_ELMNT size: " + TMGglobal.T738.getRow());
+
+			TMGglobal.T739.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T739_REPO size: " + TMGglobal.T739.getRow());
+			tmgHreConverter.setStatusMessage(" T739_REPO size: " + TMGglobal.T739.getRow());
+
+			TMGglobal.T740.last();
+			if (TMGglobal.DEBUG)
+				System.out.println("New HRE - T740_SORC_LINK size: " + TMGglobal.T740.getRow());
+			tmgHreConverter.setStatusMessage(" T740_SORC_LINK size: " + TMGglobal.T740.getRow());
 
 
 		} catch (SQLException sqle) {

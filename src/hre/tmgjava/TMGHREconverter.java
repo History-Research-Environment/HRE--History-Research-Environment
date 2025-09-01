@@ -49,6 +49,9 @@ package hre.tmgjava;
  *			  2024-12-12 - Updated for seed v22c database (N. Tolleshaug)
  *v0.01.0032  2025-02-11 - Code for initiate citation/source import (N. Tolleshaug)
  *			  2025-06-30 - Added lines for build number (N. Tolleshaug)
+ *			  2025-07-12 - Added remaining source_def/elemnt, repo and link tables (N. Tolleshaug)
+ *			  2025-07-21 - Changed sequenece of source table processin (N. Tolleshaug)
+ *			  2025-07-22 - Imported project ruleset from pjc file (N. Tolleshaug)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -93,7 +96,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	protected TMGHREprogressMonitor processMonitor;
 	private static HREserverH2tcp tcpServ;
 	private String statusMessage = "ended";
-	private int totalNumberPasses = 4;
+	private int totalNumberPasses = 5;
 	private int completedNumberPasses = 0;
 	long oneMilliSec = 1000L;
 	long startTime;
@@ -108,6 +111,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	private static String tmgVersion;
 	private static String tmgNativeLang;
+	
+	private String ruleSet;
 
 /**
  * Set Dump of TMG table content based on selected table name
@@ -243,6 +248,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
 
 			processMonitor.setContextOfAction(" Project name: " + TMGglobal.chosenFilename);
+			
+	// Write PJC data to minitor		
 			for (String element : pjcData) {
 				processMonitor.setContextOfAction(" " + element);
 			}
@@ -299,7 +306,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	// Set up memo handler
 			pointHREmemo = new HREmemo(hreLoader.getDataBasePointer());
-			pointSourcePass = new TMGpass_Source(hreLoader.getDataBasePointer());
+			pointSourcePass = new TMGpass_Source(hreLoader.getDataBasePointer(), ruleSet);
 
 	// SUPPORT pass
 			passSupportData();
@@ -479,7 +486,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  *********************************************************/
 	@SuppressWarnings("resource")
 	public String[] readPJCfile(String filePath) throws HCException {
-		  String [] data = new String[9];
+		  String [] data = new String[10];
 		  data[0] = "Researcher's Name not found";
 		  data[1] = "Mapping Country not found";
 		  data[2] = "PJC Version not found";
@@ -489,6 +496,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		  data[6] = "Last Indexed not found";
 		  data[7] = "Last VFI not found";
 		  data[8] = "Last Optimized not found";
+		  data[9] = "Source ruleset not found";
 
 		  File file = new File(filePath);
 		  BufferedReader buffer;
@@ -505,6 +513,9 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					if (string.startsWith("LastIndexed")) data[6] = string;
 					if (string.startsWith("LastVFI")) data[7] = string;
 					if (string.startsWith("LastOptimized")) data[8] = string;
+					if (string.startsWith("SourceRule")) data[9] = string;
+					ruleSet = data[9];
+					
 				}
 				return data;
 		  } catch (FileNotFoundException fnfe) {
@@ -771,10 +782,17 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	// Copy TMG source tables
 		pointSourcePass.initSourceTables(); 
 	// Import Source tables
+		pointSourcePass.addToSorceElementTable(this); // Set up index for element names
+		pointSourcePass.addToSorceDefTable(this); // Set up PID index
 		pointSourcePass.addToSourceTable(this);
 		pointSourcePass.addToCitationTable(this);
+		pointSourcePass.addToReposTable(this);
+		pointSourcePass.addToSorceLinkTable(this);
+		
 		pointSourcePass.testReposTables();
 		pointSourcePass.citationStat();
+		completedNumberPasses++;
+		processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
 	}
 
 /**

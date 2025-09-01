@@ -20,6 +20,7 @@ package hre.tmgjava;
  * v0.03.0031 2023-10-20 - Updated for v22b database
  * 			  2024-11-23 - Changed to multi table processing for E.dbf (N. Tolleshaug)
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
+ * v0.03.0032 2025-07-21 - Added tables for import of source A,M,S,R,U,W tables (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.io.File;

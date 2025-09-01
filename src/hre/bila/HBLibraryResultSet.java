@@ -44,12 +44,16 @@ package hre.bila;
  * 			  2025-05-12 - Complete IS_OWNER update code (D Ferguson)
  * 			  2025-05-25 - Add getKeyAssocMin routine (D Ferguson)
  * 			  2025-05-26 - Add getUserName routine for assessorRPID lookup (D Ferguson)
+ * 			  2025-07-02 - Added selectSentenceString for TMG sentences (N. Tolleshaug)
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
  * NOTE 03 - updateUserIntable need to have position set in calling method
  *******************************************************************************************/
 
+import java.io.IOException;
+import java.io.Reader;
+import java.sql.Clob;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -102,6 +106,15 @@ public class HBLibraryResultSet {
 		return nameStyleTable;
 	}
 
+/**
+ * public ResultSet getOutputStylesTable(String tableName, String nameType, long ownerPID, int dataBaseIndex)
+ * @param tableName
+ * @param nameType
+ * @param ownerPID
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
 	public ResultSet getOutputStylesTable(String tableName, String nameType, long ownerPID, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet nameStyleTable;
@@ -111,6 +124,14 @@ public class HBLibraryResultSet {
 		return nameStyleTable;
 	}
 
+/**
+ * public ResultSet getNameStyleElementTable(String nameType, String tableName, int dataBaseIndex)
+ * @param nameType
+ * @param tableName
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
 	public ResultSet getNameStyleElementTable(String nameType, String tableName, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet nameStyleElements;
@@ -120,6 +141,15 @@ public class HBLibraryResultSet {
 		return nameStyleElements;
 	}
 
+/**
+ * public ResultSet getNameStyleElements(String tableName, String nameType, String langCode, int dataBaseIndex)
+ * @param tableName
+ * @param nameType
+ * @param langCode
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
 	public ResultSet getNameStyleElements(String tableName, String nameType, String langCode, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet nameStyleElements;
@@ -612,6 +642,58 @@ public class HBLibraryResultSet {
 			System.out.println("Get Place data DDLv21c error: " + sqle.getMessage());
 			sqle.printStackTrace();
 			throw new HBException("Get Place data DDLv21c error: " + sqle.getMessage());
+		}
+	}
+
+/**
+ * public String selectSentenceString(int eventType, int roleCode, String lang_code, int dataBaseIndex)
+ * @param eventType
+ * @param roleCode
+ * @param lang_code
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
+	public String selectSentenceString(int eventType, int roleCode, String lang_code, int dataBaseIndex) throws HBException {
+		String selectString , sentence = "";
+		ResultSet sentenceSet;
+		String langPrefix = "";
+		try {
+			selectString = pointBusinessLayer.
+				setSelectSQL("*", pointBusinessLayer.sentenceTable,
+							"EVNT_TYPE = " + eventType
+							+ " AND EVNT_ROLE_NUM = " + roleCode);
+			sentenceSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			sentenceSet.last();
+			if (sentenceSet.getRow() == 0) return "NOSENTENCE";
+			sentenceSet.beforeFirst();
+			while (sentenceSet.next()) {
+				if (sentenceSet.getString("LANG_CODE").equals(lang_code)) break;
+			}
+		// if language not found
+			if (sentenceSet.isAfterLast()) {
+				langPrefix = "(en-US)";
+				sentenceSet.beforeFirst();
+				while (sentenceSet.next()) {
+					if (sentenceSet.getString("LANG_CODE").equals("en-US")) break;
+				}
+			}
+
+			if (sentenceSet.isAfterLast()) return "NOSENTENCE";
+
+			if (sentenceSet.getBoolean("IS_LONG"))  {
+				Clob clobMemo = sentenceSet.getClob("LONG_SENT");
+		         Reader readClob = clobMemo.getCharacterStream();
+		         StringBuffer buffer = new StringBuffer();
+		         int ch;
+		         while ((ch = readClob.read())!=-1) buffer.append(""+(char)ch);
+		         sentence = buffer.toString();
+			} else sentence = sentenceSet.getString("SHORT_SENT");
+			return langPrefix + sentence;
+		} catch (SQLException | IOException sqle) {
+			System.out.println(" HBLibraryResultSet - selectSentenceString: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException(" HBLibraryResultSet - selectSentenceString: " + sqle.getMessage());
 		}
 	}
 
@@ -1445,9 +1527,8 @@ public class HBLibraryResultSet {
 		return hashCodePersonPID;
 	}
 
-
 /**
- *
+ * public ResultSet getRoleNameList(int eventNumber, String selectRoles, int dataBaseIndex)
  * @param eventNumber
  * @param selectRoles example " AND EVNT_ROLE_NUM IN (1,2,3,10)")
  * @param dataBaseIndex

@@ -30,6 +30,7 @@ package hre.bila;
  * 			  2024-10-10 - Modified change date format for all handlers (N. Tolleshaug)
  * v0.03.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
  * 			  2025-03-20 - Added userTable name (N. Tolleshaug)
+ * 			  2025-07-02 - Added sentece set Table name (N. Tolleshaug)
  ******************************************************************************************/
 
 import java.sql.ResultSet;
@@ -62,17 +63,20 @@ public class HBBusinessLayer  {
     long null_RPID  = 1999999999999999L;
 
 	public String languageUses, translatedLang, schemaDefined, projectTable, userTable, translatedData, translatedFlag, 
-				  dateTable, memoSet;
+				  dateTable, memoSet, sentenceTable;
+	
 	public String nameStyles, nameStylesOutput, nameElementsDefined, locationNameStyles,
 				  locationNameElements, entityTypeDefinition;
+	
 	public String flagDefn, flagValue, flagDefinition, flagSettingValues;
 	
 	public String personTable, personNameTable, personNamesTableElements, personBirthTable,
 				  personParentTable, personPartnerTable;
-	public String locationTable, locationNameTable, locationNameElementTable, eventTable,eventTagTable,
+	
+	public String locationTable, locationNameTable, locationNameElementTable, eventTable, eventTagTable,
 				  eventAssocTable, eventDefnTable, eventRoleTable;
-	public String digtalExhibitTable, digtalNameTable;
-	public String citationTable, sourceTable;
+	
+	public String citationTable, sourceTable, digtalExhibitTable, digtalNameTable;
 	
 	// Fields
 	public String visibleId, bestImage, bestNameField, personFatherField, personMotherField,
@@ -140,6 +144,7 @@ public class HBBusinessLayer  {
 			schemaDefined = "T104_SCHEMA_DEFN";
 			projectTable = "T126_PROJECTS";
 			userTable = "T131_USER";
+			sentenceTable = "T168_SENTENCE_SET";
 
 		// Style tables
 			nameStyles = "T160_NAME_STYLE";

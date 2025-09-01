@@ -6,6 +6,7 @@ package hre.gui;
  *			  2025-01-31 Add Delete button (D Ferguson)
  *			  2025-02-01 Invoke HG0570 from Add button (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
+ *			  2025-08-16 Get table header from T204 (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -50,6 +51,7 @@ import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
@@ -60,15 +62,15 @@ import net.miginfocom.swing.MigLayout;
  * @version v0.04.0032
  * @since 2025-01-17
  */
-
 public class HG0569ManageRepos extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	HBPersonHandler pointPersonHandler;
 
 	public static final String screenID = "56900"; //$NON-NLS-1$
 
 	private JPanel contents;
 
-	private String[] tableRepoColHeads = null;
+	String[] tableRepoColHeads = null;
 	private Object[][] tableRepoData;
 	DefaultTableModel srcTableModel = null;
 
@@ -77,18 +79,19 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
  */
 	public HG0569ManageRepos(HBProjectOpenData pointOpenProject)  {
 		this.pointOpenProject = pointOpenProject;
+		pointPersonHandler = pointOpenProject.getPersonHandler();
 
 		setTitle("Manage Repositories");
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "managerepository";		 //$NON-NLS-1$
 
-	// Collect static GUI text from T204 for Repository table (T204 data still to be preloaded)
-//		String[] tableRepoColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-
-		// Setup close and logging actions
+	// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0569ManageRepos");	//$NON-NLS-1$
+
+	// Collect static GUI text from T204 for Repository table
+		tableRepoColHeads = pointPersonHandler.setTranslatedData("56900", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
 
 	// Setup dialog
 		contents = new JPanel();
@@ -163,7 +166,6 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 
  	// Get Repo data
 		// load some dummy data for test & display - to be removed
-		tableRepoColHeads = new String[] {"RepoID", "Repository" };
 		tableRepoData = new Object[][] {{1, "Repository A "},	{2, "Repository B"}};
 //		tableRepoData = pointPersonHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Repository data
 		if (tableRepoData == null ) {

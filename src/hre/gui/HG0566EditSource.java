@@ -5,6 +5,7 @@ package hre.gui;
  * v0.04.0032 2025-02-07 Original draft (D Ferguson)
  *			  2025-02-10 Change textAreas to textPanes; add Preview buttons (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
+ *			  2025-08-16 Get table header from T204 (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 allow editing/saving of the Source's data
@@ -61,6 +62,7 @@ import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
@@ -74,22 +76,23 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0566EditSource extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	HBPersonHandler pointPersonHandler;
 
 	public static final String screenID = "56600"; //$NON-NLS-1$
 
 	private JPanel contents;
 
-	private String[] tableSrcElmntColHeads = null;
-	private Object[][] tableSrcElmntData;
+	String[] tableSrcElmntColHeads = null;
+	Object[][] tableSrcElmntData;
 	DefaultTableModel srcElmntTableModel = null;
 	private int rowClicked;
 
-	private String[] tableSrcSrcColHeads = null;
-	private Object[][] tableSrcSrcData;
+	String[] tableSrcSrcColHeads = null;
+	Object[][] tableSrcSrcData;
 	DefaultTableModel srcSrcTableModel = null;
 
-	private String[] tableRepoColHeads = null;
-	private Object[][] tableRepoData;
+	String[] tableRepoColHeads = null;
+	Object[][] tableRepoData;
 	DefaultTableModel repoTableModel = null;
 
 	JTextArea remindText, referText;
@@ -106,20 +109,25 @@ public class HG0566EditSource extends HG0450SuperDialog {
  */
 	public HG0566EditSource(HBProjectOpenData pointOpenProject)  {
 		this.pointOpenProject = pointOpenProject;
+		pointPersonHandler = pointOpenProject.getPersonHandler();
+
 		setTitle("Source Definition");
 		setResizable(false);
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "editsource";		 //$NON-NLS-1$
 
-	// Collect static GUI text from T204 for all tables (T204 data still to be preloaded)
-//		String[] tableSrcElmntColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-//		String[] tableSrcSrcColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-//		String[] tableRepoColHeads = pointPersonHandler.setTranslatedData(screenID, "1", false);		//$NON-NLS-1$
-
-		// Setup close and logging actions
+	// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0566EditSource");	//$NON-NLS-1$
+
+	// Collect static GUI text from T204 for all tables
+		tableSrcElmntColHeads =
+				pointPersonHandler.setTranslatedData("56600", "1", false);	// Source Element, Value //$NON-NLS-1$ //$NON-NLS-2$
+		tableSrcSrcColHeads =
+				pointPersonHandler.setTranslatedData("56600", "2", false); // ID, Source  //$NON-NLS-1$ //$NON-NLS-2$
+		tableRepoColHeads =
+				pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository  //$NON-NLS-1$ //$NON-NLS-2$
 
 	// For Text area font setting
 	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
@@ -203,9 +211,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					if (column == 0) return false;
 					return true;
 			}};
+
 		// Get Source data
 		// load some dummy data for test & display - to be removed
-		tableSrcElmntColHeads = new String[] {"Source Element", "Value" };
 		tableSrcElmntData = new Object[][] {{"[TITLE]", "blah blah blah "},
 										  {"[AUTHOR]", "John Smith"}  };
 
@@ -218,7 +226,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			dispose();
 		}
 	 	// Setup tableSrcElmntData, model and renderer
-		srcElmntTableModel = new DefaultTableModel(tableSrcElmntData, tableSrcElmntColHeads) ;
+		srcElmntTableModel = new DefaultTableModel(tableSrcElmntData, tableSrcElmntColHeads);
         tableSrcElmnt.setModel(srcElmntTableModel);
 		tableSrcElmnt.getColumnModel().getColumn(0).setMinWidth(80);
 		tableSrcElmnt.getColumnModel().getColumn(0).setPreferredWidth(140);
@@ -424,9 +432,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int column) {
 					return false;
 			}};
+
 		// Get Source of Source data
 		// load some dummy data for test & display - to be removed
-		tableSrcSrcColHeads = new String[] {"ID", "Source" };
 		tableSrcSrcData = new Object[][] {{"11", "source eleven"},
 										  {"27", "source twenty-seven"}  };
 
@@ -496,9 +504,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				public boolean isCellEditable(int row, int column) {
 					return true;
 			}};
+
 		// Get Repository data
 		// load some dummy data for test & display - to be removed
-		tableRepoColHeads = new String[] {"ID", "Repository" };
 		tableRepoData = new Object[][] {{"23", "Repository 23"},
 										  {"55", "Repository 55"}  };
 
