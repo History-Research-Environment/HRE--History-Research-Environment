@@ -25,6 +25,7 @@ package hre.tmgjava;
  *  		   2025-08-24 - Use TMGlanguage for all SORC_LANG settings (D Ferguson)
  *  		   2025-08-26 - Fix elementInfoExtract to extract data correctly (D Ferguson)
  *  		   2025-08-31 - Create T734 records with full element ID info (D Ferguson)
+ *  		   2025-09-01 - Convert T737 source templates to number format (D Ferguson)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -237,6 +238,112 @@ public class TMGpass_Source {
 	}
 
 /**
+ * addToSourceElementTable(TMGHREconverter tmgHreConverter)
+ * @param tmgHreConverter
+ * Field Name Type Width Description
+		RECNO I 4 PRIMARY KEY.  ID Number of the Source Element.
+		DSID I 4 Data Set ID
+		ELEMENT C 30 Source Element name
+		GROUPNUM N 3 Source Element administrative group:
+ */
+	public void addToSourceElementTable(TMGHREconverter tmgHreConverter) {
+		this.tmgHreConverter = tmgHreConverter;
+		long sourceElementTablePID = proOffset;
+		int elementTmgGroup, prevRecno = 0, elementRecno = 0;
+		if (sourceDump)
+			System.out.println(" ****  T738_SORC_ELMNT table: *******");
+		int nrOftmgURows = tmgUtable.getNrOfRows();
+		for (int index_U_Table = 0; index_U_Table < nrOftmgURows; index_U_Table++) {
+			try {
+		// Special construction to compensate for non consecutive Recno - Ferguson project !!!
+				prevRecno = elementRecno;
+				elementRecno = tmgUtable.getValueInt(index_U_Table, "RECNO");
+				elementName = tmgUtable.getValueString(index_U_Table, "ELEMENT").trim().toUpperCase();
+				if (elementRecno <= prevRecno) {
+					System.out.println(" WARNING - T738_SORC_ELMNT: " + elementName + " - RECNO: " + elementRecno + " == prev: " + prevRecno + " Ignored!");
+					continue;
+				}
+
+				sourceElementTablePID = proOffset + elementRecno;
+				elementTmgGroup = tmgUtable.getValueInt(index_U_Table, "GROUPNUM");
+				if (sorcElmntNameIndex.containsKey(elementName))
+					System.out.println(" Duplicate element name: " + elementName);
+				else
+					sorcElmntNameIndex.put(elementName, elementTmgGroup);
+			// Calculation of elementNum as CHAR(5)
+				elementNumber = String.format("%05d", (elementTmgGroup*1000 + elementRecno));
+
+		// Add new source element record
+				insertRowT738_SORC_ELMNT(index_U_Table, sourceElementTablePID, tableT738_SORC_ELMNT);
+
+			} catch (HCException hce) {
+				System.out.println("ddToSorceElementTable error: " + hce.getMessage());
+				hce.printStackTrace();
+			}
+		}
+	}
+
+/**
+ * addToSourceDefnTable(TMGHREconverter tmgHreConverter)
+ * @param tmgHreConverter
+ * Field Name Type Width Description
+		* ? RULESET N 1 1=Mills Categories, 2=Lackey Categories, 3=Custom Categories
+		- DSID I 4 Data Set ID
+		* ? SOURTYPE I 4 Type within this ruleset.
+		* ? TRANS_TO I 4 Most like which source type within Mills’ Categories?
+		* NAME C 66 Name of this source type
+		- FOOT M 4 Standard full footnote template
+		- SHORT M 4 Standard short footnote template
+		- BIB M 4 Standard bibliographic template
+		* CUSTFOOT M 4 Custom full footnote template
+		* CUSTSHORT M 4 Custom short footnote template
+		* CUSTBIB M 4 Custom bibliographic template
+		- SAMEAS I 4 This source type is the same as another in the Mills Categories.
+		- Relates to a.sourtype where ruleset=1.
+		- SAMEASMSG M 4 The message displayed to the user when this source type is selected.
+		- PRIMARY L 1 Is this the primary custom source type (ruleset=3).
+		* REMINDERS M 4 Hint Memo  (new in v7.01)
+ */
+	public void addToSourceDefnTable(TMGHREconverter tmgHreConverter) {
+		this.tmgHreConverter = tmgHreConverter;
+	// Based on pjc RuleSet #, build the T737 SORC_DEFN table
+		long sourceDefTablePID = proOffset;
+		int ruleSetFound;
+		int nrOftmgRows = tmgAtable.getNrOfRows();
+		if (sourceDump)
+			System.out.println(" Start  T737_SORC_DEFN table: *******");
+	// Get PJC Ruleset number: 1=Mills Categories, 2=Lackey Categories, 3=Custom Categories
+		pjcRuleSetNumber = Integer.parseInt(ruleSet.substring(ruleSet.length()-1, ruleSet.length()));
+		if (pjcRuleSetNumber == 1) ruleSetName = "Mills";
+		else if (pjcRuleSetNumber == 2) ruleSetName = "Lackey";
+		else if (pjcRuleSetNumber == 3) ruleSetName = "Custom ";
+		else ruleSetName = "Not known";
+		System.out.println(" Project Ruleset: " + pjcRuleSetNumber + " - " + ruleSetName + " Categories");
+		tmgHreConverter.setStatusMessage(" Source Ruleset: " + pjcRuleSetNumber
+				+ " - " + ruleSetName + " Categories");
+
+		for (int index_A_Table = 0; index_A_Table < nrOftmgRows; index_A_Table++) {
+			try {
+				ruleSetFound = tmgAtable.getValueInt(index_A_Table, "RULESET");
+				// Import RuleSet 1 (Mills) OR RuleSet 2 (Lackey) OR Ruleset 3 (Custom) source types.
+				// For each record in A.dbf where A.ruleset = the PJC ruleSetNumber, create a T737 record
+				if (ruleSetFound == pjcRuleSetNumber) {
+					sourceDefTablePID = sourceDefTablePID + 1;
+					sourceDefType = tmgAtable.getValueInt(index_A_Table, "SOURTYPE");
+					custType = tmgAtable.getValueInt(index_A_Table, "SOURTYPE");
+					sorcDefinPIDindex.put(custType, sourceDefTablePID);
+				// Add new source def record for the A record at entry index_A_table to T737 ResultSet
+					insertRowT737_SORC_DEFN(index_A_Table, sourceDefTablePID, tableT737_SORC_DEFN);
+				}
+			} catch (HCException hce) {
+				System.out.println("addToSorceDefTable error: " + hce.getMessage());
+				hce.printStackTrace();
+			}
+		}
+		//System.out.println(" End  T737_SORC_DEFN table: *******");
+	}
+
+/**
  * void addToSourceTable()
  */
 	public void addToSourceTable(TMGHREconverter tmgHreConverter) {
@@ -249,7 +356,7 @@ public class TMGpass_Source {
 		String[] T737Templates;
 		String[][] splitInfo;
 		if (sourceDump)
-			System.out.println("\n**** T736_SORC table: ****");
+			System.out.println("\n**** T736_SORC, T734 SORC DATA tables: ****");
 		int nrOftmgRRows = tmgMtable.getNrOfRows();
 
 		for (int index_M_Table = 0; index_M_Table < nrOftmgRRows; index_M_Table++) {
@@ -357,119 +464,64 @@ public class TMGpass_Source {
 				System.out.println("addToT736Source error: " + hce.getMessage());
 				hce.printStackTrace();
 			}
-
-			// Now go back to the 3 source templates recorded in the base T737 SORC DEFN records
-			// and convert these templates from [NAME] entries to [number] entries
-
-
-
 		}
 	}
 
 /**
- * addToSorceDefTable(TMGHREconverter tmgHreConverter)
- * @param tmgHreConverter
- * Field Name Type Width Description
-		* ? RULESET N 1 1=Mills Categories, 2=Lackey Categories, 3=Custom Categories
-		- DSID I 4 Data Set ID
-		* ? SOURTYPE I 4 Type within this ruleset.
-		* ? TRANS_TO I 4 Most like which source type within Mills’ Categories?
-		* NAME C 66 Name of this source type
-		- FOOT M 4 Standard full footnote template
-		- SHORT M 4 Standard short footnote template
-		- BIB M 4 Standard bibliographic template
-		* CUSTFOOT M 4 Custom full footnote template
-		* CUSTSHORT M 4 Custom short footnote template
-		* CUSTBIB M 4 Custom bibliographic template
-		- SAMEAS I 4 This source type is the same as another in the Mills Categories.
-		- Relates to a.sourtype where ruleset=1.
-		- SAMEASMSG M 4 The message displayed to the user when this source type is selected.
-		- PRIMARY L 1 Is this the primary custom source type (ruleset=3).
-		* REMINDERS M 4 Hint Memo  (new in v7.01)
+ * updateT737Templates(TMGHREconverter tmgHreConverter)
+ * @throws SQLException
+ * @throws HCException
  */
-	public void addToSorceDefTable(TMGHREconverter tmgHreConverter) {
-		this.tmgHreConverter = tmgHreConverter;
-	// Based on pjc RuleSet #, build the T737 SORC_DEFN table
-		long sourceDefTablePID = proOffset;
-		int ruleSetFound;
-		int nrOftmgRows = tmgAtable.getNrOfRows();
-		if (sourceDump)
-			System.out.println(" Start  T737_SORC_DEFN table: *******");
-	// Get PJC Ruleset number: 1=Mills Categories, 2=Lackey Categories, 3=Custom Categories
-		pjcRuleSetNumber = Integer.parseInt(ruleSet.substring(ruleSet.length()-1, ruleSet.length()));
-		if (pjcRuleSetNumber == 1) ruleSetName = "Mills";
-		else if (pjcRuleSetNumber == 2) ruleSetName = "Lackey";
-		else if (pjcRuleSetNumber == 3) ruleSetName = "Custom ";
-		else ruleSetName = "Not known";
-		System.out.println(" Project Ruleset: " + pjcRuleSetNumber + " - " + ruleSetName + " Categories");
-		tmgHreConverter.setStatusMessage(" Source Ruleset: " + pjcRuleSetNumber
-				+ " - " + ruleSetName + " Categories");
-
-		for (int index_A_Table = 0; index_A_Table < nrOftmgRows; index_A_Table++) {
-			try {
-				ruleSetFound = tmgAtable.getValueInt(index_A_Table, "RULESET");
-				// Import RuleSet 1 (Mills) OR RuleSet 2 (Lackey) OR Ruleset 3 (Custom) source types.
-				// For each record in A.dbf where A.ruleset = the PJC ruleSetNumber, create a T737 record
-				if (ruleSetFound == pjcRuleSetNumber) {
-					sourceDefTablePID = sourceDefTablePID + 1;
-					sourceDefType = tmgAtable.getValueInt(index_A_Table, "SOURTYPE");
-					custType = tmgAtable.getValueInt(index_A_Table, "SOURTYPE");
-					sorcDefinPIDindex.put(custType, sourceDefTablePID);
-				// Add new source def record for the A record at entry index_A_table to T737 ResultSet
-					insertRowT737_SORC_DEFN(index_A_Table, sourceDefTablePID, tableT737_SORC_DEFN);
+	public void updateT737Templates(TMGHREconverter tmgHreConverter) throws  HCException {
+		// Go back to the 3 source templates recorded in the base T737 SORC DEFN records
+		// and convert these templates from [NAME] entries to [number] entries
+		List<String> nameList = null, numberList = null;
+		String template = "";
+		ResultSet hreTable;
+		String selectString = pointHREbase.setSelectSQL("*", "T737_SORC_DEFN", "");
+		hreTable = pointHREbase.requestTabledata("T737_SORC_DEFN", selectString);
+		try {
+			hreTable.beforeFirst();
+			while (hreTable.next()) {
+			// Get FullFoot source template from T737 SORC_DEFN
+				template = hreTable.getString("SORC_DEFN_FULLFOOT");
+			// Extract List of all unique [SOURCE ELEMENTS] that appear.
+				nameList = extractElementNames(template);
+			// Lookup T738 Source Elements for records with matching element names
+			// and get their IDs into a new numberList
+				numberList = new ArrayList<String>();
+				for (int i = 0; i < nameList.size(); i++) {
+					numberList.add(getT738Number(nameList.get(i)));
 				}
-			} catch (HCException hce) {
-				System.out.println("addToSorceDefTable error: " + hce.getMessage());
-				hce.printStackTrace();
-			}
-		}
-		//System.out.println(" End  T737_SORC_DEFN table: *******");
-	}
+			// Convert the source templates from [NAMES] to [numbers]
+				numberedFullFoot = templateNameToNumber(template, nameList, numberList);
+			// and replace the T737 FullFoot template with the numbered version
+				hreTable.updateString("SORC_DEFN_FULLFOOT", numberedFullFoot);
 
-/**
- * addToSourceElementTable(TMGHREconverter tmgHreConverter)
- * @param tmgHreConverter
- * Field Name Type Width Description
-		RECNO I 4 PRIMARY KEY.  ID Number of the Source Element.
-		DSID I 4 Data Set ID
-		ELEMENT C 30 Source Element name
-		GROUPNUM N 3 Source Element administrative group:
- */
-	public void addToSorceElementTable(TMGHREconverter tmgHreConverter) {
-		this.tmgHreConverter = tmgHreConverter;
-		long sourceElementTablePID = proOffset;
-		int elementTmgGroup, prevRecno = 0, elementRecno = 0;
-		if (sourceDump)
-			System.out.println(" ****  T738_SORC_ELMNT table: *******");
-		int nrOftmgURows = tmgUtable.getNrOfRows();
-		for (int index_U_Table = 0; index_U_Table < nrOftmgURows; index_U_Table++) {
-			try {
-				//sourceElementTablePID = sourceElementTablePID + 1;
-		// Special construction to compensate for non consecutive reposRecno - Ferguson project !!!
-				prevRecno = elementRecno;
-				elementRecno = tmgUtable.getValueInt(index_U_Table, "RECNO");
-				elementName = tmgUtable.getValueString(index_U_Table, "ELEMENT").trim();
-				if (elementRecno <= prevRecno) {
-					System.out.println(" WARNING - T738_SORC_ELMNT: " + elementName + " - RECNO: " + elementRecno + " == prev: " + prevRecno + " Ignored!");
-					continue;
+			// Repeat the above process for the ShortFoot template
+				template = hreTable.getString("SORC_DEFN_SHORTFOOT");
+				nameList = extractElementNames(template);
+				numberList = new ArrayList<String>();
+				for (int i = 0; i < nameList.size(); i++) {
+					numberList.add(getT738Number(nameList.get(i)));
 				}
-		// *********************************************************************
-				sourceElementTablePID = proOffset + elementRecno;
-				elementTmgGroup = tmgUtable.getValueInt(index_U_Table, "GROUPNUM");
-				if (sorcElmntNameIndex.containsKey(elementName))
-					System.out.println(" Duplicate element name: " + elementName);
-				else
-					sorcElmntNameIndex.put(elementName, elementTmgGroup);
-			// Calculation of elementNum as CHAR(5)
-				elementNumber = String.format("%05d", (elementTmgGroup*1000 + elementRecno));
+				numberedShortFoot = templateNameToNumber(template, nameList, numberList);
+				hreTable.updateString("SORC_DEFN_SHORTFOOT", numberedShortFoot);
 
-		// Add new source element record
-				insertRowT738_SORC_ELMNT(index_U_Table, sourceElementTablePID, tableT738_SORC_ELMNT);
+			// Repeat the above process for the Biblio template
+				template = hreTable.getString("SORC_DEFN_BIBLIO");
+				nameList = extractElementNames(template);
+				numberList = new ArrayList<String>();
+				for (int i = 0; i < nameList.size(); i++) {
+					numberList.add(getT738Number(nameList.get(i)));
+				}
+				numberedBiblio = templateNameToNumber(template, nameList, numberList);
+				hreTable.updateString("SORC_DEFN_Biblio", numberedBiblio);
 
-			} catch (HCException hce) {
-				System.out.println("ddToSorceElementTable error: " + hce.getMessage());
-				hce.printStackTrace();
+				hreTable.updateRow();
 			}
+		} catch (SQLException sqle) {
+			throw new HCException("updateT737Templates error: " + sqle.getMessage());
 		}
 	}
 
@@ -936,11 +988,14 @@ public class TMGpass_Source {
  * @throws SQLException
  */
 	private String getT738Number(String elementName) throws HCException  {
-		// Get the T738 element number of the parameter elementName
+		// Get the T738 element number of the parameter elementName.
+		// SQL stmt will crash if the Element Name contains a quote mark, so test
+		// and adjust the name.
+		String correctedName = elementName.replace("'", "''");
 		String number = "";
 		ResultSet hreTable;
 		String selectString = pointHREbase.setSelectSQL("*", "T738_SORC_ELMNT",
-												"SORC_ELMNT_NAME = " + "'"+elementName + "'");
+												"SORC_ELMNT_NAME = " + "'"+correctedName + "'");
 		hreTable = pointHREbase.requestTabledata("T738_SORC_ELMNT", selectString);
 		try {
 			hreTable.beforeFirst();
@@ -1023,11 +1078,11 @@ public class TMGpass_Source {
  * @return
  */
 	private String templateNameToNumber(String template, List<String> nameList, List<String> numberList) {
-		// Build lookup map: "[text here]" → "12345"
+		// Build lookup map: "[TEXT HERE]" → "12345"
+		// Esnure braketed input always converted to uppercase for conversion to T738 numbers
 		Map<String, String> replacementMap = new HashMap<>();
-		for (int i = 0; i < nameList.size(); i++) {
-			replacementMap.put(nameList.get(i), numberList.get(i));
-		}
+		for (int i = 0; i < nameList.size(); i++)
+			replacementMap.put(nameList.get(i).toUpperCase(), numberList.get(i));
 
 		// Regex to find all bracketed entries
 		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");
@@ -1035,12 +1090,13 @@ public class TMGpass_Source {
 
 		StringBuffer result = new StringBuffer();
 		while (matcher.find()) {
-			String match = matcher.group(); // e.g. "[this is an example]"
-			String replacement = replacementMap.get(match);
+			String original = matcher.group(); // e.g. "[this is an example]"
+            String replacement = replacementMap.get(original.toUpperCase());
+
 			if (replacement != null) {
 				matcher.appendReplacement(result, "[" + Matcher.quoteReplacement(replacement) + "]");
 			} else {
-				matcher.appendReplacement(result, Matcher.quoteReplacement(match));
+				matcher.appendReplacement(result, Matcher.quoteReplacement(original));
 			}
 		}
 		matcher.appendTail(result);

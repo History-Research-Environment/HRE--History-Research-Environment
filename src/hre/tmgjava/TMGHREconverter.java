@@ -50,8 +50,9 @@ package hre.tmgjava;
  *v0.01.0032  2025-02-11 - Code for initiate citation/source import (N. Tolleshaug)
  *			  2025-06-30 - Added lines for build number (N. Tolleshaug)
  *			  2025-07-12 - Added remaining source_def/elemnt, repo and link tables (N. Tolleshaug)
- *			  2025-07-21 - Changed sequenece of source table processin (N. Tolleshaug)
+ *			  2025-07-21 - Changed sequenece of source table processing (N. Tolleshaug)
  *			  2025-07-22 - Imported project ruleset from pjc file (N. Tolleshaug)
+ *			  2025-09-01 - Add new source table process (updateT737Templates) (D Ferguson)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -111,7 +112,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	private static String tmgVersion;
 	private static String tmgNativeLang;
-	
+
 	private String ruleSet;
 
 /**
@@ -248,8 +249,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
 
 			processMonitor.setContextOfAction(" Project name: " + TMGglobal.chosenFilename);
-			
-	// Write PJC data to minitor		
+
+	// Write PJC data to minitor
 			for (String element : pjcData) {
 				processMonitor.setContextOfAction(" " + element);
 			}
@@ -515,7 +516,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					if (string.startsWith("LastOptimized")) data[8] = string;
 					if (string.startsWith("SourceRule")) data[9] = string;
 					ruleSet = data[9];
-					
+
 				}
 				return data;
 		  } catch (FileNotFoundException fnfe) {
@@ -778,17 +779,18 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		setStatusMessage(" Loading TMG source tables");
 		tmgLoader.loadTmgSourceTables();
 		timeReport("load TMG Source tables");
-		
+
 	// Copy TMG source tables
-		pointSourcePass.initSourceTables(); 
+		pointSourcePass.initSourceTables(); // from TMG A, M, R, S, U, W tables
 	// Import Source tables
-		pointSourcePass.addToSorceElementTable(this); // Set up index for element names
-		pointSourcePass.addToSorceDefTable(this); // Set up PID index
-		pointSourcePass.addToSourceTable(this);
-		pointSourcePass.addToCitationTable(this);
-		pointSourcePass.addToReposTable(this);
-		pointSourcePass.addToSorceLinkTable(this);
-		
+		pointSourcePass.addToSourceElementTable(this);	// Process T738 SORC_ELEMENT
+		pointSourcePass.addToSourceDefnTable(this); 	// Build T737 SORC_DEFN
+		pointSourcePass.addToSourceTable(this);			// Build T736 SORC, T734 SORC_DATA
+		pointSourcePass.updateT737Templates(this);		// Update T737 source template formats
+		pointSourcePass.addToCitationTable(this);		// Build T735 CITN
+		pointSourcePass.addToReposTable(this);			// Build T739 REPO
+		pointSourcePass.addToSorceLinkTable(this);		// Build T740 SORC_LINK
+
 		pointSourcePass.testReposTables();
 		pointSourcePass.citationStat();
 		completedNumberPasses++;
