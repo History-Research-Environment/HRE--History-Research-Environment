@@ -24,21 +24,22 @@ package hre.tmgjava;
  * 			  2025-07-06 - Udated from nils to bruker (N. Tolleshaug)
  * 			  2025-07-12 - Added remaining source_def/elemnt, repo and link tables (N. Tolleshaug)
  * 			  2025-07-22 - Added T734_SORC_DATA table (N. Tolleshaug)
+ * 			  2025-09-18 - Added other T7xx tables and updated database dates (D Ferguson)
  *****************************************************************************************/
 
 import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "30.09.2025";			// Set Build number
-	public static String releaseDate = "30 Sep 2025";		// and release date
+	public static String buildNo = "18.09.2025";			// Set Build number
+	public static String releaseDate = "18 Sep 2025";		// and release date
 
 	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
-	public static String databaseVersion = "v22c 2024-12-19";	// Database version DDL
+	public static String databaseVersion = "v22c 2025-09-18";	// Database version DDL
 
 	//public static String databaseBuild = "v22c 2024-11-01"; // Updated T20X tables
 	//public static String databaseBuild = "v22c 2024-11-01"; // Updated for v22c / v22c 2024-11-01
-	public static String databaseBuild = "v22c 2024-12-19"; // Updated for v22c / SQL: DDL v22c 2024-12-19
+	public static String databaseBuild = "v22c 2025-09-18"; // Updated for v22c / SQL: DDL v22c 2025-09-18
 
 	public static int dataSetID = 1; // Selected DATASET number from TMG folder
 

@@ -31,7 +31,8 @@ package hre.tmgjava;
  * 			  2025-07-12 - Added source_def source_elemnt, repo and link tables (N. Tolleshaug)
  * 			  2025-07-22 - Added T734_SORC_DATA table for sorc element data (N. Tolleshaug)
  * 			  2025-08-24 - Remove drop of C5 tables as they don't exist (D Ferguson)
- *
+ *			  2025-09-04 - Remove T738 creation (now preloaded) (D Ferguson)
+ *			  2025-09-18 - Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -72,110 +73,8 @@ public class HREloader_V22c {
 	// Set boolean IS_OWNER in T131
 			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
 
-/**			T168_SENTENCE_SET modifications - 3 additions until they are added to the Seed
- 			 PID BIGINT
- 			 CL_COMMIT_RPID  BIGINT
-			 IS_LONG BOOLEAN
-			 SHORT_SENT  CHARACTER VARYING(500)
-			 LONG_SENT  CHARACTER LARGE OBJECT(51200)
-			 LANG_CODE CHARACTER(5) - added
-			 EVNT_TYPE SMALLINT - added
-			 EVNT_ROLE_NUM SMALLINT - added
-*/
-			alterColumnInTable("T168_SENTENCE_SET","LANG_CODE","CHAR(5)");
-			alterColumnInTable("T168_SENTENCE_SET","EVNT_TYPE","SMALLINT");
-			alterColumnInTable("T168_SENTENCE_SET","EVNT_ROLE_NUM","SMALLINT");
-
 	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");
-
-	// Add all Evidence tables (untill they are added to the Seed)
-	/**	Create a new table T734 where each record would contain the (a) a pointer to the
-	 * owning T736; (b) the number of an element; (c) the element’s data
-	 */
-			createTableInBase("T734_SORC_DATA","PID BIGINT NOT NULL,"
-							  + "CL_COMMIT_RPID BIGINT NOT NULL,"
-							  + "SORC_OWNER_RPID BIGINT NOT NULL,"
-							  + "SORC_ELMNT_LANG CHAR(5) NOT NULL,"
-							  + "SORC_ELMNT_NUM CHAR(5) NOT NULL,"
-							  + "SORC_ELMNT_DATA VARCHAR(400) NOT NULL");
-			updateTableInBase("T734_SORC_DATA", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-
-	// Create new citation table
-			createTableInBase("T735_CITN","PID BIGINT NOT NULL,"
-								+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-								+ "CITED_RPID BIGINT NOT NULL,"
-								+ "OWNER_TYPE CHAR(4) NOT NULL,"
-								+ "SORC_RPID BIGINT NOT NULL,"
-								+ "ASSESSOR_RPID BIGINT NOT NULL,"
-								+ "CITN_DETAIL_RPID BIGINT NOT NULL,"
-								+ "CITN_MEMO_RPID BIGINT NOT NULL,"
-								+ "CITN_REF CHAR(30) NOT NULL,"
-								+ "CITN_GUI_SEQ SMALLINT NOT NULL,"
-								+ "CITN_ACC_NAME1 TINYINT,"
-								+ "CITN_ACC_NAME2 TINYINT,"
-								+ "CITN_ACC_DATE TINYINT,"
-								+ "CITN_ACC_LOCN TINYINT,"
-								+ "CITN_ACC_MEMO TINYINT");
-			updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-
-	// Create new source table
-			createTableInBase("T736_SORC","PID BIGINT NOT NULL,"
-								+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-								+ "IS_ACTIVE BOOLEAN NOT NULL,"
-								+ "SORC_DEF_RPID BIGINT NOT NULL,"
-								+ "SORC_REF SMALLINT NOT NULL,"
-								+ "SORC_TYPE SMALLINT NOT NULL,"
-								+ "SORC_FIDELITY CHAR(1) NOT NULL,"
-								+ "SORC_TEXT_RPID BIGINT NOT NULL,"
-								+ "SORC_AUTHOR_RPID BIGINT NOT NULL,"
-								+ "SORC_EDITOR_RPID BIGINT NOT NULL,"
-								+ "SORC_COMPILER_RPID BIGINT NOT NULL,"
-								+ "SORC_ABBREV CHAR(50) NOT NULL,"
-								+ "SORC_TITLE VARCHAR(400) NOT NULL,"
-								+ "SORC_FULLFORM VARCHAR(500) NOT NULL,"
-								+ "SORC_SHORTFORM VARCHAR(500) NOT NULL,"
-								+ "SORC_BIBLIOFORM VARCHAR(500) NOT NULL,"
-								+ "SORC_REMIND_RPID BIGINT NOT NULL");
-				updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-
-	// Create new source definition table
-				createTableInBase("T737_SORC_DEFN","PID BIGINT NOT NULL,"
-									+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-									+ "SORC_DEFN_TYPE SMALLINT NOT NULL,"
-									+ "SORC_DEFN_NAME CHAR(66) NOT NULL,"
-									+ "SORC_LANG CHAR(5) NOT NULL,"
-									+ "SORC_DEFN_FULLFOOT VARCHAR(500) NOT NULL,"
-									+ "SORC_DEFN_SHORTFOOT VARCHAR(500) NOT NULL,"
-									+ "SORC_DEFN_BIBLIO VARCHAR(500) NOT NULL,"
-									+ "SORC_DEFN_REMIND_RPID BIGINT NOT NULL");
-				updateTableInBase("T737_SORC_DEFN", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-
-	// Create new Source element table
-				createTableInBase("T738_SORC_ELMNT","PID BIGINT NOT NULL,"
-									+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-									+ "SORC_ELMNT_NUM CHAR(5) NOT NULL,"
-									+ "SORC_LANG CHAR(5) NOT NULL,"
-									+ "SORC_ELMNT_NAME CHAR(30) NOT NULL");
-				updateTableInBase("T738_SORC_ELMNT", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-
-	// Create new Repository table
-				createTableInBase("T739_REPO","PID BIGINT NOT NULL,"
-									+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-									+ "REPO_MEMO_RPID BIGINT NOT NULL,"
-									+ "REPO_ADDR_RPID BIGINT NOT NULL,"
-									+ "REPO_ABBREV CHAR(50) NOT NULL,"
-									+ "REPO_REF SMALLINT NOT NULL,"
-									+ "REPO_NAME VARCHAR(500) NOT NULL");
-				updateTableInBase("T739_REPO", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
-
-	// Create new Source link table
-				createTableInBase("T740_SORC_LINK","PID BIGINT NOT NULL,"
-						+ "IS_PRIMARY BOOLEAN NOT NULL,"
-						+ "SORC_RPID BIGINT NOT NULL,"
-						+ "REPO_RPID BIGINT NOT NULL,"
-						+ "REPO_REF CHAR(25) NOT NULL");
-				updateTableInBase("T740_SORC_LINK", "ALTER TABLE", "ADD PRIMARY KEY (PID)");
 
 /**
  * Create new user - remove when moved to HRE
@@ -185,28 +84,6 @@ public class HREloader_V22c {
 
 			createNewUser("Don","Hre-2021");
 			tmgHreConverter.setStatusMessage(" Created user " + "Don" + " with all rights ");
-
-
-		// Delete/Drop all tables with _CL_ in table name - removed as Seed doesn't contain C5 tables
-/*			HRE_Tables = pointHREbase.requestTableList();
-			try {
-				HRE_Tables.beforeFirst();
-				int nrOfTablesDeleted = 0;
-				while (HRE_Tables.next()) {
-					String tableName = HRE_Tables.getString("TABLE_NAME");
-					if (tableName.startsWith("C5")) {
-						updateTableInBase(tableName, "DROP TABLE");
-						nrOfTablesDeleted++;
-					}
-				}
-				tmgHreConverter.setStatusMessage(" *** DROP'ed " + nrOfTablesDeleted + " C5 tables");
-				if (TMGglobal.DUMP) System.out.println("Tables Dropped: " + nrOfTablesDeleted);
-
-			} catch (SQLException sqle) {
-				System.out.println("HREloader - Delete CL table error: " + sqle.getMessage());
-				sqle.printStackTrace();
-			}
-*/
 
 			reportProgress(completed, nrOfTables);
 			TMGglobal.T102 = tableLoader("T102_PACKAGE_DEFN");

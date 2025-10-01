@@ -4,6 +4,7 @@ package hre.gui;
  * Split off from HGlobal 2023-05-02
  ************************************************************************
  * v0.00.0029 2023-05-01 - Common static methods for HRE (D. Ferguson)
+ * v0.04.0032 2025-09-26 - Add Source Element convertNumsToNames (D Ferguson)
  *************************************************************************/
 import java.awt.Component;
 import java.awt.Container;
@@ -13,7 +14,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Vector;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.AbstractAction;
@@ -34,7 +37,7 @@ import hre.nls.HGlobalMsgs;
  * @version build 0.01.2923.0501
  */
 public class HGlobalCode {
-	
+
 /*************************************
  * ROUTINES FOR TABLE HEADERS
  ************************************/
@@ -49,15 +52,15 @@ public class HGlobalCode {
 			HGlobalMsgs.Text_54};	// Local/Remote Server
 		return projectTableHdr;
 	}
-	
+
 /**
- * String getLocalText()	
+ * String getLocalText()
  * @return String "Local"
  */
 	public static String getLocalText() {
 		return HGlobalMsgs.Text_55;
 	}
-	
+
 /**
  * Supply Table Header for Remote Projects table in HG0418
  * @return String[] rmtprojTableHeader
@@ -90,7 +93,8 @@ public class HGlobalCode {
  * @param email to check
  */
 	public static boolean isEmailValid(String email) {
-		if (email == null) return false; else if(email.length() == 0) return false;
+		if (email == null) return false;
+		if(email.length() == 0) return false;
 		String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@" + "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"; //$NON-NLS-1$ //$NON-NLS-2$
 		Pattern pat = Pattern.compile(emailRegex);
 		return pat.matcher(email).matches();
@@ -122,7 +126,7 @@ public class HGlobalCode {
 
 /**********************
  * COMMON METHODS
- *********************/	
+ *********************/
 /**
  * Return by name project pointer from openProjects ArrayList
  * @param ProjectName Name of project to return
@@ -148,7 +152,7 @@ public class HGlobalCode {
 	public static String[][] getSummaryData(String[] project) {
 		return getSummaryData(project, HGlobalMsgs.Text_67);	// Closed project
 	}
-	
+
 /**
  * Collect summary data for open selected project
  * @param String [] project
@@ -179,7 +183,7 @@ public class HGlobalCode {
 		   LocalDateTime now = LocalDateTime.now();
 		   return dtf.format(now);
 	  }
-	  
+
 /**
  * Measure time consumption	when opening project
  */
@@ -196,7 +200,7 @@ public class HGlobalCode {
 
 /*************************************
  * MESSAGE ROUTINES FOR STARTUP CODE
- ************************************/	
+ ************************************/
 /**
  * error message from HB0711Logging
  * @param errorCode
@@ -241,7 +245,7 @@ public class HGlobalCode {
 
 /*************************************
  * ROUTINES FOR TABLE CELL TABBING
- ************************************/	
+ ************************************/
 /**
  * JTable Cell Tabbing - Set Action Map for tab, shift-tab and Enter for a JTable
  * @param theTable - JTable this applies to
@@ -250,22 +254,21 @@ public class HGlobalCode {
  * @param startCol - valid start col for tabbing [range 0 - (numCols-1) ]
  * @param numCols -  Number of columns this applies to
  */
-	public static class JTableCellTabbing {	
-		@SuppressWarnings("serial")
+	public static class JTableCellTabbing {
 		public static void setTabMapping(final JTable theTable, final int startRow, final int numRows, final int startCol, final int numCols) {
 			// Calculate last row and column for tabbing
 		    final int endRow = startRow + (numRows - 1);
-		    final int endCol = startCol + (numCols - 1);		    
-		    // Check for valid range	    
+		    final int endCol = startCol + (numCols - 1);
+		    // Check for valid range
 		    if ((startRow > endRow) || (startCol > endCol)) {
 		        throw new IllegalArgumentException("Table Size incorrectly set for JTableCellTabbing");	//$NON-NLS-1$
-		    } 
+		    }
 		    // Get Input and Action Map to set tabbing order on the JTable
 		    InputMap im = theTable.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 		    ActionMap am = theTable.getActionMap();
 		    // Code for Enter key
 		    KeyStroke enterKey = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
-		    am.put(im.get(enterKey), new AbstractAction() {	
+		    am.put(im.get(enterKey), new AbstractAction() {
 		        @Override
 		        public void actionPerformed(ActionEvent e) {
 		        	int row = theTable.getSelectedRow();
@@ -282,12 +285,12 @@ public class HGlobalCode {
 		            	else {
 		            		theTable.changeSelection(row, col, false, false);
 		            		theTable.editCellAt(row, col);
-		            		};
+		            		}
 		        }
-		    });				    
+		    });
 		    // Code for TAB key
 		    KeyStroke tabKey = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0);
-		    am.put(im.get(tabKey), new AbstractAction() {				
+		    am.put(im.get(tabKey), new AbstractAction() {
 		        @Override
 		        public void actionPerformed(ActionEvent e) {
 		            int row = theTable.getSelectedRow();
@@ -308,9 +311,9 @@ public class HGlobalCode {
 		            	else {
 		            		theTable.changeSelection(row, col, false, false);
 		            		theTable.editCellAt(row, col);
-		            		};
+		            		}
 		        }
-		    });		    
+		    });
 		    // Code for SHIFT_TAB (tab backwards)
 		    KeyStroke shiftTab = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, java.awt.event.InputEvent.SHIFT_DOWN_MASK);
 		    am.put(im.get(shiftTab), new AbstractAction() {
@@ -332,14 +335,14 @@ public class HGlobalCode {
 		            }
 		            // Else change cell selection
 		            	else {
-		            		theTable.changeSelection(row, col, false, false);		           
+		            		theTable.changeSelection(row, col, false, false);
 		            		theTable.editCellAt(row, col);
-		            	};
+		            	}
 		        }
 		    });
 		}
 	}	// End JTableCellTabbing
-	
+
 /**
  * Internal class focusPolicy extends FocusTraversalPolicy
  * @author Don Ferguson
@@ -375,6 +378,69 @@ public class HGlobalCode {
 		public Component getFirstComponent(Container focusCycleRoot) {
             return focusOrder.get(0);
         }
-    }		// End focusPolicy	
-	
+    }		// End focusPolicy
+
+
+/******************************************************************************************
+ * ROUTINES FOR SOURCE ELEMNT NUMBER->NAME AND NAME->NUMBER CONVERSION in SOURCE TEMPLATES
+ *****************************************************************************************/
+/**
+ * convertNumsToNames - convert SourceElement numbers to Element names in template parameter
+ * @param template
+ * @param hashmap
+ * @return converted template
+ */
+	public static String convertNumsToNames(String template, Map<String, String> codeToTextMap) {
+		// Setup a regex to find [nnnnn] entries in template
+		Pattern pattern = Pattern.compile("\\[(\\d{5})\\]");
+        Matcher matcher = pattern.matcher(template);
+        StringBuffer result = new StringBuffer();
+        // Convert the 5-digit strings to Source Element strings via the hashmap
+        while (matcher.find()) {
+            String code = matcher.group(1); // extract just the 5-digit string
+            String replacement = (String) codeToTextMap.get(code);
+            if (replacement != null) {
+                matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+            } else {
+                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group()));
+            }
+        }
+        matcher.appendTail(result);
+        return result.toString();
+	}		// End convertNumsToNames
+
+/**
+ * convertNamesToNums - convert Source Element names back to Element numbers in template parameter
+ * @param template
+ * @param hashmap
+ * @return converted template
+ */
+	public static String convertNamesToNums(String template, Map<String, String> textToCodeMap) {
+	// Setup a regex to find [Element names] entries in template
+		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");
+		Matcher matcher = pattern.matcher(template);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String original = matcher.group(); 	// e.g. "[element-name]"
+            if (original.contains(":")) {		 // Skip colon-containing entries like [IAL:]
+                matcher.appendReplacement(result, Matcher.quoteReplacement(original));
+                continue;
+            }
+            // Convert the Source Element names to 5-digit strings via the hashmap
+            String code = textToCodeMap.get(original.trim());
+            // Throw an error if no match - user used an element name that doesn't exist
+            if (code == null) {
+                JOptionPane.showMessageDialog(null,
+                    "Unknown Source Element name: " + original,
+                    "Source Element name error",
+                    JOptionPane.ERROR_MESSAGE);
+                return null; // halt processing
+            }
+            // otherwise keep going
+            matcher.appendReplacement(result, "[" + Matcher.quoteReplacement(code) + "]");
+        }
+        matcher.appendTail(result);
+        return result.toString();
+	}		// End convertNamesToNums
+
 }		// End HGlobalCode

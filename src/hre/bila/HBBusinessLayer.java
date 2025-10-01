@@ -30,7 +30,8 @@ package hre.bila;
  * 			  2024-10-10 - Modified change date format for all handlers (N. Tolleshaug)
  * v0.03.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
  * 			  2025-03-20 - Added userTable name (N. Tolleshaug)
- * 			  2025-07-02 - Added sentece set Table name (N. Tolleshaug)
+ * 			  2025-07-02 - Added sentence set Table name (N. Tolleshaug)
+ * 			  2025-09-01 - Added remaining source/evidence tables (D Ferguson)
  ******************************************************************************************/
 
 import java.sql.ResultSet;
@@ -62,22 +63,25 @@ public class HBBusinessLayer  {
     long proOffset = 1000000000000000L;
     long null_RPID  = 1999999999999999L;
 
-	public String languageUses, translatedLang, schemaDefined, projectTable, userTable, translatedData, translatedFlag, 
+	public String languageUses, translatedLang, schemaDefined, projectTable, userTable, translatedData, translatedFlag,
 				  dateTable, memoSet, sentenceTable;
-	
+
 	public String nameStyles, nameStylesOutput, nameElementsDefined, locationNameStyles,
 				  locationNameElements, entityTypeDefinition;
-	
+
 	public String flagDefn, flagValue, flagDefinition, flagSettingValues;
-	
+
 	public String personTable, personNameTable, personNamesTableElements, personBirthTable,
 				  personParentTable, personPartnerTable;
-	
+
 	public String locationTable, locationNameTable, locationNameElementTable, eventTable, eventTagTable,
 				  eventAssocTable, eventDefnTable, eventRoleTable;
-	
-	public String citationTable, sourceTable, digtalExhibitTable, digtalNameTable;
-	
+
+	public String sourceDataTable, citationTable, sourceTable, sourceDefnTable, sourceElmntTable,
+				repoTable, sourceLinkTable;
+
+	public String digtalExhibitTable, digtalNameTable;
+
 	// Fields
 	public String visibleId, bestImage, bestNameField, personFatherField, personMotherField,
 				  personHDateBirthField, personHdateDeathField, personLocnBirthField,
@@ -85,7 +89,7 @@ public class HBBusinessLayer  {
 
 	int birthEventType, deathEventType;
 	public int marrGroup = 6, divorceGroup = 7, birthGroup = 4;
-	
+
 	private String [] dateFormats = {"dd.mm.yyyy",
 			"dd-mm-yyyy",
 			"dd/mm/yyyy",
@@ -111,7 +115,7 @@ public class HBBusinessLayer  {
 	public HBLibraryBusiness pointLibraryBusiness;
 	public HREmemo pointHREmemo;
 
-    int dateFormatIndex = 0; 
+    int dateFormatIndex = 0;
     boolean changedDateFormat = true;
 
 	// Date translation String[]'s
@@ -188,11 +192,16 @@ public class HBBusinessLayer  {
 		//Exhibit table
 			digtalExhibitTable = "T676_DIGT";
 			digtalNameTable = "T677_DIGT_NAME";
-			
-		// Citation source tables
-			 citationTable = "T735_CITN";
-			 sourceTable = "T736_SORC";
-			 
+
+		// Citation / source tables
+			sourceDataTable = "T734_SORC_DATA";
+			citationTable = "T735_CITN";
+			sourceTable = "T736_SORC";
+			sourceDefnTable = "T737_SORC_DEFN";
+			sourceElmntTable = "T738_SORC_ELMNT";
+			repoTable = "T739_REPO";
+			sourceLinkTable = "T740_SORC_LINK";
+
 		// Field names
 			visibleId = "VISIBLE_ID";
 			ownerRecordField = "OWNER_RPID";
@@ -330,9 +339,8 @@ public class HBBusinessLayer  {
 			int percent = count * 100 / rows;
 			if (percent > 100) {
 				return 100;
-			} else {
-				return percent;
 			}
+			return percent;
 		} catch (Exception hbe) {
 			throw new HBException(" Divide by null error: " + hbe.getMessage());
 		}
@@ -364,9 +372,8 @@ public class HBBusinessLayer  {
 		try {
 	        if (PID.first()) {
 				return PID.getLong("PID");
-			} else {
-				return proOffset;
 			}
+			return proOffset;
 		} catch (SQLException sqle) {
 			throw new HBException(" HBBusinessLayer - lastRowPID error: " + sqle.getMessage());
 		}
@@ -391,9 +398,8 @@ public class HBBusinessLayer  {
 		try {
 	        if (PID.first()) {
 				return PID.getLong("PID");
-			} else {
-				return proOffset;
 			}
+			return proOffset;
 		} catch (SQLException sqle) {
 			throw new HBException(" HBBusinessLayer - firstRowPID error: " + sqle.getMessage());
 		}
@@ -405,8 +411,8 @@ public class HBBusinessLayer  {
  * @throws SQLException
  */
 	public boolean isResultSetEmpty(ResultSet rSet) throws SQLException {
-		if (rSet == null) return true; else
-	    return (!rSet.isBeforeFirst() && rSet.getRow() == 0);
+		if (rSet == null) return true;
+		return (!rSet.isBeforeFirst() && rSet.getRow() == 0);
 	}
 
 /**
@@ -495,9 +501,9 @@ public class HBBusinessLayer  {
 		String sqlRequest = "ALTER TABLE " + tableName + " ADD " + colName + " " + varType;
     	updateTableData(sqlRequest, dbIndex);
 	}
-	
+
 /**
- * updateTableInBase(String tableName, String sqlCommand, String condition, int dbIndex) 	
+ * updateTableInBase(String tableName, String sqlCommand, String condition, int dbIndex)
  * @param tableName
  * @param sqlCommand
  * @param condition
@@ -529,7 +535,7 @@ public class HBBusinessLayer  {
 		}
 	}
 
-	
+
 /**
  *
  * @param selectSQL
@@ -713,10 +719,10 @@ public class HBBusinessLayer  {
  * @param mainDetails
  * @return
  */
-  	
-  	
+
+
   	private String dateFormat(int dateFormatIndex, long mainYear, String mainDetails) {
-  		
+
   		char separator = '.';
   		String displayDate = "", dayMonth = "", mainYears = "", month = "", day = "";
   	// Test for problems
@@ -765,7 +771,8 @@ public class HBBusinessLayer  {
 			}
   			return displayDate;
 
-  		} else if (dateFormatIndex == 3 || dateFormatIndex == 4) {
+  		}
+		if (dateFormatIndex == 3 || dateFormatIndex == 4) {
   	//Format "dd Mmm yyyy","dd MMM yyyy"
   			if (!dayMonth.startsWith("%")) {
   				if (day.startsWith("%")) {
@@ -855,19 +862,17 @@ public class HBBusinessLayer  {
 		}
 		try {
 			int monthNumber = Integer.parseInt(month);
-			if (monthNumber > 0 &&  monthNumber < 13) {
-				monthName = monthNamesAbbrev[Integer.parseInt(month)-1];
-			} else {
+			if ((monthNumber <= 0) || (monthNumber >= 13)) {
 				return monthName;
 			}
+			monthName = monthNamesAbbrev[Integer.parseInt(month)-1];
 		} catch(NumberFormatException nfe) {
 			System.out.println("NumberFormatException month: " + month + " err: " + nfe.getMessage());
 		}
 		if (upperCase) {
 			return monthName.toUpperCase();
-		} else {
-			return monthName;
 		}
+		return monthName;
 	}
 
 /**
@@ -908,7 +913,7 @@ public class HBBusinessLayer  {
 		}
 		dateFormatIndex = newDateFormat;
 	}
-	
+
 /**
  * getChangedDateFormat()
  * @return
@@ -916,7 +921,7 @@ public class HBBusinessLayer  {
 	public boolean getChangedDateFormat() {
 		return changedDateFormat;
 	}
-	
+
 /**
  * public void dateFormatSelect() for all HDATE display in handlers
  */
@@ -930,7 +935,7 @@ public class HBBusinessLayer  {
 		}
 		System.out.println("dateFormatSelect() - Format " +  HGlobal.dateFormat + " not found!!");
 	}
-	
+
 /**
  * Date format selector
  * @return date format index
@@ -944,9 +949,9 @@ public class HBBusinessLayer  {
 		System.out.println("dateFormatSelector() - Format string not found!!");
         return 0;
 	}
-	
+
 /**
- * initiateDateFormat(int index)	
+ * initiateDateFormat(int index)
  */
 	public void initiateDateFormat(int index) {
 		HGlobal.dateFormat = dateFormats[index];
@@ -1043,7 +1048,7 @@ public class HBBusinessLayer  {
 /**
  * Date format selector
  * @return date format index
- 
+
 	private int dateFormatSelector() {
 		for (int i = 0; i < dateFormat.length; i++) {
 			if (dateFormat[i].trim().equals(HGlobal.dateFormat.trim())) {
@@ -1053,9 +1058,9 @@ public class HBBusinessLayer  {
 		System.out.println("dateFormatSelector() - Format string not found!!");
         return 0;
 	}
-*/	
+*/
 /**
- * initiateDateFormat(int index)	
+ * initiateDateFormat(int index)
 
 	public void initiateDateFormat(int index) {
 		HGlobal.dateFormat = dateFormat[index];

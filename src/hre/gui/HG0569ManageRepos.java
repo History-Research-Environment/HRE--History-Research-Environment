@@ -7,6 +7,8 @@ package hre.gui;
  *			  2025-02-01 Invoke HG0570 from Add button (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *			  2025-08-16 Get table header from T204 (D Ferguson)
+ *			  2025-09-03 Load Repository list from database (D Ferguson)
+ *			  2025-09-17 Add Repo count into table header, fix sort order (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE02 implement Edit button
@@ -51,6 +53,8 @@ import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBCitationSourceHandler;
+import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
@@ -65,13 +69,14 @@ import net.miginfocom.swing.MigLayout;
 public class HG0569ManageRepos extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBPersonHandler pointPersonHandler;
+	public HBCitationSourceHandler pointCitationSourceHandler;
 
 	public static final String screenID = "56900"; //$NON-NLS-1$
 
 	private JPanel contents;
 
 	String[] tableRepoColHeads = null;
-	private Object[][] tableRepoData;
+	Object[][] tableRepoData;
 	DefaultTableModel srcTableModel = null;
 
 /**
@@ -80,6 +85,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 	public HG0569ManageRepos(HBProjectOpenData pointOpenProject)  {
 		this.pointOpenProject = pointOpenProject;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 
 		setTitle("Manage Repositories");
 	// Setup references for HG0450
@@ -94,6 +100,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		tableRepoColHeads = pointPersonHandler.setTranslatedData("56900", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
 
 	// Setup dialog
+		setResizable(false);
 		contents = new JPanel();
 		setContentPane(contents);
 		contents.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -140,17 +147,18 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		JTable tableRepo = new JTable() {
 			private static final long serialVersionUID = 1L;
 				@Override
-				public boolean isCellEditable(int row, int column) {
+				public boolean isCellEditable(int row, int col) {
+					if (col == 1) return true;
 					return false;
 			}};
 		tableRepo.setMaximumSize(new Dimension(32767, 32767));
 		tableRepo.setFillsViewportHeight(true);
-		// Setup tabbing within table against all rows but only column 0-2
+		// Setup tabbing within table against all rows but only column 0-1
 		if (tableRepo.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableRepo, 0, tableRepo.getRowCount(), 0, 2);
+					JTableCellTabbing.setTabMapping(tableRepo, 0, tableRepo.getRowCount(), 0, 1);
 		// scrollPane contains the Repo picklist
 		JScrollPane scrollTable = new JScrollPane();
-		scrollTable.setPreferredSize(new Dimension(305, 380));
+		scrollTable.setPreferredSize(new Dimension(460, 400));
 		repoPanel.add(scrollTable, "cell 0 0"); //$NON-NLS-1$
 		contents.add(repoPanel, "cell 1 0, grow"); //$NON-NLS-1$
 
@@ -158,6 +166,9 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		JButton btn_Cancel = new JButton("Cancel");		// Cancel
 		btn_Cancel.setEnabled(true);
 		contents.add(btn_Cancel, "cell 1 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
+		JButton btn_Save = new JButton("Save");		// Save
+		btn_Save.setEnabled(false);
+		contents.add(btn_Save, "cell 1 1, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
 		JButton btn_Select = new JButton("Select");		// Select
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 1 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
@@ -165,10 +176,13 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 	// End of Panel Definitions
 
  	// Get Repo data
-		// load some dummy data for test & display - to be removed
-		tableRepoData = new Object[][] {{1, "Repository A "},	{2, "Repository B"}};
-//		tableRepoData = pointPersonHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Repository data
-		if (tableRepoData == null ) {
+		try {
+			tableRepoData = pointCitationSourceHandler.getRepoList();
+		} catch (HBException hbe) {
+			System.out.println( " Error loading Repository list: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+		if (tableRepoData.length == 0 ) {
 			JOptionPane.showMessageDialog(scrollTable, "No data found in HRE database\n"	// No data found in HRE database\n
 													 + "Repository Select error",		// Repository Select error
 													   "Repository Select", 			// Repository Select
@@ -176,21 +190,25 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 			dispose();
 		}
 
-	 	// Setup tablePersData, model and renderer
-		srcTableModel = new DefaultTableModel(
-    		tableRepoData, tableRepoColHeads) {
-				private static final long serialVersionUID = 1L;
-				@SuppressWarnings({ "unchecked", "rawtypes" })
-				@Override
-				public Class getColumnClass(int column) {
-						return getValueAt(0, column).getClass();
+		// Get the number of Elements in the table into a string (##)
+		String count = " (" + String.format("%02d", tableRepoData.length) + ")";	//$NON-NLS-1$ //$NON-NLS-2$
+		// Add this count into the table header string
+		tableRepoColHeads[1] = tableRepoColHeads[1] + count;
+
+		// Setup tablemodel, renderer and layout
+		srcTableModel = new DefaultTableModel(tableRepoData, tableRepoColHeads) {
+			private static final long serialVersionUID = 1L;
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			@Override
+			public Class getColumnClass(int column) {
+					return getValueAt(0, column).getClass();
 			}
 		};
         tableRepo.setModel(srcTableModel);
 		tableRepo.getColumnModel().getColumn(0).setMinWidth(50);
 		tableRepo.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableRepo.getColumnModel().getColumn(1).setMinWidth(50);
-		tableRepo.getColumnModel().getColumn(1).setPreferredWidth(250);
+		tableRepo.getColumnModel().getColumn(1).setPreferredWidth(400);
 		tableRepo.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
 		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
@@ -226,6 +244,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		// Focus Policy still to be setup!
 
 		pack();
+
 
 /*****************************
  * CREATE All ACTION LISTENERS
@@ -273,7 +292,13 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE02 does nothing yet - should drive HG0570 with data pre-populated
+				// NOTE02 - should drive HG0570 and pass across Repo ID for it to load the rest
+				HG0570EditRepository editScreen = new HG0570EditRepository(pointOpenProject);
+				editScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyEdit = btn_Add.getLocationOnScreen();
+				editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
+				editScreen.setVisible(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -293,11 +318,25 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 			}
 		});
 
+		// Listener for Save button
+		btn_Save.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent actEvent) {
+
+				// update edited element name in database
+
+				if (reminderDisplay != null) reminderDisplay.dispose();
+			}
+		});
+
 		// Listener for Select button
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				// pass the selected element back to the caller
 
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				dispose();
 			}
 		});
 

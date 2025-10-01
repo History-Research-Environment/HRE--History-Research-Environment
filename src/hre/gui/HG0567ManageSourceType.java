@@ -6,15 +6,17 @@ package hre.gui;
  *			  2025-01-31 Add Delete button, implement Add button (D Ferguson)
  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
  *			  2025-08-16 Get table header from T204 (D Ferguson)
+ *			  2025-09-04 Load Source Type list from database (D Ferguson)
+ *			  2025-09-16 Add Source type count into table header (D Ferguson)
+ *			  2025-09-25 Load Source templates and convert to Element Names (D Ferguson)
+ *			  2025-09-27 Invoke HG0568 to perform Source Type edits (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
- * NOTE02 implement Edit button
  * NOTE03 implement Copy button
  * NOTE04 doesn't allow editing/saving of source types
  * NOTE06 implement Delete button
  *
  ************************************************************************************/
-
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -25,7 +27,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -57,6 +61,8 @@ import javax.swing.table.TableRowSorter;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBCitationSourceHandler;
+import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
@@ -72,6 +78,7 @@ import net.miginfocom.swing.MigLayout;
 public class HG0567ManageSourceType extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBPersonHandler pointPersonHandler;
+	public HBCitationSourceHandler pointCitationSourceHandler;
 
 	public static final String screenID = "56700"; //$NON-NLS-1$
 
@@ -82,6 +89,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 	DefaultTableModel srcTableModel = null;
 
 	JTextArea fullFootText, shortFootText, biblioText;
+	String[] sorcDefnTemplates;
+	String[][] tableSrcElmntData;
+	long selectedSorcDefnPID;
+	long null_RPID  = 1999999999999999L;
 
 /**
  * Create the dialog
@@ -89,6 +100,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 	public HG0567ManageSourceType(HBProjectOpenData pointOpenProject)  {
 		this.pointOpenProject = pointOpenProject;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 
 	// NOTE this can be called directly from 'Evidence' on mainMenu , when title should be 'Manage Source types'
 	// OR from HG0565ManageSource, when the title should be 'Select Source Type'
@@ -101,14 +113,28 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0567ManageSourceType");	//$NON-NLS-1$
 
-
 	// Collect static GUI text from T204 for Source type table
 		tableSourceTypeColHeads = pointPersonHandler.setTranslatedData("56700", "1", false); // Source Type	//$NON-NLS-1$ //$NON-NLS-2$
+
+	// Load the Source Element list (names/ID#s) as we need it for Source template conversion & checking
+		try {
+			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
+		} catch (HBException hbe) {
+			System.out.println( " Error loading Source Element list: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+	    // Then construct a lookup for "12345" → "[element text]" conversion
+        Map<String, String> codeToTextMap = new HashMap<>();
+        for (String[] row : tableSrcElmntData) {
+            if (row.length >= 2)
+                codeToTextMap.put(row[1], row[0].trim());
+        }
 
 	// For Text area font setting
 	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 
 	// Setup dialog
+	    setResizable(false);
 		contents = new JPanel();
 		setContentPane(contents);
 		contents.setLayout(new MigLayout("insets 10", "[]10[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -165,7 +191,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 					JTableCellTabbing.setTabMapping(tableSourceType, 0, tableSourceType.getRowCount(), 0, 0);
 		// scrollPane contains the Source Type picklist
 		JScrollPane scrollTable = new JScrollPane();
-		scrollTable.setPreferredSize(new Dimension(305, 380));
+		scrollTable.setPreferredSize(new Dimension(370, 380));
 		sourceTypePanel.add(scrollTable, "cell 0 0"); //$NON-NLS-1$
 		contents.add(sourceTypePanel, "cell 1 0, grow"); //$NON-NLS-1$
 
@@ -186,7 +212,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		fullFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		fullFootText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane fullFootTextScroll = new JScrollPane(fullFootText);
-		fullFootTextScroll.setMinimumSize(new Dimension(200, 100));
+		fullFootTextScroll.setMinimumSize(new Dimension(240, 100));
 		fullFootTextScroll.getViewport().setOpaque(false);
 		fullFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		fullFootText.setCaretPosition(0);	// set scrollbar to top
@@ -204,7 +230,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		shortFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		shortFootText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane shortFootTextScroll = new JScrollPane(shortFootText);
-		shortFootTextScroll.setMinimumSize(new Dimension(200, 100));
+		shortFootTextScroll.setMinimumSize(new Dimension(240, 100));
 		shortFootTextScroll.getViewport().setOpaque(false);
 		shortFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		shortFootText.setCaretPosition(0);	// set scrollbar to top
@@ -222,7 +248,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		biblioText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		biblioText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane biblioTextScroll = new JScrollPane(biblioText);
-		biblioTextScroll.setMinimumSize(new Dimension(200, 100));
+		biblioTextScroll.setMinimumSize(new Dimension(240, 100));
 		biblioTextScroll.getViewport().setOpaque(false);
 		biblioTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		biblioText.setCaretPosition(0);	// set scrollbar to top
@@ -233,38 +259,42 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 	// Define control buttons
 		JButton btn_Cancel = new JButton("Cancel");		// Cancel
 		btn_Cancel.setEnabled(true);
-		contents.add(btn_Cancel, "cell 2 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
+		contents.add(btn_Cancel, "cell 1 1 2, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
+		JButton btn_Save = new JButton("Save");		// Save
+		btn_Save.setEnabled(false);
+		contents.add(btn_Save, "cell 1 1 2, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
 		JButton btn_Select = new JButton("Select");		// Select
 		btn_Select.setEnabled(false);
-		contents.add(btn_Select, "cell 2 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
+		contents.add(btn_Select, "cell 1 1 2, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
 	// End of Panel Definitions
 
- 	// Get Source Type data
-		// load some dummy data for test & display - to be removed
-		tableSourceTypeData = new Object[][] {{"Source type A "}, {"Source type B"}};
-//		tableSourceTypeData = pointPersonHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Source data
-		if (tableSourceTypeData == null ) {
+ 	// Get Source Defn data
+	// tableSourceTypeData contains SourceDefnName, PID (only display 1st col)
+		try {
+			tableSourceTypeData = pointCitationSourceHandler.getSourceDefnList();
+		} catch (HBException hbe) {
+			System.out.println( " Error loading Source Defn list: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+		if (tableSourceTypeData.length == 0 ) {
 			JOptionPane.showMessageDialog(scrollTable, "No data found in HRE database\n"	// No data found in HRE database\n
-													 + "Source Type select error",		// Source Type select error
-													   "Source Type Select", 			// Source Type Select
+													 + "Source Definition select error",		// Source Definition select error
+													   "Source Definition Select", 			// Source Defenition Select
 													   JOptionPane.ERROR_MESSAGE);
 			dispose();
 		}
 
-	 	// Setup tablePersData, model and renderer
-		srcTableModel = new DefaultTableModel(
-    		tableSourceTypeData, tableSourceTypeColHeads) {
-				private static final long serialVersionUID = 1L;
-				@SuppressWarnings({ "unchecked", "rawtypes" })
-				@Override
-				public Class getColumnClass(int column) {
-						return getValueAt(0, column).getClass();
-			}
-		};
+		// Get the number of entriets in the table into a string (##)
+		String count = " (" + String.format("%02d", tableSourceTypeData.length) + ")";	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		// Add this count into the table header string
+		tableSourceTypeColHeads[0] = tableSourceTypeColHeads[0] + count;
+
+	 	// Setup tablemodel and layout
+		srcTableModel = new DefaultTableModel(tableSourceTypeData, tableSourceTypeColHeads);
         tableSourceType.setModel(srcTableModel);
 		tableSourceType.getColumnModel().getColumn(0).setMinWidth(50);
-		tableSourceType.getColumnModel().getColumn(0).setPreferredWidth(300);
+		tableSourceType.getColumnModel().getColumn(0).setPreferredWidth(350);
 		tableSourceType.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
 		// Set the ability to sort on columns
@@ -317,10 +347,25 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 				// find source clicked
 					int clickedRow = tableSourceType.getSelectedRow();
 					int selectedRowInTable = tableSourceType.convertRowIndexToModel(clickedRow);
-
-				// Do something with the source type value so Select button can use it,
-				// and get the source type templates and load them into the footnote/biblio areas (NOTE04)
-
+				// Get the Source Defn templates using the selected sorcDefnPID value
+					selectedSorcDefnPID = (long)tableSourceTypeData[selectedRowInTable][1];
+					try {
+						sorcDefnTemplates = pointCitationSourceHandler
+											.getSourceDefnTemplates(selectedSorcDefnPID);
+					} catch (HBException hbe) {
+						System.out.println( " Error loading source templates: " + hbe.getMessage());
+						hbe.printStackTrace();
+					}
+				// Get the source template from the Source Defn templates, then convert
+				// the Element [nnnnn] entries into Element Names via the hashmap codeToTextMap
+				// and load the result into the text areas for display.
+				// Start with the Full footer
+					fullFootText.setText(HGlobalCode.convertNumsToNames(sorcDefnTemplates[0], codeToTextMap));
+				// then the Short footer
+					shortFootText.setText(HGlobalCode.convertNumsToNames(sorcDefnTemplates[1], codeToTextMap));
+				// then the Bibliography template
+					biblioText.setText(HGlobalCode.convertNumsToNames(sorcDefnTemplates[2], codeToTextMap));
+				// Set control buttons
 					btn_Edit.setEnabled(true);
 					btn_Copy.setEnabled(true);
 					btn_Select.setEnabled(true);
@@ -333,7 +378,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0568EditSourceType typeScreen = new HG0568EditSourceType(pointOpenProject);
+				HG0568EditSourceType typeScreen = new HG0568EditSourceType(pointOpenProject, null_RPID); //<<TEMP NULLRPID!
 				typeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyType = btn_Add.getLocationOnScreen();
 				typeScreen.setLocation(xyType.x, xyType.y + 30);
@@ -345,7 +390,12 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE02 does nothing yet
+				HG0568EditSourceType editScreen = new HG0568EditSourceType(pointOpenProject, selectedSorcDefnPID);
+				editScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyEdit = btn_Add.getLocationOnScreen();
+				editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
+				editScreen.setVisible(true);
+				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -362,6 +412,18 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				// NOTE06 not implemented yet
+				// DO NOT DELETE A SOURCE TYPE DEFINITION THAT IS IN USE!!!
+			}
+		});
+
+		// Listener for Save button
+		btn_Save.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent actEvent) {
+
+				// update edited data in database
+
+				if (reminderDisplay != null) reminderDisplay.dispose();
 			}
 		});
 
@@ -369,7 +431,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				// pass the selected defn to the caller
 
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				dispose();
 			}
 		});
 

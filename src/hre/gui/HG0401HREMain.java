@@ -15,7 +15,6 @@ package hre.gui;
  * v0.00.0020 2020-03-17 added TMG to HRE convert in Tool menu (N Tolleshaug)
  *            2020-03-26 changes in above code returned to DF
  * v0.00.0021 2020-03-28 added code to open last project if option on (D Ferguson)
- *                       also moved Welcome screen display here from HA0001
  *            2020-04-10 add/delete projects at bottom of Project menu (D Ferguson)
  *                       enforce maximum of 3 projects open at once
  *                       fix bug in Exit where could not cancel out of Close
@@ -89,8 +88,10 @@ package hre.gui;
  * 			  2025-01-21 Removed extension.setBusinessLayerPointer(pointBusinessLayer) (N Tolleshaug)
  * 			  2025-02-08 Add new Evidence Source Elements menu item (D Ferguson)
  * 			  2025-06-29 Set calls to Evidence screens with pointOpenProject (D Ferguson)
+ * 			  2025-09-25 Add greyed-out logo to contentsPane to improve look (D Ferguson)
  *****************************************************************************************/
 
+import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -98,6 +99,8 @@ import java.awt.Desktop;
 import java.awt.Dialog.ModalExclusionType;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.SystemColor;
 import java.awt.Toolkit;
@@ -111,6 +114,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
 import java.io.IOException;
@@ -119,6 +123,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -182,6 +187,7 @@ public class HG0401HREMain extends JFrame {
 
 	public static JDesktopPane mainPane; 		// Make public so all JIFs can be added to it
 	public static HG0401HREMain mainFrame;
+	private BufferedImage logo = null;
 	private JMenuBar menuBar;
 	private JMenu menuReports;					// for use by plugin code
 	private JMenu menuTools;
@@ -306,8 +312,28 @@ public class HG0401HREMain extends JFrame {
 		setTitle("  HRE - History Research Engine"); //$NON-NLS-1$
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);    // set to do nothing as we have our own Close Handler
 
+		// Create a bufferedimage from the current HRE logo
+		try {
+			logo = ImageIO.read(HG0401HREMain.class.getResourceAsStream("/hre/images/HRE-logo.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		// Setup screen mainPane as a JDesktopPane for Viewpoint JInternalFrames
-		mainPane = new JDesktopPane();
+		// and incorporate the logo in it, but greyed out
+		mainPane = new JDesktopPane() {
+			private static final long serialVersionUID = 1L;
+			@Override
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				int x = (getWidth() - logo.getWidth())  / 2;		// center the logo image
+				int y = (getHeight() - logo.getHeight()) / 2;
+				Graphics2D g2 = (Graphics2D) g.create();
+				g2.setComposite(AlphaComposite.SrcOver.derive(0.1f));  //<< set to 0.1 level of opaqueness
+				g2.drawImage(logo, x, y, this);
+				g2.dispose();
+			}
+		};
 		mainPane.setBackground(SystemColor.control);
 		mainPane.setLayout(null);								// absolute layout, so we control placement of Viewpoints, etc
 		getContentPane().add(mainPane, BorderLayout.CENTER);	// place in centre - (JFrames are Border Layout by default)
@@ -706,7 +732,7 @@ public class HG0401HREMain extends JFrame {
 		menuProjOpen.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-	    	// Do not allow more than 3 open projects
+			// Do not allow more than 3 open projects
 	    	if (HGlobal.numOpenProjects == 3)
 	    		{JOptionPane.showMessageDialog(HG0401HREMain.mainPane, HG0401Msgs.Text_133, HG0401Msgs.Text_134,
 	    				JOptionPane.INFORMATION_MESSAGE);

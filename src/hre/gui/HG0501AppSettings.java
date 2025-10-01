@@ -48,6 +48,7 @@ package hre.gui;
  *			  2024-10-12 Add 'PS reload' User option (D Ferguson)
  *			  2024-10-12 Removed resetPersonSelect() from change dataformat (N Tolleshaug)
  *			  2024-11-15 Add 'prompt for Married Name' User option (D Ferguson)
+ * v0.04.0032 2025-09-21 Do pack() after font change as size may require it (D Ferguson)
  ***********************************************************************************/
 
 import java.awt.Color;
@@ -1772,6 +1773,8 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         // Ensure selected items visible in new lists
         scrollSelectedToVisible(themeList);
         scrollSelectedToVisible(fontList);
+        // PAck screen again as font size change may need it
+        pack();
     } // End setSelectedFont
 
 /**

@@ -726,7 +726,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		// Lstener for selection of the Role/Sentence tabbed pane
 		// Required so that tableRole gets focus, otherwise the up/down
 		// buttons don't work until the table is manually selected.
-		tabPane.addChangeListener(e -> {
+		tabPane.addChangeListener(_ -> {		// using unnamed lambda
 			if (tabPane.getSelectedIndex() == 1) tableRole.requestFocusInWindow();
 		});
 

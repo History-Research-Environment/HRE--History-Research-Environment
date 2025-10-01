@@ -38,21 +38,22 @@ package hre.tmgjava;
  *  		  2023-02-15 - Implemented create new thumbs for exhibits (N. Tolleshaug)
  *  		  2023-02-28 - New pass 2 for location, events in pass 3 (N. Tolleshaug)
  *  		  2023-04-01 - Cleaned database version testing (N. Tolleshaug)
- * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-05-01 - Get TMG language fixed for v22a (N. Tolleshaug)
- * v0.01.0031 2023-10-20 - Updated for v22b database
+ * v0.02.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
+ * v0.03.0030 2023-05-01 - Get TMG language fixed for v22a (N. Tolleshaug)
+ * v0.03.0031 2023-10-20 - Updated for v22b database
  * 			  2023-10-20 - Loading Source/Citation TMG tables
  * 			  2023-10-20 - Removed all v22a handling
  * 			  2023-11-03 - Updated for new associate event processing
  * 			  2024-10-20 - Removed finally console and status printout (N. Tolleshaug)
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  *			  2024-12-12 - Updated for seed v22c database (N. Tolleshaug)
- *v0.01.0032  2025-02-11 - Code for initiate citation/source import (N. Tolleshaug)
+ *v0.04.0032  2025-02-11 - Code for initiate citation/source import (N. Tolleshaug)
  *			  2025-06-30 - Added lines for build number (N. Tolleshaug)
  *			  2025-07-12 - Added remaining source_def/elemnt, repo and link tables (N. Tolleshaug)
  *			  2025-07-21 - Changed sequenece of source table processing (N. Tolleshaug)
  *			  2025-07-22 - Imported project ruleset from pjc file (N. Tolleshaug)
  *			  2025-09-01 - Add new source table process (updateT737Templates) (D Ferguson)
+ *			  2025-09-19 - Change TMGLanguage code to find most common language (D Ferguson)
  *******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
@@ -67,8 +68,13 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 //import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
@@ -536,25 +542,28 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	private String locateTMGlanguage() {
 		String wsentance = "", language = "en-US";
+		List<String> possibles = new ArrayList<>();
 		try {
 			tmgLoader.loadTmgEventTables(false);
 			TMGtableData tmgEtable = TMGglobal.tmg_E_table;
 			int nrOftmg$Rows = tmgEtable.getNrOfRows();
+			// Extract [LANGUAGE= settings in E.dbf into List of possible languages
 			for (int index = 0; index < nrOftmg$Rows; index++) {
 				wsentance = HREmemo.returnStringContent(tmgEtable.getValueString(index,"WSENTENCE"));
 				if (wsentance.trim().length() > 20) {
 					int endPos = wsentance.indexOf("][");
 					if (endPos > 0)
-					   language = HREmemo.getLangCode(wsentance.substring(3,endPos)).trim();
-					System.out.println(" Language found: " + language);
-					TMGglobal.tmg_E_table.closeTMGtable();
-					return language;
+						possibles.add(wsentance.substring(3,endPos));
 				}
 			}
-
-			System.out.println(" Language: " + language);
+			// Now find the most common entry in the list of possibles
+			String mostCommon = possibles.stream()
+	                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+	                .entrySet().stream().max((o1, o2) -> o1.getValue().compareTo(o2.getValue()))
+	                .map(Map.Entry::getKey).orElse(null);
+			language = HREmemo.getLangCode(mostCommon).trim();
+			System.out.println(" Language found: " + mostCommon);
 			TMGglobal.tmg_E_table.closeTMGtable();
-			//return language;
 		} catch (HCException hce) {
 			System.out.println(" ERROR - locate TMG native language: " + hce.getMessage());
 			if (TMGglobal.TRACE) hce.printStackTrace();

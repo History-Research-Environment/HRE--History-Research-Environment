@@ -20,6 +20,13 @@ package hre.bila;
  *			  2025-05-26 - Add SORC_FIDELITY into tableSourceData (D Ferguson)
  *			  2025-05-29 - Add assessor data into citationEditData (D Ferguson)
  *			  2025-06-15 - For new project with empty source table add default Source (N. Tolleshaug)
+ *			  2025-09-02 - Add routine to return SourcElmnt table (D Ferguson)
+ * 			  2025-09-03 - Add routine to return Repository table (D Ferguson)
+ * 			  2025-09-04 - Add routine to return Source Defn table (D Ferguson)
+ * 			  2025-09-23 - Add routine to return Source Defn templates (D Ferguson)
+ * 			  2025-09-26 - Add routine to return Source Defn Edit data (D Ferguson)
+ * 			  2025-09-28 - Add routine to return Source Edit data (D Ferguson)
+ * 			  2025-09-29 - Add routine to return Source Elmnt values (T734) (D Ferguson)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -57,12 +64,17 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 	Object[][] tableCiteData = null;
 	Object[][] tableSourceData =  null;
+	String[][] tableSourceElmntData = null;
+	String[][] tableSourceElmntDataValues = null;
+	Object[][] tableSourceDefnData = null;
+	String[] sourceDefnTemplates = new String[3];
+	Object[][] tableRepoData = null;
 	String[] accuracy = {"","","","",""};
 
 	long citedRecordRPID, citationTablePID, nextCitationPID, sourceTablePID;
 	String citedTableName, sourceTitle, abbrevTitle, ctnDetail, ctnMemo;
-	String sourceTypeName, sourceRefTable, sourceMemo, subSource, sourceText, sourceRemind;
-	int sourceNumber, majSource, sourceType, sourceRefId;
+	String sourceTypeName, sourceRefTable, sourceMemo, subSource, sourceText;
+	int sourceNumber, majSource, sourceRefId;
 
 	public String[] getAccuracyData() {
 		return accuracy;
@@ -217,15 +229,18 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public Object[][] getSourceList() throws HBException {
+		// Load all T736 SORC records
 		ResultSet eventCitationRS, eventSourcRS;
-		String sourceTitle = "Edit New Source";
+		String sourceAbbrev = "Edit New Source";
 		int citedNumber = 0, index = 0;
 		long sourcePID = null_RPID;
+		long sourceDefnPID = null_RPID;
 		String sourceFID = "E";
+		String sourceFullFoot = "", sourceShortFoot = "", sourceBiblio ="";
 
 	// Load pre populated list if done before
 		if (tableSourceData != null) return tableSourceData;
-		
+
 	// Continue with loading source list
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", sourceTable, "");
@@ -240,21 +255,29 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			}
 		// Continue
 			eventSourcRS.last();
-			tableSourceData = new Object[eventSourcRS.getRow()][5];
+			tableSourceData = new Object[eventSourcRS.getRow()][9];
 			eventSourcRS.beforeFirst();
 			while (eventSourcRS.next()) {
-				sourceTitle = eventSourcRS.getString("SORC_ABBREV").trim();
+				sourceAbbrev = eventSourcRS.getString("SORC_ABBREV").trim();
 				sourcePID = eventSourcRS.getLong("PID");
 				selectString = setSelectSQL("*", citationTable, "SORC_RPID = " + sourcePID);
 				eventCitationRS = requestTableData(selectString, dataBaseIndex);
 				eventCitationRS.last();
 				citedNumber = eventCitationRS.getRow();
 				sourceFID = eventSourcRS.getString("SORC_FIDELITY");
+				sourceDefnPID = eventSourcRS.getLong("SORC_DEF_RPID");
+				sourceFullFoot = eventSourcRS.getString("SORC_FULLFORM").trim();
+				sourceShortFoot = eventSourcRS.getString("SORC_SHORTFORM").trim();
+				sourceBiblio = eventSourcRS.getString("SORC_BIBLIOFORM").trim();
 				tableSourceData[index][0] = eventSourcRS.getInt("SORC_REF");
-				tableSourceData[index][1] = sourceTitle;
+				tableSourceData[index][1] = sourceAbbrev;
 				tableSourceData[index][2] = citedNumber;
 				tableSourceData[index][3] = sourcePID;
 				tableSourceData[index][4] = sourceFID;
+				tableSourceData[index][5] = sourceDefnPID;
+				tableSourceData[index][6] = sourceFullFoot;
+				tableSourceData[index][7] = sourceShortFoot;
+				tableSourceData[index][8] = sourceBiblio;
 				index++;
 			}
 		} catch (SQLException sqle) {
@@ -262,6 +285,259 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sqle.printStackTrace();
 		}
 		return tableSourceData;
+	}
+
+/**
+ * public Object[] getSourceEditData(long sourcePID)
+ * @param sourcePID
+ * @return
+ * @throws HBException
+ */
+	public Object[] getSourceEditData(long sourcePID) throws HBException {
+		ResultSet sourceRS;
+		String sourceFidelity, sourceAbbrev, sourceTitle,
+							sourceFullFoot, sourceShortFoot, sourceBiblio, sourceRemind, sourceText;
+		int sourceRef, sourceType;
+		long sourceDefnPID, sourceTextPID, sourceAuthorPID, sourceEditorPID, sourceCompilerPID, sourceRemindPID;
+		boolean sourceActiv;
+		Object[] sourceEditData = new Object[15];
+		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", sourceTable, " PID = " + sourcePID);
+		sourceRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			sourceRS.first();
+			sourceActiv = sourceRS.getBoolean("IS_ACTIVE");
+			sourceDefnPID = sourceRS.getLong("SORC_DEF_RPID");
+			sourceRef = sourceRS.getInt("SORC_REF");
+			sourceType = sourceRS.getInt("SORC_TYPE");
+			sourceFidelity = sourceRS.getString("SORC_FIDELITY");
+			sourceTextPID = sourceRS.getLong("SORC_TEXT_RPID");
+			if (sourceTextPID == null_RPID) sourceText = "";
+			else sourceText = pointHREmemo.readMemo(sourceTextPID);
+			sourceAuthorPID = sourceRS.getLong("SORC_AUTHOR_RPID");
+			sourceEditorPID = sourceRS.getLong("SORC_EDITOR_RPID");
+			sourceCompilerPID = sourceRS.getLong("SORC_COMPILER_RPID");
+			sourceAbbrev = sourceRS.getString("SORC_ABBREV").trim();
+			sourceTitle = sourceRS.getString("SORC_TITLE").trim();
+			sourceFullFoot = sourceRS.getString("SORC_FULLFORM").trim();
+			sourceShortFoot = sourceRS.getString("SORC_SHORTFORM").trim();
+			sourceBiblio = sourceRS.getString("SORC_BIBLIOFORM").trim();
+			sourceRemindPID = sourceRS.getLong("SORC_REMIND_RPID");
+			if (sourceRemindPID == null_RPID) sourceRemind = "";
+			else sourceRemind = pointHREmemo.readMemo(sourceRemindPID);
+			sourceDefnPID = sourceRS.getLong("SORC_DEF_RPID");
+
+			sourceEditData[0] = sourceTitle;
+			sourceEditData[1] = sourceAbbrev;
+			sourceEditData[2] = sourceRef;
+			sourceEditData[3] = sourceType;
+			sourceEditData[4] = sourceActiv;
+			sourceEditData[5] = sourceFidelity;
+			sourceEditData[6] = sourceFullFoot;
+			sourceEditData[7] = sourceShortFoot;
+			sourceEditData[8] = sourceBiblio;
+			sourceEditData[9] = sourceText;
+			sourceEditData[10] = sourceRemind;
+			sourceEditData[11] = sourceDefnPID;
+			sourceEditData[12] = sourceAuthorPID;
+			sourceEditData[13] = sourceEditorPID;
+			sourceEditData[14] = sourceCompilerPID;
+		} catch (SQLException sqle) {
+			System.out.println(" getSourceData() error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return sourceEditData;
+	}
+
+/**
+ * getSourceElmntList() throws HBException
+ * @return
+ * @throws HBException
+ */
+	public String[][] getSourceElmntList(String language) throws HBException {
+		// Load all T738 SORC_ELMNT records for requested language
+		int index = 0;
+		ResultSet sourceElmntRS;
+
+	// Load source element list for requested language
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", sourceElmntTable, "SORC_ELMNT_LANG=" + "'" + language + "'");
+		sourceElmntRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			sourceElmntRS.last();
+			tableSourceElmntData = new String[sourceElmntRS.getRow()][2];
+			sourceElmntRS.beforeFirst();
+			while (sourceElmntRS.next()) {
+				tableSourceElmntData[index][0] = sourceElmntRS.getString("SORC_ELMNT_NAME");
+				tableSourceElmntData[index][1] = sourceElmntRS.getString("SORC_ELMNT_NUM");
+				index++;
+			}
+		} catch (SQLException sqle) {
+			System.out.println(" getSourceElmntList() error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return tableSourceElmntData;
+	}
+
+/**
+ * getSourceElmntDataValues() throws HBException
+ * @return
+ * @throws HBException
+ */
+	public String[][] getSourceElmntDataValues(long sourceOwner) throws HBException {
+		// Load all T734 SORC_DATA records for a particular Source
+		int index = 0;
+		ResultSet elmntValuRS;
+
+	// Load source data table for requested source
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", sourceDataTable, "SORC_OWNER_RPID=" + sourceOwner);
+		elmntValuRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			elmntValuRS.last();
+			tableSourceElmntDataValues= new String[elmntValuRS.getRow()][2];
+			elmntValuRS.beforeFirst();
+			while (elmntValuRS.next()) {
+				tableSourceElmntDataValues[index][0] = elmntValuRS.getString("SORC_ELMNT_NUM");
+				tableSourceElmntDataValues[index][1] = elmntValuRS.getString("SORC_ELMNT_DATA");
+				index++;
+			}
+		} catch (SQLException sqle) {
+			System.out.println(" getSourceElmntValue() error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return tableSourceElmntDataValues;
+	}
+
+/**
+ * String[][] getSourceDefnList() throws HBException
+ * @return
+ * @throws HBException
+ */
+	public Object[][] getSourceDefnList() throws HBException {
+		// Load all T737 SORC_DEFN records (regardless of language at this stage)
+		int index = 0;
+		ResultSet sourceDefnRS;
+	// Load pre populated list if done before
+		if (tableSourceDefnData != null) return tableSourceDefnData;
+
+	// Continue with loading source definition list
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", sourceDefnTable, "");
+		sourceDefnRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			sourceDefnRS.last();
+			tableSourceDefnData = new Object[sourceDefnRS.getRow()][2];
+			sourceDefnRS.beforeFirst();
+			while (sourceDefnRS.next()) {
+				tableSourceDefnData[index][0] = sourceDefnRS.getString("SORC_DEFN_NAME");
+				tableSourceDefnData[index][1] = sourceDefnRS.getLong("PID");
+				index++;
+			}
+		} catch (SQLException sqle) {
+			System.out.println(" getSourceDefnList() error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return tableSourceDefnData;
+	}
+
+/**
+ * String[] getSourceDefnTemplates() throws HBException
+ * @return
+ * @throws HBException
+ */
+	public String[] getSourceDefnTemplates(long defnPID) throws HBException {
+		// Get the 3 T737 SORC_DEFN templates for the requested Source Defn
+		ResultSet sourceDefnRS;
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", sourceDefnTable, "PID = " + defnPID);
+		sourceDefnRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			sourceDefnRS.first();
+			sourceDefnTemplates[0] = sourceDefnRS.getString("SORC_DEFN_FULLFOOT");
+			sourceDefnTemplates[1] = sourceDefnRS.getString("SORC_DEFN_SHORTFOOT");
+			sourceDefnTemplates[2] = sourceDefnRS.getString("SORC_DEFN_BIBLIO");
+		} catch (SQLException sqle) {
+			System.out.println(" getSourceDefnTemplate error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return sourceDefnTemplates;
+	}
+
+/**
+ * public Object[] getSourceDefnEditData(long sourceDefnPID)
+ * @param sourceDefnPID
+ * @return
+ * @throws HBException
+ */
+	public Object[] getSourceDefnEditData(long sourceDefnPID) throws HBException {
+		ResultSet sourceDefnRS;
+		String sourceDefnName, sourceDefnLang, sourceDefnFullFoot, sourceDefnShortFoot, sourceDefnBiblio, sourceDefnRemind;
+		int sourceDefnType;
+		long sourceDefnRemindPID;
+		Object[] sourceDefnEditData = new Object[7];
+		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", sourceDefnTable, " PID = " + sourceDefnPID);
+		sourceDefnRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			sourceDefnRS.first();
+			sourceDefnName = sourceDefnRS.getString("SORC_DEFN_NAME").trim();
+			sourceDefnType = sourceDefnRS.getInt("SORC_DEFN_TYPE");
+			sourceDefnLang = sourceDefnRS.getString("SORC_DEFN_LANG").trim();
+			sourceDefnFullFoot = sourceDefnRS.getString("SORC_DEFN_FULLFOOT").trim();
+			sourceDefnShortFoot = sourceDefnRS.getString("SORC_DEFN_SHORTFOOT").trim();
+			sourceDefnBiblio = sourceDefnRS.getString("SORC_DEFN_BIBLIO").trim();
+			sourceDefnRemindPID = sourceDefnRS.getLong("SORC_DEFN_REMIND_RPID");
+			if (sourceDefnRemindPID == null_RPID) sourceDefnRemind = "";
+			else sourceDefnRemind = pointHREmemo.readMemo(sourceDefnRemindPID);
+
+			sourceDefnEditData[0] = sourceDefnName;
+			sourceDefnEditData[1] = sourceDefnType;
+			sourceDefnEditData[2] = sourceDefnLang;
+			sourceDefnEditData[3] = sourceDefnFullFoot;
+			sourceDefnEditData[4] = sourceDefnShortFoot;
+			sourceDefnEditData[5] = sourceDefnBiblio;
+			sourceDefnEditData[6] = sourceDefnRemind;
+
+		} catch (SQLException sqle) {
+			System.out.println(" getSourceDefnData() error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return sourceDefnEditData;
+	}
+
+/**
+ * Object[][] getRepoList() throws HBException
+ * @return
+ * @throws HBException
+ */
+	public Object[][] getRepoList() throws HBException {
+		// Load all T739 REPO records
+		int index = 0;
+		ResultSet repoRS;
+	// Load pre populated list if done before
+		if (tableRepoData != null) return tableRepoData;
+
+	// Continue with loading repositorylist
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		selectString = setSelectSQL("*", repoTable, "");
+		repoRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			repoRS.last();
+			tableRepoData = new Object[repoRS.getRow()][2];
+			repoRS.beforeFirst();
+			while (repoRS.next()) {
+				tableRepoData[index][0] = repoRS.getInt("REPO_REF");
+				tableRepoData[index][1] = repoRS.getString("REPO_ABBREV");
+				index++;
+			}
+		} catch (SQLException sqle) {
+			System.out.println(" getRepoList() error: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return tableRepoData;
 	}
 
 /**
@@ -326,7 +602,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public void saveCitedData(long citationTablePID, Object[] saveCitedData, int[] accuracySave) throws HBException{
-		//System.out.println(" saveCitedData PID: " + citationTablePID + "-" + saveCitedData[0] + "/" + accuracySave[0]);
 		ResultSet eventCitationRS, eventSourcRS;
 		long sourcePID, memoTablePID;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
@@ -431,13 +706,13 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sqle.printStackTrace();
 		}
 	}
-	
-	
+
+
 /**
- * private void addToSourceT736_SORC(long T736tablePID, ResultSet hreTable)	
+ * private void addToSourceT736_SORC(long T736tablePID, ResultSet hreTable)
  * @param T736tablePID
  * @param hreTable
- *  * CREATE TABLE T736_SORC( 
+ *  * CREATE TABLE T736_SORC(
 	PID BIGINT NOT NULL,
 	CL_COMMIT_RPID BIGINT NOT NULL,
 	IS_ACTIVE BOOLEAN NOT NULL,
@@ -465,7 +740,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 					sourceReference = hreTable.getInt("SORC_REF");
 				}
 			}
-			
+
 		// Move cursor to the insert row
 				hreTable.moveToInsertRow();
 		// Update new row in H2 database
@@ -474,7 +749,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateBoolean("IS_ACTIVE", true);
 				hreTable.updateInt("SORC_REF", sourceReference + 1);
 				hreTable.updateInt("SORC_TYPE",1);
-				hreTable.updateString("SORC_FIDELITY","C");			
+				hreTable.updateString("SORC_FIDELITY","C");
 				hreTable.updateLong("SORC_TEXT_RPID",null_RPID);
 				hreTable.updateLong("SORC_AUTHOR_RPID",null_RPID);
 				hreTable.updateLong("SORC_EDITOR_RPID",null_RPID);
@@ -483,18 +758,18 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateString("SORC_TITLE", sourceTitle);
 				hreTable.updateString("SORC_FULLFORM", sourceTitle);
 				hreTable.updateString("SORC_SHORTFORM", sourceTitle);
-				hreTable.updateString("SORC_BIBLIOFORM", sourceTitle);		
+				hreTable.updateString("SORC_BIBLIOFORM", sourceTitle);
 				hreTable.updateLong("SORC_REMIND_RPID",null_RPID);
 			//Insert row
 				hreTable.insertRow();
-				
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 
 /*
-CREATE TABLE T737_SORC_DEFN( 
+CREATE TABLE T737_SORC_DEFN(
 	PID BIGINT NOT NULL,
 	CL_COMMIT_RPID BIGINT NOT NULL,
 	SORC_DEFN_TYPE SMALLINT NOT NULL,
@@ -507,12 +782,12 @@ CREATE TABLE T737_SORC_DEFN(
 	);
 ALTER TABLE T737_SORC_DEFN ADD PRIMARY KEY (PID);
 
-CREATE TABLE T738_SORC_ELMNT( 
+CREATE TABLE T738_SORC_ELMNT(
 	PID BIGINT NOT NULL,
 	CL_COMMIT_RPID BIGINT NOT NULL,
 	SORC_ELMNT_NUM CHAR(5) NOT NULL,
 	SORC_ELMNT_LANG CHAR(5) NOT NULL,
-	SORC_ELMNT_NAME CHAR(30) NOT NULL
+	SORC_ELMNT_NAME CHAR(40) NOT NULL
 	);
 ALTER TABLE T738_SORC_ELMNT ADD PRIMARY KEY (PID);
  */

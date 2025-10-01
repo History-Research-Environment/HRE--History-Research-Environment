@@ -45,6 +45,7 @@ package hre.bila;
  * 			  2025-05-25 - Add getKeyAssocMin routine (D Ferguson)
  * 			  2025-05-26 - Add getUserName routine for assessorRPID lookup (D Ferguson)
  * 			  2025-07-02 - Added selectSentenceString for TMG sentences (N. Tolleshaug)
+ * 			  2025-09-25 - Apply fix for Issue 32.08 (D Ferguson)
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -1779,16 +1780,17 @@ public class HBLibraryResultSet {
 		String selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.languageUses,"LANG_CODE = '" + guiLang + "'");
 		ResultSet langSettings = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-		try {
-			langSettings.first();
-			langSettings.updateString("GUI_LANG_CODE", langCodes[0]);
-			langSettings.updateString("DATA1_LANG_CODE", langCodes[1]);
-			langSettings.updateString("DATA2_LANG_CODE", langCodes[2]);
-			langSettings.updateString("REPORT_LANG_CODE", langCodes[3]);
-			langSettings.updateRow();
-
-		} catch (SQLException sqle) {
-			throw new HBException("setLanguageCodes - SQL error: " + sqle.getMessage());
+		if (langSettings != null) {
+			try {
+				langSettings.first();
+				langSettings.updateString("GUI_LANG_CODE", langCodes[0]);
+				langSettings.updateString("DATA1_LANG_CODE", langCodes[1]);
+				langSettings.updateString("DATA2_LANG_CODE", langCodes[2]);
+				langSettings.updateString("REPORT_LANG_CODE", langCodes[3]);
+				langSettings.updateRow();
+			} catch (SQLException sqle) {
+				throw new HBException("setLanguageCodes - SQL error: " + sqle.getMessage());
+			}
 		}
 	}
 

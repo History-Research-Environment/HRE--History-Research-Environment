@@ -3,9 +3,10 @@ package hre.tmgjava;
  * TMG to HRE MEMO handler
  ****************************************************************************************
  * v0.00.0029 2023-04-23 - Firt version (N. Tolleshaug)
- * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-08-15 - Test for long CLOB element (N. Tolleshaug)
+ * v0.02.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
+ * v0.03.0030 2023-08-15 - Test for long CLOB element (N. Tolleshaug)
  * 		      2023-09-06 - if (language.equals("DUTCH")) code = "nl-NL"; (N. Tolleshaug)
+ * v0.04.0032 2025-09-18 - if (language.equals("FRENCH2")) code = "fr-FR"; (D Ferguson)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,7 +32,7 @@ public class HREmemo {
 		//hreTable = TMGglobal.T167;
 		try {
 			memoPID = pointHREbase.lastRowPID(memoTable);
-			if (TMGglobal.DEBUG) 
+			if (TMGglobal.DEBUG)
 				System.out.println(" Last PID in Table " + memoPID);
 		} catch (HBException hbe) {
 			System.out.println("Table " + memoTable + " empty");
@@ -160,6 +161,7 @@ public class HREmemo {
 		if (language.equals("DANISH")) code = "da-DK";
 		if (language.equals("DUTCH")) code = "nl-NL";
 		if (language.equals("FRENCH")) code = "fr-FR";
+		if (language.equals("FRENCH2")) code = "fr-FR";
 		if (language.equals("GERMAN")) code = "de-DE";
 		if (language.equals("ITALIAN")) code = "it-IT";
 		if (language.equals("NORWEGIAN")) code = "no-NB";

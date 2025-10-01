@@ -48,6 +48,7 @@ package hre.bila;
  *			  2025-03-24 Create boolean IS_OWNER in T131 (N. Tolleshaug)
  *			  2025-05-12 Complete IS_OWNER update code (D Ferguson)
  *			  2025-08-25 Update T168 table to add missing new fields (D Ferguson)
+ *			  2025-09-18 Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -502,49 +503,6 @@ public class HBProjectHandler extends HBBusinessLayer {
 
 	// Set boolean IS_OWNER in T131
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
-
-	// Add 3 new fields to T168 (until they are added to the Seed)
-		updateTableInBase("T168_SENTENCE_SET", "ALTER TABLE", "ADD LANG_CODE CHAR(5)", databaseIndex);
-		updateTableInBase("T168_SENTENCE_SET", "ALTER TABLE", "ADD EVNT_TYPE SMALLINT", databaseIndex);
-		updateTableInBase("T168_SENTENCE_SET", "ALTER TABLE", "ADD EVNT_ROLE_NUM SMALLINT", databaseIndex);
-
-	// Create new citation table (until Seed contains it)
-		createTableInBase("T735_CITN","PID BIGINT NOT NULL,"
-							+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-							+ "CITED_RPID BIGINT NOT NULL,"
-							+ "OWNER_TYPE CHAR(4) NOT NULL,"
-							+ "SORC_RPID BIGINT NOT NULL,"
-							+ "ASSESSOR_RPID BIGINT NOT NULL,"
-							+ "CITN_DETAIL_RPID BIGINT NOT NULL,"
-							+ "CITN_MEMO_RPID BIGINT NOT NULL,"
-							+ "CITN_REF CHAR(30) NOT NULL,"
-							+ "CITN_GUI_SEQ SMALLINT NOT NULL,"
-							+ "CITN_ACC_NAME1 TINYINT,"
-							+ "CITN_ACC_NAME2 TINYINT,"
-							+ "CITN_ACC_DATE TINYINT,"
-							+ "CITN_ACC_LOCN TINYINT,"
-							+ "CITN_ACC_MEMO TINYINT", databaseIndex);
-		updateTableInBase("T735_CITN", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);
-
-	// Create new source table (until Seed contains it)
-		createTableInBase("T736_SORC","PID BIGINT NOT NULL,"
-							+ "CL_COMMIT_RPID BIGINT NOT NULL,"
-							+ "IS_ACTIVE BOOLEAN NOT NULL,"
-							+ "SORC_DEF_RPID BIGINT NOT NULL,"
-							+ "SORC_REF SMALLINT NOT NULL,"
-							+ "SORC_TYPE SMALLINT NOT NULL,"
-							+ "SORC_FIDELITY CHAR(1) NOT NULL,"
-							+ "SORC_TEXT_RPID BIGINT NOT NULL,"
-							+ "SORC_AUTHOR_RPID BIGINT NOT NULL,"
-							+ "SORC_EDITOR_RPID BIGINT NOT NULL,"
-							+ "SORC_COMPILER_RPID BIGINT NOT NULL,"
-							+ "SORC_ABBREV CHAR(50) NOT NULL,"
-							+ "SORC_TITLE VARCHAR(400) NOT NULL,"
-							+ "SORC_FULLFORM VARCHAR(500) NOT NULL,"
-							+ "SORC_SHORTFORM VARCHAR(500) NOT NULL,"
-							+ "SORC_BIBLIOFORM VARCHAR(500) NOT NULL,"
-							+ "SORC_REMIND_RPID BIGINT NOT NULL", databaseIndex);
-		updateTableInBase("T736_SORC", "ALTER TABLE", "ADD PRIMARY KEY (PID)", databaseIndex);
 
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
 

@@ -3,15 +3,17 @@ package hre.gui;
  * EditSource -
  * ***********************************************************************************
  * v0.04.0032 2025-02-07 Original draft (D Ferguson)
- *			  2025-02-10 Change textAreas to textPanes; add Preview buttons (D Ferguson)
+ *			  2025-02-10 Change textAreas to textPanes for Preview buttons (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *			  2025-08-16 Get table header from T204 (D Ferguson)
+ *			  2025-09-29 Load all Source data and populate much of screen (D Ferguson)
+ *			  2025-10-01 Fix error in Element Values table load (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
- * NOTE01 allow editing/saving of the Source's data
- * NOTE02 need to load combobox of all Source types for selection and handle changes
- * NOTE06 handle add/delete of source of source and repositories
- * NOTE07 make Preview buttons work
+ * NOTE01 allow saving of the Source's data
+ * NOTE02 need to handle change of Source Types - working on it
+ * NOTE06 handle load/add/delete of source of source and repositories
+ * NOTE07 make Preview buttons work on footnotes/biblio data
  *
  ************************************************************************************/
 
@@ -28,6 +30,15 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -53,6 +64,8 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -61,6 +74,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -77,14 +91,15 @@ import net.miginfocom.swing.MigLayout;
 public class HG0566EditSource extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBPersonHandler pointPersonHandler;
+	public HBCitationSourceHandler pointCitationSourceHandler;
 
 	public static final String screenID = "56600"; //$NON-NLS-1$
 
 	private JPanel contents;
 
-	String[] tableSrcElmntColHeads = null;
-	Object[][] tableSrcElmntData;
-	DefaultTableModel srcElmntTableModel = null;
+	String[] tableSrcElmntValueHeads = null;
+	String[][] tableSrcElmntValueData;
+	DefaultTableModel srcElmntValueModel = null;
 	private int rowClicked;
 
 	String[] tableSrcSrcColHeads = null;
@@ -103,15 +118,31 @@ public class HG0566EditSource extends HG0450SuperDialog {
 										"Transcript",
 										"Extract",
 										"Other/Unknown" };
+	String[][] tableSrcElmntData;
+	String[][] tableSourceElmntDataValues;
+	List<String> uniqueElementNums, uniqueElementNames, uniqueElementValues;
+	long sourcePID, sourceDefnPID;
+	String[] sorcDefnTemplates;
+	String fullFootNumberedTemplate, fullFootNamedTemplate, shortFootNumberedTemplate, shortFootNamedTemplate,
+			biblioNumberedTemplate, biblioNamedTemplate;
+	Object[][] sorcDefnTable;
+	Object[] sourceEditData = null;
+
+	DocumentListener titleTextChange, abbrevTextChange, fullFootTextChange, shortFootTextChange, biblioTextChange,
+					 referTextChange, remindTextChange;
+	boolean titleTextChanged = false, abbrevTextChanged = false, fullFootTextChanged = false, shortFootTextChanged = false,
+			biblioTextChanged = false, referTextChanged = false, remindTextChanged = false;
 
 /**
  * Create the dialog
  */
-	public HG0566EditSource(HBProjectOpenData pointOpenProject)  {
+	public HG0566EditSource(HBProjectOpenData pointOpenProject, long sourcePID)  {
 		this.pointOpenProject = pointOpenProject;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		this.sourcePID = sourcePID;
 
-		setTitle("Source Definition");
+		setTitle("Edit Source");
 		setResizable(false);
 	// Setup references for HG0450
 		windowID = screenID;
@@ -121,18 +152,80 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0566EditSource");	//$NON-NLS-1$
 
-	// Collect static GUI text from T204 for all tables
-		tableSrcElmntColHeads =
-				pointPersonHandler.setTranslatedData("56600", "1", false);	// Source Element, Value //$NON-NLS-1$ //$NON-NLS-2$
-		tableSrcSrcColHeads =
-				pointPersonHandler.setTranslatedData("56600", "2", false); // ID, Source  //$NON-NLS-1$ //$NON-NLS-2$
-		tableRepoColHeads =
-				pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository  //$NON-NLS-1$ //$NON-NLS-2$
-
 	// For Text area font setting
 	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 
-	// Setup dialog
+/**************************************************
+// Start loading all data required for this screen
+ **************************************************/
+	    // Collect static GUI text from T204 for all tables
+		tableSrcElmntValueHeads =
+				pointPersonHandler.setTranslatedData("56600", "1", false);	// Source Element, Value //$NON-NLS-1$ //$NON-NLS-2$
+		tableSrcSrcColHeads =
+				pointPersonHandler.setTranslatedData("56600", "2", false); // ID, Sources (abbrev.)  //$NON-NLS-1$ //$NON-NLS-2$
+		tableRepoColHeads =
+				pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository  //$NON-NLS-1$ //$NON-NLS-2$
+
+		// Load the Source Element list (names/ID#s) as we need it for Source template conversion & checking
+		try {
+			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
+		} catch (HBException hbe) {
+			System.out.println( " Error loading Source Element list: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+	    // Then construct a lookup for "12345" → "[element text]" conversion
+        Map<String, String> codeToTextMap = new HashMap<>();
+        for (String[] row : tableSrcElmntData) {
+            if (row.length >= 2)
+                codeToTextMap.put(row[1], row[0].trim());
+        }
+        // Then construct a lookup for "[text here]" → "12345" conversion back
+        Map<String, String> textToCodeMap = new HashMap<>();
+        for (String[] row : tableSrcElmntData) {
+            if (row.length >= 2) {
+                String trimmedText = row[0].trim();
+                textToCodeMap.put(trimmedText, row[1]);
+            }
+        }
+
+        // Get the data for this Source for populating this screen
+ 		try {
+ 			sourceEditData = pointCitationSourceHandler.getSourceEditData(sourcePID);
+ 		} catch (HBException hbe) {
+ 			System.out.println( " Error loading Source data: " + hbe.getMessage());
+ 			hbe.printStackTrace();
+ 		}
+
+ 		// Get the Source Defn list (to be able to get the type's name by matching the PID)
+		try {
+			sorcDefnTable = pointCitationSourceHandler.getSourceDefnList();
+		} catch (HBException hbe) {
+			System.out.println( " Error loading source defn list: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+		// and sort it as we need it in sorted order for its combobox
+		Arrays.sort(sorcDefnTable, (row1, row2) -> ((String) row1[0]).compareTo((String) row2[0]));
+
+ 		// Get the underlying Source Defn templates using the sorcDefnPID value
+		sourceDefnPID = (long)sourceEditData[11];
+		try {
+			sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sourceDefnPID);
+		} catch (HBException hbe) {
+			System.out.println( " Error loading source defn templates: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+
+		// Get the Source Element data values currently saved for this Source
+		try {
+			tableSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
+		} catch (HBException hbe) {
+			System.out.println( " Error loading source element values: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+
+/****************************
+// Setup the screen layouts
+ ****************************/
 		contents = new JPanel();
 		setContentPane(contents);
 		contents.setLayout(new MigLayout("insets 10", "[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -151,7 +244,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		tabPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
 		tabPane.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		tabPane.setPreferredSize(new Dimension(640, 440));
-		contents.add(tabPane, "cell 0 0");
+		contents.add(tabPane, "cell 0 0");	//$NON-NLS-1$
 
 	// ******Define main (General) panel for most data
         JPanel genPanel = new JPanel();
@@ -162,10 +255,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
         // Define sub-panel for Source title etc
 		JPanel titlePanel = new JPanel();
 		titlePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		titlePanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		titlePanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]5[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel title = new JLabel("Title");
-		titlePanel.add(title, "cell 0 0, alignx right");
+		JLabel title = new JLabel("Source Title");
+		titlePanel.add(title, "cell 0 0, alignx right");	//$NON-NLS-1$
 		JTextArea titleText = new JTextArea();
 		titleText.setWrapStyleWord(true);
 		titleText.setLineWrap(true);
@@ -176,35 +269,35 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		titleText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		titleText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane titleTextScroll = new JScrollPane(titleText);
-		titleTextScroll.setMinimumSize(new Dimension(550, 30));
+		titleTextScroll.setMinimumSize(new Dimension(550, 50));
 		titleTextScroll.getViewport().setOpaque(false);
 		titleTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		titleText.setCaretPosition(0);	// set scrollbar to top
 		titlePanel.add(titleTextScroll, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-		JLabel abbrev = new JLabel("Abbrev.");
-		titlePanel.add(abbrev, "cell 0 1, alignx right");
-		JTextField srcAbbrev = new JTextField();
-		srcAbbrev.setColumns(50);
-		srcAbbrev.setEditable(true);
-		titlePanel.add(srcAbbrev, "cell 1 1, alignx left");	//$NON-NLS-1$
+		JLabel abbrev = new JLabel("Abbreviation");
+		titlePanel.add(abbrev, "cell 0 1, alignx right");	//$NON-NLS-1$
+		JTextField abbrevText = new JTextField();
+		abbrevText.setColumns(60);
+		abbrevText.setEditable(true);
+		titlePanel.add(abbrevText, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-		genPanel.add(titlePanel, "cell 0  0 2, grow");
-
-		// Define sub-panel for Source Type and Source element list table
-		JPanel sourcePanel = new JPanel();
-		sourcePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		sourcePanel.setLayout(new MigLayout("insets 10", "[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		JLabel srcType = new JLabel("Source Type:");
-		sourcePanel.add(srcType, "cell 0 0, alignx left");
+		JLabel srcType = new JLabel("Source Type");
+		titlePanel.add(srcType, "cell 0 2, alignx right");	//$NON-NLS-1$
 		DefaultComboBoxModel<String> comboTypeModel = new DefaultComboBoxModel<>();			// NOTE02 - load list of SourceTypes here
 //											= new DefaultComboBoxModel<>(pointxxxxx.get all source types());
 		 JComboBox<String> comboSourceTypes = new JComboBox<>(comboTypeModel);
-		sourcePanel.add(comboSourceTypes, "cell 0 0, alignx left, gapx 10");	//$NON-NLS-1$
+		titlePanel.add(comboSourceTypes, "cell 1 2, alignx left");	//$NON-NLS-1$
+
+		genPanel.add(titlePanel, "cell 0 0 2, grow");	//$NON-NLS-1$
+
+		// Define sub-panel for Source element table of values
+		JPanel valuePanel = new JPanel();
+		valuePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		valuePanel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		// Setup JTable to show (editable) Source elements
-		JTable tableSrcElmnt = new JTable() {
+		JTable tableSrcElmntValues = new JTable() {
 			private static final long serialVersionUID = 1L;
 				@Override
 				public boolean isCellEditable(int row, int column) {
@@ -212,51 +305,38 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					return true;
 			}};
 
-		// Get Source data
-		// load some dummy data for test & display - to be removed
-		tableSrcElmntData = new Object[][] {{"[TITLE]", "blah blah blah "},
-										  {"[AUTHOR]", "John Smith"}  };
-
-		//		tableSrcElmntData = pointzzzzzHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Source Element data
-		if (tableSrcElmntData == null ) {
-			JOptionPane.showMessageDialog(tableSrcElmnt, "No data found in HRE database\n"	// No data found in HRE database\n
-													 + "Source load error",		// Source load error
-													   "Edit Source", 			// Edit Source
-													   JOptionPane.ERROR_MESSAGE);
-			dispose();
-		}
-	 	// Setup tableSrcElmntData, model and renderer
-		srcElmntTableModel = new DefaultTableModel(tableSrcElmntData, tableSrcElmntColHeads);
-        tableSrcElmnt.setModel(srcElmntTableModel);
-		tableSrcElmnt.getColumnModel().getColumn(0).setMinWidth(80);
-		tableSrcElmnt.getColumnModel().getColumn(0).setPreferredWidth(140);
-		tableSrcElmnt.getColumnModel().getColumn(1).setMinWidth(150);
-		tableSrcElmnt.getColumnModel().getColumn(1).setPreferredWidth(230);
-		tableSrcElmnt.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+	 	// Setup tableSrcElmntValues, model and renderer
+		srcElmntValueModel = new DefaultTableModel(tableSrcElmntValueData, tableSrcElmntValueHeads);
+        tableSrcElmntValues.setModel(srcElmntValueModel);
+		tableSrcElmntValues.getColumnModel().getColumn(0).setMinWidth(80);
+		tableSrcElmntValues.getColumnModel().getColumn(0).setPreferredWidth(120);
+		tableSrcElmntValues.getColumnModel().getColumn(1).setMinWidth(150);
+		tableSrcElmntValues.getColumnModel().getColumn(1).setPreferredWidth(200);
+		tableSrcElmntValues.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
 		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
-		tableSrcElmnt.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
+//		tableSrcElmntValues.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
 	    // Set header format
-		JTableHeader pHeader = tableSrcElmnt.getTableHeader();
+		JTableHeader pHeader = tableSrcElmntValues.getTableHeader();
 		pHeader.setOpaque(false);
 		JLabel pheaderLabel = (JLabel) centerLabelRenderer;
 		pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		// Set row selection action
-		ListSelectionModel rowSelectionModel = tableSrcElmnt.getSelectionModel();
+		ListSelectionModel rowSelectionModel = tableSrcElmntValues.getSelectionModel();
 		rowSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		// Show the table
-		tableSrcElmnt.setMaximumSize(new Dimension(32767, 32767));
-		tableSrcElmnt.setFillsViewportHeight(true);
+		tableSrcElmntValues.setMaximumSize(new Dimension(32767, 32767));
+		tableSrcElmntValues.setFillsViewportHeight(true);
 		// Setup tabbing within table against all rows but only column 0-1
-		if (tableSrcElmnt.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableSrcElmnt, 0, tableSrcElmnt.getRowCount(), 0, 1);
+		if (tableSrcElmntValues.getRowCount() > 0)
+					JTableCellTabbing.setTabMapping(tableSrcElmntValues, 0, tableSrcElmntValues.getRowCount(), 0, 1);
 		// scrollPane contains the Source Element picklist
 		JScrollPane scrollSrcElmntTable = new JScrollPane();
-		scrollSrcElmntTable.setPreferredSize(new Dimension(375, 250));
-		scrollSrcElmntTable.setViewportView(tableSrcElmnt);
-		sourcePanel.add(scrollSrcElmntTable, "cell 0 1"); //$NON-NLS-1$
+		scrollSrcElmntTable.setPreferredSize(new Dimension(325, 270));
+		scrollSrcElmntTable.setViewportView(tableSrcElmntValues);
+		valuePanel.add(scrollSrcElmntTable, "cell 0 0"); //$NON-NLS-1$
 
-		genPanel.add(sourcePanel, "cell 0 1, grow"); //$NON-NLS-1$
+		genPanel.add(valuePanel, "cell 0 1, grow"); //$NON-NLS-1$
 
 		// Define sub-panel for Source footnote/biblio templates
 		JPanel templatePanel = new JPanel();
@@ -271,7 +351,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		fullFootText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
 		fullFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		fullFootText.setBorder(new JTable().getBorder());		// match Table border
-		fullFootText.setPreferredSize(new Dimension(200, 75));
+		fullFootText.setPreferredSize(new Dimension(260, 75));
 		JScrollPane fullFootTextScroll = new JScrollPane(fullFootText);
 		fullFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		templatePanel.add(fullFootTextScroll, "cell 0 1, alignx left");	//$NON-NLS-1$
@@ -284,7 +364,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		shortFootText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
 		shortFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		shortFootText.setBorder(new JTable().getBorder());		// match Table border
-		shortFootText.setPreferredSize(new Dimension(200, 60));
+		shortFootText.setPreferredSize(new Dimension(260, 60));
 		JScrollPane shortFootTextScroll = new JScrollPane(shortFootText);
 		shortFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		templatePanel.add(shortFootTextScroll, "cell 0 3, alignx left");	//$NON-NLS-1$
@@ -297,7 +377,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		biblioText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
 		biblioText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		biblioText.setBorder(new JTable().getBorder());		// match Table border
-		biblioText.setPreferredSize(new Dimension(200, 60));
+		biblioText.setPreferredSize(new Dimension(260, 60));
 		JScrollPane biblioTextScroll = new JScrollPane(biblioText);
 		biblioTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		templatePanel.add(biblioTextScroll, "cell 0 5, alignx left");	//$NON-NLS-1$
@@ -318,7 +398,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
         JLabel active = new JLabel("Source is Active");
         activPanel.add(active, "cell 0 0"); //$NON-NLS-1$
         JCheckBox activChkBox = new JCheckBox();
-        activChkBox.setSelected(true);		// default setting
         activPanel.add(activChkBox, "cell 1 0"); //$NON-NLS-1$
 
         JLabel fidelity = new JLabel("Source Fidelity");
@@ -435,17 +514,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 		// Get Source of Source data
 		// load some dummy data for test & display - to be removed
-		tableSrcSrcData = new Object[][] {{"11", "source eleven"},
-										  {"27", "source twenty-seven"}  };
+		tableSrcSrcData = new Object[][] {{"11", "dummy entry for now"} };
 
 		//		tableSrcSrcData = pointzzzzzHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Source of Source data
-		if (tableSrcSrcData == null ) {
-			JOptionPane.showMessageDialog(tableSrcElmnt, "No data found in HRE database\n"	// No data found in HRE database\n
-													 + "Source of Sources load error",		// Source of Sources load error
-													   "Edit Source", 			// Edit Source
-													   JOptionPane.ERROR_MESSAGE);
-			dispose();
-		}
+
 	 	// Setup tableSrcSrcData, model and renderer
 		srcSrcTableModel = new DefaultTableModel(tableSrcSrcData, tableSrcSrcColHeads) ;
         tableSrcSrc.setModel(srcSrcTableModel);
@@ -475,9 +547,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		scrollSrcTable.setViewportView(tableSrcSrc);
 		srcsrcPanel.add(scrollSrcTable, "cell 0 1"); //$NON-NLS-1$
 
-		genPanel.add(sourcePanel, "cell 0 1, grow"); //$NON-NLS-1$
-
-		connPanel.add(srcsrcPanel, "cell 0 0");
+		connPanel.add(srcsrcPanel, "cell 0 0");	//$NON-NLS-1$
 
 		// Define sub-panel for Repositories
 		JPanel repoPanel = new JPanel();
@@ -507,17 +577,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 		// Get Repository data
 		// load some dummy data for test & display - to be removed
-		tableRepoData = new Object[][] {{"23", "Repository 23"},
-										  {"55", "Repository 55"}  };
+		tableRepoData = new Object[][] {{"23", "dummy entry for now"}};
 
 		//		tableReposData = pointzzzzzHandler.xxxxxxxxxxxxxxxxxxxx		<<< load Repository data
-		if (tableRepoData == null ) {
-			JOptionPane.showMessageDialog(tableSrcElmnt, "No data found in HRE database\n"	// No data found in HRE database\n
-													 + "Repository data load error",		// Repository data load error
-													   "Edit Source", 			// Edit Source
-													   JOptionPane.ERROR_MESSAGE);
-			dispose();
-		}
+
 	 	// Setup tableRepoData, model and renderer
 		repoTableModel = new DefaultTableModel(tableRepoData, tableRepoColHeads) ;
         tableRepo.setModel(repoTableModel);
@@ -547,7 +610,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		scrollRepoTable.setViewportView(tableRepo);
 		repoPanel.add(scrollRepoTable, "cell 0 1"); //$NON-NLS-1$
 
-		connPanel.add(repoPanel, "cell 0 1");
+		connPanel.add(repoPanel, "cell 0 1");	//$NON-NLS-1$
 
 	// **** Define control buttons
 		JButton btn_Cancel = new JButton("Cancel");		// Cancel
@@ -559,7 +622,115 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 	// End of Panel Definitions
 
-		// Focus Policy still to be setup!
+/********************************************************
+// Load sourceEditData into the above dialog definitions
+******************************************************** */
+	       /* Format of sourceEditData[] is as follows
+				sourceEditData[0] = sourceTitle;			used
+				sourceEditData[1] = sourceAbbrev;			used
+				sourceEditData[2] = sourceRef;					not much value to this code!
+				sourceEditData[3] = sourceType;					ditto!
+				sourceEditData[4] = sourceActiv;			used
+				sourceEditData[5] = sourceFidelity;			used
+				sourceEditData[6] = sourceFullFoot;			used
+				sourceEditData[7] = sourceShortFoot;		used
+				sourceEditData[8] = sourceBiblio;			used
+				sourceEditData[9] = sourceText;				used
+				sourceEditData[10] = sourceRemind;			used
+				sourceEditData[11] = sourceDefnPID;			used to get SourceDefn templates and Defn Name
+				sourceEditData[12] = sourceAuthorPID;
+				sourceEditData[13] = sourceEditorPID;
+				sourceEditData[14] = sourceCompilerPID;
+			*/
+
+	// Set the title and abbrev text
+		titleText.setText((String)sourceEditData[0]);
+		abbrevText.setText((String)sourceEditData[1]);
+
+	// Load comboSourceTypes from the Source Defn table and set the index by matching PIDs
+		for (int j=0; j < sorcDefnTable.length; j++) {
+			comboSourceTypes.addItem((String) sorcDefnTable[j][0]);
+			if (sourceDefnPID == (long)sorcDefnTable[j][1]) comboSourceTypes.setSelectedIndex(j);
+		}
+
+	// Set the active checkbox
+		if ((boolean)sourceEditData[4] == true) activChkBox.setSelected(true);
+		else activChkBox.setSelected(false);
+
+	// Set the Fidelity combobox
+		String fid = (String)sourceEditData[5];
+		if (fid.equals("A")) comboFidelity.setSelectedIndex(0);				//$NON-NLS-1$
+		else if (fid.equals("B")) comboFidelity.setSelectedIndex(1);		//$NON-NLS-1$
+		else if (fid.equals("C")) comboFidelity.setSelectedIndex(2);		//$NON-NLS-1$
+		else if (fid.equals("D")) comboFidelity.setSelectedIndex(3);		//$NON-NLS-1$
+		else if (fid.equals("E")) comboFidelity.setSelectedIndex(4);		//$NON-NLS-1$
+
+	// Set Source reference and Reminder text
+		referText.setText((String)sourceEditData[9]);
+		referText.setCaretPosition(0);
+		remindText.setText((String)sourceEditData[10]);
+		remindText.setCaretPosition(0);
+
+	// Get this Source's templates; if empty, use the template from the SourceDefn templates,
+	// then convert the Element [nnnnn] entries into Element Names using the Hashmap codeToTextMap
+	// and load result into the text areas for display.
+	// Start with the Full footer
+		fullFootNumberedTemplate = (String)sourceEditData[6];					// get Source full footer
+		if (fullFootNumberedTemplate.isEmpty())
+							fullFootNumberedTemplate = sorcDefnTemplates[0];	// Source Defn full footer
+		fullFootNamedTemplate = HGlobalCode.convertNumsToNames(fullFootNumberedTemplate, codeToTextMap); // convert to names
+		fullFootText.setText(fullFootNamedTemplate);
+		fullFootText.setCaretPosition(0);
+	// then the Short footer
+		shortFootNumberedTemplate = (String)sourceEditData[7];							// get Source short footer
+		if (shortFootNumberedTemplate.isEmpty())
+									shortFootNumberedTemplate = sorcDefnTemplates[1];	// Source Defn short footer
+		shortFootNamedTemplate = HGlobalCode.convertNumsToNames(shortFootNumberedTemplate, codeToTextMap); // convert to names
+		shortFootText.setText(shortFootNamedTemplate);
+		shortFootText.setCaretPosition(0);
+	// then the Bibliography template
+		biblioNumberedTemplate = (String)sourceEditData[8];							// get Source bibliography
+		if (biblioNumberedTemplate.isEmpty())
+									biblioNumberedTemplate = sorcDefnTemplates[2];	// Source Defn bibliography
+		biblioNamedTemplate = HGlobalCode.convertNumsToNames(biblioNumberedTemplate, codeToTextMap); // convert to names
+		biblioText.setText(biblioNamedTemplate);
+		biblioText.setCaretPosition(0);
+
+	// Create Lists of all UNIQUE Source Element Numbers and Source Element Names from the Source templates
+		uniqueElementNums =
+				extractUniqueElementNums(fullFootNumberedTemplate+shortFootNumberedTemplate+biblioNumberedTemplate);
+		uniqueElementNames =
+				extractUniqueElementNames(fullFootNamedTemplate+shortFootNamedTemplate+biblioNamedTemplate);
+
+	// Match Element numbers to create an Element Value list aligned with Element Names
+		int numValues = tableSourceElmntDataValues.length;
+		uniqueElementValues = new ArrayList<String>();
+		boolean matched = false;
+		for (int i=0; i < uniqueElementNums.size(); i++) {
+			matched = false;
+			for (int j=0; j < numValues; j++) {
+				if (uniqueElementNums.get(i).equals(tableSourceElmntDataValues[j][0])) {
+							uniqueElementValues.add(tableSourceElmntDataValues[j][1]);
+							matched = true;
+				}
+			}
+			if (matched == false) uniqueElementValues.add("");
+		}
+		// (Re)load tableSrcElmntValueData
+		srcElmntValueModel.setRowCount(0); 			// first clear all existing rows
+		tableSrcElmntValueData = new String[uniqueElementNames.size()][2];
+		for (int i=0; i < uniqueElementNames.size(); i++) {
+			tableSrcElmntValueData[i][0] = uniqueElementNames.get(i);
+			tableSrcElmntValueData[i][1] = uniqueElementValues.get(i);
+			srcElmntValueModel.addRow(tableSrcElmntValueData[i]);
+		}
+
+
+
+
+	// End of dialog data population process
+
+	// Focus Policy still to be setup!
 
 		pack();
 
@@ -590,30 +761,212 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving data in HG0566EditSource");	//$NON-NLS-1$
 
-				// NOTE01 perform save actions on all data
+				// NOTE01 save any changed data - use the xxxEdited booleans to check text edits
+
+				// When saving source templates use the convertNamesToNums routine with the textToCodeMap hashmap
+				// to check all Element names exist and can be converted back to Element numbers, and do the
+				// conversion back to the numbered version for saving.
+				// It throws error msg and returns null, so if null returned, do not save!
+				// Example usage using fullFoot text, with before/after console routines:
+				//    System.out.println("Input="+fullFootText.getText());
+				//    String fullFootToSave = HGlobalCode.convertNamesToNums(fullFootText.getText(), textToCodeMap);
+				//    System.out.println("Output="+fullFootToSave);
+				// then check for null response and do NOT dispose! (leave user to fix it and try again!)
 
 			}
 		});
+
+		// Listener for edit of Title text
+		titleTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				titleTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				titleTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				titleTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		titleText.getDocument().addDocumentListener(titleTextChange);
+
+		// Listener for edit of Abbreviation text
+		titleTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				titleTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				titleTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				titleTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		titleText.getDocument().addDocumentListener(titleTextChange);
+
+		// Listener for edit of Abbreviation text
+		abbrevTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				abbrevTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				abbrevTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				abbrevTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		abbrevText.getDocument().addDocumentListener(abbrevTextChange);
+
+		// Listener for edit of Fullfooter text
+		fullFootTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				fullFootTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				fullFootTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				fullFootTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		fullFootText.getDocument().addDocumentListener(fullFootTextChange);
+
+		// Listener for edit of Short footer text
+		shortFootTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				shortFootTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				shortFootTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				shortFootTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		shortFootText.getDocument().addDocumentListener(shortFootTextChange);
+
+		// Listener for edit of Bibliography text
+		biblioTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				biblioTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				biblioTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				biblioTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		biblioText.getDocument().addDocumentListener(biblioTextChange);
+
+		// Listener for edit of Reference text
+		referTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				referTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				referTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				referTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		referText.getDocument().addDocumentListener(referTextChange);
+
+		// Listener for edit of Reminder text
+		remindTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				remindTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				remindTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				remindTextChanged = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		remindText.getDocument().addDocumentListener(remindTextChange);
 
 		// Source Types combo-box listener
 		comboSourceTypes.addActionListener (new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 
-				// NOTE02 - for the new selected SourceType, perform following actions:
-				// 1. set the combobox to show the selected SourceType
-				// 2. for that SourceType, load into tableSrcElmntData, column 0, all that Type's Source Elements
-				// 3. for all Source Elements whose name matches the 'new' elements, also transfer the Value of the Element into col 1
-				// 4. re-display the results in tableSrcElmnt
+			// NOTE02 - for the new selected SourceType, perform following actions:
+			// 1. set the combobox to show the selected SourceType
+			// 2. for that SourceType, get its 3 source templates into sorcDefnTemplates
+			// 3. then re-load the foot/biblio templates into their textPanes, using the Source ones (if they
+			//		exist), defaulting to the SorcDefnTemplates
+			// 4. re-analyze these templates to extract to source element numbers they use
+			// 5. rebuild the source element value table to show the values that apply to this source
 
 			}
 		});
 
-		// Listener for tableSrcElmnt row selection
-		tableSrcElmnt.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		// Source Fidelity combo-box listener
+		comboFidelity.addActionListener (new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+
+			// NOTE01 - based on index selected, convert to value in the A-E range for saving
+
+			}
+		});
+
+		// Listener for tableSrcElmntValues row selection
+		tableSrcElmntValues.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent selectSrc) {
 				if (!selectSrc.getValueIsAdjusting()) {
-					if (tableSrcElmnt.getSelectedRow() == -1) return;
+					if (tableSrcElmntValues.getSelectedRow() == -1) return;
 				// find source clicked
 //					int clickedRow = tableSrcElmnt.getSelectedRow();
 //					int selectedRowInTable = tableSrcElmnt.convertRowIndexToModel(clickedRow);
@@ -626,16 +979,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			}
         });
 
-	// Define ActionListeners for Source Element table right-click popupMenus
+	// Define ActionListeners for Source Element values table right-click popupMenus
 	// For popupMenu item popMenuDel - Delete the clicked Source Element
 	    ActionListener popDel = new ActionListener() {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
 		// The right-clicked row is passed here in rowClicked
-        		int rowInTable = tableSrcElmnt.convertRowIndexToModel(rowClicked);
+        		int rowInTable = tableSrcElmntValues.convertRowIndexToModel(rowClicked);
         		String elmntClicked = (String) tableSrcElmntData[rowInTable][0];
-        		if (JOptionPane.showConfirmDialog(tableSrcElmnt, "Are you sure you want to delete \n"	// Are you sure you want to delete \n
-						  + "Source Element " + elmntClicked +"?",		// Source Element (name)?	//$NON-NLS-1$
+        		if (JOptionPane.showConfirmDialog(tableSrcElmntValues, "Are you sure you want to delete \n"	// Are you sure you want to delete \n
+						  + "Source Element " + elmntClicked +"?",		// Source Element (name)?	//$NON-NLS-1$ //$NON-NLS-2$
 						   "Delete Element",						// Delete Element
 						   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 					return;
@@ -660,7 +1013,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				// Show HG0564ManageSrcElmnt code to allow selection of new Element into the Source Element table
 					HG0564ManageSrcElmnt elmntSelectScreen = new HG0564ManageSrcElmnt(pointOpenProject);
 					elmntSelectScreen.setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
-					Point xyElmnt = srcAbbrev.getLocationOnScreen();
+					Point xyElmnt = abbrevText.getLocationOnScreen();
 					elmntSelectScreen.setLocation(xyElmnt.x+100, xyElmnt.y);
 					elmntSelectScreen.setVisible(true);
 				} catch (HBException hbe) {
@@ -686,13 +1039,13 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	    JPopupMenu popupMenuOnlyAdd = new JPopupMenu();
 	    popupMenuOnlyAdd.add(popMenuAddOnly);
 	// Listener for Source Element table mouse click
-	    tableSrcElmnt.addMouseListener(new MouseAdapter() {
+	    tableSrcElmntValues.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
                 if (me.getButton() == MouseEvent.BUTTON3) {
                 // RIGHT-CLICK
-                	rowClicked = tableSrcElmnt.rowAtPoint(me.getPoint());
-                	if (tableSrcElmnt.rowAtPoint(me.getPoint()) < 0)
+                	rowClicked = tableSrcElmntValues.rowAtPoint(me.getPoint());
+                	if (tableSrcElmntValues.rowAtPoint(me.getPoint()) < 0)
 						popupMenuOnlyAdd.show(me.getComponent(), me.getX(), me.getY());
 					else
 						popupMenuElmnt.show(me.getComponent(), me.getX(), me.getY());
@@ -771,7 +1124,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		btn_srcDel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here to delete selected source of source & turn on btn_Save
+				// NOTE06 need code here to delete selected source ONLY IF NOT IN USE ANYWHERE!
 			}
 		});
 
@@ -792,11 +1145,44 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		btn_repoDel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE06 need code here to delete selected repository & turn on btn_Save
+				// NOTE06 need code here to delete selected repository ONLY IF NOT IN USE ANYWHERE!
 			}
 		});
 
 
 	}	// End HG0566EditSource constructor
+
+/*
+ * extractUniqueElementNums - extract a unique list of Source Element numbers from input String
+ * @param - input
+ * @return
+ */
+	public static List<String> extractUniqueElementNums(String input) {
+		// Extract a unique list of Source Element numbers from input String (preserving the order)
+		Set<String> uniqueEntries = new LinkedHashSet<>();
+		Matcher matcher = Pattern.compile("\\[(\\d{5})\\]").matcher(input);	//$NON-NLS-1$
+		while (matcher.find()) {
+			uniqueEntries.add(matcher.group(1)); // strip brackets
+		}
+		return new ArrayList<>(uniqueEntries);
+	}	// End extractUniqueElementNums
+
+/*
+ * extractUniqueElementNames - extract a unique list of Source Element names from input String
+ * @param - input
+ * @return
+ */
+	public static List<String> extractUniqueElementNames(String input) {
+		// Extract a unique list of Source Element names from input String (preserving the order)
+		Set<String> uniqueEntries = new LinkedHashSet<>();
+		Matcher matcher = Pattern.compile("\\[(.*?)\\]").matcher(input); //$NON-NLS-1$
+		while (matcher.find()) {
+			String content = matcher.group(1);
+			if (!content.contains(":")) {
+				uniqueEntries.add(matcher.group()); // preserve brackets
+			}
+		}
+		return new ArrayList<>(uniqueEntries);
+	}	// End  extractUniqueElementNames
 
 }  // End of HG0566EditSource
