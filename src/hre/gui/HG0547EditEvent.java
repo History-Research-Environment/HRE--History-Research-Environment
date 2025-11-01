@@ -132,6 +132,7 @@ import net.miginfocom.swing.MigLayout;
 public class HG0547EditEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	long null_RPID  = 1999999999999999L;
+	String citeOwnerType = "T450";
 
 	public HBWhereWhenHandler pointWhereWhenHandler;
 	public HBPersonHandler pointPersonHandler;
@@ -1074,7 +1075,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	           		objCiteDataToEdit = objEventCiteData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
 					HG0555EditCitation citeScreen
-								= new HG0555EditCitation(false, pointOpenProject, "T450", keyAssocMin, (long) objCiteDataToEdit[3]); //$NON-NLS-1$
+								= new HG0555EditCitation(false, pointOpenProject, citeOwnerType, keyAssocMin, (long) objCiteDataToEdit[3]); //$NON-NLS-1$
 					citeScreen.pointEditEvent = pointEditEvent;
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyCite = lbl_Date.getLocationOnScreen();
@@ -1088,8 +1089,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				pointCitationSourceHandler.setCitedTableData("T450", eventPID);		//$NON-NLS-1$
-				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, "T450", keyAssocMin); //$NON-NLS-1$
+				pointCitationSourceHandler.setCitedTableData(citeOwnerType, eventPID);		//$NON-NLS-1$
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeOwnerType, keyAssocMin); //$NON-NLS-1$
 				citeScreen.pointEditEvent = pointEditEvent;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Date.getLocationOnScreen();

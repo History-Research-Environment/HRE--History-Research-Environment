@@ -6,6 +6,7 @@ package hre.gui;
  *			  2025-05-26 Adjust miglayout settings (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  * 			  2025-09-27 Load the Source templates converted to readable Element names (D Ferguson)
+ * 			  2025-10-17 When add new type, create empty data for adding text (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 action Save button
@@ -54,6 +55,7 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0568EditSourceType extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	long null_RPID  = 1999999999999999L;
 	public HBCitationSourceHandler pointCitationSourceHandler;
 
 	public static final String screenID = "56800"; //$NON-NLS-1$
@@ -211,13 +213,20 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
         }
 
 	// Get the data for this Source Defn, then load into the screen
+    // if add with no sourceDefPID,  empty sourceDefnData  must be created
 		try {
-			sourceDefnData = pointCitationSourceHandler.getSourceDefnEditData(sorcDefnPID);
+			if (sorcDefnPID != null_RPID) 
+				sourceDefnData = pointCitationSourceHandler.getSourceDefnEditData(sorcDefnPID);
+			else {
+				sourceDefnData = new String[7];
+				for (int i = 0; i < sourceDefnData.length; i++)
+					sourceDefnData[i] = "";	
+			}
 		} catch (HBException hbe) {
 			System.out.println( " Error loading Source Defn data: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
-		sourceDefnName.setText(" "+(String)sourceDefnData[0]);	//$NON-NLS-1$
+		sourceDefnName.setText(" " + (String)sourceDefnData[0]);	//$NON-NLS-1$
 		// Get the source templates and convert the Element [nnnnn] entries into
 		// Element Names via the hashmap codeToTextMap and load into the text areas for display.
 		// Start with the Full footer

@@ -33,6 +33,7 @@ package hre.tmgjava;
  * 			  2025-08-24 - Remove drop of C5 tables as they don't exist (D Ferguson)
  *			  2025-09-04 - Remove T738 creation (now preloaded) (D Ferguson)
  *			  2025-09-18 - Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
+ *			  2025-10-21 - Delete T737 content whne importing user project (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -75,6 +76,9 @@ public class HREloader_V22c {
 
 	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");
+			
+	//Delete all copied rows in T737_SORC_DEFN but keep table
+			updateTableInBase("T737_SORC_DEFN", "DELETE FROM");		
 
 /**
  * Create new user - remove when moved to HRE

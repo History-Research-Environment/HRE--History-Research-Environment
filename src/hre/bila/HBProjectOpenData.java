@@ -63,7 +63,8 @@ package hre.bila;
  * 			  2024-04-14 - Added processing of boolean "IS_IMPORTED" from T126 (N. Tolleshaug)
  * 			  2024-08-18 - Added clear window pointer (N. Tolleshaug)
  * 			  2024-10-05 - Added set window pointer (N. Tolleshaug)
- * v0.03.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
+ * v0.04.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
+ * 			  2025-10-26 - Added code for HBRepositoryHandler (D Ferguson)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -110,6 +111,7 @@ public class HBProjectOpenData {
 	private HBViewPointHandler pointViewPointHandler;
 	private HBPersonHandler pointPersonHandler;
 	private HBCitationSourceHandler pointCitationSourceHandler;
+	private HBRepositoryHandler pointRepositoryHandler;
 	private HBWhereWhenHandler pointWhereWhenHandler;
 	private HBMediaHandler pointMediaHandler;
 
@@ -202,7 +204,7 @@ public class HBProjectOpenData {
     public void clearWindowPointer(int index) {
     	guiScreenPointers[index] = null;
     }
-    
+
     public void setWindowPointer(int index, Container windowPointer) {
     	guiScreenPointers[index] = windowPointer;
     }
@@ -279,24 +281,30 @@ public class HBProjectOpenData {
 	public String getGuiLanguage(String guiCode) throws HBException {
 		if (guiCode.equals("en")) {
 			return "en-US";
-		} else if (guiCode.equals("gb")) {
-			return "en-GB";
-		} else if (guiCode.equals("de")) {
-			return "de-DE";
-		} else if (guiCode.equals("fr")) {
-			return "fr-FR";
-		} else if (guiCode.equals("es")) {
-			return "es-ES";
-		} else if (guiCode.equals("it")) {
-			return "it-IT";
-		} else if (guiCode.equals("nl")) {
-			return "nl-NL";
-		} else if (guiCode.equals("no")) {
-			return "no-NB";
-		} else {
-			System.out.println(" getGuiLanguage: " + guiCode + " not found");
-			return "en-US";
 		}
+		if (guiCode.equals("gb")) {
+			return "en-GB";
+		}
+		if (guiCode.equals("de")) {
+			return "de-DE";
+		}
+		if (guiCode.equals("fr")) {
+			return "fr-FR";
+		}
+		if (guiCode.equals("es")) {
+			return "es-ES";
+		}
+		if (guiCode.equals("it")) {
+			return "it-IT";
+		}
+		if (guiCode.equals("nl")) {
+			return "nl-NL";
+		}
+		if (guiCode.equals("no")) {
+			return "no-NB";
+		}
+		System.out.println(" getGuiLanguage: " + guiCode + " not found");
+		return "en-US";
 	}
 
 /**
@@ -399,9 +407,8 @@ public class HBProjectOpenData {
     public long getPersonPIDfromVisID(int visibleID) {
     	if (personMapPID.get(visibleID) != null) {
 			return personMapPID.get(visibleID);
-		} else {
-			return null_RPID;
 		}
+		return null_RPID;
     }
 
 /**
@@ -577,19 +584,23 @@ public class HBProjectOpenData {
 	// Set up HBPersonHandler
 		pointPersonHandler = new HBPersonHandler(this);
 		pointPersonHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
-		
-	// Set up citation - source handler	
+
+	// Set up citation - source handler
 		pointCitationSourceHandler  = new HBCitationSourceHandler(this);
 		pointCitationSourceHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
-		
+
+	// Set up repository handler
+		pointRepositoryHandler  = new HBRepositoryHandler(this);
+		pointRepositoryHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+
 	// Set uo HBViewPointHandler
 		pointViewPointHandler = new HBViewPointHandler(this);
 		pointViewPointHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
-		
+
 	// Set up HBWhereWhenHandler
 		pointWhereWhenHandler = new HBWhereWhenHandler(this);
 		pointWhereWhenHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
-		
+
 	// Set up MediaHandler
 		pointMediaHandler = new HBMediaHandler(this);
 		pointMediaHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
@@ -617,6 +628,14 @@ public class HBProjectOpenData {
  */
 	public HBCitationSourceHandler getCitationSourceHandler() {
 		return pointCitationSourceHandler;
+	}
+
+/**
+ * getRepositoryHandler()
+ * @return
+ */
+	public HBRepositoryHandler getRepositoryHandler() {
+		return pointRepositoryHandler;
 	}
 
 /**
@@ -685,35 +704,32 @@ public class HBProjectOpenData {
 			}
 
 	    // Find project database version
-		    if (pointProjectHandler.pointDBlayer.ifTableExist(pointProjectHandler.schemaDefined, dataBaseIndex)) {
-
-		// Set up ResultSet T101_SCHEMA_DEFNS
-				selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.schemaDefined,"");
-				pointSchemaDefTable = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
-
-		//  Get database version
-				databaseDDLversion = pointProjectHandler.pointLibraryResultSet.
-						getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
-
-			// Set up ResultSet T126_PROJECTS
-				selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
-				projectTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
-				try {
-					projectTableRS.first();
-					projectDatabaseName = projectTableRS.getString("PROJECT_NAME");
-					importedProject = projectTableRS.getBoolean("IS_IMPORTED");
-					projectTableRS.close();
-				} catch (SQLException sqle) {
-					if (HGlobal.DEBUG) {
-						System.out.println(" table T126_PROJECTS - IS_IMPORTED not found!");
-					}
-					importedProject = true;
-				}
-
-		    } else {
+		    if (!pointProjectHandler.pointDBlayer.ifTableExist(pointProjectHandler.schemaDefined, dataBaseIndex)) {
 		    	System.out.println("Table T104_SCHEMA_DEFN not found!");
 		    	return 1;
 		    }
+			// Set up ResultSet T101_SCHEMA_DEFNS
+					selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.schemaDefined,"");
+					pointSchemaDefTable = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+
+			//  Get database version
+					databaseDDLversion = pointProjectHandler.pointLibraryResultSet.
+							getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
+
+				// Set up ResultSet T126_PROJECTS
+					selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
+					projectTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+					try {
+						projectTableRS.first();
+						projectDatabaseName = projectTableRS.getString("PROJECT_NAME");
+						importedProject = projectTableRS.getBoolean("IS_IMPORTED");
+						projectTableRS.close();
+					} catch (SQLException sqle) {
+						if (HGlobal.DEBUG) {
+							System.out.println(" table T126_PROJECTS - IS_IMPORTED not found!");
+						}
+						importedProject = true;
+					}
 
 		    if (HGlobal.DEBUG) {
 				System.out.println(" Opened DB created from: "
@@ -732,17 +748,16 @@ public class HBProjectOpenData {
  * 		Generate ResultSet for project tables
  * 		Select database version to process
  */
-		    if (databaseDDLversion.contains("v22c")) {
-				if (HGlobal.DEBUG) 
-					System.out.println("Database DDL build: " + databaseDDLversion);			
-				generateHRETables22(dataBaseIndex);
-				getLanguageCodes(dataBaseIndex);
-				personMapPID =  pointProjectHandler.pointLibraryResultSet
-								.indexingPersonMapPID(pointT401_PERSONS);
-			} else {
+		    if (!databaseDDLversion.contains("v22c")) {
 				throw new HBException(" HBProjectOpenData - HRE database version not accepted" +
 					" found: " + databaseDDLversion);
 			}
+			if (HGlobal.DEBUG)
+				System.out.println("Database DDL build: " + databaseDDLversion);
+			generateHRETables22(dataBaseIndex);
+			getLanguageCodes(dataBaseIndex);
+			personMapPID =  pointProjectHandler.pointLibraryResultSet
+							.indexingPersonMapPID(pointT401_PERSONS);
 
 		// Inform user of database version if in DEBUG mode
 		    if (HGlobal.DEBUG) {
@@ -921,29 +936,8 @@ public class HBProjectOpenData {
  * @throws HBException
 */
 	 public void registerOpenScreen(Container screenPoint) throws HBException {
-		 
-		 if (nrOpen < maxNrOpenScreens) {
-			 String windowID = " -- ";
-			 if (screenPoint instanceof JInternalFrame) {
-				windowID = ((HG0451SuperIntFrame) screenPoint).getScreenID();
-			}
-	     	 if (screenPoint instanceof JDialog) {
-				windowID = ((HG0450SuperDialog) screenPoint).getScreenID();
-			}
-	     	 if (screenPoint instanceof JFrame) {
-				windowID = ((HG0452SuperFrame) screenPoint).getScreenID();
-			}
 
-			 int index = pointGuiData.getStoreIndex(windowID);
-
-			 guiScreenPointers[index] = screenPoint;
-			 nrOpen++;
-			 
-			 if (HGlobal.DEBUG) 
-				System.out.println("HBProjectOpenData - Registered Screen ID: " + windowID + " Open windows: " + nrOpen);
-			
-
-		 } else {
+		 if (nrOpen >= maxNrOpenScreens) {
 			 if (screenPoint instanceof JInternalFrame) {
 				((JInternalFrame) screenPoint).dispose();
 			}
@@ -958,6 +952,24 @@ public class HBProjectOpenData {
 			}
 		     throw new HBException("Max nr of windows exceeded! : " + nrOpen);
 		 }
+		 String windowID = " -- ";
+		  if (screenPoint instanceof JInternalFrame) {
+		 	windowID = ((HG0451SuperIntFrame) screenPoint).getScreenID();
+		 }
+		  if (screenPoint instanceof JDialog) {
+		 	windowID = ((HG0450SuperDialog) screenPoint).getScreenID();
+		 }
+		  if (screenPoint instanceof JFrame) {
+		 	windowID = ((HG0452SuperFrame) screenPoint).getScreenID();
+		 }
+
+		  int index = pointGuiData.getStoreIndex(windowID);
+
+		  guiScreenPointers[index] = screenPoint;
+		  nrOpen++;
+
+		  if (HGlobal.DEBUG)
+		 	System.out.println("HBProjectOpenData - Registered Screen ID: " + windowID + " Open windows: " + nrOpen);
 	 }
 
  /**
@@ -1011,9 +1023,9 @@ public class HBProjectOpenData {
 				 if (windowID.equals(screenID)) {
 					guiScreenPointers[i] = null;
 					nrOpen--;
-				if (HGlobal.DEBUG) 
+				if (HGlobal.DEBUG)
 					System.out.println("HBProjectOpenData - Window removed: " + screenID + " NrOpen: " + nrOpen);
-				
+
 				 }
  			 }
  	     }
@@ -1189,21 +1201,18 @@ public class HBProjectOpenData {
 			System.out.println("Close ResultSet and database index: " + databaseIndex);
 		}
 		try {
-			if (pointSchemaDefTable != null) {
-				pointSchemaDefTable.close();
-			} else {
+			if (pointSchemaDefTable == null) {
 				throw new HBException("OpenProjectData - pointT101_SCHEMA_DEFNS not open");
 			}
-			if (pointT401_PERSONS != null) {
-				pointT401_PERSONS.close();
-			} else {
+			pointSchemaDefTable.close();
+			if (pointT401_PERSONS == null) {
 				throw new HBException("OpenProjectData - pointT401_BIOS not open");
 			}
-			if (pointT402_PERSON_NAMES != null) {
-				pointT402_PERSON_NAMES.close();
-			} else {
+			pointT401_PERSONS.close();
+			if (pointT402_PERSON_NAMES == null) {
 				throw new HBException("OpenProjectData - pointT404_BIO_NAMES not open");
 			}
+			pointT402_PERSON_NAMES.close();
 
 		// Set frame size open screen in GUI data for open screens and dispose
 			for (int i = 0; i < pointGuiData.guiIDvalues.length; i++) {

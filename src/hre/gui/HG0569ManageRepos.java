@@ -1,6 +1,6 @@
 package hre.gui;
 /**************************************************************************************
- * ManageRepositories -
+ * ManageRepositories - HG0569ManageRepos extends HG0450SuperDialog
  * ***********************************************************************************
  * v0.04.0032 2025-01-17 Original draft (D Ferguson)
  *			  2025-01-31 Add Delete button (D Ferguson)
@@ -55,8 +55,9 @@ import javax.swing.table.TableRowSorter;
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
-import hre.bila.HBPersonHandler;
+//import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBRepositoryHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
 
@@ -68,10 +69,15 @@ import net.miginfocom.swing.MigLayout;
  */
 public class HG0569ManageRepos extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
-	HBPersonHandler pointPersonHandler;
+	//HBPersonHandler pointPersonHandler;
 	public HBCitationSourceHandler pointCitationSourceHandler;
+	HBRepositoryHandler pointRepositoryHandler;
 
 	public static final String screenID = "56900"; //$NON-NLS-1$
+	long null_RPID  = 1999999999999999L;
+	long proOffset  = 1000000000000000L;
+
+	int selectedRowInTable;
 
 	private JPanel contents;
 
@@ -84,8 +90,9 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
  */
 	public HG0569ManageRepos(HBProjectOpenData pointOpenProject)  {
 		this.pointOpenProject = pointOpenProject;
-		pointPersonHandler = pointOpenProject.getPersonHandler();
+		//pointPersonHandler = pointOpenProject.getPersonHandler();
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 
 		setTitle("Manage Repositories");
 	// Setup references for HG0450
@@ -97,7 +104,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0569ManageRepos");	//$NON-NLS-1$
 
 	// Collect static GUI text from T204 for Repository table
-		tableRepoColHeads = pointPersonHandler.setTranslatedData("56900", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
+		tableRepoColHeads = pointCitationSourceHandler.setTranslatedData("56900", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
 
 	// Setup dialog
 		setResizable(false);
@@ -264,7 +271,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					if (tableRepo.getSelectedRow() == -1) return;
 				// find repo clicked
 					int clickedRow = tableRepo.getSelectedRow();
-					int selectedRowInTable = tableRepo.convertRowIndexToModel(clickedRow);
+					selectedRowInTable = tableRepo.convertRowIndexToModel(clickedRow);
 
 				// Do something with the repo so Select button can use it
 
@@ -280,7 +287,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0570EditRepository repoScreen = new HG0570EditRepository(pointOpenProject);
+				HG0570EditRepository repoScreen = new HG0570EditRepository(pointOpenProject, null_RPID);
 				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyRepo = btn_Add.getLocationOnScreen();
 				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);
@@ -293,7 +300,8 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				// NOTE02 - should drive HG0570 and pass across Repo ID for it to load the rest
-				HG0570EditRepository editScreen = new HG0570EditRepository(pointOpenProject);
+				HG0570EditRepository editScreen = new HG0570EditRepository(pointOpenProject,
+											(long) tableRepoData[selectedRowInTable][2]);
 				editScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
@@ -334,7 +342,12 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				// pass the selected element back to the caller
-
+				int selectedRowInTable = tableRepo.convertRowIndexToModel(tableRepo.getSelectedRow());		
+				System.out.println( "Clicked repos row/PID: " + selectedRowInTable + "/" 
+						+ tableRepoData[selectedRowInTable][2]);
+				
+		// Transfer selected repos PID to Respository handler
+				pointRepositoryHandler.setSelectedReposPID((long)tableRepoData[selectedRowInTable][2]);
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				dispose();
 			}

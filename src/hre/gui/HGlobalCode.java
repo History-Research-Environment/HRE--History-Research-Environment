@@ -1,11 +1,12 @@
 package hre.gui;
-/************************************************************************
+/*****************************************************************************************
  * COMMON CODE MODULE
  * Split off from HGlobal 2023-05-02
- ************************************************************************
+ *****************************************************************************************
  * v0.00.0029 2023-05-01 - Common static methods for HRE (D. Ferguson)
- * v0.04.0032 2025-09-26 - Add Source Element convertNumsToNames (D Ferguson)
- *************************************************************************/
+ * v0.04.0032 2025-09-26 - Add Source Element convertNumsToNames/NamesToNums (D Ferguson)
+ * 			  2025-10-07 - Add bracket validation routines (NLS'd) (D Ferguson)
+ ****************************************************************************************/
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.FocusTraversalPolicy;
@@ -14,6 +15,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -34,7 +36,7 @@ import hre.nls.HGlobalMsgs;
  * Common methods for HRE (hre.bila and hre.gui)
  * @author Don Ferguson
  * @since 2023-05-02
- * @version build 0.01.2923.0501
+ * @version build 0.04.3225.1006
  */
 public class HGlobalCode {
 
@@ -392,7 +394,7 @@ public class HGlobalCode {
  */
 	public static String convertNumsToNames(String template, Map<String, String> codeToTextMap) {
 		// Setup a regex to find [nnnnn] entries in template
-		Pattern pattern = Pattern.compile("\\[(\\d{5})\\]");
+		Pattern pattern = Pattern.compile("\\[(\\d{5})\\]");		//$NON-NLS-1$
         Matcher matcher = pattern.matcher(template);
         StringBuffer result = new StringBuffer();
         // Convert the 5-digit strings to Source Element strings via the hashmap
@@ -417,12 +419,12 @@ public class HGlobalCode {
  */
 	public static String convertNamesToNums(String template, Map<String, String> textToCodeMap) {
 	// Setup a regex to find [Element names] entries in template
-		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");
+		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");		//$NON-NLS-1$
 		Matcher matcher = pattern.matcher(template);
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
             String original = matcher.group(); 	// e.g. "[element-name]"
-            if (original.contains(":")) {		 // Skip colon-containing entries like [IAL:]
+            if (original.contains(":")) {		 // Skip colon-containing entries like [IAL:]  //$NON-NLS-1$
                 matcher.appendReplacement(result, Matcher.quoteReplacement(original));
                 continue;
             }
@@ -431,16 +433,88 @@ public class HGlobalCode {
             // Throw an error if no match - user used an element name that doesn't exist
             if (code == null) {
                 JOptionPane.showMessageDialog(null,
-                    "Unknown Source Element name: " + original,
-                    "Source Element name error",
+                    HGlobalMsgs.Text_0 + original,			// Unknown Source Element name:
+                    HGlobalMsgs.Text_1,						// Source Element name error
                     JOptionPane.ERROR_MESSAGE);
                 return null; // halt processing
             }
             // otherwise keep going
-            matcher.appendReplacement(result, "[" + Matcher.quoteReplacement(code) + "]");
+            matcher.appendReplacement(result, "[" + Matcher.quoteReplacement(code) + "]"); //$NON-NLS-1$ //$NON-NLS-2$
         }
         matcher.appendTail(result);
         return result.toString();
 	}		// End convertNamesToNums
 
-}		// End HGlobalCode
+/******************************************************************************************
+ * ROUTINES FOR VALIDATING [ ] BRACKETS AND FORMAT CODES IN SENTENCES AND SOURCE TEMPLATES
+ *****************************************************************************************/
+/**
+ * validateBrackets
+ * @param input string
+ * @return error string
+ */
+	public static String validateBrackets(String input) {
+		// Test String input for matching [ ] brackets.
+		// Returns null string if all OK, otherwise returns error msg
+	    int openIndex = -1;
+	    for (int i = 0; i < input.length(); i++) {
+	        char c = input.charAt(i);
+	        if (c == '[') {
+	            if (openIndex != -1) {
+	            	// Unmatched opening bracket after position openIndex
+	            	return HGlobalMsgs.Text_2 + openIndex;		// Unmatched opening bracket after position
+	            }
+	            openIndex = i;
+	        } else if (c == ']') {
+	            if (openIndex == -1) {
+	            	// Unmatched closing bracket before position i
+	            	return HGlobalMsgs.Text_3 + i;				// Unmatched closing bracket before position
+	            }
+	            openIndex = -1; // matched
+	        }
+	    }
+	    if (openIndex != -1) {
+	    	// Unmatched opening bracket after position openIndex
+	    	return HGlobalMsgs.Text_4 + openIndex;				// nmatched opening bracket after position
+	    }
+		return null;		// all OK
+	}		// End validateBrackets
+
+/**
+ * validateFormatCodes
+ * @param input string
+ * @return error string
+ */
+	public static String validateFormatCodes(String input) {
+		// Test String input for matching [xxx:}  and [:xxx] formatting codes.
+		// Returns null string if all OK,
+		// otherwise returns error msgg of bad tag and position
+		Pattern bracketPattern = Pattern.compile("\\[(.*?)\\]");	//$NON-NLS-1$
+		Matcher matcher = bracketPattern.matcher(input);
+		Map<String, Integer> openColonTags = new LinkedHashMap<>();
+		while (matcher.find()) {
+			String content = matcher.group(1);
+			int position = matcher.start();
+			if (content.endsWith(":")) {		//$NON-NLS-1$
+				String tag = content.substring(0, content.length() - 1);
+				if (openColonTags.containsKey(tag))
+					return (HGlobalMsgs.Text_5 + tag + HGlobalMsgs.Text_6 + position);
+						// Duplicate opening tag [		] at position
+				openColonTags.put(tag, position);
+			} else if (content.startsWith(":")) {		//$NON-NLS-1$
+				String tag = content.substring(1);
+				if (!openColonTags.containsKey(tag))
+					return (HGlobalMsgs.Text_7 + tag + HGlobalMsgs.Text_8 + position);
+						// Unmatched closing tag [:		] at position
+				openColonTags.remove(tag);
+			}
+		}
+		if (!openColonTags.isEmpty()) {
+			Map.Entry<String, Integer> first = openColonTags.entrySet().iterator().next();
+			return (HGlobalMsgs.Text_9 + first.getKey() + HGlobalMsgs.Text_10 + first.getValue());
+				// Unmatched opening tag [				:] at position
+		}
+		return null;		// All good
+	}    // End validate FormatCodes
+
+}		// End HGlobalCodes

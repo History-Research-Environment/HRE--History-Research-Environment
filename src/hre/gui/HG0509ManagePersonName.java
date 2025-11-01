@@ -32,6 +32,7 @@ package hre.gui;
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  * 			  2025-04-21 Observe GUI Seq when loading citation data (D Ferguson)
  * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
+ * 			  2025-10-18 Corrected table content if add name ore edit name (N. Tolleshaug)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE04 Sentence edit function missing
@@ -416,10 +417,15 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		JLabel lbl_Surety = new JLabel(HG0509Msgs.Text_20);	// Surety
 		contents.add(lbl_Surety, "cell 2 3, alignx right, aligny center, gapx 50");		//$NON-NLS-1$
 
-	// Create scrollpane and table for the Name Citations
-		objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");	//$NON-NLS-1$
-		// and sort it on GUI sequence
+	// If edit name load the cittion data - if add start with empty table
+		if (pointManagePersonName instanceof HG0509EditPersonName)
+			objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");	//$NON-NLS-1$
+		else objNameCiteData = new Object[1][3];
+		
+	// and sort it on GUI sequence
 		Arrays.sort(objNameCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
+		
+	// Create scrollpane and table for the Name Citations		
 		citeModel = new DefaultTableModel(objNameCiteData, citeHeaderData);
 		JTable tableNameCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
@@ -794,7 +800,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			  		} else btn_Hidden.setVisible(false);
 					btn_Save.setEnabled(true);
 					styleChanged = true;
-					clearPersonTableData();
+				// Only clear table if add new name - keep table if edit name
+					if (pointManagePersonName instanceof HG0509AddPersonName) clearPersonTableData();
 				} catch (HBException hbe) {
 					System.out.println("HG0509ManagePersonName style error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();

@@ -29,6 +29,12 @@ package hre.tmgjava;
  *			   2025-09-15 - Revise addToSourceTable to handle preloaded T738 (D Ferguson)
  *			   2025-09-17 - Ignore duplicate T738 names (D Ferguson)
  *			   2025-09-24 - Add test for illegal TMG Source templates = "--" (D Ferguson)
+ *			   2025-10-03 - Fix for ruleset=1 or 3, and M.custtype=0 (NTo/D Ferguson)
+ *			   2025-10-05 - Add creating T735 records for record type M (D Ferguson)
+ *			   2025-10-13 - Add T734 record creation for a Source Title (D Ferguson)
+ *			   2025-10-20 - Modify U.dbf import for special preloaded T738s (D Ferguson)
+ *			   2025-10-24 - Modify T738 creation to cater for TMG weird entries (D Ferguson)
+ *			   2025-10-25 - Chesnay project adjustment - database input > 400
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -100,7 +106,7 @@ public class TMGpass_Source {
 
 // Source element variables
 	String elementName, elementNumber, elementNewNumber;
-	int elementRecno;
+	int elementRecNum, groupNumber;
 
 // Repos variables
 	String reposName, reposAbbrev;
@@ -208,6 +214,9 @@ public class TMGpass_Source {
 					continue;
 				}
 				if (sourceRefTable.equals("M")) {
+					citedRecordRPID = referedRecord + proOffset;
+					citedTableName = "T736";
+					insertRowT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);
 					sources++;
 					continue;
 				}
@@ -269,7 +278,7 @@ public class TMGpass_Source {
 		try {
 			hreTableT738US.beforeFirst();
 			while (hreTableT738US.next()) {
-			// save the Source Element Name and ID3
+			// save the Source Element Name and IDs
 				elmntNameBaseList.add(hreTableT738US.getString("SORC_ELMNT_NAME"));
 				elmntNumberBaseList.add(hreTableT738US.getString("SORC_ELMNT_NUM"));
 			}
@@ -282,24 +291,48 @@ public class TMGpass_Source {
 			pointHREbase.updateTableInBase("T738_SORC_ELMNT", "DELETE FROM",
 					"WHERE SORC_ELMNT_LANG='" + tmgHreConverter.languageTMG() + "'");
 
-		// (Phase 3) Import all U.dbf records into T738 with language = TMG project language
+		// (Phase 3) Import all U.dbf records into T738 with language = TMG project language, but
+		// handle the 'special case' records (for REPOSITORY and group > 27) differently
 			boolean ignore;
 			for (int index_U_Table = 0; index_U_Table < nrOftmgURows; index_U_Table++) {
 				ignore = false;
 				try {
 					elementName = tmgUtable.getValueString(index_U_Table, "ELEMENT").trim().toUpperCase();
+					groupNumber = tmgUtable.getValueInt(index_U_Table, "GROUPNUM");
+					elementRecNum = tmgUtable.getValueInt(index_U_Table, "RECNO");
 					// Check for duplicated Element names
 					for (int j = 0; j < elmntNameImported.size(); j++) {
 						if (elementName.equals(elmntNameImported.get(j).trim())) ignore = true;
 					}
-					if (elementName.isEmpty()) ignore= true; // ignore blank names like the UK sample one
-					// If all OK, add this to the valid imported list and write out a new T738
+					// ignore blank names like the UK sample one
+					if (elementName.isEmpty()) ignore= true;
+					// Ignore Names starting with '[REPOSITORY' as these are preloaded special cases
+					if (elementName.startsWith("[REPOSITORY")) ignore= true;
+					// If Group number > 27 check if Name is known in Base List.
+					// If so, ignore it, as is a known special case.
+					// If its not knowm, create a T738, but number it as a TMG-added 'special'.
+					if (groupNumber > 27) {
+						for (int k = 0; k < elmntNameBaseList.size(); k++) {
+							if (elementName.equals(elmntNameBaseList.get(k).trim())) {
+								ignore= true;
+								break;
+							}
+							// Else change grp#, rec# details for this new 'special' elementName
+							if (!ignore) {
+								elementRecNum = 0;
+								if (groupNumber == 28) groupNumber = 51;
+								if (groupNumber == 29) groupNumber = 60;
+								if (groupNumber == 30) groupNumber = 61;
+								if (groupNumber == 31) groupNumber = 70;
+								if (groupNumber == 32) groupNumber = 80;
+							}
+						}
+					}
+					// If not to be ignored, add this to the valid imported list and write out a T738
 					if (!ignore) {
 						elmntNameImported.add(elementName);
-						int elementTmgGroup = tmgUtable.getValueInt(index_U_Table, "GROUPNUM");
-						int elementRecNo = tmgUtable.getValueInt(index_U_Table, "RECNO");
-						elementNumber =  String.format("%05d", elementTmgGroup*1000 + elementRecNo);
-						insertRowT738_SORC_ELMNT(index_U_Table, sourceElementTablePID, tableT738_SORC_ELMNT);
+						elementNumber =  String.format("%05d", (groupNumber*1000 + elementRecNum));
+						insertRowT738_SORC_ELMNT(sourceElementTablePID, tableT738_SORC_ELMNT);
 						sourceElementTablePID++;
 					}
 				} catch (HCException hce) {
@@ -307,6 +340,20 @@ public class TMGpass_Source {
 					hce.printStackTrace();
 				}
 			}
+			// Now add all the 'special case' T738 records using the ELement Names/Numbers from the Base list
+			// as the base (Eng) names will be the ones used in the imported project for these elements
+			int baseNum = 0;
+			for (int i = 0; i < elmntNumberBaseList.size(); i++) {
+				baseNum = Integer.parseInt(elmntNumberBaseList.get(i));
+				// Write out the 'special case' T738's (Numbers > 40000)
+				if (baseNum >= 40000) {
+					elementNumber = elmntNumberBaseList.get(i);
+					elementName = elmntNameBaseList.get(i);
+					insertRowT738_SORC_ELMNT(sourceElementTablePID, tableT738_SORC_ELMNT);
+					sourceElementTablePID++;
+				}
+			}
+
 			// If the project language is en-US, we don't need the next 2 steps, so can exit early
 			if (tmgHreConverter.languageTMG().equals("en-US")) return;
 
@@ -364,7 +411,6 @@ public class TMGpass_Source {
 				sqle.printStackTrace();
 				throw new HCException("addToSorceElementTable phase5 error: " + sqle.getMessage());
 			}
-
 	}
 
 /**
@@ -433,10 +479,10 @@ public class TMGpass_Source {
 	public void addToSourceTable(TMGHREconverter tmgHreConverter) {
 		this.tmgHreConverter = tmgHreConverter;
 	// Based on data in the M.dbf records, extract M.info data into T734 SORC_DATA records
-	// and create the T736 SORC records
+	// and create the T736 SORC records. Also put the Title into a T734 SORC_DATA record
 		long sourceTablePID, T734tablePID = proOffset;
 		List<String> elementNameList = null, elementNumberList = null;
-		String allTemplates, sorcFullFoot ="", sorcShortFoot = "", sorcBiblio = "", uncitedField = "";
+		String allTemplates = "", sorcFullFoot ="", sorcShortFoot = "", sorcBiblio = "", uncitedField = "";
 		String[] T737Templates;
 		String[][] splitInfo;
 		if (sourceDump)
@@ -454,15 +500,18 @@ public class TMGpass_Source {
 			// For PJC Ruleset = 1 (Mills) or 3 (Custom), the M.custtype matches A.sourtype where A.ruleset
 			// matches that RuleSet number.  A T737 SORC_DEFN record will have been created for each A record.
 			// Thus each M.custtype will now match a T737 SORC_DEFN's SORC_DEF_TYPE value.
+			// BUT if custtype=0, the M.type field must be used instead (NTo fix).
 			//
 			// For PJC Ruleset = 2 (Lackey) source types a double type-matching process is required.
 			// The T737 creation step will have created a T737 record for each of the 14 Lackey A.dbf records.
 			// For the match process, if a Source M.type matches A.sourtype where A.ruleset=1 then the A record's
 			// A.trans_to field will match a T737 SORC_DEFN record's SORC_DEF_TYPE (in the range of 1-14),
 			// so that the A.trans_to value is the 'real' sourceType of a T737 SORC_DEFN.
-				if (pjcRuleSetNumber == 1 || pjcRuleSetNumber == 3)
-											sourceType = tmgMtable.getValueInt(index_M_Table, "CUSTTYPE");
-				else {		// for Lackey type source defns, get M.type
+				if (pjcRuleSetNumber == 1 || pjcRuleSetNumber == 3) {
+						sourceType = tmgMtable.getValueInt(index_M_Table, "CUSTTYPE");
+						if (sourceType == 0)
+                                        sourceType = tmgMtable.getValueInt(index_M_Table, "TYPE");
+				} else {		// for Lackey type source defns, get M.type
 					sourceType = tmgMtable.getValueInt(index_M_Table, "TYPE");
 					// Match it to an A.sourtype, and get the A.trans_to
 					for (int index_A = 0; index_A < tmgAtable.getNrOfRows(); index_A++) {
@@ -482,16 +531,18 @@ public class TMGpass_Source {
 
 			// Get all 3 source templates from T737 SORC_DEFN for this source type
 				T737Templates = getT737SourceTemplates(sourceType);
-			// Construct a string of all templates (both M table and default T737 ones) and
+			// Construct a string of all templates (from M table and default T737 ones) and
 			// also include M.uncitedfld as M.info may contain data for this element as well(!)
 			// This is needed because M.info can contain data that applies to over-ridden Source Elements
-				allTemplates = T737Templates[0] + T737Templates[1] + T737Templates[2];
 				sorcFullFoot = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"FFORM"));
-				if (!sorcFullFoot.isEmpty()) allTemplates = allTemplates + sorcFullFoot;
+				if (sorcFullFoot.isEmpty()) allTemplates = T737Templates[0];
+				else allTemplates = sorcFullFoot;
 				sorcShortFoot = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"SFORM"));
-				if (!sorcShortFoot.isEmpty()) allTemplates = allTemplates + sorcShortFoot;
+				if (sorcShortFoot.isEmpty()) allTemplates = allTemplates + T737Templates[1];
+				else allTemplates = allTemplates + sorcShortFoot;
 				sorcBiblio = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"BFORM"));
-				if (!sorcBiblio.isEmpty()) allTemplates = allTemplates + sorcBiblio;
+				if (sorcBiblio.isEmpty()) allTemplates = allTemplates + T737Templates[2];
+				else allTemplates = allTemplates +	sorcBiblio;
 				uncitedField = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"UNCITEDFLD"));
 				if (!uncitedField.isEmpty()) allTemplates = allTemplates + uncitedField;
 
@@ -505,6 +556,16 @@ public class TMGpass_Source {
 				elementNumberList = new ArrayList<String>();
 				for (int i = 0; i < elementNameList.size(); i++) {
 					elementNumberList.add(getT738Number(elementNameList.get(i)));
+				}
+
+			// If there is an ElementNumberlist entry starting with '01', this means the Source Title
+			// has been used as part of one of the templates, so create a T734 record for it
+				for (int j = 0; j < elementNumberList.size(); j++) {
+					if (elementNumberList.get(j).startsWith("01") ) {
+						T734tablePID = T734tablePID + 1;
+						insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
+								elementNumberList.get(j), sourceTitle, tableT734_SORC_ELMNT_DATA);
+					}
 				}
 
 			// For each piece of source data in splitinfo[j][0] find the elementName/number it is for.
@@ -700,6 +761,11 @@ public class TMGpass_Source {
 				hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 				hreTable.updateLong("SORC_OWNER_RPID", T736tablePID);
 				hreTable.updateString("SORC_ELMNT_NUM", elementNum );
+			// Chesnay project adjustment - 25.10.2025
+				if (elementData.length() > 400) {
+					System.out.println(" * TmgJava - insertRowT734_SORC_DATA - SORC_ELMNT_DATA input > 400:\n" + elementData);
+					elementData = elementData.substring(0,400);
+				}
 				hreTable.updateString("SORC_ELMNT_DATA", elementData);
 			//Insert row
 				hreTable.insertRow();
@@ -863,12 +929,18 @@ public class TMGpass_Source {
 				hreTable.updateLong("SORC_COMPILER_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"COMPILERID"));
 			// End
 				hreTable.updateString("SORC_ABBREV",tmgMtable.getValueString(index_M_Table,"ABBREV"));
-				hreTable.updateString("SORC_TITLE",tmgMtable.getValueString(index_M_Table,"TITLE"));
+				String sorcTitle = tmgMtable.getValueString(index_M_Table,"TITLE");
+			// Chesnay project adjustment - 25.10.2025
+				if (sorcTitle.length() > 400) {
+					System.out.println(" * TmgJava- insertRowT736_SORC - SORC_TITLE input > 400:\n" + sorcTitle);
+					sorcTitle = sorcTitle.substring(0,400);
+				}
+				hreTable.updateString("SORC_TITLE",sorcTitle);
 				hreTable.updateString("SORC_FULLFORM", numberedFullFoot);
 				hreTable.updateString("SORC_SHORTFORM", numberedShortFoot);
 				hreTable.updateString("SORC_BIBLIOFORM", numberedBiblio);
 			// Create a T167_MEMO_SET record with the reminder
-				sourceRemind = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"TEXT"));
+				sourceRemind = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"REMINDERS"));
 			// Processing memo to T167_MEMO_SET
 				if (sourceRemind.length() == 0) hreTable.updateLong("SORC_REMIND_RPID", null_RPID);
 				else hreTable.updateLong("SORC_REMIND_RPID",
@@ -935,7 +1007,7 @@ public class TMGpass_Source {
 	}
 
 /**
- * private void insertRowT738_SORC_ELMNT(int index_U_Table, long T738tablePID, ResultSet hreTable)
+ * private void insertRowT738_SORC_ELMNT(long T738tablePID, ResultSet hreTable)
 		   CREATE TABLE T738_SORC_ELMNT(
 			PID BIGINT NOT NULL,
 			CL_COMMIT_RPID BIGINT NOT NULL,
@@ -946,7 +1018,7 @@ public class TMGpass_Source {
 		String elementName, elementNumber;
  * @throws HCException
  */
-	private void insertRowT738_SORC_ELMNT(int index_U_Table, long T738tablePID, ResultSet hreTable) throws HCException {
+	private void insertRowT738_SORC_ELMNT(long T738tablePID, ResultSet hreTable) throws HCException {
 		try {
 		    // moves cursor to the insert row
 				hreTable.moveToInsertRow();

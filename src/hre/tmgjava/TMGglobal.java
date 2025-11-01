@@ -25,6 +25,8 @@ package hre.tmgjava;
  * 			  2025-07-12 - Added remaining source_def/elemnt, repo and link tables (N. Tolleshaug)
  * 			  2025-07-22 - Added T734_SORC_DATA table (N. Tolleshaug)
  * 			  2025-09-18 - Added other T7xx tables and updated database dates (D Ferguson)
+ * 			  2025-09-30 - Updated //bruker// to  //Nils// (N. Tolleshaug)
+ * 			  2025-10-21 - Updated log file to "C:\\Users\\Nils\\HRE\\NTo-B32-V22C-Log.txt"; (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.sql.ResultSet;
@@ -87,7 +89,7 @@ public class TMGglobal {
 	public static String userName = "";						// User name as known by the OS
 
 	// New exhibit path for test NTo
-	public static String newExhibitFolderPath = "C:\\Users\\bruker\\Documents\\The Master Genealogist v9\\Exhibits\\Ferguson\\";
+	public static String newExhibitFolderPath = "C:\\Users\\Nils\\Documents\\The Master Genealogist v9\\Exhibits\\Ferguson\\";
 
 	// path to HRE Help sub-folders	(Production)
 	public static String helpPath = "file:\\C:\\Program Files\\HRE\\Help\\";
@@ -100,15 +102,15 @@ public class TMGglobal {
 
 // ****** Log file for for console output from converter enabled by TRACE
 // ******-- Specific for user NTo - need to general for all Users ---********
-	public static String logFile = "C:\\Users\\bruker\\HRE\\NTo-B31-Log.txt";
+	public static String logFile = "C:\\Users\\Nils\\HRE\\NTo-B32-V22C-Log.txt";
 // **************************************************************************
-	public static String tmgStartFolder = "C:\\Users\\bruker\\Documents\\The Master Genealogist v9\\Projects\\";
+	public static String tmgStartFolder = "C:\\Users\\Nils\\Documents\\The Master Genealogist v9\\Projects\\";
 // DDL 22c **************************************************************************
-	public static String tmghreBase22c = "C:/Users/bruker/HRE/Project/HRE-TMG-v22c";
+	public static String tmghreBase22c = "C:/Users/Nils/HRE/Project/HRE-TMG-v22c";
 //****************************************************************************************
-	public static String seedBase = "C:\\Users\\bruker\\HRE\\HRE Seed database.mv.db";
+	public static String seedBase = "C:\\Users\\Nils\\HRE\\HRE Seed database.mv.db";
 // DDL 22c **************************
-	public static String seedBase22c = "C:\\Users\\bruker\\HRE\\HRE Seed database v22c.mv.db";
+	public static String seedBase22c = "C:\\Users\\Nils\\HRE\\HRE Seed database v22c.mv.db";
 
 /**
  * Table objects for TMG tables

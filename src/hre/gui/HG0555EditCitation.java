@@ -28,10 +28,10 @@ package hre.gui;
  *            2025-05-26 Fix Fidelity not set on screen if new citation (D Ferguson)
  *            2025-05-27 Fix handling of Assessor Name and PID in Citations (D Ferguson)
  *            2025-05-29 Make Assessor name = current owner if Surety changed (D Ferguson)
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE02 footnote/biblio templates not yet loaded from source data
- * NOTE03 parsing routine needs [  ] parameter substitution method
+ *            2025-10-13 Load source templates and implement Preview (incomplete) (D Ferguson)
+ *			  2025-10-27 Add repository data to Preview code; improve parser punc. handling (D Ferguson)
+ *			  2025-10-28 Implement Source Memo properly (D Ferguson)
+ *			  2025-10-29 Chnage parser to replace < > with {{ }} markers (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -86,6 +86,7 @@ import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBRepositoryHandler;
 import hre.nls.HG0555Msgs;
 import net.miginfocom.swing.MigLayout;
 
@@ -104,11 +105,13 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	long proOffset  = 1000000000000000L;
 
 	HG0555EditCitation pointEditCitation = this;
+	HG0566EditSource pointSelectedSource = null;
 	HG0547EditEvent pointEditEvent = null;
 	HG0509ManagePersonName pointManagePersonName = null;
 	HG0507SelectPerson pointSelectPerson = null;
 
-	public HBCitationSourceHandler pointCitationSourceHandler;
+	HBCitationSourceHandler pointCitationSourceHandler;
+	HBRepositoryHandler pointRepositoryHandler;
 
 	private JPanel contents;
 	boolean outputVisible = false;
@@ -128,43 +131,69 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	Object[] citationEditData;
 	Object[] citationSaveData;
 	Object[][] objSourceData;
+	Object[] objSourceEditData;
+	String[][] tableSrcElmntData;
+	String[][] tableSourceElmntDataValues;
 	JTextField fidelityText;
 
 	long citationTablePID = null_RPID;
-	long sourceTablePID = null_RPID;
+	long sourcePID = null_RPID;
+	long sorcDefnPID = null_RPID;
+	String[] sorcDefnTemplates;
+	boolean haveSourceData = false;
 
 	DocumentListener citeDetailListen, citeMemoListen;
 	FocusListener accFocus;
 	boolean citeDetailChanged, citeMemoChanged, refTextChanged, assessChanged = false;
 	boolean accuracyChanged, fidelityChanged;
-	boolean sourceFound = false;
+//	boolean sourceFound = false;
 
 	JTextArea citeMemoText, citeDetailText;
 	JTextField sourceTitleText, refText, acc1, acc2, accD, accP, accM;
 	JFormattedTextField srcNum;
 
-	String templateFullFootnote, templateShortFootnote, templateBibliography = "";  // NOTE02 data still to be loaded //$NON-NLS-1$
+	String sourceFullFoot = "", sourceShortFoot = "", sourceBiblio = "";	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	String templateFullFoot = "", templateShortFoot = "", templateBibliography = "";   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	String sourceMemo = "";	//$NON-NLS-1$
+
+	Boolean srcMemoNotProcessed = true, cdNotProcessed = true, cmNotProcessed = true, repoNotProcessed = true;
+	String[] sourceMemoParts;
+	String[] citationDetailParts;
+	String[] citationMemoParts;
+	String[] repositoryMemoParts;
+	Object[] repoLinkData;
+	Object[] repoData;
+	long repoPID;
+	String repositoryName, repositoryReference, repositoryAddress;
 
 	JButton btn_Save;
 
+	// This is invoked from HG0565ManageSource when a Source is selected for use
+	// during AddCitation action and is a row from tableSourceData
 	public void setSourceSelectedData(Object[] objSourceDataToEdit) {
-		sourceTablePID = (long) objSourceDataToEdit[3];
-		sourceTitleText.setText((String) objSourceDataToEdit[1]);
 		srcNum.setText(""+objSourceDataToEdit[0]); 		//$NON-NLS-1$
+		sourceTitleText.setText((String) objSourceDataToEdit[1]);
+		sourcePID = (long) objSourceDataToEdit[3];
 		fidelityData = (String) objSourceDataToEdit[4];
 		fidelityText.setText(" " + fidAnalyse()); 		//$NON-NLS-1$
+		sorcDefnPID = (long) objSourceDataToEdit[5];
+		sourceFullFoot = (String) objSourceDataToEdit[6];
+		sourceShortFoot	= (String) objSourceDataToEdit[7];
+		sourceBiblio = (String) objSourceDataToEdit[8];
+		haveSourceData = true;
 	}
 
 /**
  * Create the entry points
  */
+	// When invoked with addCitationRecord = true
 	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, String citeOwnerType,
 							  int keyAssocMin)  {
 		this.pointOpenProject = pointOpenProject;
 		this.keyAssocMin = keyAssocMin;
 		createGUI(addCitationRecord, citeOwnerType);
 	}
-
+	// When invoked with addCitationRecord = false
 	public HG0555EditCitation(boolean addCitationRecord, HBProjectOpenData pointOpenProject, String citeOwnerType,
 							  int keyAssocMin, long citationTablePID)  {
 		this.pointOpenProject = pointOpenProject;
@@ -172,6 +201,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		this.citationTablePID = citationTablePID;
 		createGUI(addCitationRecord, citeOwnerType);
 	}
+
 /**
  * Create the dialog
 */
@@ -183,6 +213,14 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		windowID = screenID;
 		helpName = "editcitation";		 //$NON-NLS-1$
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
+
+	// Setup close and logging actions
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0555EditCitation");	//$NON-NLS-1$
+
+	// For Text area/panes font setting
+	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 
 	// Collect citationData if NOT an Add Citation case
 		try {
@@ -197,6 +235,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				assessorPID = (long) citationEditData[6];
 				fidelityData = (String) citationEditData[7];
 				accuracyData = pointCitationSourceHandler.getAccuracyData();
+				sourcePID = (long) citationEditData[8];
 			}
 	// For ANY case, get the current Project IS_OWNER data (needed for an ADD or if Surety changes)
 			ownerAssessorData = (Object[]) pointCitationSourceHandler.getAssessorData();
@@ -210,12 +249,13 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 			hbe.printStackTrace();
 		}
 
-	// Setup close and logging actions
-		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0555EditCitation");	//$NON-NLS-1$
-
-	// For Text area/panes font setting
-	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
+	// Load the Source Element list (names/ID#s) - needed for Element number lookup
+		try {
+			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
+		} catch (HBException hbe) {
+			System.out.println( " Error loading Source Element list: " + hbe.getMessage());	//$NON-NLS-1$
+			hbe.printStackTrace();
+		}
 
 	// Setup dialog
 		contents = new JPanel();
@@ -271,7 +311,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citeDetailText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		citeDetailText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane citeDetailTextScroll = new JScrollPane(citeDetailText);
-		citeDetailTextScroll.setMinimumSize(new Dimension(350, 75));
+		citeDetailTextScroll.setPreferredSize(new Dimension(350, 75));
 		citeDetailTextScroll.getViewport().setOpaque(false);
 		citeDetailTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		citeDetailText.setCaretPosition(0);	// set scrollbar to top
@@ -290,7 +330,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		citeMemoText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		citeMemoText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane citeMemoTextScroll = new JScrollPane(citeMemoText);
-		citeMemoTextScroll.setMinimumSize(new Dimension(350, 75));
+		citeMemoTextScroll.setPreferredSize(new Dimension(350, 75));
 		citeMemoTextScroll.getViewport().setOpaque(false);
 		citeMemoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		citeMemoText.setCaretPosition(0);	// set scrollbar to top
@@ -564,12 +604,60 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					outputPanel.setVisible(true);
 					outputVisible = true;
 					pack();
+
+				// First load the Source data if its not present (needed for templates and sorcDefnPID)
+					if (!haveSourceData) {
+						try {
+							objSourceEditData = pointCitationSourceHandler.getSourceEditData(sourcePID);
+							sourceTitleText.setText((String) objSourceEditData[0]);
+							sourceREF = (int)objSourceEditData[2];
+							fidelityData = (String)objSourceEditData[5];
+							sourceFullFoot = (String)objSourceEditData[6];
+							sourceShortFoot = (String)objSourceEditData[7];
+							sourceBiblio = (String)objSourceEditData[8];
+							sourceMemo = (String)objSourceEditData[9];
+							sorcDefnPID = (long) objSourceEditData[11];
+							haveSourceData = true;
+				 		} catch (HBException hbe) {
+				 			System.out.println( " Error loading Source data: " + hbe.getMessage());	//$NON-NLS-1$
+				 			hbe.printStackTrace();
+				 		}
+					}
+
+				// Load the correct template into each template text area by getting the underlying
+				// sourceDefn templates (for use if no Source template exists), then parsing each
+				// template and substituting element Values for the elementNumbers
+					try {
+						sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sorcDefnPID);
+					} catch (HBException hbe) {
+						System.out.println( " Error loading source defn templates: " + hbe.getMessage());	//$NON-NLS-1$
+						hbe.printStackTrace();
+					}
+					if (sourceFullFoot.isEmpty()) templateFullFoot = sorcDefnTemplates[0];
+					else templateFullFoot = sourceFullFoot;
+					if (sourceShortFoot.isEmpty()) templateShortFoot = sorcDefnTemplates[1];
+					else templateShortFoot = sourceShortFoot;
+					if (sourceBiblio.isEmpty()) templateBibliography = sorcDefnTemplates[2];
+					else templateBibliography = sourceBiblio;
+
+				// Get the Source Element values that belong to this Source.
+				// Table contains Element number, Element value
+					try {
+						tableSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
+					} catch (HBException hbe) {
+						System.out.println( " Error loading source element values: " + hbe.getMessage()); //$NON-NLS-1$
+						hbe.printStackTrace();
+					}
+
 				// Parse the full Footnote text into its output area
-					fullFootText.setText(parseNoteBiblio(templateFullFootnote));
+					fullFootText.setText(parseNoteBiblio(templateFullFoot));
+					fullFootText.setCaretPosition(0);
 				// Parse the short Footnote text into its output area
-					shortFootText.setText(parseNoteBiblio(templateShortFootnote));
+					shortFootText.setText(parseNoteBiblio(templateShortFoot));
+					shortFootText.setCaretPosition(0);
 				// Parse the Bibliography text into its output area
 					biblioText.setText(parseNoteBiblio(templateBibliography));
+					biblioText.setCaretPosition(0);
 				}
 				else {
 				// Hide the output panel if Preview button clicked again
@@ -587,14 +675,18 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				// Close reminder display, if open
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				long newCitationTablePID = null_RPID;
+				if (sourcePID == null_RPID) return;	// no Source set
 				try {
 					if (addCitationRecord) {
-						newCitationTablePID = pointCitationSourceHandler.createCitationRecord(sourceTablePID);
+				// Create new cite record
+						newCitationTablePID = pointCitationSourceHandler.createCitationRecord(sourcePID);
+				// Store data for citation
 						pointCitationSourceHandler.saveCitedData(newCitationTablePID, citationSaveData(), accuracyEdited);
 					} else pointCitationSourceHandler.saveCitedData(citationTablePID, citationSaveData(), accuracyEdited);
 					if (pointEditEvent != null) pointEditEvent.resetCitationTable(newCitationTablePID);
 					if (pointManagePersonName != null) pointManagePersonName.resetCitationTable();
 					if (pointSelectPerson != null) pointSelectPerson.resetCitationTable(citeOwnerType);
+					if (pointSelectedSource != null) pointSelectedSource.resetCitationTable(null_RPID);
 
 				} catch (HBException hbe) {
 					System.out.println(" HG0555EditCitation save error: " + hbe.getMessage()); //$NON-NLS-1$
@@ -745,31 +837,35 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	private void sourceNumberEntry(int enteredNum) {
     	if (enteredNum > 0) {
     		try {
-    			// Get source number, title, cited, PID, fidelity
+    			// Get source number, title, cited, PID, fidelity, sorceDefnPID, templates
 				objSourceData = pointCitationSourceHandler.getSourceList();
 			} catch (HBException hse) {
 				System.out.println(" HG0555EditCitation get source data error: " + hse.getMessage()); //$NON-NLS-1$
 				hse.printStackTrace();
 			}
-    		// Get the PID and title of the entered source number
+    		// Get the data for the entered source number
     		for (int i = 0; i < objSourceData.length; i++) {
     			if ((int)objSourceData[i][0] == enteredNum) {
-    				sourceTablePID = (long) objSourceData[i][3];
+    				sourcePID = (long) objSourceData[i][3];
     				sourceTitleText.setText((String) objSourceData[i][1]);
     				fidelityData = (String) objSourceData[i][4];
     				fidelityText.setText(" " + fidAnalyse()); 		//$NON-NLS-1$
+    				sorcDefnPID = (long) objSourceData[i][5];
+    				sourceFullFoot = (String) objSourceData[i][6];
+    				sourceShortFoot	= (String) objSourceData[i][7];
+    				sourceBiblio = (String) objSourceData[i][8];
     				btn_Save.setEnabled(true);
-    				sourceFound = true;
+    				haveSourceData = true;
     				break;
     			}
     		}
     	}
 		// No source number matched
-		if (!sourceFound) JOptionPane.showMessageDialog(srcNum,
-														HG0555Msgs.Text_54 + enteredNum,	// No Source exists with number:
-														HG0555Msgs.Text_55, JOptionPane.ERROR_MESSAGE); // Select Source
+		if (!haveSourceData) JOptionPane.showMessageDialog(srcNum,
+									HG0555Msgs.Text_54 + enteredNum,	// No Source exists with number:
+									HG0555Msgs.Text_55, JOptionPane.ERROR_MESSAGE); // Select Source
 		// reset for next time
-		sourceFound = false;
+		haveSourceData = false;
 	}
 
 /**
@@ -800,8 +896,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	 ***************************/
 		// Both TMG/HRE templates and HTML use < > markers for different purposes, so we need to replace all
 		// such markers in the input string to enable use of HTML formatting codes.
-		// We have chosen to replace the template < and > markers with ≤ and ≥ - we do this now.
-		String markers = inputText.replace("<", "≤").replace(">", "≥"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		// We have chosen to replace the template < and > markers with {{ and }} - we do this now.
+		String markers = inputText.replace("<", "{{").replace(">", "}}"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 		// The format of input string can include TMG formatting values which should never be
 		// part of citations. These are [SCAP:] [INDEX:] [SIZE:] and need to be removed.
@@ -852,11 +948,11 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		// In Phase 2 we want to break the revised input string into an array of 'tokens',
 		// each containing just 1 component of the input string.
 		// So we setup a regex to break the text string into 'tokens' in tokensPh2[]
-		String regex2 = "\\[[^\\]]*\\]|\\≤[^\\≥]*\\≥|[^≤≥\\[\\]]+"; 	//$NON-NLS-1$
+		String regex2 = "\\[[^\\]]*\\]|\\{\\{[^}]*\\}\\}|[^\\[\\]\\{\\}]+"; //$NON-NLS-1$
 		Pattern pattern2 = Pattern.compile(regex2);
         Matcher matcher2 = pattern2.matcher(workText);
-        // This regex will extract each string enclosed in [ ] or ≤ ≥ or plain text
-        // note that ≤ ≥ strings will enclose more [ ] strings - process them in Phase 3.
+        // This regex will extract each string enclosed in [ ] or {{ }} or plain text
+        // note that {{ }} strings will enclose more [ ] strings - process them in Phase 3.
         while (matcher2.find()) {
             tokensPh2[tokenNumPh2] = matcher2.group();
             tokenNumPh2++ ;
@@ -871,29 +967,29 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	/**********************************************************
 	 * PHASE 3 - remove empty tokens and split apart < > tokens
 	 **********************************************************/
-        // This phase transfers all tokens to tokensPh3, ignoring null/empty tokens and tokens wrapped in ≤ ≥ (for now).
+        // This phase transfers all tokens to tokensPh3, ignoring null/empty tokens and tokens wrapped in {{ }} (for now).
         for (int i=0; i < tokenNumPh2; i++) {
-        	if (tokensPh2[i].trim().length() > 0 && tokensPh2[i] != null && !tokensPh2[i].substring(0, 1).equals("≤")) { //$NON-NLS-1$
+        	if (tokensPh2[i].trim().length() > 0 && tokensPh2[i] != null && !tokensPh2[i].startsWith("{{")) { //$NON-NLS-1$
         		tokensPh3[tokenNumPh3] = tokensPh2[i];
         		tokenNumPh3++;
         	}
-            // Now break apart all ≤  ≥ entries in tokensPh2 to expose [  ] entries they
+            // Now break apart all {{ }} entries in tokensPh2 to expose [  ] entries they
         	// will contain and load them into tokensPh3 as separate tokens
-        	if (tokensPh2[i].startsWith("≤")) { //$NON-NLS-1$
-        		// Remove the ≤, ≥ characters from beginning/end of this token
+        	if (tokensPh2[i].startsWith("{{")) { //$NON-NLS-1$
+        		// Remove the {{ }} characters from beginning/end of this token
     			workText = tokensPh2[i].substring(1, tokensPh2[i].length() - 1);
-    			// add the ≤ into tokensPh3
-    			tokensPh3[tokenNumPh3] = "≤"; //$NON-NLS-1$
+    			// add the {{ into tokensPh3
+    			tokensPh3[tokenNumPh3] = "{{"; //$NON-NLS-1$
     			tokenNumPh3++;
-    			// Break apart the ≤ ≥ contents using the previous regex pattern (now
+    			// Break apart the {{ }} contents using the previous regex pattern (now
     			// applied to workText) and add these into tokensPh3.
     			Matcher matcher3 = pattern2.matcher(workText);
                 while (matcher3.find()) {
                 	tokensPh3[tokenNumPh3] = matcher3.group();
                     tokenNumPh3++ ;
                 }
-    			// add the ending ≥
-    			tokensPh3[tokenNumPh3] ="≥"; //$NON-NLS-1$
+    			// add the ending }}
+    			tokensPh3[tokenNumPh3] ="}}"; //$NON-NLS-1$
     			tokenNumPh3++;
         	}
         }
@@ -907,9 +1003,122 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	/***************************************************
 	 * PHASE 4 - substitute [  ] fields with real values
 	 ***************************************************/
-  		// At this stage we should be substituting the [xxx] tokens with their real values
-  		// but at this facility isn't available yet, we'll carry on.
+  		// At this stage substitute the [nnnnn] tokens with their real values
+  		// which are available in tableSourceElmntDataValues[number][value].
+ 		for (int i = 0; i < tokenNumPh3; i++) {
+ 			// Find [nnnnn] tokens and extract the 'nnnnn'
+  			if (tokensPh3[i].startsWith("[") && tokensPh3[i].length() == 7) {		//$NON-NLS-1$
+  				String elmntNumber = tokensPh3[i].substring(1, 6);
+  				// Match the 'nnnnn' with a tableSourceElmntDataValues entry to get its value
+  				for (int j = 0; j < tableSourceElmntDataValues.length; j++) {
+  					if (elmntNumber.equals(tableSourceElmntDataValues[j][0])) {
+  						tokensPh3[i] = tableSourceElmntDataValues[j][1];
+  						break;
+  					}
+  				}
+  			}
+  		}
+ 		// Now consider whether we still have [nnnnn] tokens left to be handled.
+ 		// These can be:
+ 		//	[REPOSITORY xxx ] entries in the 40000-400002 number range
+ 		//  [COMMMENTS} = number 51000, ALL data from Source MEMO (TEXT field)
+ 		//  [M] or [Mn] = numbers 50000-500009, data from Source MEMO
+ 		//  [CD} or [CDn] = number 60000-60009, data from Citation DETAIL
+ 		//  [CREF} = number 61000, data from Citation Reference
+ 		//  [CM] or [CMn] = number 70000-70009, data from Citation MEMO
+ 		//  [RM] or [RMn] = number 80000-80009, data from Repository MEMO
+ 		// NOTE: [COMMENTS] is the same thing as [M], i.e. the whole of the Source Memo (aka Source Text)
+ 		// NOTE: in TMG [CD1] is the same as [CD] i.e., the 'parts' counter starts at 1, not 0.
+ 		// This means the 'parts' number needs to be corrected when processing [XXx] tokens.
 
+ 		// On first pass, look for any CDn, Mn. RMn, CMn tokens that may
+ 		// require breaking apart their respective memo strings at the || marker
+ 		// For repositories, this requires getting the source/repo link data to find the repository.
+		for (int i = 0; i < tokenNumPh3; i++) {
+			// For Source Memo
+			if (tokensPh3[i].startsWith("[500") && srcMemoNotProcessed) {	//$NON-NLS-1$
+				sourceMemoParts = sourceMemo.split("\\|\\|");				//$NON-NLS-1$
+				srcMemoNotProcessed = false;
+			}
+			// For Citation Detail
+			if (tokensPh3[i].startsWith("[600") && cdNotProcessed)	{	//$NON-NLS-1$
+				citationDetailParts = citationDetail.split("\\|\\|");	//$NON-NLS-1$
+				cdNotProcessed = false;
+			}
+			// For Citation Memo
+			if (tokensPh3[i].startsWith("[700") && cmNotProcessed)	{	//$NON-NLS-1$
+				citationMemoParts = citationMemo.split("\\|\\|");		//$NON-NLS-1$
+				cmNotProcessed = false;
+			}
+			// For repository data including its memo
+			if ((tokensPh3[i].startsWith("[400") || 			//$NON-NLS-1$
+					tokensPh3[i].startsWith("[800]"))			//$NON-NLS-1$
+						&& repoNotProcessed) {
+				repoNotProcessed = false;
+				try {
+				// Get the source/repo link data (and repo ref)
+					repoLinkData = pointRepositoryHandler.getLinkedRepository(sourcePID);
+					repoPID = (long) repoLinkData[0];
+					repositoryReference = (String) repoLinkData[1];
+				// If a valid repoPID, get the nominated repository data
+					if (repoPID != null_RPID) {
+						repoData = pointRepositoryHandler.getRepositoryData(repoPID);
+						repositoryName = (String) repoData[0];
+						String repoMemo = (String) repoData[3];
+						repositoryMemoParts = repoMemo.split("\\|\\|");		//$NON-NLS-1$
+						repositoryAddress = (String) repoData[4];
+					}
+					else {
+						repositoryName = "";	//$NON-NLS-1$
+						repositoryMemoParts[0] = "";	//$NON-NLS-1$
+						repositoryAddress = "";	//$NON-NLS-1$
+					}
+				} catch (HBException hre) {
+					System.out.println(" HG0555EditCitation get repo data error: " + hre.getMessage()); //$NON-NLS-1$
+					hre.printStackTrace();
+				}
+			}
+		}
+
+		// Now run through the tokens again and complete all substitutions
+		int tokenNum = 0;
+		for (int i = 0; i < tokenNumPh3; i++) {
+			if (tokensPh3[i].equals("[40000]")) tokensPh3[i] = repositoryName;			//$NON-NLS-1$
+			if (tokensPh3[i].equals("[40001]")) tokensPh3[i] = repositoryAddress; 		 //$NON-NLS-1$
+			if (tokensPh3[i].equals("[40002]")) tokensPh3[i] = repositoryReference;		//$NON-NLS-1$
+			if (tokensPh3[i].equals("[51000]")) tokensPh3[i] = sourceMemo;				//$NON-NLS-1$
+			if (tokensPh3[i].equals("[61000]")) tokensPh3[i] = citationRefer;			//$NON-NLS-1$
+			if (tokensPh3[i].startsWith("[600")) {			//$NON-NLS-1$
+				// Convert the Element number to an integer in range 0-8 (as TMG uses 1-9)
+				tokenNum = Integer.parseInt(tokensPh3[i].substring(1, 6)) - 60000;
+				if (tokenNum > 0) tokenNum= tokenNum - 1;
+				// and test that the split text has that number of parts
+				if (citationDetailParts.length <= tokenNum) break;
+				// then get the applicable part of the split-apart Citation Detail string
+				tokensPh3[i] = citationDetailParts[tokenNum];
+			}
+			// Repeat above code for 50000 entries (Source Memo)
+			if (tokensPh3[i].startsWith("[500")) {			//$NON-NLS-1$
+				tokenNum = Integer.parseInt(tokensPh3[i].substring(1, 6)) - 50000;
+				if (tokenNum > 0) tokenNum= tokenNum - 1;
+				if (sourceMemoParts.length <= tokenNum) break;
+				tokensPh3[i] = sourceMemoParts[tokenNum];
+			}
+			// Repeat above code for 70000 entries (Citation Memo)
+			if (tokensPh3[i].startsWith("[700")) {			//$NON-NLS-1$
+				tokenNum = Integer.parseInt(tokensPh3[i].substring(1, 6)) - 70000;
+				if (tokenNum > 0) tokenNum= tokenNum - 1;
+				if (citationMemoParts.length <= tokenNum) break;
+				tokensPh3[i] = citationMemoParts[tokenNum];
+			}
+			// Repeat above code for 80000 entries (Repo Memo)
+			if (tokensPh3[i].startsWith("[800")) {			//$NON-NLS-1$
+				tokenNum = Integer.parseInt(tokensPh3[i].substring(1, 6)) - 80000;
+				if (tokenNum > 0) tokenNum= tokenNum - 1;
+				if (repositoryMemoParts.length <= tokenNum) break;
+				tokensPh3[i] = repositoryMemoParts[tokenNum];
+			}
+		}
 
         // Display tokensPh3 for checking
   		//System.out.println("End Phase 4:");
@@ -918,26 +1127,26 @@ public class HG0555EditCitation extends HG0450SuperDialog {
   		//}
 
 	/***************************************************
-	 * PHASE 5 - process within the ≤ ≥ markers
+	 * PHASE 5 - process within the {{ }} markers
 	 ***************************************************/
-   		// Now check the substitutions of tokens enclosed in the ≤ ≥ markers.
+   		// Now check the substitutions of tokens enclosed in the {{ }} markers.
 		// If there are unsubstituted tokens then the complete content
 		// of these markers needs to be removed from the output.
     	// First, look for a start marker
     	int startMarker = 0;
     	int stopMarker = 0;
 		for (int i = 0; i < tokenNumPh3; i++) {
-			if (tokensPh3[i].startsWith("≤")) { //$NON-NLS-1$
+			if (tokensPh3[i].startsWith("{{")) { //$NON-NLS-1$
 				startMarker = i;
-				// Once "≤" is found, look for a "≥"
+				// Once "{{" is found, look for a "}}"
 				for (int j = i; j < tokenNumPh3; j++) {
-					if (tokensPh3[j].startsWith("≥")) { //$NON-NLS-1$
+					if (tokensPh3[j].startsWith("}}")) { //$NON-NLS-1$
 						stopMarker = j;
 						break;
 					}
 				}
 				// Now check within the range of the start/stopMarkers for a  [  ] token.
-				// If one exists, it hasn't been substituted, so delete the whole ≤ ≥ range.
+				// If one exists, it hasn't been substituted, so delete the whole {{ }} range.
 				for (int k = startMarker+1; k < stopMarker; k++) {
 					if (tokensPh3[k].startsWith("[")) { //$NON-NLS-1$
 						for (int x = startMarker; x < stopMarker+1; x++) {
@@ -954,18 +1163,77 @@ public class HG0555EditCitation extends HG0450SuperDialog {
   		//	System.out.println("tokensPh3[" + i + "] = " + tokensPh3[i]);
   		//}
 
+/***************************************************
+ * PHASE 6 - look for brackets containing nothing
+ ***************************************************/
+	// Now check for brackets containing no good info and clean out the invalid info
+	// First, look for a start (
+		boolean bracketsFound = false;
+  	   	startMarker = 0;
+    	stopMarker = 0;
+		for (int i = 0; i < tokenNumPh3; i++) {
+			if (tokensPh3[i].trim().equals("(")) { 	//$NON-NLS-1$
+				bracketsFound = true;
+				startMarker = i;
+				// Once "(" is found, look for a ")"
+				for (int j = i; j < tokenNumPh3; j++) {
+					if (tokensPh3[j].trim().startsWith(")")) { 	//$NON-NLS-1$
+						stopMarker = j;
+						break;
+					}
+				}
+				// Now check within the range of the start/stopMarkers for a  [  ] token, followed
+				// by punctuation and blank them both out
+				for (int k = startMarker+1; k < stopMarker; k++) {
+					if (tokensPh3[k].trim().startsWith("[")  && (tokensPh3[k+1].trim().equals(":") ||	//$NON-NLS-1$ //$NON-NLS-2$
+						tokensPh3[k+1].trim().equals(";") || tokensPh3[k+1].trim().equals(",") ||		//$NON-NLS-1$ //$NON-NLS-2$
+						tokensPh3[k+1].trim().equals("/") ) ) { 										//$NON-NLS-1$
+							tokensPh3[k] = ""; 		//$NON-NLS-1$
+							tokensPh3[k+1] = "";	//$NON-NLS-1$
+						}
+					// or an unsubstituted token before the last bracket
+					if (tokensPh3[k].trim().startsWith("[") && tokensPh3[k+1].trim().startsWith(")") )	//$NON-NLS-1$ //$NON-NLS-2$
+						tokensPh3[k] = "";		//$NON-NLS-1$
+					// or just a spare unsubstituted token
+					if (tokensPh3[k].trim().startsWith("[") )		//$NON-NLS-1$
+						tokensPh3[k] = "";		//$NON-NLS-1$
+				}
+			}
+		}
+	// Now if we are in brackets mode, pass through again and if all tokens between
+    // brackets are empty, remove the brackets
+		if (bracketsFound ) {
+			boolean allBlank = true;
+			for (int k = startMarker+1; k < stopMarker; k++) {
+				if (!tokensPh3[k].trim().equals("")) allBlank = false;		//$NON-NLS-1$
+			}
+			if (allBlank) {		// remove the brackets
+				tokensPh3[startMarker] = "";	//$NON-NLS-1$
+				tokensPh3[stopMarker] = tokensPh3[stopMarker].substring(1);
+			}
+		}
+
+        // Display tokensPh3 for checking
+  		//System.out.println("End Phase 6:");
+  		//for (int i = 0; i < tokenNumPh3; i++) {
+  		//	System.out.println("tokensPh3[" + i + "] = " + tokensPh3[i]);
+  		//}
+
 	/****************************************************
-	 * PHASE 6 - build final output string
+	 * PHASE 7 - build final output string
 	 ****************************************************/
-        // Build the tokens into our workText string, ignoring blank tokens
+        // Build the tokens into our workText string, ignoring unsubstituted tokens, then blank ones
 		workText = ""; //$NON-NLS-1$
         for (int i=0; i < tokenNumPh3; i++) {
+        	if (tokensPh3[i].trim().startsWith("[")) tokensPh3[i] = "";				//$NON-NLS-1$ //$NON-NLS-2$
         	if (!tokensPh3[i].equals("")) workText = workText + tokensPh3[i] + " "; //$NON-NLS-1$ //$NON-NLS-2$
         }
-        // Now clean the output of double blanks, blanks before/after punctuation and
-        // the ≤ ≥ markers remaining after valid substitutions were made.
+        // Now clean the output of double blanks, blanks before/after punctuation etc and
+        // the {{ }} markers remaining after valid substitutions were made.
         // Use another iterative regex to do this.
 		Map<String, String> clean = new HashMap<>();
+		clean.put("{{", "");		// remove leftover {{ marker 	//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put("}}", "");		// remove leftover }} marker 	//$NON-NLS-1$ //$NON-NLS-2$
 		clean.put("  ", " ");		// change double blank to blank //$NON-NLS-1$ //$NON-NLS-2$
 		clean.put("( ", "(");		// remove blank after ( 		//$NON-NLS-1$ //$NON-NLS-2$
 		clean.put(" )", ")");		// remove blank before ) 		//$NON-NLS-1$ //$NON-NLS-2$
@@ -973,8 +1241,12 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		clean.put(" ;", ";");		// remove blank before ; 		//$NON-NLS-1$ //$NON-NLS-2$
 		clean.put(" ,", ",");		// remove blank before , 		//$NON-NLS-1$ //$NON-NLS-2$
 		clean.put(" .", ".");		// remove blank before . 		//$NON-NLS-1$ //$NON-NLS-2$
-		clean.put("≤", "");			// remove leftover ≤ marker 	//$NON-NLS-1$ //$NON-NLS-2$
-		clean.put("≥", "");			// remove leftover ≥ marker 	//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put("\" ", "\"");		// remove blank after " 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(" \"", "\"");		// remove blank before " 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(",.", ".");		// change .. to .		 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(". .", ".");		// change . . to .		 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put(", .", ".");		// change , . to .		 		//$NON-NLS-1$ //$NON-NLS-2$
+		clean.put("; .", ".");		// change ; . to .		 		//$NON-NLS-1$ //$NON-NLS-2$
 		StringBuffer buffer3 = new StringBuffer(workText);
 		for (Map.Entry<String, String> entry : clean.entrySet()) {
 	        // Create the regex pattern from the map key
@@ -988,10 +1260,9 @@ public class HG0555EditCitation extends HG0450SuperDialog {
             matcher3.appendTail(buffer3);
 	    }
 		output = buffer3.toString();
-
         // and return it
 		return output;
 
-	}		// end of parseFootBiblio
+	}		// end of parseNoteBiblio
 
 }  // End of HG0555EditCitation

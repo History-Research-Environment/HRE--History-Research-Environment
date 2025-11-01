@@ -54,8 +54,11 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
-import hre.bila.HBPersonHandler;
+import hre.bila.HBCitationSourceHandler;
+import hre.bila.HBException;
+//import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBRepositoryHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
 import net.miginfocom.swing.MigLayout;
@@ -69,9 +72,13 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0570EditRepository extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
-	HBPersonHandler pointPersonHandler;
+	//HBPersonHandler pointPersonHandler;
+	HBCitationSourceHandler pointCitationSourceHandler;
+	HBRepositoryHandler pointRepositoryHandler;
 
 	public String screenID = "57000";	//$NON-NLS-1$
+	long null_RPID  = 1999999999999999L;
+	long proOffset  = 1000000000000000L;
 
 	private JPanel contents;
 
@@ -89,13 +96,16 @@ public class HG0570EditRepository extends HG0450SuperDialog {
     JTable tableLocation;
     Object[][] tableLocationData;
     String[] tableLocationHeader;
+    Object[] repositoryData;
 
 /**
  * Create the dialog
  */
-	public HG0570EditRepository(HBProjectOpenData pointOpenProject)  {
+	public HG0570EditRepository(HBProjectOpenData pointOpenProject, long repoasitoryTablePID)  {
 		this.pointOpenProject = pointOpenProject;
-		pointPersonHandler = pointOpenProject.getPersonHandler();
+		//pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 
 	// Setup references
 		windowID = screenID;
@@ -107,8 +117,13 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0570EditRepository");	//$NON-NLS-1$
 
 	// Collect static GUI text from T204 for Location table
-		tableLocationHeader = pointPersonHandler.setTranslatedData("57000", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
-
+		tableLocationHeader = pointCitationSourceHandler.setTranslatedData("57000", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
+		try {
+			repositoryData = pointRepositoryHandler.getRepositoryData(repoasitoryTablePID);
+		} catch (HBException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 /************************************
  * Setup main panel and its contents
  ***********************************/
@@ -135,21 +150,21 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 
 		JLabel name = new JLabel("Abbreviated Name: ");
 		namePanel.add(name, "cell 0 0");	//$NON-NLS-1$
-		JTextField repoAbbrev = new JTextField();
+		JTextField repoAbbrev = new JTextField((String)repositoryData[1]);
 		repoAbbrev.setColumns(30);
 		repoAbbrev.setEditable(true);
 		namePanel.add(repoAbbrev, "cell 1 0, alignx left");	//$NON-NLS-1$
 
 		JLabel ref = new JLabel("Reference Number: ");
 		namePanel.add(ref, "cell 0 1");	//$NON-NLS-1$
-		JTextField repoRef = new JTextField();
+		JTextField repoRef = new JTextField((int)repositoryData[2]);
 		repoRef.setColumns(5);
 		repoRef.setEditable(true);
 		namePanel.add(repoRef, "cell 1 1, alignx left");	//$NON-NLS-1$
 
 		JLabel fullName = new JLabel("Repository Name: ");
 		namePanel.add(fullName, "cell 0 2");	//$NON-NLS-1$
-		fullNameText = new JTextArea();
+		fullNameText = new JTextArea((String)repositoryData[0]);
 		fullNameText.setWrapStyleWord(true);
 		fullNameText.setLineWrap(true);
 		fullNameText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
