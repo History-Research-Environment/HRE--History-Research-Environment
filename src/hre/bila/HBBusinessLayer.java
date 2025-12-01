@@ -113,7 +113,7 @@ public class HBBusinessLayer  {
 	public HG0401HREMain mainFrame;
 	public HBLibraryResultSet pointLibraryResultSet;
 	public HBLibraryBusiness pointLibraryBusiness;
-	public HREmemo pointHREmemo;
+	public hre.tmgjava.HREmemo pointHREmemo;
 
     int dateFormatIndex = 0;
     boolean changedDateFormat = true;

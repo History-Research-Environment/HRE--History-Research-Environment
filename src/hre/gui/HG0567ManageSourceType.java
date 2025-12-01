@@ -10,6 +10,8 @@ package hre.gui;
  *			  2025-09-16 Add Source type count into table header (D Ferguson)
  *			  2025-09-25 Load Source templates and convert to Element Names (D Ferguson)
  *			  2025-09-27 Invoke HG0568 to perform Source Type edits (D Ferguson)
+ * 			  2025-11-17 Change HGlobalCode routines to be in ReportHandler (D Ferguson)
+ *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 implement Copy button
@@ -65,6 +67,7 @@ import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBReportHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
 
@@ -78,6 +81,7 @@ import net.miginfocom.swing.MigLayout;
 public class HG0567ManageSourceType extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBPersonHandler pointPersonHandler;
+	HBReportHandler pointReportHandler;
 	public HBCitationSourceHandler pointCitationSourceHandler;
 
 	public static final String screenID = "56700"; //$NON-NLS-1$
@@ -101,6 +105,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		this.pointOpenProject = pointOpenProject;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		pointReportHandler = pointOpenProject.getReportHandler();
 
 	// NOTE this can be called directly from 'Evidence' on mainMenu , when title should be 'Manage Source types'
 	// OR from HG0565ManageSource, when the title should be 'Select Source Type'
@@ -360,11 +365,11 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 				// the Element [nnnnn] entries into Element Names via the hashmap codeToTextMap
 				// and load the result into the text areas for display.
 				// Start with the Full footer
-					fullFootText.setText(HGlobalCode.convertNumsToNames(sorcDefnTemplates[0], codeToTextMap));
+					fullFootText.setText(pointReportHandler.convertNumsToNames(sorcDefnTemplates[0], codeToTextMap));
 				// then the Short footer
-					shortFootText.setText(HGlobalCode.convertNumsToNames(sorcDefnTemplates[1], codeToTextMap));
+					shortFootText.setText(pointReportHandler.convertNumsToNames(sorcDefnTemplates[1], codeToTextMap));
 				// then the Bibliography template
-					biblioText.setText(HGlobalCode.convertNumsToNames(sorcDefnTemplates[2], codeToTextMap));
+					biblioText.setText(pointReportHandler.convertNumsToNames(sorcDefnTemplates[2], codeToTextMap));
 				// Set control buttons
 					btn_Edit.setEnabled(true);
 					btn_Copy.setEnabled(true);

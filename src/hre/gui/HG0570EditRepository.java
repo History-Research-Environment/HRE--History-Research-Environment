@@ -5,9 +5,13 @@ package hre.gui;
  *			  2025-05-26 Adjust miglayout sub-panel sizes (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  *			  2025-08-16 Get table header from T204 (D Ferguson)
+ *			  2025-11-01 Code for Add and Edit repositories (N.Tolleshaug)
+ *			  2025-11-02 Completed code for repositories (N.Tolleshaug)
+ *			  2025-11-23 Fix test for empty repo Name/Abbrev text (D Ferguson)
+ *			  2025-11-28 NLS all code (D Ferguson)
+ *
  ********************************************************************************
  * NOTES for incomplete functionality:
- * NOTE00 - needs WhWhHandler etc defined to be able to pickup location styles and data
  * NOTE01 needs Save code
  *
  ********************************************************************************/
@@ -56,11 +60,12 @@ import javax.swing.text.DefaultCaret;
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
-//import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBRepositoryHandler;
+import hre.bila.HBWhereWhenHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
+import hre.nls.HG0570Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -72,58 +77,89 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0570EditRepository extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
-	//HBPersonHandler pointPersonHandler;
+
 	HBCitationSourceHandler pointCitationSourceHandler;
 	HBRepositoryHandler pointRepositoryHandler;
+	HBWhereWhenHandler pointWhereWhenHandler;
+	HG0570EditRepository pointEditRepository = this;
 
 	public String screenID = "57000";	//$NON-NLS-1$
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
 
 	private JPanel contents;
+	boolean locationChanged = false;
 
     // For Text area font setting
     Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 
     JTextArea memoText, fullNameText;
-	DocumentListener memoTextChange, nameTextChange;
-    boolean memoEdited, nameEdited = false; 		// Signals memo/name edited
+    JTextField repoAbbrev, repoRef;
+	DocumentListener memoTextChange, nameTextChange, abbrevTextChange;
+    boolean memoEdited = false; 					// Signals memo edited
     boolean changedLocationNameStyle = false;   	// Signals name style changed
 
     JComboBox<String> locationNameStyles;
     TableModelListener tableLocationListener;
 
+    long locationTablePID;
+    int locationNameStyleIndex;
+    long repositoryTablePID;
+    int addNewSequenceNumber = 0;
+
     JTable tableLocation;
     Object[][] tableLocationData;
     String[] tableLocationHeader;
-    Object[] repositoryData;
+    Object[] repositoryData = new Object[6];
+    Object[] respositorySaveData;
+
+/**
+ * updateAddSequenceNumber
+ * @param number
+ */
+    public void updateAddSequenceNumber(int number) {
+    	addNewSequenceNumber = number + 1;
+    	repoRef.setText("" + addNewSequenceNumber); //$NON-NLS-1$
+    }
 
 /**
  * Create the dialog
  */
-	public HG0570EditRepository(HBProjectOpenData pointOpenProject, long repoasitoryTablePID)  {
+	public HG0570EditRepository(HBProjectOpenData pointOpenProject, boolean editRespository, long repositoryTablePID)  {
 		this.pointOpenProject = pointOpenProject;
-		//pointPersonHandler = pointOpenProject.getPersonHandler();
+		this.repositoryTablePID = repositoryTablePID;
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
+		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 
 	// Setup references
 		windowID = screenID;
 		helpName = "editrepository";	//$NON-NLS-1$
 
     	setResizable(false);
-    	setTitle("Edit Repository Details");
+    	if (editRespository) setTitle(HG0570Msgs.Text_1); // Edit Repository Details
+    	else setTitle(HG0570Msgs.Text_2);		// Add Repository
+
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0570EditRepository");	//$NON-NLS-1$
 
 	// Collect static GUI text from T204 for Location table
 		tableLocationHeader = pointCitationSourceHandler.setTranslatedData("57000", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
+
 		try {
-			repositoryData = pointRepositoryHandler.getRepositoryData(repoasitoryTablePID);
-		} catch (HBException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		// Activate location name style processing in HBWhereWhenHnadler
+			pointWhereWhenHandler.activateEditRespository();
+		// Collect respository data from T739
+			if (editRespository) {
+				repositoryData = pointRepositoryHandler.getRepositoryData(repositoryTablePID);
+		// Set the location table PID
+				locationTablePID = (long) repositoryData[5];
+			}
+		} catch (HBException hbe) {
+			System.out.println(" Respository data error: " + hbe.getMessage()); //$NON-NLS-1$
+			hbe.printStackTrace();
 		}
+
 /************************************
  * Setup main panel and its contents
  ***********************************/
@@ -148,21 +184,23 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		namePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		namePanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel name = new JLabel("Abbreviated Name: ");
+		JLabel name = new JLabel(HG0570Msgs.Text_4);		// Abbreviated Name:
 		namePanel.add(name, "cell 0 0");	//$NON-NLS-1$
-		JTextField repoAbbrev = new JTextField((String)repositoryData[1]);
+		repoAbbrev = new JTextField((String)repositoryData[1]);
 		repoAbbrev.setColumns(30);
 		repoAbbrev.setEditable(true);
 		namePanel.add(repoAbbrev, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-		JLabel ref = new JLabel("Reference Number: ");
+		JLabel ref = new JLabel(HG0570Msgs.Text_5);		// Reference Number:
 		namePanel.add(ref, "cell 0 1");	//$NON-NLS-1$
-		JTextField repoRef = new JTextField((int)repositoryData[2]);
+		if (repositoryData[2] == null) repoRef = new JTextField();
+		else repoRef = new JTextField(String.valueOf((int)repositoryData[2]));
+		repoRef.setHorizontalAlignment(JTextField.CENTER);
 		repoRef.setColumns(5);
-		repoRef.setEditable(true);
+		repoRef.setEditable(false);
 		namePanel.add(repoRef, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-		JLabel fullName = new JLabel("Repository Name: ");
+		JLabel fullName = new JLabel(HG0570Msgs.Text_6);	// Repository Name:
 		namePanel.add(fullName, "cell 0 2");	//$NON-NLS-1$
 		fullNameText = new JTextArea((String)repositoryData[0]);
 		fullNameText.setWrapStyleWord(true);
@@ -188,13 +226,14 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		locnPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		locnPanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_Styles = new JLabel("Location Style: ");	// Location Style:
+		JLabel lbl_Styles = new JLabel(HG0570Msgs.Text_7);	// Location Style:
 		lbl_Styles.setFont(lbl_Styles.getFont().deriveFont(lbl_Styles.getFont().getStyle() | Font.BOLD));
 		locnPanel.add(lbl_Styles, "cell 0 0, alignx left");	//$NON-NLS-1$
-		DefaultComboBoxModel<String> comboLocnModel = new DefaultComboBoxModel<>();			// NOTE00 - temp definition!!!
-//									= new DefaultComboBoxModel<>(pointWhereWhenHandler.getLocationStyles());
+		DefaultComboBoxModel<String> comboLocnModel // = new DefaultComboBoxModel<>();
+						   = new DefaultComboBoxModel<>(pointRepositoryHandler.pointLocationStyleData.getNameStyleList());
 		locationNameStyles = new JComboBox<>(comboLocnModel);
-//		locationNameStyles.setSelectedIndex(pointWhereWhenHandler.getDefaultLocationStyleIndex());	// NOTE00 temp disabled
+
+		// Load all styles available
 		locnPanel.add(locationNameStyles, "cell 1 0, alignx left");	//$NON-NLS-1$
 
 	// Create scrollpane and table for the Location data entry
@@ -232,22 +271,25 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 				}
 			};
 
-		// NOTE00 some dummy data to test the table display format - to be removed
-		tableLocationData = new Object[][] {{"Addressee ", " "},	{"Detail", "test place"},
-										    {"City/Town ", " "},	{"County", " "},
-										    {"Country ", " "},	{"Postal", " "} };
-
-/*		NOTE00 following code disabled until correct WhWhHandler code ready
-		int defaultLocationNameStyle = pointWhereWhenHandler.getDefaultLocationStyleIndex();
-		locationNameStyles.setSelectedIndex(defaultLocationNameStyle);
-		tableLocationData = pointWhereWhenHandler.getLocationDataTable(defaultLocationNameStyle);
-		tableLocationHeader = pointWhereWhenHandler.getEventLocationTableHeader();
-*/
+		try {
+			locationNameStyleIndex = pointRepositoryHandler.locationNameStyleData(locationTablePID);
+			if (editRespository)
+				locationNameStyles.setSelectedIndex((locationNameStyleIndex));
+			else locationNameStyles.setSelectedIndex(pointRepositoryHandler.getDefaultStyleIndex());
+			pointWhereWhenHandler.setNameStyleIndex(locationNameStyleIndex);
+			if (!editRespository)
+				locationTablePID =  pointWhereWhenHandler.createLocationRecord();
+			pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
+		} catch (HBException hbe) {
+			System.out.println(" Set up location name style error: " + hbe.getMessage()); //$NON-NLS-1$
+			hbe.printStackTrace();
+		}
+		tableLocationData = pointWhereWhenHandler.getLocationNameTable();
 		tableLocation.setModel(new DefaultTableModel(tableLocationData, tableLocationHeader));
 
 	// Make table single-click editable
 		((DefaultCellEditor) tableLocation.getDefaultEditor(Object.class)).setClickCountToStart(1);
-		// and make loss of focus on a cell terminate the edit
+	// and make loss of focus on a cell terminate the edit
 		tableLocation.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);	//$NON-NLS-1$
 
 		tableLocation.getColumnModel().getColumn(0).setMinWidth(80);
@@ -278,11 +320,11 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		memoPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		memoPanel.setLayout(new MigLayout("insets 5", "[grow]", "[]5[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_Memo = new JLabel("Memo: ");	// Memo:
+		JLabel lbl_Memo = new JLabel(HG0570Msgs.Text_9);	// Memo:
 		lbl_Memo.setFont(lbl_Memo.getFont().deriveFont(lbl_Memo.getFont().getStyle() | Font.BOLD));
 		memoPanel.add(lbl_Memo, "cell 0 0, align left");	//$NON-NLS-1$
 
-		memoText = new JTextArea();
+		memoText = new JTextArea((String) repositoryData[3]);
 		memoText.setWrapStyleWord(true);
 		memoText.setLineWrap(true);
 		memoText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
@@ -304,13 +346,13 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 /*******************************
  * Setup final control buttons
  ******************************/
-		JButton btn_Save = new JButton("Save");	// Save
-		btn_Save.setToolTipText("Save the edited Repository data");	// Save the edited Repository data
+		JButton btn_Save = new JButton(HG0570Msgs.Text_10);	// Save
+		btn_Save.setToolTipText(HG0570Msgs.Text_11);		// Save the edited Repository data
 		btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 0 3, align right, gapx 20, tag ok"); //$NON-NLS-1$
 
-		JButton btn_Close = new JButton("Close");	// Close
-		btn_Close.setToolTipText("Close this screen");	// Close this screen
+		JButton btn_Close = new JButton(HG0570Msgs.Text_12);	// Close
+		btn_Close.setToolTipText(HG0570Msgs.Text_13);			// Close this screen
 		contents.add(btn_Close, "cell 0 3, align right, gapx 20, tag cancel"); //$NON-NLS-1$
 
 //*******************
@@ -343,58 +385,77 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		nameTextChange = new DocumentListener() {
 	        @Override
 	        public void removeUpdate(DocumentEvent e) {
-	           	memoEdited = true;
             	btn_Save.setEnabled(true);
 	        }
 	        @Override
 	        public void insertUpdate(DocumentEvent e) {
-	           	memoEdited = true;
             	btn_Save.setEnabled(true);
 	        }
 	        @Override
 	        public void changedUpdate(DocumentEvent e) {
-	           	memoEdited = true;
             	btn_Save.setEnabled(true);
 	        }
 	    };
 	    fullNameText.getDocument().addDocumentListener(nameTextChange);
 
+		// Listener for edit of Abbreviation text
+		abbrevTextChange = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				btn_Save.setEnabled(true);
+			}
+		};
+		repoAbbrev.getDocument().addDocumentListener(abbrevTextChange);
+
 	// Listener for edits of memoText
 		memoTextChange = new DocumentListener() {
 	        @Override
 	        public void removeUpdate(DocumentEvent e) {
-	           nameEdited = true;
+	        	memoEdited = true;
             	btn_Save.setEnabled(true);
 	        }
 	        @Override
 	        public void insertUpdate(DocumentEvent e) {
-	           	nameEdited = true;
+	        	memoEdited = true;
             	btn_Save.setEnabled(true);
 	        }
 	        @Override
 	        public void changedUpdate(DocumentEvent e) {
-	           	nameEdited = true;
+	        	memoEdited = true;
             	btn_Save.setEnabled(true);
 	        }
 	    };
 	    memoText.getDocument().addDocumentListener(memoTextChange);
 
-	// Listener for changes made in location
-		tableLocationListener = new TableModelListener() {
+	// Listener for changes made in tableLocation
+		TableModelListener tableLocationListener = new TableModelListener() {
 			@Override
-           public void tableChanged(TableModelEvent tme) {
-                if (tme.getType() == TableModelEvent.UPDATE) {
+			public void tableChanged(TableModelEvent tme) {
+				if (tme.getType() == TableModelEvent.UPDATE) {
                     int row = tme.getFirstRow();
                     if (row > -1) {
-	                    String nameElementData = (String) tableLocation.getValueAt(row, 1);
-
+						String nameElementData =  (String) tableLocation.getValueAt(row, 1);
+						if (HGlobal.DEBUG) {
+								String element = (String) tableLocation.getValueAt(row, 0);
+								System.out.println("HG0570ManageRepository loc.table changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
+										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
+						}
 						if (nameElementData != null) {
-
+							pointWhereWhenHandler.addToNameChangeList(row, nameElementData);
+							locationChanged = true;
 							btn_Save.setEnabled(true);
 						}
                     }
-                }
-            }
+				}
+			}
 		};
 		tableLocation.getModel().addTableModelListener(tableLocationListener);
 
@@ -403,9 +464,17 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 				if (!(locationNameStyles.getSelectedIndex() == -1)) {
+					int index = locationNameStyles.getSelectedIndex();
 					DefaultTableModel tableModel = (DefaultTableModel) tableLocation.getModel();
 					tableModel.setNumRows(0);	// clear table
-//					tableLocationData = pointWhereWhenHandler.getLocationDataTable(locationNameStyles.getSelectedIndex()); //NOTE00 to be completed
+					pointWhereWhenHandler.setNameStyleIndex(index);
+					try {
+						pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
+					} catch (HBException hbe) {
+						System.out.println(" HG0570EditRepository: " + hbe.getMessage()); //$NON-NLS-1$
+						hbe.printStackTrace();
+					}
+					tableLocationData = pointWhereWhenHandler.getLocationNameTable();
 					tableModel.setDataVector(tableLocationData, tableLocationHeader);
 				// reset table rows
 					tableModel.setRowCount(tableLocationData.length);
@@ -421,24 +490,57 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				new TableModelEvent(tableLocation.getModel());
+				try {
+					if (!editRespository)
+						// Only for add repository
+						if (repoAbbrev.getText().length() == 0 || fullNameText.getText().length() == 0) {
+							JOptionPane.showMessageDialog(pointEditRepository,
+								HG0570Msgs.Text_15, // You cannot add a repository unless both \nRepository Name and Abbbreviation are set.
+								HG0570Msgs.Text_2,  // Add Repository
+								JOptionPane.WARNING_MESSAGE);
+							return;
+						}
 
-				// NOTE01 perform save actions
+					if (locationChanged) {
+					// Update name element table T553
+						pointWhereWhenHandler.updateLocationElementData(locationTablePID);
+						locationChanged = false;
+					}
+					pointWhereWhenHandler.updateStoredNameStyle(locationNameStyles.getSelectedIndex(), locationTablePID);
+
+					if (editRespository) pointRepositoryHandler.updateRepositoryTable(repositoryTablePID, saveRespositoryData());
+					else pointRepositoryHandler.addRepositoryTable(locationTablePID, saveRespositoryData());
+				// Reset ropitory table after add/update
+					pointRepositoryHandler.pointManageRepos.resetRepositoryTable();
+					dispose();
+
+				} catch (HBException hbe) {
+					System.out.println(" HG0570EditRepository: " + hbe.getMessage());	//$NON-NLS-1$
+					hbe.printStackTrace();
+					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
+				}
+
+			// Set reset location data
+				pointWhereWhenHandler.resetLocationSelect(pointOpenProject);
+				btn_Save.setEnabled(false);
 
 				if (reminderDisplay != null) reminderDisplay.dispose();
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: accepting updates and leaving HG0570EditRepository");		//$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0570EditRepository");		//$NON-NLS-1$
 			}
 		});
+
 
 	// Listener for Close button
 		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 			// Test for unsaved changes
-			if (btn_Save.isEnabled() || memoEdited || nameEdited) {
+			if (btn_Save.isEnabled()) {
 				if (JOptionPane.showConfirmDialog(btn_Save,
-						"There are unsaved changes. \n"		// There are unsaved changes. \n
-						+ "Do you still wish to exit this screen?",	// Do you still wish to exit this screen?
-						"Edit Repository",		// Edit Event
+						HG0570Msgs.Text_17		// There are unsaved changes. \n
+						+ HG0570Msgs.Text_18,	// Do you still wish to exit this screen?
+						HG0570Msgs.Text_19,		// Edit Repository
 						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 							if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0570EditRepository"); //$NON-NLS-1$
 						// Yes option: clear Reminder and exit
@@ -455,5 +557,20 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 
 	}	// End HG0570EditRepository constructor
 
-
+/**
+ * saveRespositoryData()
+ */
+	private Object[] saveRespositoryData() {
+		respositorySaveData = new Object[6];
+		respositorySaveData[0] = fullNameText.getText();
+		respositorySaveData[1] = repoAbbrev.getText();
+		String repoRefContent = repoRef.getText().trim();
+		if (repoRefContent.length() > 0)
+			respositorySaveData[2] = Integer.parseInt(repoRefContent);
+		else respositorySaveData[2] = -1;
+		respositorySaveData[3] = memoText.getText();
+		respositorySaveData[4] = locationTablePID;
+		//respositorySaveData[5] =
+		return respositorySaveData;
+	}
 }  // End of HG0570EditRepository

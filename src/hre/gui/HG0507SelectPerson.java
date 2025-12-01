@@ -19,6 +19,7 @@ package hre.gui;
  * 			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
  * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
  * 			  2025-06-05 Partial fix to layout issues with large fonts (D Ferguson)
+ * 			  2025-11-28 Modified for used with HG0566EditSource (N.Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -96,7 +97,9 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
-
+// Controls the added memo panel
+	public boolean additionalPanel = true; // Turned off in HG0566EditSource
+	
 	HG0507SelectPerson thisSelectPerson = this;
 	public HG0547EditEvent pointEditEvent;
     public HBPersonHandler pointPersonHandler;
@@ -760,22 +763,36 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-			// Hide the Find/Filter & Person panels
-				findPanel.setVisible(false);
-				personPanel.setVisible(false);
-				control1Panel.setVisible(false);
-
-			// Display the Relationship/memo/Citation panels instead
-				persRolePanel.setVisible(true);
-				memoPanel.setVisible(true);
+				if (additionalPanel) {
+				// Hide the Find/Filter & Person panels
+					findPanel.setVisible(false);
+					personPanel.setVisible(false);
+					control1Panel.setVisible(false);
+	
+				// Display the Relationship/memo/Citation panels instead
+					persRolePanel.setVisible(true);
+					memoPanel.setVisible(true);
 				// but don't show citation panel for associates
-				if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
-				if (thisSelectPerson instanceof HG0507SelectPartner) citePanel.setVisible(true);
-				control2Panel.setVisible(true);
-
-			// Change the title from Select to Add
-				setTitle(addTitle);
-				pack();
+					if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
+					if (thisSelectPerson instanceof HG0507SelectPartner) citePanel.setVisible(true);
+					control2Panel.setVisible(true);
+	
+				// Change the title from Select to Add
+					setTitle(addTitle);
+					pack();
+				} else {
+					
+				// If only used to collec the selected peron PID
+					if (tablePersons.getSelectedRow() == -1) return;
+				// Otherwise, find personPID clicked
+					clickedRow = tablePersons.getSelectedRow();
+					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
+					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
+					dispose();
+					//System.out.println(" Selected person PID: " + personPID);
+					pointCitationSourceHandler.updatePersonName(personPID);
+					//dispose();
+				}
 			}
 		});
 

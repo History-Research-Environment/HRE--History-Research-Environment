@@ -906,6 +906,7 @@ class HdateInput {
  * @Since  2023-04-23
  */
 class HREmemo extends HBBusinessLayer {
+	//class HREmemo {
 
 	static long proOffset = 1000000000000000L;
 	static long null_RPID  = 1999999999999999L;

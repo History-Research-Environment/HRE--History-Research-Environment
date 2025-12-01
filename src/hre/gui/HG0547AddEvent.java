@@ -5,6 +5,7 @@ package hre.gui;
  * 			  2025-04-27 Updated to create event record when initiated (N.Tolleshaug)
  *			  2025-05-08 Updated for save data for new event (N.Tolleshaug)
  *			  2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
+ *			  2025-11-01 - Modified name for createLocationRecord (N.Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -137,7 +138,7 @@ public class HG0547AddEvent extends HG0547EditEvent {
 					// Update name element table T403
 						if (locationChanged) {
 							if (locationNamePID == null_RPID)
-								locationNamePID = pointWhereWhenHandler.createLocationRecord(eventPID);
+								locationNamePID = pointWhereWhenHandler.createLocationAndUpdateEvent(eventPID);
 							pointWhereWhenHandler.updateLocationElementData(locationNamePID);
 						}
 

@@ -65,6 +65,7 @@ package hre.bila;
  * 			  2024-10-05 - Added set window pointer (N. Tolleshaug)
  * v0.04.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
  * 			  2025-10-26 - Added code for HBRepositoryHandler (D Ferguson)
+ * 			  2025-11-03 - Added code for HBReportHandler (D Ferguson)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -114,6 +115,7 @@ public class HBProjectOpenData {
 	private HBRepositoryHandler pointRepositoryHandler;
 	private HBWhereWhenHandler pointWhereWhenHandler;
 	private HBMediaHandler pointMediaHandler;
+	private HBReportHandler pointReportHandler;
 
     long proOffset = 1000000000000000L;
     long null_RPID  = 1999999999999999L;
@@ -604,6 +606,10 @@ public class HBProjectOpenData {
 	// Set up MediaHandler
 		pointMediaHandler = new HBMediaHandler(this);
 		pointMediaHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+
+	// Set up Report handler
+		pointReportHandler  = new HBReportHandler(this);
+		pointReportHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
 	}
 
 /**
@@ -652,6 +658,14 @@ public class HBProjectOpenData {
  */
 	public HBMediaHandler getMediaHandler() {
 		return pointMediaHandler;
+	}
+
+/**
+ * getReportHandler() - get pointer to HBReportHandler
+ * @return
+ */
+	public HBReportHandler getReportHandler() {
+		return pointReportHandler;
 	}
 
 /**

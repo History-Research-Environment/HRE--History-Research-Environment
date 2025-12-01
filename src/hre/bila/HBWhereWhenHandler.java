@@ -84,6 +84,7 @@ package hre.bila;
   *			   2025-06-15 - Changed from string sep with "/" to String[] (N. Tolleshaug)
   *			   2025-07-02 - Added set language to HBEventRoleManager (N. Tolleshaug)
   *			   2025-07-13 - Handle passing of sexCode through to all HG0547s (D Ferguson)
+  *			   2015-11-01 - Modified and splitted code for createLacation record (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -185,7 +186,16 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			System.out.println("HBWhereWhenHandler() - initiated");
 		}
 	}
-
+	
+/**
+ * @throws HBException 
+ * 
+ */
+	public void activateEditRespository() throws HBException {
+		pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
+		pointCreateEventRecord = new CreateEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject);
+	}
+	
 /**
  * setlocationStyleChanged(boolean state)
  * @param state
@@ -220,11 +230,24 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	}
 
 /**
- * API methods for CreateEventRecord
+ * public long createLocationAndUpdateEvent(long eventTablePID)
+ * @param eventTablePID
+ * @return
  * @throws HBException
  */
-	public long createLocationRecord(long eventTablePID) throws HBException {
-		return pointCreateEventRecord.createLocationRecord(eventTablePID);
+
+	public long createLocationAndUpdateEvent(long eventTablePID) throws HBException {
+		return pointCreateEventRecord.createLocationAndUpdateEvent(eventTablePID);
+	}
+	
+/**
+ * public long createLocationRecord(long eventTablePID) 
+ * @param eventTablePID
+ * @return
+ * @throws HBException
+ */
+	public long createLocationRecord() throws HBException {
+		return pointCreateEventRecord.createLocationRecord();
 	}
 
 /**
@@ -2167,10 +2190,14 @@ class ManageLocationNameData extends HBBusinessLayer {
 		this.locationNamePID = locNamePID;
 		int errorCode = 0;
 		String[] personNameStyleDestriptions;
+		
+		//setNameStyleTable(); // Test  31.10-2025
+		
     	nameStyleElementCodes = nameStyleCodeString[nameStyleIndex].split("\\|");
       	personNameElementsData = updateRecordedNameData(locationNamePID);
-
+      	
       	exstractStyleAndDates(locationNamePID);
+      	
 
 		if (isTmgNameStyle[nameStyleIndex]) {
 		      	personNameStyleDestriptions = nameStyleDescriptionString[nameStyleIndex].split("\\|");
@@ -2697,16 +2724,29 @@ class ManageLocationNameData extends HBBusinessLayer {
 			throw new HBException(" Error HBWhereWhenHandler - addEvent/Location : " + sqle.getMessage());
 		}
 	}
-
+	
+/**
+ * createLocationAndUpdateEvent(long eventTablePID)
+ * @param eventTablePID
+ * @return
+ * @throws HBException
+ */
+	public long createLocationAndUpdateEvent(long eventTablePID) throws HBException {	
+		createLocationRecord();
+		updateEventWithLocation(eventTablePID);
+		return nextLocationRecordPID;
+	}
 /**
  * public void createLocationRecord()
  * @throws HBException
  */
-	public long createLocationRecord(long eventTablePID) throws HBException {
+	public long createLocationRecord() throws HBException {
 
 		nextLocationRecordPID = lastRowPID(locationTable, dataBaseIndex) + 1;
 		nextLocationNameRecordPID = lastRowPID(locationNameTable, dataBaseIndex) + 1;
 		nextLocNameElementRecordPID = lastRowPID(locationNameElementTable, dataBaseIndex) + 1;
+		nameStyleRPID = pointLocationStyleData.
+				getNameStylePID(pointLocationStyleData.getDefaultStyleIndex());
 
 		// Start transaction handling
 		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
@@ -2739,8 +2779,28 @@ class ManageLocationNameData extends HBBusinessLayer {
 												mapset.getValue());
 				}
 	            elementNamePID++;
-	        }
-
+			}
+		// End transaction and COMMIT
+			updateTableData("COMMIT", dataBaseIndex);
+			return nextLocationRecordPID;
+		} catch (SQLException sqle) {
+			if (HGlobal.DEBUG) {
+				System.out.println(" Error HBWhereWhenHandler - addEvent/Location ROLLBACK: " + sqle.getMessage());
+			}
+			updateTableData("ROLLBACK", dataBaseIndex);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("Error addEvent/Location ROLLBACK:  " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HBException(" Error HBWhereWhenHandler - addEvent/Location : " + sqle.getMessage());
+		}
+	}
+	
+	private long updateEventWithLocation(long eventTablePID) throws HBException {
+		try {		
+		// Start transaction handling
+			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+			
 		// Update T450 event with new location
 			selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
 			eventTableRS = requestTableData(selectString, dataBaseIndex);
@@ -3093,7 +3153,7 @@ class EditEventRecord extends HBBusinessLayer {
 		pointLocationStyleData =  new HBNameStyleManager(pointDBlayer, dataBaseIndex, "Location ");
 		pointLocationStyleData.updateStyleTable("P", nameStyles, nameElementsDefined);
 		locationHeaderData = setTranslatedData("50800","1", false);
-		long nameStyleRPID = proOffset + 1;  // Set preligm to first N person name style
+		long nameStyleRPID = proOffset + 1;  // Set prelim to first N person name style
 
 		personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStyleRPID, "N", dataBaseIndex);
 

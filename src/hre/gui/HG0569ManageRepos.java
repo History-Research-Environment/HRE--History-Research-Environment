@@ -9,11 +9,15 @@ package hre.gui;
  *			  2025-08-16 Get table header from T204 (D Ferguson)
  *			  2025-09-03 Load Repository list from database (D Ferguson)
  *			  2025-09-17 Add Repo count into table header, fix sort order (D Ferguson)
+ *			  2025-11-01 Code for Add and Edit repositories (N.Tolleshaug)
+ *     		  2025-11-08 Code for delete and check repositor is in use (N.Tolleshaug)
+ *     		  2025-11-22 Fix Repo table display when reset; remove Save btn (D Ferguson)
+ *     					 Make double-click on Repo go to Edit (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
- * NOTE02 implement Edit button
  * NOTE03 implement Copy button
- * NOTE04 implement Delete button
+ *	NB: Use of Select doesn't seem to do anything!
+ *
  ************************************************************************************/
 
 import java.awt.Component;
@@ -21,6 +25,8 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -43,8 +49,6 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -55,7 +59,6 @@ import javax.swing.table.TableRowSorter;
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
-//import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBRepositoryHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
@@ -69,30 +72,35 @@ import net.miginfocom.swing.MigLayout;
  */
 public class HG0569ManageRepos extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
-	//HBPersonHandler pointPersonHandler;
-	public HBCitationSourceHandler pointCitationSourceHandler;
+
+	HBCitationSourceHandler pointCitationSourceHandler;
 	HBRepositoryHandler pointRepositoryHandler;
+	HG0569ManageRepos pointManageRepos = this;
 
 	public static final String screenID = "56900"; //$NON-NLS-1$
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
 
 	int selectedRowInTable;
+	boolean select = false; // Select true - only select / select false reposmanage
 
 	private JPanel contents;
+	JTable tableRepo;
 
 	String[] tableRepoColHeads = null;
 	Object[][] tableRepoData;
-	DefaultTableModel srcTableModel = null;
+	DefaultTableModel repoTableModel = null;
+	DefaultTableCellRenderer centerLabelRenderer;
 
 /**
  * Create the dialog
  */
-	public HG0569ManageRepos(HBProjectOpenData pointOpenProject)  {
+	public HG0569ManageRepos(HBProjectOpenData pointOpenProject, boolean select)  {
 		this.pointOpenProject = pointOpenProject;
-		//pointPersonHandler = pointOpenProject.getPersonHandler();
+		this.select = select;
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
+		pointRepositoryHandler.pointManageRepos = this;
 
 		setTitle("Manage Repositories");
 	// Setup references for HG0450
@@ -151,11 +159,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		repoPanel.setLayout(new MigLayout("insets 5", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Setup JTable to show Repo data
-		JTable tableRepo = new JTable() {
+		tableRepo = new JTable() {
 			private static final long serialVersionUID = 1L;
 				@Override
 				public boolean isCellEditable(int row, int col) {
-					if (col == 1) return true;
 					return false;
 			}};
 		tableRepo.setMaximumSize(new Dimension(32767, 32767));
@@ -170,12 +177,9 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		contents.add(repoPanel, "cell 1 0, grow"); //$NON-NLS-1$
 
 	// Define control buttons
-		JButton btn_Cancel = new JButton("Cancel");		// Cancel
-		btn_Cancel.setEnabled(true);
-		contents.add(btn_Cancel, "cell 1 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		JButton btn_Save = new JButton("Save");		// Save
-		btn_Save.setEnabled(false);
-		contents.add(btn_Save, "cell 1 1, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
+		JButton Btn_Close = new JButton("Close");		// Close
+		Btn_Close.setEnabled(true);
+		contents.add(Btn_Close, "cell 1 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
 		JButton btn_Select = new JButton("Select");		// Select
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 1 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
@@ -184,7 +188,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 
  	// Get Repo data
 		try {
-			tableRepoData = pointCitationSourceHandler.getRepoList();
+			tableRepoData = pointRepositoryHandler.getRepoList(true);
 		} catch (HBException hbe) {
 			System.out.println( " Error loading Repository list: " + hbe.getMessage());
 			hbe.printStackTrace();
@@ -198,12 +202,12 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		}
 
 		// Get the number of Elements in the table into a string (##)
-		String count = " (" + String.format("%02d", tableRepoData.length) + ")";	//$NON-NLS-1$ //$NON-NLS-2$
+		String count = " (" + String.format("%01d", tableRepoData.length) + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		// Add this count into the table header string
 		tableRepoColHeads[1] = tableRepoColHeads[1] + count;
 
 		// Setup tablemodel, renderer and layout
-		srcTableModel = new DefaultTableModel(tableRepoData, tableRepoColHeads) {
+		repoTableModel = new DefaultTableModel(tableRepoData, tableRepoColHeads) {
 			private static final long serialVersionUID = 1L;
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			@Override
@@ -211,13 +215,13 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					return getValueAt(0, column).getClass();
 			}
 		};
-        tableRepo.setModel(srcTableModel);
+        tableRepo.setModel(repoTableModel);
 		tableRepo.getColumnModel().getColumn(0).setMinWidth(50);
 		tableRepo.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableRepo.getColumnModel().getColumn(1).setMinWidth(50);
-		tableRepo.getColumnModel().getColumn(1).setPreferredWidth(400);
+		tableRepo.getColumnModel().getColumn(1).setPreferredWidth(380);
 		tableRepo.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
+		centerLabelRenderer = new DefaultTableCellRenderer();
 		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
 		tableRepo.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
 
@@ -260,38 +264,48 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		addWindowListener(new WindowAdapter() {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
-		    	btn_Cancel.doClick();
+		    	Btn_Close.doClick();
 			}
 		});
 
-		// Listener for tableRepo row selection
-		tableRepo.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent selectSrc) {
-				if (!selectSrc.getValueIsAdjusting()) {
-					if (tableRepo.getSelectedRow() == -1) return;
-				// find repo clicked
-					int clickedRow = tableRepo.getSelectedRow();
-					selectedRowInTable = tableRepo.convertRowIndexToModel(clickedRow);
-
-				// Do something with the repo so Select button can use it
-
-					btn_Edit.setEnabled(true);
-					btn_Copy.setEnabled(true);
-					btn_Select.setEnabled(true);
-					btn_Delete.setEnabled(true);
+		// Listener for Repo table mouse click selections
+		tableRepo.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+				if (tableRepo.getSelectedRow() != -1) {
+				int clickedRow = tableRepo.getSelectedRow();
+				selectedRowInTable = tableRepo.convertRowIndexToModel(clickedRow);
+		           	if (me.getClickCount() == 1) {
+		           	// SINGLE-CLICK - turn on table controls
+						btn_Edit.setEnabled(true);
+						btn_Copy.setEnabled(true);
+						btn_Select.setEnabled(true);
+						btn_Delete.setEnabled(true);
+		           	}
+	        		// DOUBLE_CLICK - make it an Edit
+		           	if (me.getClickCount() == 2) {
+		           		btn_Edit.doClick();
+		           	}
 				}
 			}
-        });
+		});
 
 		// Listener for Add button
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0570EditRepository repoScreen = new HG0570EditRepository(pointOpenProject, null_RPID);
-				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-				Point xyRepo = btn_Add.getLocationOnScreen();
-				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);
-				repoScreen.setVisible(true);
+				HG0570EditRepository addScreen;
+				try {
+					addScreen = pointRepositoryHandler.
+												activateeAddRepository(pointOpenProject, findLargestSequenceNumber());
+					addScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyEdit = btn_Add.getLocationOnScreen();
+					addScreen.setLocation(xyEdit.x, xyEdit.y + 30);
+					addScreen.setVisible(true);
+				} catch (HBException hbe) {
+					System.out.println(" Activate repository add Error " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -299,14 +313,21 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE02 - should drive HG0570 and pass across Repo ID for it to load the rest
-				HG0570EditRepository editScreen = new HG0570EditRepository(pointOpenProject,
-											(long) tableRepoData[selectedRowInTable][2]);
-				editScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-				Point xyEdit = btn_Add.getLocationOnScreen();
-				editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
-				editScreen.setVisible(true);
-				btn_Save.setEnabled(true);
+				// Check if no row selected (like after a Delete!)
+				if (tableRepo.getSelectedRow() == -1) return;
+				HG0570EditRepository editScreen;
+				try {
+					editScreen = pointRepositoryHandler.
+												activateEditRepository(pointOpenProject,
+														(long) tableRepoData[selectedRowInTable][2]);
+					editScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyEdit = btn_Add.getLocationOnScreen();
+					editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
+					editScreen.setVisible(true);
+				} catch (HBException hbe) {
+					System.out.println(" Activate repository edit Error " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -318,22 +339,22 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Delete button
+		// Listener for Repository Delete button
 		btn_Delete.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE04 does nothing yet
-			}
-		});
-
-		// Listener for Save button
-		btn_Save.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent actEvent) {
-
-				// update edited element name in database
-
-				if (reminderDisplay != null) reminderDisplay.dispose();
+				try {
+					pointRepositoryHandler.deleteRepository((long) tableRepoData[selectedRowInTable][2]);
+					resetRepositoryTable();
+					tableRepo.getSelectionModel().clearSelection(); // clear selectedRow setting
+				} catch (HBException hbe) {
+					if (HGlobal.DEBUG) System.out.println(" HG0569ManageRepos - deleteRepository error: " + hbe.getMessage());
+					JOptionPane.showMessageDialog(pointManageRepos, "Cannot delete repository\n"	// No data found in HRE database\n
+							 + hbe.getMessage(),		// Repository delete
+							   "Repository Delete", 			// Repository Select
+							   JOptionPane.ERROR_MESSAGE);
+					if (HGlobal.DEBUG) hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -341,20 +362,26 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				// Check if no row selected (like after a Delete!)
+				if (tableRepo.getSelectedRow() == -1) return;
 				// pass the selected element back to the caller
-				int selectedRowInTable = tableRepo.convertRowIndexToModel(tableRepo.getSelectedRow());		
-				System.out.println( "Clicked repos row/PID: " + selectedRowInTable + "/" 
-						+ tableRepoData[selectedRowInTable][2]);
-				
-		// Transfer selected repos PID to Respository handler
-				pointRepositoryHandler.setSelectedReposPID((long)tableRepoData[selectedRowInTable][2]);
+				int selectedRowInTable = tableRepo.convertRowIndexToModel(tableRepo.getSelectedRow());
+				// Transfer selected repos PID to Respository handler
+				if (select) {
+					try {
+						pointRepositoryHandler.addNewRespositoryLink((long)tableRepoData[selectedRowInTable][2]);
+					} catch (HBException hbe) {
+						// TODO Auto-generated catch block
+						hbe.printStackTrace();
+					}
+				}
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				dispose();
 			}
 		});
 
-		// Listener for Cancel button
-		btn_Cancel.addActionListener(new ActionListener() {
+		// Listener for Close button
+		Btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (reminderDisplay != null) reminderDisplay.dispose();
@@ -392,5 +419,50 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		});
 
 	}	// End HG0569ManageRepos constructor
+
+/**
+ * resetRepositoryTable();
+ */
+	public void resetRepositoryTable() {
+		try {
+			tableRepoData = pointRepositoryHandler.getRepoList(false);
+		// Setup reposotory table, model and renderer
+			repoTableModel.setDataVector(tableRepoData, tableRepoColHeads);
+			tableRepo.setModel(repoTableModel);
+			tableRepo.getColumnModel().getColumn(0).setMinWidth(50);
+			tableRepo.getColumnModel().getColumn(0).setPreferredWidth(50);
+			tableRepo.getColumnModel().getColumn(1).setMinWidth(50);
+			tableRepo.getColumnModel().getColumn(1).setPreferredWidth(380);
+			tableRepo.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+			tableRepo.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
+
+			// Set the ability to sort on columns
+			tableRepo.setAutoCreateRowSorter(true);
+		    TableModel myModel = tableRepo.getModel();
+		    TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
+			List <RowSorter.SortKey> psortKeys1 = new ArrayList<>();
+
+			// Presort on column 1
+			psortKeys1.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
+			sorter.setSortKeys(psortKeys1);
+		    tableRepo.setRowSorter(sorter);
+
+		} catch (HBException hbe) {
+			System.out.println(" HG0569ManageRepos - resetRepositoryTable() error: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+	}
+
+/**
+ * findLargestSequenceNumber()
+ * @return
+ */
+	private int findLargestSequenceNumber() {
+		int sequenceNumber = 0;
+		for (int i = 0; i < tableRepoData.length; i++) {
+			if ((int)tableRepoData[i][0] > sequenceNumber) sequenceNumber = (int)tableRepoData[i][0];
+		}
+		return sequenceNumber;
+	}
 
 }  // End of HG0569ManageRepos

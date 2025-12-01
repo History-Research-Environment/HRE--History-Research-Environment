@@ -17,6 +17,7 @@ package hre.gui;
  * 			  2024-12-05 Final update location name TAB handling (N. Tolleshaug)
  * 			  2024-04-21 Handle saving of changed citation sequence (D Ferguson)
  * 			  2025-05-24 Changes to show key people and roles in screen top panel (D Ferguson)
+ * 			  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -157,7 +158,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 					// Update name element table T403
 						if (locationChanged) {
 							if (locationNamePID == null_RPID)
-								locationNamePID = pointWhereWhenHandler.createLocationRecord(eventPID);
+								locationNamePID = pointWhereWhenHandler.createLocationAndUpdateEvent(eventPID);
 							pointWhereWhenHandler.updateLocationElementData(locationNamePID);
 						}
 

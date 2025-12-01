@@ -37,6 +37,10 @@ package hre.bila;
  * 			  2025-10-17 - Handling edit and add new source elements (N. Tolleshaug)
  * 			  2025-10-20 - New project create first new source (N. Tolleshaug)
  * 			  2025-10-24 - Update add/delete citation for source (N. Tolleshaug)
+ * 			  2025-11-02 - Move Repo routines to HBRepositoryHandler (D Ferguson)
+ * 			  2025-11-09 - Update delete source also source/repos links (N. Tolleshaug)
+ * 			  2025-11-28 - Implemented author, editor and compiler name edit (N. Tolleshaug)
+ *            2025-11-30 - Implemented option for select or delete editorial names (N. Tolleshaug)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -61,6 +65,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import hre.gui.HG0507SelectPerson;
+import hre.gui.HG0566EditSource;
 import hre.gui.HGlobal;
 
 public class HBCitationSourceHandler extends HBBusinessLayer {
@@ -70,6 +76,9 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 	HBWhereWhenHandler pointWhereWhenHandler;
 	HBProjectOpenData pointOpenProject;
+	HREmemo pointHREmemo;
+	HG0507SelectPerson pointSelectPerson;
+	HG0566EditSource pointEditSource;
 	int dataBaseIndex;
 
 	String selectString;
@@ -79,35 +88,85 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	String[][] tableSourceElmntData = null;
 	String[][] tableSourceElmntDataValues = null;
 	Object[][] tableSourceDefnData = null;
-	//String[] sourceDefnTemplates = new String[3];
 	String[] sourceDefnTemplates = {" - "," - "," - "};
-	Object[][] tableRepoData = null;
-	long[] repoPIDs = null;
 	String[] accuracy = {"","","","",""};
-	
+
 // Cite variables
 	long citedRecordRPID, citationTablePID, nextCitationPID;
 	public String citedTableName;
 	String ctnDetail;
 	String ctnMemo;
-	
-// Source variables	 
-	long sourceTablePID, sourceDefinTablePID, nextSourceTablePID, sourceDefnPID, 
+
+// Source variables
+	long sourceTablePID, sourceDefinTablePID, nextSourceTablePID, sourceDefnPID,
 		  sourceAuthorPID, sourceEditorPID, sourceCompilerPID, reminderTablePID, referenceTablePID;
-	String sourceTitle = "New source", sourceAbbrev = "New source", sourceTypeName, sourceFidelity = "", sourceReference = "", 
+	String sourceTitle = "New source", sourceAbbrev = "New source", sourceTypeName, sourceFidelity = "", sourceReference = "",
 	sourceMemo, sourceReminder = "", subSource, sourceText, sourceFullFoot = "", sourceShortFoot = "", sourceBiblio = "";
 	int sourceNumber, majSource, sourceRefId;
+	int textFieldSelection;
 	boolean sourceActive;
-	
+
 // Sourcce element data
 	String sourceElementNumber, sourceElementData;
 	long nextSourceElementDataPID;
-	
+
 	// Records the name element changes from HG0566EditSource
 	HashMap<String,String> elementNameDataChanges = new HashMap<String,String>();
-
+	
+/**
+ * public String[] getAccuracyData()
+ * @return
+ */
 	public String[] getAccuracyData() {
 		return accuracy;
+	}
+	
+/**
+ * public String getPersonName(long personTablePID)
+ * @param personTablePID
+ * @return
+ * @throws HBException 
+ */
+	public String getPersonName(long personTablePID) throws HBException {
+		String[] personNameStyle = {"","",""};
+		String personName = " Not recorded ";
+		if (personTablePID > proOffset && personTablePID != null_RPID) {
+				personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
+				personName = pointLibraryResultSet.exstractPersonName(personTablePID, personNameStyle, dataBaseIndex);
+		}
+		return personName;
+	}
+	
+/**
+ * public void activateSelectPerson(HBProjectOpenData pointOpenProject)	
+ * @param pointOpenProject
+ * @throws HBException
+ */
+	public HG0507SelectPerson activateSelectPerson(HBProjectOpenData pointOpenProject, 
+										HG0566EditSource pointEditSource,
+										int textFieldSelection) throws HBException {
+		this.textFieldSelection = textFieldSelection;
+		this.pointEditSource = pointEditSource;
+		HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointSelectPerson = new HG0507SelectPerson(pointPersonHandler, pointOpenProject, false);
+		return pointSelectPerson;
+	}
+	
+/**
+ * updateAutorsName(long personTablePID)	
+ * @param personTablePID
+ */
+	public void updatePersonName(long personTablePID) {
+		if (textFieldSelection == 1) sourceAuthorPID = personTablePID;
+		else if (textFieldSelection == 2) sourceEditorPID = personTablePID;
+		else if (textFieldSelection == 3) sourceCompilerPID = personTablePID;
+		
+		pointEditSource.resetNames(sourceAuthorPID, sourceEditorPID, sourceCompilerPID);
+	}
+	
+	public void updateTextFieldSelection(HG0566EditSource pointEditSource, int textFieldSelection) {
+		this.pointEditSource = pointEditSource;
+		this.textFieldSelection = textFieldSelection;
 	}
 
 /**
@@ -118,6 +177,11 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		this.pointOpenProject = pointOpenProject;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
+		
+	// Temp settings 25.11.2025 NTo
+	//	sourceAuthorPID = proOffset + 1;
+	//	sourceEditorPID = proOffset + 1; 
+	//	sourceCompilerPID = proOffset + 1;
 	}
 
 /**
@@ -165,7 +229,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		}
 		return nextCitationPID;
 	}
-	
+
 /**
  * public void deleteCitationRecord(long sourceTablePID) throws HBException {
  * @param sourceTablePID
@@ -209,7 +273,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		sourceAuthorPID		= (long) sourceStoreData[12] ;
 		sourceEditorPID		= (long) sourceStoreData[13] ;
 		sourceCompilerPID	= (long) sourceStoreData[14] ;
-		
+
 		ResultSet sourceTableRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
@@ -226,7 +290,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		}
 		return nextCitationPID;
 	}
-	
+
 /**
  * public long createSourceRecord(long sourceDefinTablePID) throws HBException
  * @return
@@ -250,7 +314,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		sourceAuthorPID		= (long) sourceStoreData[12] ;
 		sourceEditorPID		= (long) sourceStoreData[13] ;
 		sourceCompilerPID	= (long) sourceStoreData[14] ;
-		
+
 		ResultSet sourceTableRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", sourceTable, " PID = " + sourceTablePID);
@@ -265,6 +329,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		}
 		return nextCitationPID;
 	}
+
 /**
  * public void deleteSourceRecord(long sourceTablePID) throws HBException {
  * @param sourceTablePID
@@ -275,26 +340,41 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * 3 - Delete source citations
  */
 	public void deleteSourceRecord(long sourceTablePID) throws HBException {
-		ResultSet sourceTabelRS, sourceElementDataRS;
+		ResultSet sourceTabelRS, sourceElementDataRS, sourecRespositoryLinkRS;
 		this.sourceTablePID = sourceTablePID;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", sourceTable, " PID = " + sourceTablePID);
 		sourceTabelRS = requestTableData(selectString, dataBaseIndex);
 		selectString = setSelectSQL("*", sourceDataTable, " SORC_OWNER_RPID = " + sourceTablePID);
 		sourceElementDataRS = requestTableData(selectString, dataBaseIndex);
+		selectString = setSelectSQL("*", sourceLinkTable, " SORC_RPID = " + sourceTablePID);
+		sourecRespositoryLinkRS = requestTableData(selectString, dataBaseIndex);
+	// Start transaction
+		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
 		try {
+	// Delete source
 			sourceTabelRS.first();
 			sourceTabelRS.deleteRow();
+	// Delete source element data
 			if (!isResultSetEmpty(sourceElementDataRS)) {
 				sourceElementDataRS.beforeFirst();
 				while (sourceElementDataRS.next()) sourceElementDataRS.deleteRow();
 			}
+	// Delete source/repos links
+			if (!isResultSetEmpty(sourecRespositoryLinkRS)) {
+				sourecRespositoryLinkRS.beforeFirst();
+				while (sourecRespositoryLinkRS.next()) sourecRespositoryLinkRS.deleteRow();
+			}
+	// End transaction
+			updateTableData("COMMIT", dataBaseIndex);
 		} catch (SQLException sqle) {
+	// Role back transaction
+			updateTableData("ROLLBACK", dataBaseIndex);
 			sqle.printStackTrace();
 			throw new HBException(" deleteCitationRecord() error:  " + sqle.getMessage());
 		}
 	}
-	
+
 /**
  * public Object[][] getCitationSourceData(long eventPID, String tableName)
  * @param eventPID
@@ -395,7 +475,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				addToSourceT736_SORC(proOffset + 1, eventSourcRS);
 				selectString = setSelectSQL("*", sourceTable, "");
 				eventSourcRS = requestTableData(selectString, dataBaseIndex);
-			} 
+			}
 		// Continue
 			eventSourcRS.last();
 			tableSourceData = new Object[eventSourcRS.getRow()][9];
@@ -470,7 +550,9 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		String sourceFidelity, sourceAbbrev, sourceTitle,
 							sourceFullFoot, sourceShortFoot, sourceBiblio, sourceRemind, sourceText;
 		int sourceRef, sourceType;
-		long sourceDefnPID, sourceTextPID, sourceAuthorPID, sourceEditorPID, sourceCompilerPID, sourceRemindPID;
+		long sourceDefnPID, sourceTextPID, 
+		//sourceAuthorPID, sourceEditorPID, sourceCompilerPID, 
+		sourceRemindPID;
 		boolean sourceActiv;
 		Object[] sourceEditData = new Object[15];
 		//pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
@@ -696,102 +778,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	}
 
 /**
- * Object[][] getRepoList() throws HBException
- * @return
- * @throws HBException
- */
-	public Object[][] getRepoList() throws HBException {
-		// Load all T739 REPO records
-		int index = 0;
-		ResultSet repoRS;
-	// Load pre populated list if done before
-		if (tableRepoData != null) return tableRepoData;
-
-	// Continue with loading repositorylist
-		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		selectString = setSelectSQL("*", repoTable, "");
-		repoRS = requestTableData(selectString, dataBaseIndex);
-		try {
-			repoRS.last();
-			tableRepoData = new Object[repoRS.getRow()][2];
-			repoRS.beforeFirst();
-			while (repoRS.next()) {
-				tableRepoData[index][0] = repoRS.getInt("REPO_REF");
-				tableRepoData[index][1] = repoRS.getString("REPO_ABBREV");
-				index++;
-			}
-		} catch (SQLException sqle) {
-			System.out.println(" getRepoList() error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HBException(" getRepoList() error:  " + sqle.getMessage());
-		}
-		return tableRepoData;
-	}
-
-/**
- * long[] getRepoPIDs() throws HBException
- * @return
- * @throws HBException
- */
-	public long[] getRepoPIDs(long sourcePID) throws HBException {
-		// Load all T740 SORC_LINK records for this SourcePID
-		// and extract the related Repository PIDs
-		int index = 0;
-		ResultSet sorcLinkRS;
-		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		selectString = setSelectSQL("*", sourceLinkTable, "SORC_RPID=" + sourcePID);
-		sorcLinkRS = requestTableData(selectString, dataBaseIndex);
-		try {
-			sorcLinkRS.last();
-			repoPIDs = new long[sorcLinkRS.getRow()];
-			sorcLinkRS.beforeFirst();
-			while (sorcLinkRS.next()) {
-				repoPIDs[index] = sorcLinkRS.getLong("REPO_RPID");
-				index++;
-			}
-		} catch (SQLException sqle) {
-			System.out.println(" getRepoPIDs() error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HBException(" getRepoPIDs() error: " + sqle.getMessage());
-		}
-		return repoPIDs;
-	}
-
-/**
- * Object[] getRepoEditData() throws HBException
- * @return
- * @throws HBException
- */
-	public Object[] getRepoEditData(long repoPID) throws HBException {
-		// Load data from a T739 record for this repoPID (not all collected yet)
-		ResultSet repoDataRS;
-		String repoAbbrev, repoName;
-		int repoRef;
-		Object[] repoEditData = new Object[3];
-		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		selectString = setSelectSQL("*", repoTable, "PID=" + repoPID);
-		repoDataRS = requestTableData(selectString, dataBaseIndex);
-		try {
-			if (isResultSetEmpty(repoDataRS)) return repoEditData;
-			repoDataRS.first();
-				repoRef = repoDataRS.getInt("REPO_REF");
-				repoAbbrev = repoDataRS.getString("REPO_ABBREV");
-				repoName = repoDataRS.getString("REPO_NAME");
-
-				// not handling Memo and Addr yet....
-				repoEditData[0] = repoRef;
-				repoEditData[1] = repoAbbrev;
-				repoEditData[2] = repoName;
-
-		} catch (SQLException sqle) {
-			System.out.println(" getRepoData() error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HBException(" getRepoData() error: " + sqle.getMessage());
-		}
-		return repoEditData;
-	}
-
-/**
  * public Object[] getCitationEditData(long citationTablePID)
  * @param citationTablePID
  * @return
@@ -899,7 +885,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			throw new HBException(" saveCitedData error: " + sqle.getMessage());
 		}
 	}
-	
+
 /**
  *  T734_SORC_DATA
  PID
@@ -907,7 +893,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  SORC_OWNER_RPID
  SORC_ELMNT_NUM
  SORC_ELMNT_DATA
- * @throws HBException 
+ * @throws HBException
  */
 	private void addToSourceElementDataT734_SORC_DATA(long T738tablePID, ResultSet hreTable) throws HBException {
 		try {
@@ -950,7 +936,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				CITN_ACC_DATE TINYINT NOT NULL,
 				CITN_ACC_LOCN TINYINT NOT NULL,
 				CITN_ACC_MEMO TINYINT NOT NULL
- * @throws HBException 
+ * @throws HBException
  */
 	private void addToCitationT735_CITN(long T735tablePID, ResultSet hreTable) throws HBException {
 		try {
@@ -995,7 +981,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 /**
  * public void updateElementDataChangeList(String elementName, String elementNumber, String elementData)
- * Update the elementNameDataChanges HashMap with edited element data. 
+ * Update the elementNameDataChanges HashMap with edited element data.
  * If key (elementNumber exist in HashMap the olde entry is overwritten
  * @param selectedIndex
  * @param nameData
@@ -1005,14 +991,14 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			System.out.println(" addToElementDataChangeList(): " +  elementName + "/" + elementNumber + "/" + elementData);
 		elementNameDataChanges.put(elementNumber, elementData);
 	}
-	
+
 /**
- * public void createSourceElementDataRecords(long sourcePID)		
+ * public void createSourceElementDataRecords(long sourcePID)
  * @param sourceTablePID
- * @throws HBException 
+ * @throws HBException
  */
 	public void createSourceElementDataRecords(boolean add) throws HBException {
-		ResultSet sourceElementDataRS; 
+		ResultSet sourceElementDataRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		nextSourceElementDataPID = lastRowPID(sourceDataTable, pointOpenProject) + 1;
 		selectString = setSelectSQL("*", sourceDataTable, " PID = " + (nextSourceElementDataPID - 1));
@@ -1020,21 +1006,21 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		sourceElementDataRS = requestTableData(selectString, dataBaseIndex);
 	// Loop HashMap
 		for (Map.Entry<String, String> entry : elementNameDataChanges.entrySet()) {
-			sourceElementNumber = entry.getKey(); 
+			sourceElementNumber = entry.getKey();
 			sourceElementData = entry.getValue();
 			addToSourceElementDataT734_SORC_DATA(nextSourceElementDataPID, sourceElementDataRS);
 			nextSourceElementDataPID++;
             //System.out.println("Element Data: " + sourceElementNumber + ", Data: " + sourceElementData);
-		}	
+		}
 	}
-	
+
 /**
- * public void updateSourceElementDataRecords(long sourceTablePID) 	
+ * public void updateSourceElementDataRecords(long sourceTablePID)
  * @param sourceTablePID
  * @throws HBException
  */
 	public void updateSourceElementDataRecords(long sourceTablePID) throws HBException {
-		ResultSet sourceElementDataRS; 	
+		ResultSet sourceElementDataRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		//pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 		selectString = setSelectSQL("*", sourceDataTable, " SORC_OWNER_RPID = " + sourceTablePID);
@@ -1053,13 +1039,13 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		// If new elementa are edite - create new elements
 			this.sourceTablePID = sourceTablePID;
 			if (elementNameDataChanges.size() > 0) createSourceElementDataRecords(false);
-			
+
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 			throw new HBException(" updateSourceElementDataRecords error: " + sqle.getMessage());
 		}
 	}
-	
+
 /**
  * private void addToSourceT736_SORC(long T736tablePID, ResultSet hreTable)
  * @param T736tablePID
@@ -1081,7 +1067,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	SORC_SHORTFORM VARCHAR(500) NOT NULL,
 	SORC_BIBLIOFORM VARCHAR(500) NOT NULL,
 	SORC_REMIND_RPID BIGINT NOT NULL
- * @throws HBException 
+ * @throws HBException
  */
 	private void addToSourceT736_SORC(long T736tablePID, ResultSet hreTable) throws HBException {
 		int sourceRefNr = 0;
@@ -1105,10 +1091,10 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateInt("SORC_TYPE",1);
 				hreTable.updateString("SORC_FIDELITY", sourceFidelity);
 			// Create source reference text
-				hreTable.updateLong("SORC_TEXT_RPID", pointHREmemo.addMemoRecord(sourceReference));	
-				hreTable.updateLong("SORC_AUTHOR_RPID",null_RPID);
-				hreTable.updateLong("SORC_EDITOR_RPID",null_RPID);
-				hreTable.updateLong("SORC_COMPILER_RPID",null_RPID);
+				hreTable.updateLong("SORC_TEXT_RPID", pointHREmemo.addMemoRecord(sourceReference));
+				hreTable.updateLong("SORC_AUTHOR_RPID", sourceAuthorPID);
+				hreTable.updateLong("SORC_EDITOR_RPID", sourceEditorPID);
+				hreTable.updateLong("SORC_COMPILER_RPID", sourceCompilerPID);
 				hreTable.updateString("SORC_ABBREV", sourceAbbrev);
 				hreTable.updateString("SORC_TITLE", sourceTitle);
 				hreTable.updateString("SORC_FULLFORM", sourceFullFoot);
@@ -1146,7 +1132,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	SORC_SHORTFORM VARCHAR(500) NOT NULL,
 	SORC_BIBLIOFORM VARCHAR(500) NOT NULL,
 	SORC_REMIND_RPID BIGINT NOT NULL
- * @throws HBException 
+ * @throws HBException
  */
 	private void saveSourceDataT736_SORC(ResultSet hreTable) throws HBException {
 		try {
@@ -1156,16 +1142,16 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			hreTable.updateBoolean("IS_ACTIVE", sourceActive);
 			hreTable.updateLong("SORC_DEF_RPID", sourceDefnPID); // Added for new seed
 			hreTable.updateInt("SORC_TYPE",1);
-			hreTable.updateString("SORC_FIDELITY",sourceFidelity);		
-		// Update source reference text	
+			hreTable.updateString("SORC_FIDELITY",sourceFidelity);
+		// Update source reference text
 			referenceTablePID = hreTable.getLong("SORC_TEXT_RPID");
 			if (referenceTablePID == null_RPID)
 				hreTable.updateLong("SORC_TEXT_RPID", pointHREmemo.addMemoRecord(sourceReference));
 			else
-				pointHREmemo.findT167_MEMOrecord(sourceReference, referenceTablePID);	
-			hreTable.updateLong("SORC_AUTHOR_RPID",null_RPID);
-			hreTable.updateLong("SORC_EDITOR_RPID",null_RPID);
-			hreTable.updateLong("SORC_COMPILER_RPID",null_RPID);
+				pointHREmemo.findT167_MEMOrecord(sourceReference, referenceTablePID);
+			hreTable.updateLong("SORC_AUTHOR_RPID", sourceAuthorPID);
+			hreTable.updateLong("SORC_EDITOR_RPID", sourceEditorPID);
+			hreTable.updateLong("SORC_COMPILER_RPID", sourceCompilerPID);
 			hreTable.updateString("SORC_ABBREV", sourceAbbrev);
 			hreTable.updateString("SORC_TITLE", sourceTitle);
 			hreTable.updateString("SORC_FULLFORM", sourceFullFoot);
@@ -1186,6 +1172,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			throw new HBException(" saveSourceDataT736_SORC: " + sqle.getMessage());
 		}
 	}
+
 /**
 CREATE TABLE T737_SORC_DEFN(
 	PID BIGINT NOT NULL,
@@ -1198,7 +1185,7 @@ CREATE TABLE T737_SORC_DEFN(
 	SORC_DEFN_BIBLIO VARCHAR(500) NOT NULL,
 	SORC_DEFN_REMIND_RPID BIGINT NOT NULL
 	);
- * @throws HBException 
+ * @throws HBException
  */
 	private void addToSourDefT737_SORC_DEFN(long T737tablePID, ResultSet hreTable) throws HBException {
 		String sourceDefinName = "Default Source Definition";
@@ -1226,37 +1213,6 @@ CREATE TABLE T737_SORC_DEFN(
 		}
 	}
 
-/**
-CREATE TABLE T738_SORC_ELMNT(
-	PID BIGINT NOT NULL,
-	CL_COMMIT_RPID BIGINT NOT NULL,
-	SORC_ELMNT_NUM CHAR(5) NOT NULL,
-	SORC_ELMNT_LANG CHAR(5) NOT NULL,
-	SORC_ELMNT_NAME CHAR(40) NOT NULL
-	);
-
-
-	private void addToSourElemT738_SORC_ELMNT(long T738tablePID, ResultSet hreTable) {
-		String sourceElementNumber = "00001", sourceElementName = "Element name";
-		try {
-		// Move cursor to the insert row
-			hreTable.moveToInsertRow();
-
-		// Update new row in H2 database
-			hreTable.updateLong("PID", T738tablePID);
-			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
-			hreTable.updateString("SORC_ELMNT_NUM", sourceElementNumber);
-			hreTable.updateString("SORC_ELMNT_LANG", "en-US ");
-			hreTable.updateString("SORC_ELMNT_NAME", sourceElementName);
-
-		//Insert row
-			hreTable.insertRow();
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
-*/
 /**
  * updateCiteGUIseq()
  * @param eventPID

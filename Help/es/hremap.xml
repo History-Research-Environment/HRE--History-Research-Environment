@@ -51,6 +51,7 @@
 <mapID target="56800editsourcetype" url="Edit_SourceType.html" />
 <mapID target="56900managerepository" url="Manage_Repository.html" />
 <mapID target="57000editrepository" url="Edit_Repository.html" />
+<mapID target="57100editrepository" url="Edit_Repository.html" />
 
 <mapID target="50750selectlocation" url="Select_Location_By.html" />
 <mapID target="50800managelocation" url="Manage_Location.html" />

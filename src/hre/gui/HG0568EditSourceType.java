@@ -7,6 +7,8 @@ package hre.gui;
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  * 			  2025-09-27 Load the Source templates converted to readable Element names (D Ferguson)
  * 			  2025-10-17 When add new type, create empty data for adding text (N. Tolleshaug)
+ * 			  2025-11-17 Change HGlobalCode routines to be in ReportHandler (D Ferguson)
+ *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 action Save button
@@ -44,6 +46,7 @@ import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBReportHandler;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -57,6 +60,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	long null_RPID  = 1999999999999999L;
 	public HBCitationSourceHandler pointCitationSourceHandler;
+	HBReportHandler pointReportHandler;
 
 	public static final String screenID = "56800"; //$NON-NLS-1$
 	private JPanel contents;
@@ -73,6 +77,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 	public HG0568EditSourceType(HBProjectOpenData pointOpenProject, long sorcDefnPID)  {
 		this.pointOpenProject = pointOpenProject;
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		pointReportHandler = pointOpenProject.getReportHandler();
 		this.sorcDefnPID = sorcDefnPID;
 
 		setTitle("Edit Source Type");
@@ -215,12 +220,12 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 	// Get the data for this Source Defn, then load into the screen
     // if add with no sourceDefPID,  empty sourceDefnData  must be created
 		try {
-			if (sorcDefnPID != null_RPID) 
+			if (sorcDefnPID != null_RPID)
 				sourceDefnData = pointCitationSourceHandler.getSourceDefnEditData(sorcDefnPID);
 			else {
 				sourceDefnData = new String[7];
 				for (int i = 0; i < sourceDefnData.length; i++)
-					sourceDefnData[i] = "";	
+					sourceDefnData[i] = "";
 			}
 		} catch (HBException hbe) {
 			System.out.println( " Error loading Source Defn data: " + hbe.getMessage());
@@ -230,11 +235,11 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		// Get the source templates and convert the Element [nnnnn] entries into
 		// Element Names via the hashmap codeToTextMap and load into the text areas for display.
 		// Start with the Full footer
-		fullFootText.setText(HGlobalCode.convertNumsToNames((String)sourceDefnData[3], codeToTextMap));
+		fullFootText.setText(pointReportHandler.convertNumsToNames((String)sourceDefnData[3], codeToTextMap));
 		// then the Short footer
-		shortFootText.setText(HGlobalCode.convertNumsToNames((String)sourceDefnData[4], codeToTextMap));
+		shortFootText.setText(pointReportHandler.convertNumsToNames((String)sourceDefnData[4], codeToTextMap));
 		// then the Bibliography template
-		biblioText.setText(HGlobalCode.convertNumsToNames((String)sourceDefnData[5], codeToTextMap));
+		biblioText.setText(pointReportHandler.convertNumsToNames((String)sourceDefnData[5], codeToTextMap));
 		// and the Reminder text
 		remindText.setText((String)sourceDefnData[6]);
 
@@ -343,7 +348,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 				// It throws error msg and returns null, so if null returned, do not save!
 				// Example usage using fullFoot text, with before/after console routines:
 				//    System.out.println("Input="+fullFootText.getText());
-				//    String fullFootToSave = HGlobalCode.convertNamesToNums(fullFootText.getText(), textToCodeMap);
+				//    String fullFootToSave = pointReportHandler.convertNamesToNums(fullFootText.getText(), textToCodeMap);
 				//    System.out.println("Output="+fullFootToSave);
 				// then check for null response and do NOT dispose! (leave user to fix it and try again!)
 

@@ -1555,7 +1555,7 @@ public class HG0401HREMain extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
-				HG0569ManageRepos repoScreen = new HG0569ManageRepos(pointOpenProject);
+				HG0569ManageRepos repoScreen = new HG0569ManageRepos(pointOpenProject, false);
 				repoScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyRepo = menuEvidence.getLocationOnScreen();
 				repoScreen.setLocation(xyRepo.x, xyRepo.y + 30);

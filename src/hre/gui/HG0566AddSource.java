@@ -5,8 +5,9 @@ package hre.gui;
  * v0.04.0032 2025-10-06 Original draft (N Tolleshaug)
  *			  2025-10-07 Populate element table for Add Source (N Tolleshaug)
  *			  2025-10-07 Updated save enable for edit action (N Tolleshaug)
- *			  2025-10-12 - Partly updated for Add/Update source  (N. Tolleshaug)
- *			  2025-10-16 - Updated warning when save (N. Tolleshaug)
+ *			  2025-10-12 Partly updated for Add/Update source  (N. Tolleshaug)
+ *			  2025-10-16 Updated warning when save (N. Tolleshaug)
+ *			  2025-11-16 Moved col head read to EditSource (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 allow saving of the Source's data
@@ -58,18 +59,8 @@ public class HG0566AddSource extends HG0566EditSource {
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "editsource";
-		
-/**************************************************
-// Start loading all data required for this screen
- **************************************************/
-	    // Collect static GUI text from T204 for all tables
-		tableSrcElmntValueHeads =
-				pointPersonHandler.setTranslatedData("56600", "1", false);	// Source Element, Value //$NON-NLS-1$ //$NON-NLS-2$
-		tableSrcSrcColHeads =
-				pointPersonHandler.setTranslatedData("56600", "2", false); // ID, Sources (abbrev.)  //$NON-NLS-1$ //$NON-NLS-2$
-		tableRepoColHeads =
-				pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository  //$NON-NLS-1$ //$NON-NLS-2$
 
+	// Start loading data required for this screen
 		// Load the Source Element list (names/ID#s) as we need it for Source template conversion & checking
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
@@ -109,8 +100,8 @@ public class HG0566AddSource extends HG0566EditSource {
 			System.out.println( " Error loading source defn templates: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
-		
-/*********************************'  
+
+/*********************************'
  * Code to be used later
  **********************************
 		// Get any Source of Source citation data for this Source
@@ -148,16 +139,16 @@ public class HG0566AddSource extends HG0566EditSource {
 			}
 		}
 */
-		
+
 	// Set up data and screen
 		screenLayout();
 		createActionListner();
 		btn_Save.setEnabled(false);
 		activChkBox.setSelected(true);
-		
-		for (int j = 0; j < sorcDefnTable.length; j++) 
+
+		for (int j = 0; j < sorcDefnTable.length; j++)
 			comboSourceTypes.addItem((String) sorcDefnTable[j][0]);
-		
+
 		// Listener for Save button - adding new source
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
@@ -167,7 +158,7 @@ public class HG0566AddSource extends HG0566EditSource {
 				storeData(); // Collect the GUI data
 				try {
 					if (titleTextChanged && abbrevTextChanged) {
-						pointCitationSourceHandler.createSourceRecord(sourceStoreData);	
+						pointCitationSourceHandler.createSourceRecord(sourceStoreData);
 		// Add new element data records
 						pointCitationSourceHandler.createSourceElementDataRecords(true);
 		// Reset source table
@@ -175,7 +166,7 @@ public class HG0566AddSource extends HG0566EditSource {
 					 } else {
 						//System.out.println(" Edit title and abbrev first! ");
 						String message = " Cannot add source! \nSource must have Title and Abbbrev set! ";
-						JOptionPane.showMessageDialog(pointEditSource, message,	
+						JOptionPane.showMessageDialog(pointEditSource, message,
 								"Add Source warning!", JOptionPane.INFORMATION_MESSAGE);
 					 }
 				} catch (HBException hbe) {
@@ -190,7 +181,7 @@ public class HG0566AddSource extends HG0566EditSource {
 				// It throws error msg and returns null, so if null returned, do not save!
 				// Example usage using fullFoot text, with before/after console routines:
 				//    System.out.println("Input="+fullFootText.getText());
-				//    String fullFootToSave = HGlobalCode.convertNamesToNums(fullFootText.getText(), textToCodeMap);
+				//    String fullFootToSave = pointReportHandler.convertNamesToNums(fullFootText.getText(), textToCodeMap);
 				//    System.out.println("Output="+fullFootToSave);
 				// then check for null response and do NOT dispose! (leave user to fix it and try again!)
 				pointEditSource.dispose();

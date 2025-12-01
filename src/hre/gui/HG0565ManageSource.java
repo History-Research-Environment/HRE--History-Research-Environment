@@ -17,12 +17,13 @@ package hre.gui;
  *			  2025-09-26 Load Source templates and convert to Element Names (D Ferguson)
  *			  2025-09-27 Invoke HG0566 to perform Source edits (D Ferguson)
  *			  2025-10-07 Initiation Add and Edit source buttons (N. Tolleshaug)
+ * 			  2025-11-17 Change HGlobalCode routines to be in ReportHandler (D Ferguson)
+ *			  2025-11-24 Fix crash when action taken with nothing seelcted (D Ferguson)
+ *						 Do Edit if Source table double-clicked; remove Save btn (D Ferguson)
  *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 implement Copy button
- * NOTE04 implement Delete button
- * NOTE05 implement Save button
  * NOTE06 implement Show Inactive button
  ************************************************************************************/
 
@@ -33,6 +34,8 @@ import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -60,8 +63,6 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -75,6 +76,7 @@ import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBReportHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import net.miginfocom.swing.MigLayout;
 
@@ -93,6 +95,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	public HG0555EditCitation pointEditCitation;
 	HG0565ManageSource pointThis = this;
 	HBPersonHandler pointPersonHandler;
+	HBReportHandler pointReportHandler;
 
 	private JPanel contents;
 
@@ -106,6 +109,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	String[] sorcDefnTemplates;
 	String[][] tableSrcElmntData;
 	long selectedSourcePID, selectedSorcDefnPID;
+	int clickedRow, selectedRowInTable;
 
 /**
  * Create the dialog
@@ -114,6 +118,8 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		this.pointOpenProject = pointOpenProject;
 		this.pointEditCitation = pointEditCitation;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointReportHandler = pointOpenProject.getReportHandler();
+
 		setTitle("Manage Sources");
 	// Setup references for HG0450
 		windowID = screenID;
@@ -341,12 +347,9 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		contents.add(templatePanel, "cell 2 0, aligny top"); //$NON-NLS-1$
 
 	// Define control buttons
-		JButton btn_Save = new JButton("Save");		// Save
-		btn_Save.setEnabled(false);
-		contents.add(btn_Save, "cell 1 1 2, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
-		JButton btn_Cancel = new JButton("Cancel");		// Cancel
-		btn_Cancel.setEnabled(true);
-		contents.add(btn_Cancel, "cell 1 1 2, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
+		JButton btn_Close = new JButton("Close");		// Close
+		btn_Close.setEnabled(true);
+		contents.add(btn_Close, "cell 1 1 2, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
 		JButton btn_Select = new JButton("Select");		// Select
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 1 1 2, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
@@ -364,12 +367,12 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		addWindowListener(new WindowAdapter() {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
-		    	btn_Cancel.doClick();
+		    	btn_Close.doClick();
 			}
 		});
 
-		// Listener for Cancel button
-		btn_Cancel.addActionListener(new ActionListener() {
+		// Listener for Close button
+		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 			// Dispose EditCitation, Reminder if not null
@@ -380,14 +383,14 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for tableSource row selection - load the Source templates and save selected Source's PID
-		tableSource.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent selectSrc) {
-				if (!selectSrc.getValueIsAdjusting()) {
-					if (tableSource.getSelectedRow() == -1) return;
+		// Listener for Source table mouse click - load Source templates and selected Source's PID; do Edit if double-click
+		tableSource.addMouseListener(new MouseAdapter() {
+			@Override
+	        public void mousePressed(MouseEvent me) {
+				if (tableSource.getSelectedRow() != -1) {
 				// find source that was clicked
-					int clickedRow = tableSource.getSelectedRow();
-					int selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
+					clickedRow = tableSource.getSelectedRow();
+					selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
 					selectedSourcePID = (long)tableSourceData[selectedRowInTable][3];
 				// Get the underlying Source Defn templates using the sorcDefnPID value
 					selectedSorcDefnPID = (long)tableSourceData[selectedRowInTable][5];
@@ -404,23 +407,27 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 				// Start with the Full footer
 					templateText = (String)tableSourceData[selectedRowInTable][6];		// Source full footer
 					if (templateText.isEmpty()) templateText = sorcDefnTemplates[0];	// Source Defn full footer
-					fullFootText.setText(HGlobalCode.convertNumsToNames(templateText, codeToTextMap));
+					fullFootText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
 				// then the Short footer
 					templateText = (String)tableSourceData[selectedRowInTable][7];		// Source short footer
 					if (templateText.isEmpty()) templateText = sorcDefnTemplates[1];	// Source Defn short footer
-					shortFootText.setText(HGlobalCode.convertNumsToNames(templateText, codeToTextMap));
+					shortFootText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
 				// then the Bibliography template
 					templateText = (String)tableSourceData[selectedRowInTable][8];		// Source bibliography
 					if (templateText.isEmpty()) templateText = sorcDefnTemplates[2];	// Source Defn bibliography
-					biblioText.setText(HGlobalCode.convertNumsToNames(templateText, codeToTextMap));
+					biblioText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
 				// Set control buttons
 					btn_Edit.setEnabled(true);
 					btn_Copy.setEnabled(true);
 					if (tableSourceData != null) btn_Select.setEnabled(true);
 					btn_Delete.setEnabled(true);
 				}
+        	// If DOUBLE_CLICK - make it an Edit
+	           	if (me.getClickCount() == 2) {
+	           		btn_Edit.doClick();
+	           	}
 			}
-        });
+		});
 
 		// Listener for Add button - invoke HG0566AddSource to a new source
 		btn_Add.addActionListener(new ActionListener() {
@@ -431,7 +438,6 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 				Point xySourceT = btn_Add.getLocationOnScreen();
 				sourceAddScreen.setLocation(xySourceT.x, xySourceT.y + 30);
 				sourceAddScreen.setVisible(true);
-				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -439,12 +445,13 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Edit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				// Check if no row selected (like after a Delete!)
+				if (tableSource.getSelectedRow() == -1) return;
 				HG0566UpdateSource updateScreen = new HG0566UpdateSource(pointOpenProject, selectedSourcePID, pointThis);
 				updateScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				updateScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				updateScreen.setVisible(true);
-				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -453,7 +460,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				// NOTE03 does nothing yet
-				btn_Save.setEnabled(true);
+
 			}
 		});
 
@@ -461,25 +468,30 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Delete.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				// Check if no row selected (like after another Delete!)
+				if (tableSource.getSelectedRow() == -1) return;
 				try {
-					int selectedRowInTable = tableSource.convertRowIndexToModel(tableSource.getSelectedRow());
+					selectedRowInTable = tableSource.convertRowIndexToModel(tableSource.getSelectedRow());
 					int numberCiteded = (int) tableSourceData[selectedRowInTable][2];
 			// DO NOT DELETE ANY SOURCE THAT IS IN USE!
 					if (numberCiteded  == 0) {
 						pointCitationSourceHandler.deleteSourceRecord(selectedSourcePID);
 						resetSourceTable();
+						tableSource.getSelectionModel().clearSelection(); // clear selectedRow setting
+						// Disable buttons (as nothing is selected at this stage)
+						btn_Edit.setEnabled(false);
+						btn_Copy.setEnabled(false);
+						btn_Delete.setEnabled(false);
 					} else {
-						//System.out.println(" Source used error row: " + selectedRowInTable + "/" + numberCiteded );
-						String message = " Cannot delete\nSource: " + tableSourceData[selectedRowInTable][1]
-								+ " used " + numberCiteded + " times!";
+						String message = " Cannot delete as \nSource: " + tableSourceData[selectedRowInTable][1]
+								+ " is used " + numberCiteded + " times.";
 						JOptionPane.showMessageDialog(contents, message,
-								"Delete Source Error!", JOptionPane.INFORMATION_MESSAGE);
+								"Delete Source", JOptionPane.INFORMATION_MESSAGE);
 					}
 				} catch (HBException hbe) {
 					System.out.println(" Delete Source error: " + hbe.getMessage());
 					hbe.printStackTrace();
 				}
-				btn_Save.setEnabled(true);
 			}
 		});
 
@@ -491,23 +503,18 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Save button
-		btn_Save.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE05 does nothing yet
-			}
-		});
-
 		// Listener for Select button
 		btn_Select.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
+				// Check if no row selected (like after a Delete!)
+				if (tableSource.getSelectedRow() == -1) return;
 				Object objSourceDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
 				int clickedRow = tableSource.getSelectedRow();
 				int selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
            		objSourceDataToEdit = tableSourceData[selectedRowInTable]; // select whole row
-				pointEditCitation.setSourceSelectedData(objSourceDataToEdit);
+           		if (pointEditCitation != null)
+           			pointEditCitation.setSourceSelectedData(objSourceDataToEdit);
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				dispose();
 			}

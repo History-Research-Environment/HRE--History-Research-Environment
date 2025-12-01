@@ -49,6 +49,7 @@ package hre.gui;
   * 		  2025-06-24 Load editSentence GUI via btn_Sentence (D Ferguson)
   * 		  2025-07-06 Pass roleName to HG0548EditSentence (D Ferguson)
   * 		  2025-07-13 Pass sexCode to HG0548EditSentence (D Ferguson
+  * 		  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
