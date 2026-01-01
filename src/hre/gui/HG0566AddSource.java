@@ -8,29 +8,16 @@ package hre.gui;
  *			  2025-10-12 Partly updated for Add/Update source  (N. Tolleshaug)
  *			  2025-10-16 Updated warning when save (N. Tolleshaug)
  *			  2025-11-16 Moved col head read to EditSource (N. Tolleshaug)
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE01 allow saving of the Source's data
- * NOTE02 load Author/Editoer/Compiler data
- * NOTE06 handle add/delete of source of source and repositories
- * NOTE07 make Preview buttons work on footnotes/biblio data
+ *			  2025-12-01 Changed test for Name/Abbrev both entered (D Ferguson)
+ *			  2025-12-06 Uses validateBeforeSave routine to do that! (D Ferguson)
+ *			  2025-12-20 NLS all code to this point (D Ferguson)
+ *			  2025-12-22 Updated foot note error handling (N. Tolleshaug)
+ *			  2025-12-29 NLS update (D Ferguson)
  *
  ************************************************************************************/
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-/**************************************************************************************
- * HG0566AddSource extends HG0566EditSource
- * ***********************************************************************************
- * v0.04.0032 2025-10-06 Original draft (N Tolleshaug)
- *
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE01 allow saving of the Source's data
- * NOTE02 load Author/Editoer/Compiler data
- * NOTE06 handle add/delete of source of source and repositories
- * NOTE07 make Preview buttons work on footnotes/biblio data
- *
- ************************************************************************************/
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -39,6 +26,8 @@ import javax.swing.JOptionPane;
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
+import hre.nls.HG0566Msgs;
+
 /**
  * Add Source
  * @author N. Tolleshaug
@@ -49,23 +38,28 @@ public class HG0566AddSource extends HG0566EditSource {
 	private static final long serialVersionUID = 1L;
 	private static long sourcePID;
 
+/**
+ * HG0566AddSource(HBProjectOpenData pointOpenProject, HG0565ManageSource pointManageSource)
+ * @param pointOpenProject
+ * @param pointManageSource
+ */
 	public HG0566AddSource(HBProjectOpenData pointOpenProject, HG0565ManageSource pointManageSource) {
 		super(pointOpenProject, sourcePID);
 		this.pointOpenProject = pointOpenProject;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
-		setTitle("Add Source");
+		setTitle(HG0566Msgs.Text_60);		// Add Source
 		setResizable(false);
 	// Setup references for HG0450
 		windowID = screenID;
-		helpName = "editsource";
+		helpName = "editsource";	//$NON-NLS-1$
 
 	// Start loading data required for this screen
 		// Load the Source Element list (names/ID#s) as we need it for Source template conversion & checking
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage());
+			System.out.println( " Error loading Source Element list: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 	    // Then construct a lookup for "12345" → "[element text]" conversion
@@ -85,9 +79,9 @@ public class HG0566AddSource extends HG0566EditSource {
 
  		// Get the Source Defn list (to be able to get the type's name by matching the PID)
 		try {
-			sorcDefnTable = pointCitationSourceHandler.getSourceDefnList();
+			sorcDefnTable = pointCitationSourceHandler.getSourceDefnList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source defn list: " + hbe.getMessage());
+			System.out.println( " Error loading source defn list: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 		// and sort it as we need it in sorted order for its combobox
@@ -97,48 +91,9 @@ public class HG0566AddSource extends HG0566EditSource {
 		try {
 			sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sourceDefnPID);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source defn templates: " + hbe.getMessage());
+			System.out.println( " Error loading source defn templates: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
-
-/*********************************'
- * Code to be used later
- **********************************
-		// Get any Source of Source citation data for this Source
-		try {
-			citnSrcSrcData = pointCitationSourceHandler.getCitationSourceData(sourcePID, "T736"); //$NON-NLS-1
-		} catch (HBException hbe) {
-			System.out.println( " Error loading source of source data: " + hbe.getMessage());
-			hbe.printStackTrace();
-		}
-
-		// Get any Repository data for this Source
-		// First get the PIDs of all Repos connected to this Source via the T740 link table
-		try {
-			repoPIDs = pointCitationSourceHandler.getRepoPIDs(sourcePID);
-		} catch (HBException hbe) {
-			System.out.println( " Error loading repository PIDs: " + hbe.getMessage());
-			hbe.printStackTrace();
-		}
-		// Then get the data for each of the Repos found in repoPIDs
-		if (repoPIDs.length > 0) {
-			tableRepoData = new Object[repoPIDs.length][2];
-			for (int i=0; i < repoPIDs.length; i++) {
-				repoEditData = new Object[3];
-				try {
-					repoEditData = pointCitationSourceHandler.getRepoEditData(repoPIDs[i]);
-				} catch (HBException hbe) {
-				System.out.println( " Error loading repository data: " + hbe.getMessage());
-				hbe.printStackTrace();
-				}
-				if (repoEditData != null) {
-					// Save the data we need for the Repository table
-					tableRepoData[i][0] = repoEditData[0];  // the repo ref#
-					tableRepoData[i][1] = repoEditData[1];  // the repo abbrev
-				}
-			}
-		}
-*/
 
 	// Set up data and screen
 		screenLayout();
@@ -149,43 +104,50 @@ public class HG0566AddSource extends HG0566EditSource {
 		for (int j = 0; j < sorcDefnTable.length; j++)
 			comboSourceTypes.addItem((String) sorcDefnTable[j][0]);
 
+		// Remove Preview buttons as cannot preview templates for an unsaved Source
+		btn_fullPreview.setVisible(false);
+		btn_shortPreview.setVisible(false);
+		btn_biblioPreview.setVisible(false);
+
+/***********************
+ * SAVE ACTION LISTENER
+ ***********************/
 		// Listener for Save button - adding new source
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving new source in HG0566AddSource");	//$NON-NLS-1$
-				//System.out.println(" Save - Add new source!" );
-				storeData(); // Collect the GUI data
+			// Execute validation checks on the Title/Abbrev being present and source templates being valid format
+				int check;
 				try {
-					if (titleTextChanged && abbrevTextChanged) {
-						pointCitationSourceHandler.createSourceRecord(sourceStoreData);
-		// Add new element data records
-						pointCitationSourceHandler.createSourceElementDataRecords(true);
-		// Reset source table
-						pointManageSource.resetSourceTable();
-					 } else {
-						//System.out.println(" Edit title and abbrev first! ");
-						String message = " Cannot add source! \nSource must have Title and Abbbrev set! ";
-						JOptionPane.showMessageDialog(pointEditSource, message,
-								"Add Source warning!", JOptionPane.INFORMATION_MESSAGE);
-					 }
+					check = validateBeforeSave();
 				} catch (HBException hbe) {
-					System.out.println(" Create Source Error: " + hbe.getMessage());
+			        JOptionPane.showMessageDialog(btn_Save,
+			        		HG0566Msgs.Text_80			// Unknown Source Element Name \n
+			        		+ hbe.getMessage()			// (shows the name)
+			        		+ footTextType,				// in Full/Short/Bibliography
+			        		HG0566Msgs.Text_81,			// Source Element Name error
+			                JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				if (check == 99) return;	// error flagged, so exit this Save
+
+			// Validation tests passed OK, so start the Save process
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving new source in HG0566AddSource");	//$NON-NLS-1$
+				// Collect the GUI data
+				storeData();
+				try {
+				// Add new Source
+					pointCitationSourceHandler.createSourceRecord(sourceStoreData);
+				// Add new element data records
+					pointCitationSourceHandler.createSourceElementDataRecords(true);
+				// Reset displayed source table
+					pointManageSource.resetSourceTable(true);
+				} catch (HBException hbe) {
+					System.out.println(" Create Source Error: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
-				// NOTE01 save any changed data - use the xxxEdited booleans to check text edits
-
-				// When saving source templates use the convertNamesToNums routine with the textToCodeMap hashmap
-				// to check all Element names exist and can be converted back to Element numbers, and do the
-				// conversion back to the numbered version for saving.
-				// It throws error msg and returns null, so if null returned, do not save!
-				// Example usage using fullFoot text, with before/after console routines:
-				//    System.out.println("Input="+fullFootText.getText());
-				//    String fullFootToSave = pointReportHandler.convertNamesToNums(fullFootText.getText(), textToCodeMap);
-				//    System.out.println("Output="+fullFootToSave);
-				// then check for null response and do NOT dispose! (leave user to fix it and try again!)
+			// Exit this screen
 				pointEditSource.dispose();
-
 			}
 		});
 	}

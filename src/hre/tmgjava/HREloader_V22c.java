@@ -33,7 +33,8 @@ package hre.tmgjava;
  * 			  2025-08-24 - Remove drop of C5 tables as they don't exist (D Ferguson)
  *			  2025-09-04 - Remove T738 creation (now preloaded) (D Ferguson)
  *			  2025-09-18 - Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
- *			  2025-10-21 - Delete T737 content whne importing user project (N. Tolleshaug)
+ *			  2025-10-21 - Delete T737 content when importing user project (N. Tolleshaug)
+ *			  2025-12-15 - Indexed T735 and T736 for persormance get source list (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -541,6 +542,7 @@ public class HREloader_V22c {
  * Indexing HRE tables
  */
 		tmgHreConverter.setStatusMessage(" Start indexing HRE tables");
+		String hdateTable = "T170_DATE";
 		String personNames = "T402_PERS_NAME";
 		String personNameElements = "T403_PERS_NAME_ELEMNTS";
 		String personEvent = "T450_EVNT";
@@ -548,8 +550,9 @@ public class HREloader_V22c {
 		String eventDefs = "T460_EVNT_DEFN";
 		String eventRole = "T461_EVNT_ROLE";
 		String locationNameElements = "T553_LOCN_ELEMNTS";
-		String hdateTable = "T170_DATE";
-
+		String citationTable = "T735_CITN";
+		String sourceTable = "T736_SORC";
+		
 		createIndexTable("T170_PID", hdateTable,"PID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + hdateTable);
 
@@ -575,6 +578,12 @@ public class HREloader_V22c {
 
 		createIndexTable("T553_OWNRPID", locationNameElements, "OWNER_RPID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + locationNameElements);
+		
+		createIndexTable("T735_SORC_RPID", citationTable, "SORC_RPID");
+		tmgHreConverter.setStatusMessage(" Indexed - " + citationTable);
+		
+		createIndexTable("T736_PID", sourceTable, "PID");
+		tmgHreConverter.setStatusMessage(" Indexed - " + sourceTable);
 
 /**
  * Dump size of tables

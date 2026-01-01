@@ -25,10 +25,18 @@ package hre.gui;
  * 			  2025-11-17 Change HGlobalCode routines to be in ReportHandler (D Ferguson)
  *			  2025-11-28 Implemented author, editor and compiler name edit (N. Tolleshaug)
  *			  2025-11-30 Implemented option for select or delete editorial names (N. Tolleshaug)
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE01 allow saving of the Source's data
- * NOTE02 load Author/Editer/Compiler data
+ *			  2025-12-03 Implemented copy and create new source copy (N Tolleshaug)
+ *			  2025-12-05 Make author/editor/compiler look editable (D Ferguson)
+ *			  2025-12-06 Added validateBeforeSave routine for all HG0566 code to use (D Ferguson)
+ *			  2025-12-08 Fix incorrect template changed flag settings (D Ferguson)
+ *			  2025-12-09 Add 'over-ridden' indicator if a local template in use (D Ferguson)
+ *			  2025-12-09 Initial values sourceAuthorPID = null_RPID, sourceEditorPID = null_RPID,
+ *            			   sourceCompilerPID = null_RPID (N Tolleshaug)
+ *            2025-12-11 Ensure only updated templates saved in T736 (D Ferguson)
+ *			  2025-12-13 Reinstate getting RepoColHeads from T204 (D Ferguson)
+ *			  2025-12-20 NLS all code to this point (D Ferguson)
+ *			  2025-12-22 Updated foot note template error handling (N. Tolleshaug)
+ *			  2025-12-29 NLS update (D Ferguson)
  *
  ************************************************************************************/
 
@@ -95,6 +103,7 @@ import hre.bila.HBProjectOpenData;
 import hre.bila.HBReportHandler;
 import hre.bila.HBRepositoryHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
+import hre.nls.HG0566Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -120,9 +129,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	private JPanel contents;
 
 	HG0566EditSource pointEditSource = this;
-	String citeOwnerType = "T736"; // Cited owner type to identify source table name
-
+	String citeOwnerType = "T736"; // Cited owner type to identify source table name  //$NON-NLS-1$
+	String footTextType = "";	//$NON-NLS-1$
 	Font font;
+	JLabel fullFootOverride, shortFootOverride, biblioOverride;
 	JButton btn_Save, btn_Close, btn_repoDel, btn_repoAdd, btn_srcDel, btn_srcAdd, btn_biblioPreview,
 			btn_shortPreview, btn_fullPreview;
 	DefaultTableCellRenderer centerLabelRenderer;
@@ -151,23 +161,24 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	Object objCiteDataToEdit[] = new Object[2]; // To hold data to pass to Citation editor
 
 	// For Repository handling
-	//String[] tableRepoColHeads = null;
-	String[] tableRepoColHeads = {"ID","Abbreviation","Reference"};
+	String[] tableRepoColHeads = null;
 	Object[][] tableRepoData;
 	DefaultTableModel repoTableModel = null;
 	Object[][] repoLinkData = null;
 	Object[] repoEditData;
 
 	JTextArea remindText, memoText;
-	JTextPane fullFootText, shortFootText, biblioText;
+	JTextArea fullFootText, shortFootText, biblioText;
 
-	private String[] fidelityOptions = {"Original",			// Original
-										"Photocopy",		// Photocopy
-										"Transcript",		// Transcript
-										"Extract",			// Extract
-										"Other/Unknown" };	// Other/Unknown
+	private String[] fidelityOptions = {HG0566Msgs.Text_0,			// Original
+										HG0566Msgs.Text_1,		// Photocopy
+										HG0566Msgs.Text_2,		// Transcript
+										HG0566Msgs.Text_3,			// Extract
+										HG0566Msgs.Text_4 };	// Other/Unknown
 
-	private String[] fidelityValues = {"A","B","C","D","E"};
+	private String[] fidelityValues = {"A","B","C","D","E"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+
+	String authorsName = "", editorsName = "", compilersName = ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// For source template parser input and Previews
 	private String[] citationParts = {"","",""};	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -176,8 +187,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	JScrollPane previewPaneScroll;
 
 	long sourceTablePID, sourceDefnPID, selectedRepositoryTablePID;
-	long sourceAuthorPID, sourceEditorPID, sourceCompilerPID;
-	
+	long sourceAuthorPID = null_RPID, sourceEditorPID = null_RPID, sourceCompilerPID = null_RPID;
+	long originalSourceDefnPID;
+
 	String[] sorcDefnTemplates;
 	String fullFootNumberedTemplate, fullFootNamedTemplate, shortFootNumberedTemplate, shortFootNamedTemplate,
 			biblioNumberedTemplate, biblioNamedTemplate;
@@ -185,13 +197,13 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	Object[] sourceEditData = null;
 	Object[] sourceStoreData = null;
 
-	DocumentListener titleTextChange, abbrevTextChange, fullFootTextChange, shortFootTextChange, biblioTextChange,
-					 memoTextChange, remindTextChange, authorPersonChange;
-	boolean titleTextChanged = false, abbrevTextChanged = false, fullFootTextChanged = false, shortFootTextChanged = false,
+	DocumentListener titleTextChange, abbrevTextChange,
+					 fullFootTextChange, shortFootTextChange, biblioTextChange,
+					 memoTextChange, remindTextChange;
+	boolean fullFootTextChanged = false, shortFootTextChanged = false,
 			biblioTextChanged = false, memoTextChanged = false, remindTextChanged = false,
 			nameElementDataChanged = false, authorNameChanged = false;
-	
-	
+	String templateTestBrackets, templateTestCodes;
 
 /**
  * HG0566EditSource constructor
@@ -205,7 +217,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 			this.sourceTablePID = sourcePID;
 
-			setTitle("Edit Source");
+			setTitle(HG0566Msgs.Text_5);	// Edit Source
 			setResizable(false);
 		// Setup references for HG0450
 			windowID = screenID;
@@ -223,8 +235,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					pointPersonHandler.setTranslatedData("56600", "1", false);	// Source Element, Value //$NON-NLS-1$ //$NON-NLS-2$
 			tableSrcSrcColHeads =
 					pointPersonHandler.setTranslatedData("56600", "2", false); // ID, Sources (abbrev.)  //$NON-NLS-1$ //$NON-NLS-2$
-			//tableRepoColHeads =
-			//		pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository  //$NON-NLS-1$ //$NON-NLS-2$
+			tableRepoColHeads =
+					pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository, Abbrev  //$NON-NLS-1$ //$NON-NLS-2$
 
 	// Focus Policy still to be setup!
 
@@ -235,7 +247,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
  * Setup the screen layouts
  * protected void screenLayout()
  */
-	 protected void screenLayout() {
+	 @SuppressWarnings("serial")
+	protected void screenLayout() {
 		contents = new JPanel();
 		setContentPane(contents);
 		contents.setLayout(new MigLayout("insets 10", "[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -258,7 +271,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 	// ******Define main (General) panel for most data
         JPanel genPanel = new JPanel();
-        tabPane.addTab("General", null, genPanel);
+        tabPane.addTab(HG0566Msgs.Text_6, null, genPanel);	// General
         tabPane.setMnemonicAt(0, KeyEvent.VK_G);
         genPanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -267,7 +280,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		titlePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		titlePanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]5[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel title = new JLabel("Source Title");
+		JLabel title = new JLabel(HG0566Msgs.Text_7);	// Source Title
 		titlePanel.add(title, "cell 0 0, alignx right");	//$NON-NLS-1$
 		titleText = new JTextArea();
 		titleText.setWrapStyleWord(true);
@@ -285,14 +298,14 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		titleText.setCaretPosition(0);	// set scrollbar to top
 		titlePanel.add(titleTextScroll, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-		JLabel abbrev = new JLabel("Abbreviation");
+		JLabel abbrev = new JLabel(HG0566Msgs.Text_8);	// Abbreviation
 		titlePanel.add(abbrev, "cell 0 1, alignx right");	//$NON-NLS-1$
 		abbrevText = new JTextField();
 //		abbrevText.setColumns(60);
 		abbrevText.setEditable(true);
 		titlePanel.add(abbrevText, "cell 1 1, alignx left, growx");	//$NON-NLS-1$
 
-		JLabel srcType = new JLabel("Source Type");
+		JLabel srcType = new JLabel(HG0566Msgs.Text_9);	// Source Type
 		titlePanel.add(srcType, "cell 0 2, alignx right");	//$NON-NLS-1$
 		DefaultComboBoxModel<String> comboTypeModel = new DefaultComboBoxModel<>();
 		//JComboBox<String> comboSourceTypes = new JComboBox<>(comboTypeModel);
@@ -335,7 +348,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		pHeader.setOpaque(false);
 		JLabel pheaderLabel = (JLabel) centerLabelRenderer;
 		pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		// Set row selection action
+	// Set row selection action
 		ListSelectionModel rowSelectionModel = tableSrcElmntValues.getSelectionModel();
 		rowSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		// Show the table
@@ -344,7 +357,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		// Setup tabbing within table against all rows but only column 0-1
 		if (tableSrcElmntValues.getRowCount() > 0)
 					JTableCellTabbing.setTabMapping(tableSrcElmntValues, 0, tableSrcElmntValues.getRowCount(), 0, 1);
-		// scrollPane contains the Source Element picklist
+	// scrollPane contains the Source Element picklist
 		JScrollPane scrollSrcElmntTable = new JScrollPane();
 		scrollSrcElmntTable.setPreferredSize(new Dimension(400, 320));
 		scrollSrcElmntTable.setViewportView(tableSrcElmntValues);
@@ -357,12 +370,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		templatePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		templatePanel.setLayout(new MigLayout("insets 10", "[]", "5[]5[]10[]5[]10[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel fullFoot = new JLabel("Full footnote");
+		JLabel fullFoot = new JLabel(HG0566Msgs.Text_10);	// Full footnote
 		templatePanel.add(fullFoot, "cell 0 0, alignx left");	//$NON-NLS-1$
-		btn_fullPreview = new JButton("Preview");
-		templatePanel.add(btn_fullPreview, "cell 0 0, gapx 20, alignx left");	//$NON-NLS-1$
-		fullFootText = new JTextPane();
-		fullFootText.setContentType("text/html"); //$NON-NLS-1$
+		btn_fullPreview = new JButton(HG0566Msgs.Text_11);		// Preview
+		templatePanel.add(btn_fullPreview, "cell 0 0, gapx 10, alignx left");	//$NON-NLS-1$
+		fullFootOverride = new JLabel(HG0566Msgs.Text_12);	// (overridden)
+		templatePanel.add(fullFootOverride, "cell 0 0, gapx 10, alignx left");	//$NON-NLS-1$
+		fullFootOverride.setVisible(false); // turn off by default
+		fullFootText = new JTextArea();
+		fullFootText.setLineWrap(true);
+		fullFootText.setWrapStyleWord(true);
 		fullFootText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		fullFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		fullFootText.setBorder(new JTable().getBorder());		// match Table border
@@ -371,12 +388,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		fullFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		templatePanel.add(fullFootTextScroll, "cell 0 1, alignx left");	//$NON-NLS-1$
 
-		JLabel shortFoot = new JLabel("Short footnote");
+		JLabel shortFoot = new JLabel(HG0566Msgs.Text_13);	// Short footnote
 		templatePanel.add(shortFoot, "cell 0 2, alignx left");	//$NON-NLS-1$
-		btn_shortPreview = new JButton("Preview");
-		templatePanel.add(btn_shortPreview, "cell 0 2, gapx 20, alignx left");	//$NON-NLS-1$
-		shortFootText = new JTextPane();
-		shortFootText.setContentType("text/html"); //$NON-NLS-1$
+		btn_shortPreview = new JButton(HG0566Msgs.Text_11);		// Preview
+		templatePanel.add(btn_shortPreview, "cell 0 2, gapx 10, alignx left");	//$NON-NLS-1$
+		shortFootOverride = new JLabel(HG0566Msgs.Text_12);	// (overridden)
+		templatePanel.add(shortFootOverride, "cell 0 2, gapx 10, alignx left");	//$NON-NLS-1$
+		shortFootOverride.setVisible(false); // turn off by default
+		shortFootText = new JTextArea();
+		shortFootText.setLineWrap(true);
+		shortFootText.setWrapStyleWord(true);
 		shortFootText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		shortFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		shortFootText.setBorder(new JTable().getBorder());		// match Table border
@@ -385,12 +406,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		shortFootTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		templatePanel.add(shortFootTextScroll, "cell 0 3, alignx left");	//$NON-NLS-1$
 
-		JLabel biblio = new JLabel("Bibliography");
+		JLabel biblio = new JLabel(HG0566Msgs.Text_16);		// Bibliogrpahy
 		templatePanel.add(biblio, "cell 0 4, alignx left");	//$NON-NLS-1$
-		btn_biblioPreview = new JButton("Preview");
-		templatePanel.add(btn_biblioPreview, "cell 0 4, gapx 20, alignx left");	//$NON-NLS-1$
-		biblioText = new JTextPane();
-		biblioText.setContentType("text/html"); //$NON-NLS-1$
+		btn_biblioPreview = new JButton(HG0566Msgs.Text_11);		// Preview
+		templatePanel.add(btn_biblioPreview, "cell 0 4, gapx 10, alignx left");	//$NON-NLS-1$
+		biblioOverride = new JLabel(HG0566Msgs.Text_12);	// (overridden)
+		templatePanel.add(biblioOverride, "cell 0 4, gapx 10, alignx left");	//$NON-NLS-1$
+		biblioOverride.setVisible(false); // turn off by default
+		biblioText = new JTextArea();
+		biblioText.setLineWrap(true);
+		biblioText.setWrapStyleWord(true);
 		biblioText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		biblioText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		biblioText.setBorder(new JTable().getBorder());		// match Table border
@@ -403,7 +428,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 	// ******Define Additional tabbed panel for other data
         JPanel addPanel = new JPanel();
-        tabPane.addTab("Additional", null, addPanel);
+        tabPane.addTab(HG0566Msgs.Text_19, null, addPanel);		// Additional
         tabPane.setMnemonicAt(0, KeyEvent.VK_A);
         addPanel.setLayout(new MigLayout("insets 10", "[]10[]", "10[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -412,12 +437,12 @@ public class HG0566EditSource extends HG0450SuperDialog {
         activPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
         activPanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-        JLabel active = new JLabel("Source is Active");
+        JLabel active = new JLabel(HG0566Msgs.Text_20);	// Source is Active
         activPanel.add(active, "cell 0 0"); //$NON-NLS-1$
         activChkBox = new JCheckBox();
         activPanel.add(activChkBox, "cell 1 0"); //$NON-NLS-1$
 
-        JLabel fidelity = new JLabel("Source Fidelity");
+        JLabel fidelity = new JLabel(HG0566Msgs.Text_21);		// Source Fidelity
         activPanel.add(fidelity, "cell 0 1"); //$NON-NLS-1$
 		comboFidelity = new JComboBox<String>(fidelityOptions);
 		for (int i=0; i < fidelityOptions.length; i++) {
@@ -434,21 +459,36 @@ public class HG0566EditSource extends HG0450SuperDialog {
         idPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
         idPanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-        JLabel author = new JLabel("Author of this Source");
+        JLabel author = new JLabel(HG0566Msgs.Text_22);	// Author of this Source
         idPanel.add(author, "cell 0 0, alignx right"); //$NON-NLS-1$
-		authorName = new JTextField();
+		authorName = new JTextField() {
+		    @Override
+		    protected void processKeyEvent(KeyEvent e) {
+		        // block all editing but allow double-click to still update this field
+		    }
+		};
 		authorName.setColumns(50);
 		idPanel.add(authorName, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-        JLabel editor = new JLabel("Editor of this Source");
+        JLabel editor = new JLabel(HG0566Msgs.Text_23);	// Editor of this Source
         idPanel.add(editor, "cell 0 1, alignx right"); //$NON-NLS-1$
-    	editorName = new JTextField();
+    	editorName = new JTextField() {
+		    @Override
+		    protected void processKeyEvent(KeyEvent e) {
+		        // block all editing but allow double-click to still update this field
+		    }
+    	};
 		editorName.setColumns(50);
 		idPanel.add(editorName, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-        JLabel compiler = new JLabel("Compiler of this Source");
+        JLabel compiler = new JLabel(HG0566Msgs.Text_24);	// Compiler of this Source
         idPanel.add(compiler, "cell 0 2, alignx right"); //$NON-NLS-1$
-    	compilerName = new JTextField();
+    	compilerName = new JTextField() {
+		    @Override
+		    protected void processKeyEvent(KeyEvent e) {
+		        // block all editing but allow double-click to still update this field
+		    }
+    	};
 		compilerName.setColumns(50);
 		idPanel.add(compilerName, "cell 1 2, alignx left");	//$NON-NLS-1$
 
@@ -456,7 +496,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 		// Define sub-panel for Source Memo/Source reference text (if any)
         JPanel memoPanel = new JPanel();
-        memoPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),"Source Reference text"));
+        memoPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),HG0566Msgs.Text_25)); // Source Reference text
         memoPanel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		memoText = new JTextArea();
 		memoText.setWrapStyleWord(true);
@@ -478,7 +518,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 		// Define sub-panel for Reminder text (if any)
         JPanel remPanel = new JPanel();
-        remPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),"Source Reminder"));
+        remPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),HG0566Msgs.Text_26));	// Source Reminder
         remPanel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		remindText = new JTextArea();
 		remindText.setWrapStyleWord(true);
@@ -500,7 +540,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
     	// ******Define Connections panel for repository, source of source
         JPanel connPanel = new JPanel();
-        tabPane.addTab("Connections", null, connPanel);
+        tabPane.addTab(HG0566Msgs.Text_27, null, connPanel);		// Connections
         tabPane.setMnemonicAt(0, KeyEvent.VK_C);
         connPanel.setLayout(new MigLayout("insets 10", "[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -509,7 +549,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		srcsrcPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		srcsrcPanel.setLayout(new MigLayout("insets 10", "[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-	    JLabel srcsrc = new JLabel("Sources of this Source");
+	    JLabel srcsrc = new JLabel(HG0566Msgs.Text_28);		// Sources of this Source
 	    srcsrcPanel.add(srcsrc, "cell 0 0, alignx left"); //$NON-NLS-1$
 		btn_srcAdd = new JButton("+"); //$NON-NLS-1$
 		btn_srcAdd.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
@@ -565,7 +605,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		repoPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		repoPanel.setLayout(new MigLayout("insets 10", "[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-	    JLabel repos = new JLabel("Repositories");
+	    JLabel repos = new JLabel(HG0566Msgs.Text_29);		// Repositories
 	    repoPanel.add(repos, "cell 0 0, alignx left"); //$NON-NLS-1$
 		btn_repoAdd = new JButton("+"); //$NON-NLS-1$
 		btn_repoAdd.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
@@ -618,10 +658,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		connPanel.add(repoPanel, "cell 0 1, growx");	//$NON-NLS-1$
 
 	// **** Define control buttons
-		btn_Close = new JButton("Close");		// Close
+		btn_Close = new JButton(HG0566Msgs.Text_30);		// Close
 		btn_Close.setEnabled(true);
 		contents.add(btn_Close, "cell 0 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		btn_Save = new JButton("Save");		// Save
+		btn_Save = new JButton(HG0566Msgs.Text_31);		// Save
 		btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 0 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
@@ -639,7 +679,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		previewPaneScroll.setPreferredSize(new Dimension(300, 120));
 		previewPaneScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-		// End of all PAnel Definitions
+		// End of all Panel Definitions
 
 	 }
 
@@ -659,21 +699,22 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			sourceEditData[9] = sourceText;				used
 			sourceEditData[10] = sourceRemind;			used
 			sourceEditData[11] = sourceDefnPID;			used to get SourceDefn templates and Defn Name
-			sourceEditData[12] = sourceAuthorPID;
-			sourceEditData[13] = sourceEditorPID;
-			sourceEditData[14] = sourceCompilerPID;
+			sourceEditData[12] = sourceAuthorPID;		used
+			sourceEditData[13] = sourceEditorPID;		used
+			sourceEditData[14] = sourceCompilerPID;		used
  */
 	 protected void loadData() {
-
 	// Set the title and abbrev text
 		titleText.setText((String)sourceEditData[0]);
 		abbrevText.setText((String)sourceEditData[1]);
 
 	// Load comboSourceTypes from the Source Defn table and set the index by matching PIDs
+		// First save this sourceDefnPID for checking later if Defn changes
+		originalSourceDefnPID = sourceDefnPID;
 		long compare = sourceDefnPID;
 		for (int j = 0; j < sorcDefnTable.length; j++) {
 			comboSourceTypes.addItem((String) sorcDefnTable[j][0]);
-			if (compare == (long)sorcDefnTable[j][1]) {  // Compiler ERROR sourceDefnPID value wrong NTo 6.10.2025
+			if (compare == (long)sorcDefnTable[j][1]) {
 				comboSourceTypes.setSelectedIndex(j);
 			}
 		}
@@ -696,7 +737,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		remindText.setText((String)sourceEditData[10]);
 		remindText.setCaretPosition(0);
 
-	// Get this Source's templates; use the 'createAndDisplayTextTemplates' routine, wich
+	// Get this Source's templates; use the 'createAndDisplayTextTemplates' routine, which
 	// analyses them and the Source Defn templates, converts the Element [nnnnn] values
 	// into Element Names using the Hashmap codeToTextMap, and loads the
 	// result into the text areas for display.
@@ -711,32 +752,29 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		uniqueElementNames =
 				extractUniqueElementNames(fullFootNamedTemplate+shortFootNamedTemplate+biblioNamedTemplate);
 
-	// Match Element numbers from the above to create an Element Value list aligned with Element Names
-		//loadElementValueTable();
-		
-	// Modificaton 25.11.2025 by NTo
-		if (pointEditSource instanceof HG0566UpdateSource)	loadElementValueTable();
+	// Match Element numbers from the above to create an Element Value list aligned with Element Names (if needed)
+		if (pointEditSource instanceof HG0566UpdateSource)	loadElementValueTable(false);
 		if (pointEditSource instanceof HG0566AddSource)	loadElementDefinitionTable();
+		if (pointEditSource instanceof HG0566CopySource) loadElementValueTable(true);
 
 	// Load Author, Editor, Compiler names (if present)
-		// NOTE02 - modified 25.11.2025
 		sourceAuthorPID = (long) sourceEditData[12];
 		sourceEditorPID = (long) sourceEditData[13];
 		sourceCompilerPID = (long) sourceEditData[14];
-
-		String authorsName = "", editorsName = "", compilersName = "";
 		try {
 			authorsName = pointCitationSourceHandler.getPersonName(sourceAuthorPID);
 			editorsName = pointCitationSourceHandler.getPersonName(sourceEditorPID);
 			compilersName = pointCitationSourceHandler.getPersonName(sourceCompilerPID);
 		} catch (HBException hbe) {
-			System.out.println( " HG0566EditSource - Name auth, edit or compiler error: " + hbe.getMessage());
+			System.out.println( "HG0566EditSource - Name author, editor or compiler error: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
-		
-		authorName.setText(authorsName);
-		editorName.setText(editorsName);
-		compilerName.setText(compilersName);
+		if (authorsName.isEmpty()) authorName.setText(HG0566Msgs.Text_32);	//  Not recorded
+		else authorName.setText(authorsName);
+		if (editorsName.isEmpty()) editorName.setText(HG0566Msgs.Text_32);	//  Not recorded
+		else editorName.setText(editorsName);
+		if (compilersName.isEmpty()) compilerName.setText(HG0566Msgs.Text_32);	//  Not recorded
+		else compilerName.setText(compilersName);
 
 	// Load Source of Source data
 		// The citnSrcSrcData Object contains a Source# and Source Abbrev to build into tableSrSrcData:
@@ -752,9 +790,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	 } // End of dialog data population processes
 
  /**
-  * Load sourceEditData into the above dialog definitions
-  * protected void loadData()
-  * Format of sourceEditData[] is as follows:
+  * Load dialog-updated data into sourceStoreData
+  * protected void storeData()
+  * Format of sourceStoreData[] is as follows:
  			sourceStoreData[0] = sourceTitle;			used
  			sourceStoreData[1] = sourceAbbrev;			used
  			sourceStoreData[2] = sourceRef;				use for reference number in table??
@@ -767,19 +805,19 @@ public class HG0566EditSource extends HG0450SuperDialog {
  			sourceStoreData[9] = sourceText;			used
  			sourceStoreData[10] = sourceRemind;			used
  			sourceStoreData[11] = sourceDefnPID;		used to get SourceDefn templates and Defn Name
- 			sourceStoreData[12] = sourceAuthorPID;
- 			sourceStoreData[13] = sourceEditorPID;
- 			sourceStoreData[14] = sourceCompilerPID;
+ 			sourceStoreData[12] = sourceAuthorPID;		used
+ 			sourceStoreData[13] = sourceEditorPID;		used
+ 			sourceStoreData[14] = sourceCompilerPID;		used
   */
  	 protected void storeData() {
  		 	sourceStoreData = new Object[15];
  			sourceStoreData[0] = titleText.getText(); //   sourceTitle - used
  			sourceStoreData[1] = abbrevText.getText(); //sourceAbbrev -	used
- 			sourceStoreData[2] = ""; // sourceRefNr - use for reference number in table??
- 			sourceStoreData[3] = ""; // sourceType - not much for this here!
+ 			sourceStoreData[2] = ""; // sourceRefNr - use for reference number in table??  //$NON-NLS-1$
+ 			sourceStoreData[3] = ""; // sourceType - not much for this here!				//$NON-NLS-1$
  			sourceStoreData[4] = activChkBox.isSelected(); // sourceActiv;			used
  			if (comboFidelity.getSelectedIndex() == -1)
- 				sourceStoreData[5] = "";
+ 				sourceStoreData[5] = "";		//$NON-NLS-1$
  			else sourceStoreData[5] = fidelityValues[comboFidelity.getSelectedIndex()]; // Fidelity used
  			sourceStoreData[6] = fullFootNumberedTemplate;	// used
  			sourceStoreData[7] = shortFootNumberedTemplate;	// used
@@ -788,10 +826,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
  			sourceStoreData[10] = remindText.getText(); //sourceRemind used
  		// used to get SourceDefn templates and Defn Name
  			sourceStoreData[11] = (long)sorcDefnTable[comboSourceTypes.getSelectedIndex()][1];
- 			//System.out.println(" Source Def: " + comboSourceTypes.getSelectedIndex() + "/" + sourceStoreData[11]);
- 			//sourceStoreData[12] = null_RPID;  // sourceAuthorPID;
- 			//sourceStoreData[13] = null_RPID; // sourceEditorPID;
- 			//sourceStoreData[14] = null_RPID; // sourceCompilerPID;
  			sourceStoreData[12] = sourceAuthorPID;
  			sourceStoreData[13] = sourceEditorPID;
  			sourceStoreData[14] = sourceCompilerPID;
@@ -820,8 +854,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for changes made in tablePerson (name fields)
-		TableModelListener persListener = new TableModelListener() {
+		// Listener for changes made in tableSrcElmntValues
+		TableModelListener elmntListener = new TableModelListener() {
 			@Override
             public void tableChanged(TableModelEvent tme) {
                 if (tme.getType() == TableModelEvent.UPDATE) {
@@ -830,11 +864,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
                     		String nameElementName = (String) tableSrcElmntValues.getValueAt(row, 0);
                     		String nameElementData = (String) tableSrcElmntValues.getValueAt(row, 1);
 							String elementNumber = tableSrcElmntValueData[row][2];
-	/*						//if (HGlobal.DEBUG)
-								System.out.println(" HG0509ManagePersonName - person table changed: " + row //$NON-NLS-1$
-										+ " Name: " + nameElementName
-										+ " Number: " + elementNumber
-										+ " Data: " + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$ */
 						if (nameElementData != null) {
 							btn_Save.setEnabled(true);
 							nameElementDataChanged = true;
@@ -844,69 +873,40 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				}
 			}
 		};
-		tableSrcElmntValues.getModel().addTableModelListener(persListener);
+		tableSrcElmntValues.getModel().addTableModelListener(elmntListener);
 
 		// Listener for edit of Title text
 		titleTextChange = new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
-				titleTextChanged = true;
 				btn_Save.setEnabled(true);
 			}
 			@Override
 			public void insertUpdate(DocumentEvent e) {
-				titleTextChanged = true;
 				btn_Save.setEnabled(true);
 			}
 			@Override
 			public void changedUpdate(DocumentEvent e) {
-				titleTextChanged = true;
 				btn_Save.setEnabled(true);
 			}
 		};
-
 		titleText.getDocument().addDocumentListener(titleTextChange);
-/*
-		// Listener for edit of Abbreviation text
-		titleTextChange = new DocumentListener() {
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				titleTextChanged = true;
-				btn_Save.setEnabled(true);
-			}
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				titleTextChanged = true;
-				btn_Save.setEnabled(true);
-			}
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				titleTextChanged = true;
-				btn_Save.setEnabled(true);
-			}
-		};
 
-		titleText.getDocument().addDocumentListener(titleTextChange);
-*/
 		// Listener for edit of Abbreviation text
 		abbrevTextChange = new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
-				abbrevTextChanged = true;
 				btn_Save.setEnabled(true);
 			}
 			@Override
 			public void insertUpdate(DocumentEvent e) {
-				abbrevTextChanged = true;
 				btn_Save.setEnabled(true);
 			}
 			@Override
 			public void changedUpdate(DocumentEvent e) {
-				abbrevTextChanged = true;
 				btn_Save.setEnabled(true);
 			}
 		};
-
 		abbrevText.getDocument().addDocumentListener(abbrevTextChange);
 
 		// Listener for edit of Fullfooter text
@@ -915,16 +915,19 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			public void removeUpdate(DocumentEvent e) {
 				fullFootTextChanged = true;
 				btn_Save.setEnabled(true);
+				fullFootOverride.setVisible(true);
 			}
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				fullFootTextChanged = true;
 				btn_Save.setEnabled(true);
+				fullFootOverride.setVisible(true);
 			}
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 				fullFootTextChanged = true;
 				btn_Save.setEnabled(true);
+				fullFootOverride.setVisible(true);
 			}
 		};
 		fullFootText.getDocument().addDocumentListener(fullFootTextChange);
@@ -935,16 +938,19 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			public void removeUpdate(DocumentEvent e) {
 				shortFootTextChanged = true;
 				btn_Save.setEnabled(true);
+				shortFootOverride.setVisible(true);
 			}
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				shortFootTextChanged = true;
 				btn_Save.setEnabled(true);
+				shortFootOverride.setVisible(true);
 			}
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 				shortFootTextChanged = true;
 				btn_Save.setEnabled(true);
+				shortFootOverride.setVisible(true);
 			}
 		};
 		shortFootText.getDocument().addDocumentListener(shortFootTextChange);
@@ -955,16 +961,19 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			public void removeUpdate(DocumentEvent e) {
 				biblioTextChanged = true;
 				btn_Save.setEnabled(true);
+				biblioOverride.setVisible(true);
 			}
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				biblioTextChanged = true;
 				btn_Save.setEnabled(true);
+				biblioOverride.setVisible(true);
 			}
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 				biblioTextChanged = true;
 				btn_Save.setEnabled(true);
+				biblioOverride.setVisible(true);
 			}
 		};
 		biblioText.getDocument().addDocumentListener(biblioTextChange);
@@ -1009,54 +1018,83 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		};
 		remindText.getDocument().addDocumentListener(remindTextChange);
 
-	// Mouse clik listener for Author name
-		authorName.setEditable(false); // make it non-editable
+	// Mouse click listener for Author name
 		authorName.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    try {
-                    	selectOption(" Author ", 1);
+                // If no name present go direct to selecting one
+                	if (authorsName.isEmpty()) {
+                		try {
+							activatePersonSelect(1);
+						} catch (HBException hbe) {
+							System.out.println("Author name edit error: " + hbe.getMessage()); //$NON-NLS-1$
+							hbe.printStackTrace();
+						}
+                    	btn_Save.setEnabled(true);
+                	}
+                // Else ask if user wants to Select another or Delete this one
+                	else try {
+                    	selectOption(HG0566Msgs.Text_35, 1);		// Author
 					} catch (HBException hbe) {
-						System.out.println(" Author name edit error: " + hbe.getMessage());
-						hbe.printStackTrace();
-					}
-                }
-            }
-        });
-		
-	// Mouse clik listener for Editor name	
-		editorName.setEditable(false); // make it non-editable
-		editorName.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    try {
-                    	selectOption(" Editor ", 2);
-					} catch (HBException hbe) {
-						System.out.println(" Editor name edit error: " + hbe.getMessage());
-						hbe.printStackTrace();
-					}
-                }
-            }
-        });
-		
-	// Mouse clik listener for Compilor name	
-		compilerName.setEditable(false); // make it non-editable
-		compilerName.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    try {
-                    	selectOption(" Compiler ", 3);
-					} catch (HBException hbe) {
-						System.out.println(" Compiler name edit error: " + hbe.getMessage());
+						System.out.println("Author name edit error: " + hbe.getMessage()); //$NON-NLS-1$
 						hbe.printStackTrace();
 					}
                 }
             }
         });
 
+	// Mouse click listener for Editor name
+		editorName.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                // If no name present go direct to selecting one
+                	if (editorsName.isEmpty()) {
+                		try {
+							activatePersonSelect(2);
+						} catch (HBException hbe) {
+							System.out.println("Editor name edit error: " + hbe.getMessage()); //$NON-NLS-1$
+							hbe.printStackTrace();
+						}
+                    	btn_Save.setEnabled(true);
+                	}
+                // Else ask if user wants to Select another or Delete this one
+                	else try {
+                    	selectOption(HG0566Msgs.Text_36, 2);		// Editor
+					} catch (HBException hbe) {
+						System.out.println("Editor name edit error: " + hbe.getMessage()); //$NON-NLS-1$
+						hbe.printStackTrace();
+					}
+                }
+            }
+        });
+
+	// Mouse click listener for Compilor name
+		compilerName.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                // If no name present go direct to selecting one
+                	if (compilersName.isEmpty()) {
+                		try {
+							activatePersonSelect(3);
+						} catch (HBException hbe) {
+							System.out.println("Compiler name edit error: " + hbe.getMessage()); //$NON-NLS-1$
+							hbe.printStackTrace();
+						}
+                    	btn_Save.setEnabled(true);
+                	}
+                // Else ask if user wants to Select another or Delete this one
+                	else try {
+                    	selectOption(HG0566Msgs.Text_37, 3);		// Compiler
+					} catch (HBException hbe) {
+						System.out.println("Compiler name edit error: " + hbe.getMessage()); //$NON-NLS-1$
+						hbe.printStackTrace();
+					}
+                }
+            }
+        });
 
 	// Source Types combo-box listener
 		comboSourceTypes.addActionListener (new ActionListener() {
@@ -1070,13 +1108,20 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				try {
 					sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sourceDefnPID);
 				} catch (HBException hbe) {
-					System.out.println( " Error loading source defn templates: " + hbe.getMessage());
+					System.out.println( "Error loading source defn templates: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
-			// Reset the Source templates and use new Source Defn templates to rebuild the displayed templates
-				fullFootNumberedTemplate = "";	//$NON-NLS-1$
-				shortFootNumberedTemplate = "";	//$NON-NLS-1$
-				biblioNumberedTemplate = "";	//$NON-NLS-1$
+			// Reset the Source templates and use new Source Defn templates to rebuild the displayed templates;
+			// BUT if user has re-selected the ORIGINAL sourceDefn re-use this Source's templates
+				if (sourceDefnPID == originalSourceDefnPID) {
+					fullFootNumberedTemplate = (String)sourceEditData[6];		// get Source full footer
+					shortFootNumberedTemplate = (String)sourceEditData[7];		// get Source short footer
+					biblioNumberedTemplate = (String)sourceEditData[8];			// get Source bibliography
+				} else {
+					fullFootNumberedTemplate = "";	//$NON-NLS-1$
+					shortFootNumberedTemplate = "";	//$NON-NLS-1$
+					biblioNumberedTemplate = "";	//$NON-NLS-1$
+				}
 				createAndDisplayTextTemplates();
 
 			// Create Lists of all UNIQUE Source Element Numbers and Names from the revised Source templates
@@ -1086,8 +1131,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 						extractUniqueElementNames(fullFootNamedTemplate+shortFootNamedTemplate+biblioNamedTemplate);
 
 			// Rebuild the Source Element Value table to show the values that might still apply
-				if (pointEditSource instanceof HG0566UpdateSource)	loadElementValueTable();
+				if (pointEditSource instanceof HG0566UpdateSource)	loadElementValueTable(false);
 				if (pointEditSource instanceof HG0566AddSource)	loadElementDefinitionTable();
+				if (pointEditSource instanceof HG0566CopySource) loadElementValueTable(true);
 				btn_Save.setEnabled(true);
 			}
 		});
@@ -1097,8 +1143,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 				btn_Save.setEnabled(true);
-			// NOTE01 - based on index selected, convert to value in the A-E range before saving
-
 			}
 		});
 
@@ -1106,8 +1150,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 				btn_Save.setEnabled(true);
-			// NOTE01 - set save button enabled
-
 			}
 		});
 
@@ -1116,14 +1158,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			public void valueChanged(ListSelectionEvent selectSrc) {
 				if (!selectSrc.getValueIsAdjusting()) {
 					if (tableSrcElmntValues.getSelectedRow() == -1) return;
-				// find source clicked
-//					int clickedRow = tableSrcElmnt.getSelectedRow();
-//					int selectedRowInTable = tableSrcElmnt.convertRowIndexToModel(clickedRow);
-
-				// allow editing of Value in selected row
-
 					btn_Save.setEnabled(true);
-
 				}
 			}
         });
@@ -1142,7 +1177,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				JOptionPane.showMessageDialog(
 					tableSrcElmntValues,		// position on screen
 				    previewPaneScroll,
-				    "Full Footnote Preview",
+				    HG0566Msgs.Text_38,		// Full Footnote Preview
 				    JOptionPane.PLAIN_MESSAGE
 				);
 			}
@@ -1162,7 +1197,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				JOptionPane.showMessageDialog(
 					tableSrcElmntValues,		// position on screen
 				    previewPaneScroll,
-				    "Short Footnote Preview",
+				    HG0566Msgs.Text_39,		// Short Footnote Preview
 				    JOptionPane.PLAIN_MESSAGE
 				);
 			}
@@ -1182,7 +1217,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				JOptionPane.showMessageDialog(
 					tableSrcElmntValues,		// position on screen
 				    previewPaneScroll,
-				    "Bibliography Preview",
+				    HG0566Msgs.Text_40,		// Bibliography Preview
 				    JOptionPane.PLAIN_MESSAGE
 				);
 			}
@@ -1195,10 +1230,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					if (tableSrcSrc.getSelectedRow() == -1) return;
 				// allow action on selected row
 					btn_srcDel.setEnabled(true);
-				// find source-source clicked
-				//	int clickedRow = tableSrcSrc.getSelectedRow();
-				//	int selectedRowInTable = tableSrcSrc.convertRowIndexToModel(clickedRow);
-
 				}
 			}
         });
@@ -1225,8 +1256,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	           	if (me.getClickCount() == 1 && tableSrcSrc.getSelectedRow() != -1) {
 	           	// SINGLE-CLICK - turn on table controls
 	           		btn_srcDel.setEnabled(true);
-	        		//btn_Up.setEnabled(true);
-	        		//btn_Down.setEnabled(true);
 	           	}
         		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
 	           	if (me.getClickCount() == 2 && tableSrcSrc.getSelectedRow() != -1) {
@@ -1234,7 +1263,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	           		objCiteDataToEdit = citnSrcSrcData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
 					HG0555EditCitation citeScreen
-								= new HG0555EditCitation(false, pointOpenProject, "T736", keyAssocMin,
+								= new HG0555EditCitation(false, pointOpenProject, "T736", keyAssocMin, //$NON-NLS-1$
 										(long) objCiteDataToEdit[3]);
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
@@ -1271,7 +1300,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					pointCitationSourceHandler.deleteCitationRecord((long)citnSrcSrcData[clickedRow][3]);
 					resetCitationTable();
 				} catch (HBException hbe) {
-					System.out.println("HG0547EditEvent delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
+					System.out.println("HG0566EditSource delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 			}
@@ -1300,7 +1329,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					pointRepositoryHandler.deleteRespositoryLink(sourceTablePID, selectedRepositoryTablePID);
 					resetRepositoryTable();
 				} catch (HBException hbe) {
-					System.out.println(" Delete repository table error: " + hbe.getMessage());
+					System.out.println("Delete repository table error: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 			}
@@ -1317,8 +1346,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
     		// DOUBLE_CLICK - get Object to pass to  HG0571RepoLink Editor and do so
            	if (me.getClickCount() == 2 && tableRepo.getSelectedRow() != -1) {
            		int atRow = tableRepo.getSelectedRow();
-
-           	// Display HG0571RepoLink with the repo data in atRow
+           		// Display HG0571RepoLink with the repo data in atRow
            		pointRepositoryHandler.pointEditSource = pointEditSource;
            		HG0571RepoLink pointRepolink = new HG0571RepoLink(pointOpenProject, sourceTablePID, tableRepoData[atRow]);
            		pointRepolink.setModalityType(ModalityType.APPLICATION_MODAL);
@@ -1338,32 +1366,58 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		// then convert the Element [nnnnn] entries into Element Names using the Hashmap codeToTextMap
 		// and load result into the text areas for display.
 		// Start with the Full footer
-		if (fullFootNumberedTemplate.isEmpty())
-							fullFootNumberedTemplate = sorcDefnTemplates[0];	// Source Defn full footer
+		fullFootText.getDocument().removeDocumentListener(fullFootTextChange); // disable change listener
+		if (fullFootNumberedTemplate.isEmpty()) {
+				fullFootOverride.setVisible(false); // turn off (overriden)
+				fullFootNumberedTemplate = sorcDefnTemplates[0];	// use Source Defn full footer
+			}
+		else {		// set flags to indicate this is a changed template as came from Source record
+			fullFootOverride.setVisible(true);
+			fullFootTextChanged = true;
+			}
 		fullFootNamedTemplate =
 				pointReportHandler.convertNumsToNames(fullFootNumberedTemplate, codeToTextMap); // convert to Names
 		fullFootText.setText(fullFootNamedTemplate.trim());
 		fullFootText.setCaretPosition(0);
+		fullFootText.getDocument().addDocumentListener(fullFootTextChange); // re-enable listener
+
 		// then the Short footer
-		if (shortFootNumberedTemplate.isEmpty())
-									shortFootNumberedTemplate = sorcDefnTemplates[1];	// Source Defn short footer
+		shortFootText.getDocument().removeDocumentListener(shortFootTextChange); // disable change listener
+		if (shortFootNumberedTemplate.isEmpty()) {
+				shortFootOverride.setVisible(false); // turn off (overriden)
+				shortFootNumberedTemplate = sorcDefnTemplates[1];	// use Source Defn short footer
+			}
+		else {		// set flags to indicate this is a changed template as came from Source record
+			shortFootOverride.setVisible(true);
+			shortFootTextChanged = true;
+			}
 		shortFootNamedTemplate =
 				pointReportHandler.convertNumsToNames(shortFootNumberedTemplate, codeToTextMap); // convert to Names
 		shortFootText.setText(shortFootNamedTemplate.trim());
 		shortFootText.setCaretPosition(0);
+		shortFootText.getDocument().addDocumentListener(shortFootTextChange); // re-enable listener
+
 		// then the Bibliography template
-		if (biblioNumberedTemplate.isEmpty())
-									biblioNumberedTemplate = sorcDefnTemplates[2];	// Source Defn bibliography
+		biblioText.getDocument().removeDocumentListener(biblioTextChange); // disable change listener
+		if (biblioNumberedTemplate.isEmpty()) {
+				biblioOverride.setVisible(false); // turn off (overriden)
+				biblioNumberedTemplate = sorcDefnTemplates[2];	// use Source Defn bibliography
+			}
+		else {		// set flags to indicate this is a changed template as came from Source record
+			biblioOverride.setVisible(true);
+			biblioTextChanged = true;
+			}
 		biblioNamedTemplate =
 				pointReportHandler.convertNumsToNames(biblioNumberedTemplate, codeToTextMap); // convert to Names
 		biblioText.setText(biblioNamedTemplate.trim());
 		biblioText.setCaretPosition(0);
+		biblioText.getDocument().addDocumentListener(biblioTextChange); // re-enable listener
 	}	// End createAndDisplayTextTemplates
 
 /**
  * loadElementDefTable()
  */
-	private void loadElementDefinitionTable() {
+	public void loadElementDefinitionTable() {
 		uniqueElementValues = new ArrayList<String>();
 		// Reload tableSrcElmntValueData
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
@@ -1372,7 +1426,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			// Ignore elements with numbers in the 'specials' range as they will not have T734 values
 			if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
 				tableSrcElmntValueData[i][0] = uniqueElementNames.get(i).trim();
-				tableSrcElmntValueData[i][1] = "";
+				tableSrcElmntValueData[i][1] = "";		//$NON-NLS-1$
 				tableSrcElmntValueData[i][2] = uniqueElementNums.get(i);
 				srcElmntValueModel.addRow(tableSrcElmntValueData[i]);
 			}
@@ -1382,7 +1436,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 /*
  * loadElementValueTable
  */
-	public void loadElementValueTable() {
+	public void loadElementValueTable(boolean addNewElementRecords) {
 		// Use the uniqueElementNums list to match Element numbers in the imported
 		// tableSourceElmntDataValues to create an Element Value list aligned with Element Names,
 		// then use that to load the table of Element names and values.
@@ -1413,6 +1467,13 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				tableSrcElmntValueData[i][1] = uniqueElementValues.get(i).trim();
 				tableSrcElmntValueData[i][2] = uniqueElementNums.get(i);
 				srcElmntValueModel.addRow(tableSrcElmntValueData[i]);
+
+		// If copy source add changes to ElementDataChangeList to create source element copy
+				if (addNewElementRecords)
+					pointCitationSourceHandler.updateElementDataChangeList(
+								tableSrcElmntValueData[i][0],
+								tableSrcElmntValueData[i][2],
+								tableSrcElmntValueData[i][1]);
 			}
 		}
 	}	// End loadElementValueTable
@@ -1485,7 +1546,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		try {
 			repoLinkData = pointRepositoryHandler.getRepoLinkData(sourceTablePID);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading repository PIDs: " + hbe.getMessage());
+			System.out.println("Error loading repository PIDs: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 		// Then get the data for each of the Repos found in repoPIDs
@@ -1496,7 +1557,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				try {
 					repoEditData = pointRepositoryHandler.getRepositoryData((long) repoLinkData[i][0]);
 				} catch (HBException hbe) {
-					System.out.println( " Error loading repository data: " + hbe.getMessage());
+					System.out.println( "Error loading repository data: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 				if (repoEditData != null) {
@@ -1515,16 +1576,14 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		tableRepo.getColumnModel().getColumn(0).setMinWidth(40);
 		tableRepo.getColumnModel().getColumn(0).setPreferredWidth(50);
 		tableRepo.getColumnModel().getColumn(1).setMinWidth(150);
-		//tableRepo.getColumnModel().getColumn(1).setPreferredWidth(545);
-		//tableRepo.getColumnModel().getColumn(1).setMinWidth(150);
 		tableRepo.getColumnModel().getColumn(1).setPreferredWidth(445);
 		tableRepo.getColumnModel().getColumn(2).setMinWidth(50);
 		tableRepo.getColumnModel().getColumn(2).setPreferredWidth(100);
 		tableRepo.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
 	}		// End resetRepositoryTable
-	
+
 /**
- * activatePersonSelect()	
+ * activatePersonSelect()
  * @throws HBException
  */
 	private void activatePersonSelect(int textFieldSelection) throws HBException {
@@ -1535,7 +1594,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		pointSelectPerson.setLocation(xyShow.x-300, xyShow.y-50);
 		pointSelectPerson.setVisible(true);
 	}
-	
+
 /**
  * public void resetNames(long personAuthorPID, long personEditorPID, long personCompilerPID)
  */
@@ -1543,52 +1602,171 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		sourceAuthorPID = personAuthorPID;
 		sourceEditorPID = personEditorPID;
 		sourceCompilerPID = personCompilerPID;
-		String authorsName = "", editorsName = "", compilersName = "";
 		try {
 			authorsName = pointCitationSourceHandler.getPersonName(sourceAuthorPID);
 			editorsName = pointCitationSourceHandler.getPersonName(sourceEditorPID);
 			compilersName = pointCitationSourceHandler.getPersonName(sourceCompilerPID);
 		} catch (HBException hbe) {
-			System.out.println( " HG0566EditSource - Name auth, edit or compiler error: " + hbe.getMessage());
+			System.out.println( "HG0566EditSource - Name auth, edit or compiler error: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
-		
-		authorName.getDocument().removeDocumentListener(authorPersonChange);
-		//System.out.println(" New authors name: " + authorsName);
-		authorName.setText(authorsName);
-		editorName.setText(editorsName);
-		compilerName.setText(compilersName);
-		authorName.getDocument().addDocumentListener(authorPersonChange);
+		if (authorsName.isEmpty()) authorName.setText(HG0566Msgs.Text_32);	// Not recorded
+		else authorName.setText(authorsName);
+		if (editorsName.isEmpty()) editorName.setText(HG0566Msgs.Text_32);	// Not recorded
+		else editorName.setText(editorsName);
+		if (compilersName.isEmpty()) compilerName.setText(HG0566Msgs.Text_32);	// Not recorded
+		else compilerName.setText(compilersName);
 	}
 
 /**
- * private void selectOption(int textFieldSelection ) 
+ * private void selectOption( )
+ * @param personTypeSelected
  * @param textFieldSelection
  * @throws HBException
  */
-	private int selectOption(String personTypeSeelected, int textFieldSelection ) throws HBException {
-        int choice = JOptionPane.showConfirmDialog(
-        		pointEditSource, // Parent component (null for default frame)
-                "Proceed with select (yes) or delete persom? (no)", // Message to display
-                personTypeSeelected + " person - Select new or delete?", // Title
-                JOptionPane.YES_NO_CANCEL_OPTION // Specifies the button options
-            );
-        // Process the user's choice
-        if (choice == JOptionPane.YES_OPTION) {
-        	activatePersonSelect(textFieldSelection);
-        	btn_Save.setEnabled(true);
-        } else if (choice == JOptionPane.NO_OPTION) {
-        	JOptionPane.showMessageDialog(null, "You chose to delete name.");
-        	pointCitationSourceHandler.updateTextFieldSelection(pointEditSource, textFieldSelection);
-        	pointCitationSourceHandler.updatePersonName(null_RPID);
-        	btn_Save.setEnabled(true);
-        } else if (choice == JOptionPane.CANCEL_OPTION) {
-            JOptionPane.showMessageDialog(null, "You chose to cancel action.");
-        } else if (choice == JOptionPane.CLOSED_OPTION) {
-            // User closed the dialog without selecting any button
-            JOptionPane.showMessageDialog(null, "The dialog was closed.");
-        }
-        return choice;
+	private int selectOption(String personTypeSelected, int textFieldSelection) throws HBException {
+		String[] options = { HG0566Msgs.Text_44, HG0566Msgs.Text_45, HG0566Msgs.Text_46 };	// Select, Delete, Cancel
+		int choice = JOptionPane.showOptionDialog(
+				pointEditSource, // Parent component (null for default frame)
+				HG0566Msgs.Text_47, //Select another Person or Delete current entry?
+				HG0566Msgs.Text_48 + personTypeSelected, // Edit
+				0, 3, null, options, options[0] // Specifies the options
+				);
+		// Process the user's choice
+		if (choice == JOptionPane.YES_OPTION) {			//Select option
+			activatePersonSelect(textFieldSelection);
+			btn_Save.setEnabled(true);
+		}
+		if (choice == JOptionPane.NO_OPTION) {		// Delete option
+			int choice2 = JOptionPane.showConfirmDialog(pointEditSource,
+					HG0566Msgs.Text_49,	// Are you sure you want to delete this entry?
+					HG0566Msgs.Text_48 + personTypeSelected, // Edit
+					JOptionPane.YES_NO_OPTION);
+			if (choice2 ==JOptionPane.YES_OPTION) {
+				pointCitationSourceHandler.updateTextFieldSelection(pointEditSource, textFieldSelection);
+				pointCitationSourceHandler.updatePersonName(null_RPID);
+				btn_Save.setEnabled(true);
+				return choice;
+			}
+		}
+		return choice;
 	}
+
+/**
+ * private int validateBeforeSave( )
+ * @throws HBException
+ */
+	public int validateBeforeSave() throws HBException {
+		// Following checks are present to ensure a saved Source has a valid
+		// Title and Abbreviation, and that all 3 source templates have matching [ ] brackets
+		// as well as valid BOLD/ITAL/etc formatting codes.
+		// If these tests OK, the Source Templates are then converted back to element number formats
+		// to allow them to be saved correctly.
+		// Code returns 99 if any error found or 0 if all tests passed successfully.
+
+		// Test that Title/Abbrev are present
+		if (titleText.getText().length() == 0 || abbrevText.getText().length() == 0) {
+			JOptionPane.showMessageDialog(pointEditSource,
+					HG0566Msgs.Text_51, // Both Title and Abbreviation must be entered \n before the Source can be saved
+					HG0566Msgs.Text_52,		// Source Title
+					JOptionPane.ERROR_MESSAGE);
+			return 99;  // end Save, so user can fix this error
+		}
+
+	// If any source template has been changed, test it for valid bracket etc syntax
+	// and then convert it back to Element Number format for saving.
+		if (fullFootTextChanged) {
+			// Test for unpaired brackets. Null returned data = good, otherwise show error
+			templateTestBrackets = pointReportHandler.validateBrackets(fullFootText.getText());
+			if (templateTestBrackets != null) {
+				JOptionPane.showMessageDialog(pointEditSource,
+						templateTestBrackets,
+						HG0566Msgs.Text_53,		// Full footnote template error
+						JOptionPane.ERROR_MESSAGE);
+				return 99;  // end Save, so user can fix this error
+			}
+			// Test for unpaired formating codes. Null returned data = good, otherwise show error
+			templateTestCodes = pointReportHandler.validateFormatCodes(fullFootText.getText());
+			if (templateTestCodes != null) {
+				JOptionPane.showMessageDialog(pointEditSource,
+						templateTestCodes,
+						HG0566Msgs.Text_53,	// Full footnote template error
+						JOptionPane.ERROR_MESSAGE);
+				return 99;  // end Save, so user can fix this error
+			}
+		// Convert source template element Names to element Numbers for saving
+		// Null returned data means conversion has failed (converter has raised Exception)
+			footTextType = HG0566Msgs.Text_82;		// in Full footnote
+			String fullFootToSave = pointReportHandler.convertNamesToNums(fullFootText.getText(), textToCodeMap);
+			if (fullFootToSave == null) return 99; // null data returned implies error, halt Save process
+			// If all OK save validated template in data to be saved
+			fullFootNumberedTemplate = fullFootToSave;
+		}
+		// but if fullFootText has NOT been changed, set the T736 template to be saved as blank
+		else fullFootNumberedTemplate = "";	//$NON-NLS-1$
+
+		if (shortFootTextChanged) {
+			// Test for unpaired brackets. Null returned data = good, otherwise show error
+			templateTestBrackets = pointReportHandler.validateBrackets(shortFootText.getText());
+			if (templateTestBrackets != null) {
+				JOptionPane.showMessageDialog(pointEditSource,
+						templateTestBrackets,
+						HG0566Msgs.Text_55,		// Short footnote template error
+						JOptionPane.ERROR_MESSAGE);
+				return 99;  // end Save, so user can fix this error
+			}
+			// Test for unpaired formating codes. Null returned data = good, otherwise show error
+			templateTestCodes = pointReportHandler.validateFormatCodes(shortFootText.getText());
+			if (templateTestCodes != null) {
+				JOptionPane.showMessageDialog(pointEditSource,
+						templateTestCodes,
+						HG0566Msgs.Text_55,		// Short footnote template error
+						JOptionPane.ERROR_MESSAGE);
+				return 99;  // end Save, so user can fix this error
+			}
+		// Convert source template element Names to element Numbers for saving
+		// Null returned data means conversion has failed (converter has raised Exception)
+			footTextType = HG0566Msgs.Text_83;		// in Short footnote
+			String shortFootToSave = pointReportHandler.convertNamesToNums(shortFootText.getText(), textToCodeMap);
+			if (shortFootToSave == null) return 99; // null data returned implies error, halt Save process
+			// If all OK save validated template in data to be saved
+			shortFootNumberedTemplate = shortFootToSave;
+		}
+		// but if shortFootText has NOT been changed, set the T736 template to be saved as blank
+		else shortFootNumberedTemplate = "";	//$NON-NLS-1$
+
+		if (biblioTextChanged) {
+			// Test for unpaired brackets. Null returned data = good, otherwise show error
+			templateTestBrackets = pointReportHandler.validateBrackets(biblioText.getText());
+			if (templateTestBrackets != null) {
+				JOptionPane.showMessageDialog(pointEditSource,
+						templateTestBrackets,
+						HG0566Msgs.Text_57,		// Bibliography template error
+						JOptionPane.ERROR_MESSAGE);
+				return 99;  // end Save, so user can fix this error
+			}
+			// Test for unpaired formating codes. Null returned data = good, otherwise show error
+			templateTestCodes = pointReportHandler.validateFormatCodes(biblioText.getText());
+			if (templateTestCodes != null) {
+				JOptionPane.showMessageDialog(pointEditSource,
+						templateTestCodes,
+						HG0566Msgs.Text_57,		// Bibliography template error
+						JOptionPane.ERROR_MESSAGE);
+				return 99;  // end Save, so user can fix this error
+			}
+		// Convert source template element Names to element Numbers for saving
+		// Null returned data means conversion has failed (converter has raised Exception)
+			footTextType = HG0566Msgs.Text_84;		// in Bibliography
+			String biblioToSave = pointReportHandler.convertNamesToNums(biblioText.getText(), textToCodeMap);
+			if (biblioToSave == null) return 99; // null data returned implies error, halt Save process
+			// If all OK save validated template in data to be saved
+			biblioNumberedTemplate = biblioToSave;
+		}
+		// but if biblioText has NOT been changed, set the T736 template to be saved as blank
+		else biblioNumberedTemplate = "";	//$NON-NLS-1$
+
+		// if we reach here all tests have been passed, so return 0
+			return 0;
+	}		// End validateBeforeSave
 
 }  // End of HG0566EditSource

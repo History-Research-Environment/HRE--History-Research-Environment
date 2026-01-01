@@ -846,7 +846,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
     	if (enteredNum > 0) {
     		try {
     			// Get source number, title, cited, PID, fidelity, sorceDefnPID, templates
-				objSourceData = pointCitationSourceHandler.getSourceList();
+				objSourceData = pointCitationSourceHandler.getSourceList(true, true);
 			} catch (HBException hse) {
 				System.out.println(" HG0555EditCitation get source data error: " + hse.getMessage()); //$NON-NLS-1$
 				hse.printStackTrace();

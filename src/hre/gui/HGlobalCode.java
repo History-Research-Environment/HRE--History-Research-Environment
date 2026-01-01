@@ -255,6 +255,7 @@ public class HGlobalCode {
  * @param numCols -  Number of columns this applies to
  */
 	public static class JTableCellTabbing {
+		@SuppressWarnings("serial")
 		public static void setTabMapping(final JTable theTable, final int startRow, final int numRows, final int startCol, final int numCols) {
 			// Calculate last row and column for tabbing
 		    final int endRow = startRow + (numRows - 1);

@@ -17,6 +17,7 @@ package hre.gui;
  * 			  2024-11-17 Updated location style hendling (N. Tolleshaug)
  * 			  2024-12-09 Updated location name TAB handling (D Ferguson)
  * 			  2024-12-09 Location name change list update line 680 (N. Tolleshaug)
+ * 			  
  ********************************************************************************
  * NB: cannot execute 'externalize strings' check without temporarily commenting
  *     out the statement: txt_Text = new JTextArea("\""+listText+" ...\"");
@@ -358,7 +359,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 
 	// Get data for the Location elements and values
 		pointWhereWhenHandler.setNameStyleIndex(ii);
-		pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
+		pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID, false);
 		locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
 		tableLocnData = pointWhereWhenHandler.getLocationNameTable();
 
@@ -751,7 +752,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 					// else if 2nd click, go back to previous item list
 					else {
 							showHiddenClicked = false;
-							pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
+							pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID, false);
 
 						}
 					locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
@@ -778,7 +779,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				locnModel.setNumRows(0);	// clear table
 				try {
 					pointWhereWhenHandler.setNameStyleIndex(index);
-					pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID);
+					pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID, false);
 					locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
 					tableLocnData = pointWhereWhenHandler.getLocationNameTable();
 					locnModel.setDataVector(tableLocnData, locnHeaderData);

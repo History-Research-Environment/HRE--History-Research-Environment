@@ -5,8 +5,6 @@ import org.eclipse.osgi.util.NLS;
 public class HGlobalMsgs extends NLS {
 	private static String BUNDLE_NAME = "hre.nls.HGlobal-en"; //$NON-NLS-1$
 
-	public static String Text_0;
-	public static String Text_1;
 	public static String Text_2;
 	public static String Text_3;
 	public static String Text_4;

@@ -20,11 +20,11 @@ package hre.gui;
  * 			  2025-11-17 Change HGlobalCode routines to be in ReportHandler (D Ferguson)
  *			  2025-11-24 Fix crash when action taken with nothing seelcted (D Ferguson)
  *						 Do Edit if Source table double-clicked; remove Save btn (D Ferguson)
+ *			  2025-12-01 Implemented show inactive sources (N. Tolleshaug)
+ *			  2025-12-02 Fix for show inactive sources empty (N. Tolleshaug)
+ *			  2025-12-03 Improved handlig of header for inactive sources empty (N. Tolleshaug)
+ *			  2025-12-17 NLS all code (D Ferguson)
  *
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE03 implement Copy button
- * NOTE06 implement Show Inactive button
  ************************************************************************************/
 
 import java.awt.Component;
@@ -78,6 +78,7 @@ import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBReportHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
+import hre.nls.HG0565Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -93,9 +94,12 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	public static final String screenID = "56500"; //$NON-NLS-1$
 	public HBCitationSourceHandler pointCitationSourceHandler;
 	public HG0555EditCitation pointEditCitation;
-	HG0565ManageSource pointThis = this;
+	HG0565ManageSource pointManageSource = this;
 	HBPersonHandler pointPersonHandler;
 	HBReportHandler pointReportHandler;
+
+	boolean swichActiveInactive = true;
+	JButton btn_Inactive;
 
 	private JPanel contents;
 
@@ -103,6 +107,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	Object[][] tableSourceData;
 	DefaultTableModel srcTableModel = null;
 	JTable tableSource;
+	String tableHeadsMiddleColumn; // Temp store the translated text from T204
 
 	JTextArea fullFootText, shortFootText, biblioText;
 	String templateText = "";	//$NON-NLS-1$
@@ -120,7 +125,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		pointPersonHandler = pointOpenProject.getPersonHandler();
 		pointReportHandler = pointOpenProject.getReportHandler();
 
-		setTitle("Manage Sources");
+		setTitle(HG0565Msgs.Text_0);	// Manage Sources
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "managesource";		 //$NON-NLS-1$
@@ -137,7 +142,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage());
+			System.out.println( " Error loading Source Element list: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 
@@ -169,22 +174,22 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		JPanel actionPanel = new JPanel();
 		actionPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		actionPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		JButton btn_Add = new JButton("Add");		// Add
+		JButton btn_Add = new JButton(HG0565Msgs.Text_2);		// Add
 		btn_Add.setEnabled(true);
 		actionPanel.add(btn_Add, "cell 0 0, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Edit = new JButton("Edit");		// Edit
+		JButton btn_Edit = new JButton(HG0565Msgs.Text_3);		// Edit
 		btn_Edit.setEnabled(false);
 		actionPanel.add(btn_Edit, "cell 0 1, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Copy = new JButton("Copy");		// Copy
+		JButton btn_Copy = new JButton(HG0565Msgs.Text_4);		// Copy
 		btn_Copy.setEnabled(false);
 		actionPanel.add(btn_Copy, "cell 0 2, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Delete = new JButton("Delete");		// Delete
+		JButton btn_Delete = new JButton(HG0565Msgs.Text_5);		// Delete
 		btn_Delete.setEnabled(false);
 		actionPanel.add(btn_Delete, "cell 0 3, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Inactive = new JButton("Show Inactive");		// Show Inactive
+		btn_Inactive = new JButton(HG0565Msgs.Text_27);		// Show Inactive
 		btn_Inactive.setEnabled(true);
 		actionPanel.add(btn_Inactive, "cell 0 4, alignx center, grow"); //$NON-NLS-1$
-		JLabel find = new JLabel("Find:");		// Find:
+		JLabel find = new JLabel(HG0565Msgs.Text_7);		// Find:
 		actionPanel.add(find, "cell 0 5, alignx center"); //$NON-NLS-1$
 		JTextField findText = new JTextField();
 		findText.setColumns(10);
@@ -208,22 +213,23 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		// Source ref#, Source Abbrev, #times Cited  (these 3 items displayed)
 		// and SourcePID, Fidelity, Source Defn PID, Footnote text, Shortnote text, Biblio text
 		try {
-			tableSourceData = pointCitationSourceHandler.getSourceList();
+			tableSourceData = pointCitationSourceHandler.getSourceList(true, true);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source list: " + hbe.getMessage());
+			System.out.println( " Error loading source list: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 
 		if (tableSourceData == null ) {
-			JOptionPane.showMessageDialog(tableSource, "No sources found in HRE database\n"	// No data found in HRE database\n
-													 + "Source Select error",		// Source Select error
-													   "Source Select", 			// Source Select
+			JOptionPane.showMessageDialog(tableSource, HG0565Msgs.Text_9	// No sources found in HRE database\n
+													 + HG0565Msgs.Text_10,		// Source Select error
+													   HG0565Msgs.Text_11, 			// Source Select
 													   JOptionPane.ERROR_MESSAGE);
 		}
 
 	// Get the number of items in the table into a string (##)
-		String count = " (" + String.format("%02d", tableSourceData.length) + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		String count = " (" + tableSourceData.length + ") "; //$NON-NLS-1$ //$NON-NLS-2$
 	// Add this count into the table header string
+		tableHeadsMiddleColumn = tableSourceColHeads[1];
 		tableSourceColHeads[1] = tableSourceColHeads[1] + count;
 
 
@@ -260,7 +266,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			sorter.setSortKeys(psortKeys1);
 		    tableSource.setRowSorter(sorter);
 		    // Set tooltips and header format
-			tableSource.getTableHeader().setToolTipText("Click to sort; Click again to sort in reverse order");	// Click to sort; Click again to sort in reverse order
+			tableSource.getTableHeader().setToolTipText(HG0565Msgs.Text_14);	// Click to sort; Click again to sort in reverse order
 			JTableHeader pHeader = tableSource.getTableHeader();
 			pHeader.setOpaque(false);
 			TableCellRenderer prendererFromHeader = tableSource.getTableHeader().getDefaultRenderer();
@@ -287,7 +293,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		templatePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		templatePanel.setLayout(new MigLayout("insets 5", "[]", "5[]5[]10[]5[]10[]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel fullFoot = new JLabel("Full footnote");
+		JLabel fullFoot = new JLabel(HG0565Msgs.Text_15);	// Full footnote
 		templatePanel.add(fullFoot, "cell 0 0, alignx left");	//$NON-NLS-1$
 		fullFootText = new JTextArea();
 		fullFootText.setWrapStyleWord(true);
@@ -306,7 +312,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		fullFootText.setCaretPosition(0);	// set scrollbar to top
 		templatePanel.add(fullFootTextScroll, "cell 0 1, alignx left");	//$NON-NLS-1$
 
-		JLabel shortFoot = new JLabel("Short footnote");
+		JLabel shortFoot = new JLabel(HG0565Msgs.Text_16);	// Short footnote
 		templatePanel.add(shortFoot, "cell 0 2, alignx left");	//$NON-NLS-1$
 		shortFootText = new JTextArea();
 		shortFootText.setWrapStyleWord(true);
@@ -325,7 +331,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		shortFootText.setCaretPosition(0);	// set scrollbar to top
 		templatePanel.add(shortFootTextScroll, "cell 0 3, alignx left");	//$NON-NLS-1$
 
-		JLabel biblio = new JLabel("Bibliography");
+		JLabel biblio = new JLabel(HG0565Msgs.Text_17);	// Bibliogrpahy
 		templatePanel.add(biblio, "cell 0 4, alignx left");	//$NON-NLS-1$
 		biblioText = new JTextArea();
 		biblioText.setWrapStyleWord(true);
@@ -347,10 +353,10 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		contents.add(templatePanel, "cell 2 0, aligny top"); //$NON-NLS-1$
 
 	// Define control buttons
-		JButton btn_Close = new JButton("Close");		// Close
+		JButton btn_Close = new JButton(HG0565Msgs.Text_18);		// Close
 		btn_Close.setEnabled(true);
 		contents.add(btn_Close, "cell 1 1 2, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		JButton btn_Select = new JButton("Select");		// Select
+		JButton btn_Select = new JButton(HG0565Msgs.Text_19);		// Select
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 1 1 2, alignx right, gapx 10, tag yes"); //$NON-NLS-1$
 
@@ -398,7 +404,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 						sorcDefnTemplates = pointCitationSourceHandler
 											.getSourceDefnTemplates(selectedSorcDefnPID);
 					} catch (HBException hbe) {
-						System.out.println( " Error loading source templates: " + hbe.getMessage());
+						System.out.println( " Error loading source templates: " + hbe.getMessage()); //$NON-NLS-1$
 						hbe.printStackTrace();
 					}
 				// Try the Source's template; if empty, get the template from the Source Defn templates,
@@ -433,7 +439,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				HG0566AddSource sourceAddScreen = new HG0566AddSource(pointOpenProject, pointThis);
+				HG0566AddSource sourceAddScreen = new HG0566AddSource(pointOpenProject, pointManageSource);
 				sourceAddScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xySourceT = btn_Add.getLocationOnScreen();
 				sourceAddScreen.setLocation(xySourceT.x, xySourceT.y + 30);
@@ -447,7 +453,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// Check if no row selected (like after a Delete!)
 				if (tableSource.getSelectedRow() == -1) return;
-				HG0566UpdateSource updateScreen = new HG0566UpdateSource(pointOpenProject, selectedSourcePID, pointThis);
+				HG0566UpdateSource updateScreen = new HG0566UpdateSource(pointOpenProject, selectedSourcePID, pointManageSource);
 				updateScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				updateScreen.setLocation(xyEdit.x, xyEdit.y + 30);
@@ -459,7 +465,13 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Copy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE03 does nothing yet
+				// Check if no row selected (like after a Delete!)
+				if (tableSource.getSelectedRow() == -1) return;
+				HG0566CopySource updateScreen = new HG0566CopySource(pointOpenProject, selectedSourcePID, pointManageSource);
+				updateScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xyEdit = btn_Add.getLocationOnScreen();
+				updateScreen.setLocation(xyEdit.x, xyEdit.y + 30);
+				updateScreen.setVisible(true);
 
 			}
 		});
@@ -476,20 +488,21 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			// DO NOT DELETE ANY SOURCE THAT IS IN USE!
 					if (numberCiteded  == 0) {
 						pointCitationSourceHandler.deleteSourceRecord(selectedSourcePID);
-						resetSourceTable();
+						resetSourceTable(true);
 						tableSource.getSelectionModel().clearSelection(); // clear selectedRow setting
 						// Disable buttons (as nothing is selected at this stage)
 						btn_Edit.setEnabled(false);
 						btn_Copy.setEnabled(false);
 						btn_Delete.setEnabled(false);
 					} else {
-						String message = " Cannot delete as \nSource: " + tableSourceData[selectedRowInTable][1]
-								+ " is used " + numberCiteded + " times.";
+						String message = HG0565Msgs.Text_21 				// Cannot delete this Source
+								+ HG0565Msgs.Text_22 + numberCiteded + HG0565Msgs.Text_23; // as it is used ... times
 						JOptionPane.showMessageDialog(contents, message,
-								"Delete Source", JOptionPane.INFORMATION_MESSAGE);
+								HG0565Msgs.Text_24, 						// Delete Source
+								JOptionPane.INFORMATION_MESSAGE);
 					}
 				} catch (HBException hbe) {
-					System.out.println(" Delete Source error: " + hbe.getMessage());
+					System.out.println(" Delete Source error: " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 			}
@@ -499,7 +512,20 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Inactive.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE06 at this point, reload the Source table with all T736 records where IS_ACTIVE=no
+				try {
+					if (swichActiveInactive) {
+						resetSourceTable(false);
+						swichActiveInactive = false;
+						btn_Inactive.setText(HG0565Msgs.Text_26);		// Show All
+					} else {
+						resetSourceTable(true);
+						swichActiveInactive = true;
+						btn_Inactive.setText(HG0565Msgs.Text_27);		// Show Inactive
+					}
+				} catch (HBException hbe) {
+					System.out.println(" HG0565ManageSource - resetSourceTable error: " + hbe.getMessage()); //$NON-NLS-1$
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -554,8 +580,25 @@ public class HG0565ManageSource extends HG0450SuperDialog {
  * private void resetSourceTable() throws HBException
  * @throws HBException
  */
-	public void resetSourceTable() throws HBException {
-		tableSourceData = pointCitationSourceHandler.getSourceList();
+	public void resetSourceTable(boolean showAllSources) throws HBException {
+		String count;
+		String sourceReference;
+		tableSourceData = pointCitationSourceHandler.getSourceList(showAllSources, false);
+	// Handle setting count = "" for empty table!
+		sourceReference = "" + tableSourceData[0][0]; //$NON-NLS-1$
+		if (tableSourceData.length == 1 && sourceReference.length() == 0)
+			count = ""; else //$NON-NLS-1$
+			count = " (" + tableSourceData.length + ") "; //$NON-NLS-1$ //$NON-NLS-2$
+		if (showAllSources) {
+			btn_Inactive.setText(HG0565Msgs.Text_27);		// Show Inactive
+			tableSourceColHeads[1] = tableHeadsMiddleColumn;
+		} else {
+			tableSourceColHeads[1] = HG0565Msgs.Text_34;	// Inactive Sources
+		}
+
+	// Get the number of items in the table into a string (##) in table header
+		tableSourceColHeads[1] = tableSourceColHeads[1] + count;
+
 		srcTableModel.setDataVector(tableSourceData, tableSourceColHeads);
         tableSource.setModel(srcTableModel);
 		tableSource.getColumnModel().getColumn(0).setMinWidth(50);
@@ -564,28 +607,27 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		tableSource.getColumnModel().getColumn(1).setPreferredWidth(270);
 		tableSource.getColumnModel().getColumn(2).setMinWidth(50);
 		tableSource.getColumnModel().getColumn(2).setPreferredWidth(50);
-		//tableSource.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		DefaultTableCellRenderer centerLabelRenderer = new DefaultTableCellRenderer();
 		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
 		tableSource.getColumnModel().getColumn(0).setCellRenderer(centerLabelRenderer);
 		tableSource.getColumnModel().getColumn(2).setCellRenderer(centerLabelRenderer);
-		// Set the ability to sort on columns
+	// Set the ability to sort on columns
 		tableSource.setAutoCreateRowSorter(true);
 	    TableModel myModel = tableSource.getModel();
 	    TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
 		List <RowSorter.SortKey> psortKeys1 = new ArrayList<>();
-		// Presort on column 1
+	// Presort on column 1
 		psortKeys1.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
 		sorter.setSortKeys(psortKeys1);
 	    tableSource.setRowSorter(sorter);
-	    // Set tooltips and header format
-		tableSource.getTableHeader().setToolTipText("Click to sort; Click again to sort in reverse order");	// Click to sort; Click again to sort in reverse order
+	// Set tooltips and header format
+		tableSource.getTableHeader().setToolTipText(HG0565Msgs.Text_14);	// Click to sort; Click again to sort in reverse order
 		JTableHeader pHeader = tableSource.getTableHeader();
 		pHeader.setOpaque(false);
 		TableCellRenderer prendererFromHeader = tableSource.getTableHeader().getDefaultRenderer();
 		JLabel pheaderLabel = (JLabel) prendererFromHeader;
 		pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		// Set row selection action
+	// Set row selection action
 		ListSelectionModel rowSelectionModel = tableSource.getSelectionModel();
 		rowSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		tableSource.setMaximumSize(new Dimension(32767, 32767));

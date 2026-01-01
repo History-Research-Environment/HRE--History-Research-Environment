@@ -13,6 +13,7 @@ package hre.bila;
  *			  2025-11-08 - Code for delete and check repository is in use (N.Tolleshaug)
  *			  2025-11-11 - Replaced getRepoPIDs with getRepoLinkData (D Ferguson)
  *            2025-11-16 - New handling of repos data and save data for repos link (N. Tolleshaug)
+ *            2025-12-05  - Code for copy repositories (N.Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
@@ -32,6 +33,7 @@ public class HBRepositoryHandler extends HBBusinessLayer {
 	public HBNameStyleManager pointLocationStyleData;
 	HG0570EditRepository pointEditRepository;
 	HG0570EditRepository pointAddRepository;
+	HG0570EditRepository pointCopyRepository;
 	public HG0566EditSource pointEditSource;
 	public HG0569ManageRepos pointManageRepos;
 	HREmemo pointHREmemo;
@@ -75,10 +77,26 @@ public class HBRepositoryHandler extends HBBusinessLayer {
 														long repositoryTablePID) throws HBException {
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointLocationStyleData.updateStyleTable("P", nameStyles, nameElementsDefined);
-		pointEditRepository = new HG0570EditRepository(pointOpenProject, true, repositoryTablePID);
+		pointEditRepository = new HG0570EditRepository(pointOpenProject, true, false, repositoryTablePID);
 		return  pointEditRepository;
 	}
-
+	
+/**
+ * public HG0570EditRepository activateCopyRepository
+ * @param pointOpenProject
+ * @param repositoryTablePID
+ * @return
+ * @throws HBException
+ */
+	public HG0570EditRepository activateCopyRepository(HBProjectOpenData pointOpenProject, int largestSeqNr,
+			long repositoryTablePID) throws HBException {
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		pointLocationStyleData.updateStyleTable("P", nameStyles, nameElementsDefined);
+		pointCopyRepository = new HG0570EditRepository(pointOpenProject, true, true, repositoryTablePID);
+		pointCopyRepository.updateAddSequenceNumber(largestSeqNr);
+		return  pointCopyRepository;
+	}
+	
 /**
  * activateeAddRespository(HBProjectOpenData pointOpenProject)
  * @param pointOpenProject
@@ -88,7 +106,7 @@ public class HBRepositoryHandler extends HBBusinessLayer {
 	public HG0570EditRepository activateeAddRepository(HBProjectOpenData pointOpenProject, int largestSeqNr) throws HBException {
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointLocationStyleData.updateStyleTable("P", nameStyles, nameElementsDefined);
-		pointAddRepository = new HG0570EditRepository(pointOpenProject, false , null_RPID);
+		pointAddRepository = new HG0570EditRepository(pointOpenProject, false, false , null_RPID);
 		pointAddRepository.updateAddSequenceNumber(largestSeqNr);
 		return  pointAddRepository;
 	}
@@ -225,8 +243,8 @@ public class HBRepositoryHandler extends HBBusinessLayer {
 		repoRS = requestTableData(selectString, dataBaseIndex);
 		try {
 			repoRS.first();
-			repoData[0] = repoRS.getString("REPO_NAME");
-			repoData[1] = repoRS.getString("REPO_ABBREV");
+			repoData[0] = repoRS.getString("REPO_NAME").trim();
+			repoData[1] = repoRS.getString("REPO_ABBREV").trim();
 			repoData[2] = repoRS.getInt("REPO_REF");
 			repoData[3] = pointHREmemo.readMemo(repoRS.getLong("REPO_MEMO_RPID"));
 			repositoryLocationPID = repoRS.getLong("REPO_ADDR_RPID");
@@ -514,9 +532,9 @@ public class HBRepositoryHandler extends HBBusinessLayer {
 	private void updateRepositoryT739_REPO(ResultSet hreTable) throws HBException {
 		long memoTablePID;
 		try {
-			hreTable.updateString("REPO_NAME", (String)repositorySaveData[0]);
-			hreTable.updateString("REPO_ABBREV", (String)repositorySaveData[1]);
-			hreTable.updateInt("REPO_REF", (int)repositorySaveData[2]);
+			hreTable.updateString("REPO_NAME", (String) repositorySaveData[0]);
+			hreTable.updateString("REPO_ABBREV", (String) repositorySaveData[1]);
+			hreTable.updateInt("REPO_REF", (int) repositorySaveData[2]);
 			String memoText = (String)repositorySaveData[3];
 		// Update source memo text
 			memoTablePID = hreTable.getLong("REPO_MEMO_RPID");

@@ -34,6 +34,7 @@ package hre.gui;
  * v0.04.0032 2024-12-22 Modified for B32 and v22c (N. Tolleshaug)
  * 			  2025-01-21 Removed new HBPersonHandler(null) line 536 (N. Tolleshaug)
  * 			  2025-02-08 Add all missing GUI language NLS imports (D Ferguson)
+ * 			  2025-12-16 Delete HG0568/HG0569Msgs, add HG0548Msgs in NLS list (D Ferguson)
  *
  **********************************************************************************************
  * NOTE - Special setting for user NTo for seed/sample files and help folders
@@ -96,6 +97,7 @@ import hre.nls.HG05306Msgs;
 import hre.nls.HG0531Msgs;
 import hre.nls.HG0540Msgs;
 import hre.nls.HG0547Msgs;
+import hre.nls.HG0548Msgs;
 import hre.nls.HG0551Msgs;
 import hre.nls.HG0552Msgs;
 import hre.nls.HG0555Msgs;
@@ -103,8 +105,6 @@ import hre.nls.HG0564Msgs;
 import hre.nls.HG0565Msgs;
 import hre.nls.HG0566Msgs;
 import hre.nls.HG0567Msgs;
-import hre.nls.HG0568Msgs;
-import hre.nls.HG0569Msgs;
 import hre.nls.HG0570Msgs;
 import hre.nls.HG0575Msgs;
 import hre.nls.HG0577Msgs;
@@ -517,6 +517,7 @@ public class HA0001HREstart {
 		new HG0531Msgs(HGlobal.nativeLanguage);
 		new HG0540Msgs(HGlobal.nativeLanguage);
 		new HG0547Msgs(HGlobal.nativeLanguage);
+		new HG0548Msgs(HGlobal.nativeLanguage);
 		new HG0551Msgs(HGlobal.nativeLanguage);
 		new HG0552Msgs(HGlobal.nativeLanguage);
 		new HG0555Msgs(HGlobal.nativeLanguage);
@@ -524,8 +525,6 @@ public class HA0001HREstart {
 		new HG0565Msgs(HGlobal.nativeLanguage);
 		new HG0566Msgs(HGlobal.nativeLanguage);
 		new HG0567Msgs(HGlobal.nativeLanguage);
-		new HG0568Msgs(HGlobal.nativeLanguage);
-		new HG0569Msgs(HGlobal.nativeLanguage);
 		new HG0570Msgs(HGlobal.nativeLanguage);
 		new HG0575Msgs(HGlobal.nativeLanguage);
 		new HG0577Msgs(HGlobal.nativeLanguage);

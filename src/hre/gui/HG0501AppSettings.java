@@ -49,6 +49,8 @@ package hre.gui;
  *			  2024-10-12 Removed resetPersonSelect() from change dataformat (N Tolleshaug)
  *			  2024-11-15 Add 'prompt for Married Name' User option (D Ferguson)
  * v0.04.0032 2025-09-21 Do pack() after font change as size may require it (D Ferguson)
+ * 			  2025-12-31 Remove data2language display (but leave code) (D Ferguson)
+ *
  ***********************************************************************************/
 
 import java.awt.Color;
@@ -350,7 +352,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         JPanel panelLang = new JPanel();
         tabPane.addTab(HG0501Msgs.Text_28, null, panelLang);
         tabPane.setMnemonicAt(1, KeyEvent.VK_L);
-        panelLang.setLayout(new MigLayout("insets 10", "20[]10[]20[]10[]", "15[]15[]15[]15[]15[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        panelLang.setLayout(new MigLayout("insets 10", "20[]10[]20[]10[]", "15[]15[]15[]15[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_GUIlanguage = new JLabel(HG0501Msgs.Text_32);		// Screen language
 		lbl_GUIlanguage.setBorder(null);
@@ -392,7 +394,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		JLabel lbl_Data2language = new JLabel(HG0501Msgs.Text_48);		// Alternate Data language
 		lbl_Data2language.setBorder(null);
 		lbl_Data2language.setHorizontalAlignment(SwingConstants.RIGHT);
-		panelLang.add(lbl_Data2language, "cell 0 2,alignx right"); //$NON-NLS-1$
+//		panelLang.add(lbl_Data2language, "cell 0 2,alignx right"); //$NON-NLS-1$
 
 		JComboBox<String> combo_Data2language = new JComboBox<String>(dataReptLanguages);
 //		JComboBox<String> combo_Data2language = new JComboBox(dataReptLanguages);	// use this version to make WB Design mode work
@@ -404,12 +406,12 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 			}
 		}
 		combo_Data2language.setToolTipText(HG0501Msgs.Text_53);	// Select the language from the drop-down list
-		panelLang.add(combo_Data2language, "cell 1 2, w 180!");	 //$NON-NLS-1$
+//		panelLang.add(combo_Data2language, "cell 1 2, w 180!");	 //$NON-NLS-1$
 
 		JLabel lbl_Reportlanguage = new JLabel(HG0501Msgs.Text_55);		// Report output language
 		lbl_Reportlanguage.setBorder(null);
 		lbl_Reportlanguage.setHorizontalAlignment(SwingConstants.RIGHT);
-		panelLang.add(lbl_Reportlanguage, "cell 0 3,alignx right"); //$NON-NLS-1$
+		panelLang.add(lbl_Reportlanguage, "cell 0 2,alignx right"); //$NON-NLS-1$
 
 		JComboBox<String> combo_Reportlanguage = new JComboBox<String>(dataReptLanguages);
 //		JComboBox<String> combo_Reportlanguage = new JComboBox(dataReptLanguages);	// use this version to make WB Design mode work
@@ -421,7 +423,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 				}
 			}
 		combo_Reportlanguage.setToolTipText(HG0501Msgs.Text_60);	// Select the language from the drop-down list
-		panelLang.add(combo_Reportlanguage, "cell 1 3, w 180!"); //$NON-NLS-1$
+		panelLang.add(combo_Reportlanguage, "cell 1 2, w 180!"); //$NON-NLS-1$
 
 	// *********** Define Date panel ***********
         JPanel panelFormats = new JPanel();

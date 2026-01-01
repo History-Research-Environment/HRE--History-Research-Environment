@@ -35,6 +35,7 @@ package hre.tmgjava;
  *			   2025-10-20 - Modify U.dbf import for special preloaded T738s (D Ferguson)
  *			   2025-10-24 - Modify T738 creation to cater for TMG weird entries (D Ferguson)
  *			   2025-10-25 - Chesnay project adjustment - database input > 400
+ *			   2025-12-13 - Get T738 table size correctly in addToSourceElementTable (D Ferguson)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -262,7 +263,7 @@ public class TMGpass_Source {
 	public void addToSourceElementTable(TMGHREconverter tmgHreConverter) throws  HCException {
 		// Import U.dbf records and adjust preloaded T738 records to match, where possible.
 		this.tmgHreConverter = tmgHreConverter;
-		long sourceElementTablePID = proOffset + 1281;  // start after the 1280 preloaded T738 records
+		long sourceElementTablePID = proOffset;
 		if (sourceDump)
 			System.out.println(" ****  T738_SORC_ELMNT table: *******");
 		int nrOftmgURows = tmgUtable.getNrOfRows();
@@ -270,10 +271,22 @@ public class TMGpass_Source {
 		List<String> elmntNumberBaseList = new ArrayList<>();
 		List<String> elmntNameImported = new ArrayList<>();
 
+		// (Phase 0) find size of existing T738 table so we can add after that
+		ResultSet hreTableT738all;
+		String selectString = pointHREbase.setSelectSQL("*", "T738_SORC_ELMNT", "");
+		hreTableT738all = pointHREbase.requestTabledata("T738_SORC_ELMNT", selectString);
+		try {
+			hreTableT738all.last();
+			sourceElementTablePID = proOffset + hreTableT738all.getRow() + 1; // set next PID after existing preloads
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HCException("addToSorceElementTable phase0 error: " + sqle.getMessage());
+		}
+
 		// (Phase 1) Load all en-US data into elmntNameBaseList & elmntNumberBaseList
 		ResultSet hreTableT738US;
 		String langT738 = "'en-US'";
-		String selectString = pointHREbase.setSelectSQL("*", "T738_SORC_ELMNT", "SORC_ELMNT_LANG=" + langT738);
+		selectString = pointHREbase.setSelectSQL("*", "T738_SORC_ELMNT", "SORC_ELMNT_LANG=" + langT738);
 		hreTableT738US = pointHREbase.requestTabledata("T738_SORC_ELMNT", selectString);
 		try {
 			hreTableT738US.beforeFirst();

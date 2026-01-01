@@ -26,6 +26,8 @@ package hre.gui;
  *			  2025-08-13 Add update of both Role records after move up/down actions (D Ferguson)
  *			  2025-08-14 Fix role display not in role Seq ( D Ferguson)
  *			  2025-08-16 Use T204 record for table header (D Ferguson)
+ *			  2025-12-17 NLS all code up to this point (D Ferguson)
+ *
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE03 code in Save function for saving changed sentences
@@ -94,6 +96,7 @@ import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBWhereWhenHandler;
+import hre.nls.HG0551Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -142,7 +145,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	JRadioButton radio_Tag, radio_Even;
 
-	String[] sexOptions = {"Any","Male","Female"};
+	String[] sexOptions = {HG0551Msgs.Text_0, HG0551Msgs.Text_1, HG0551Msgs.Text_2};	// Any, Male, Female
 	String[] sexValues = {"U","M","F"};	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// For Text area font setting
@@ -284,7 +287,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		if(!addNewEventType) {
 			eventNamesInGroup = pointEventRoleManager.getEventTypeList(0); // List of Event Names in group
 			eventNumbersInGroup = pointEventRoleManager.getEventTypes();  // their event numbers
-			// Get the roleNames, roleNumbers, roleSeq and whether role is Prim (Key)
+		// Get the roleNames, roleNumbers, roleSeq and whether role is Prim (Key)
 			eventRoleNames = pointEventRoleManager.getEventRoleNames(selectedEventNumber, "");	//$NON-NLS-1$
 			eventRoleNumbers = pointEventRoleManager.getEventRoleNumbers();
 			eventRoleSeq = pointEventRoleManager.getEventRoleSeq();
@@ -305,14 +308,14 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		} else tableRoleData = new Object[1][4];
 
 		if (addNewEventType) {
-			selectedEventName = "New";
-			setTitle("Define "+ selectedEventName + " Event");
+			selectedEventName = HG0551Msgs.Text_3;	// New
+			setTitle(HG0551Msgs.Text_4 + selectedEventName + HG0551Msgs.Text_5); // Define .... Event
 		}
 		else {
 			for (int i = 0; i < eventNumbersInGroup.length; i++)
 				if (selectedEventNumber == eventNumbersInGroup[i])
 					selectedEventName = eventNamesInGroup[i];
-			setTitle("Update "+ selectedEventName + " Event");
+			setTitle(HG0551Msgs.Text_6 + selectedEventName + HG0551Msgs.Text_7);  // Update ... Event
 		}
 
 	// Set up data in HBEventRoleManager
@@ -338,7 +341,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		lbl_EventTypeName.setFont(lbl_EventTypeName.getFont().deriveFont(lbl_EventTypeName.getFont().getStyle() | Font.BOLD));
 		contents.add(lbl_EventTypeName, "cell 0 0");	//$NON-NLS-1$
 
-		JLabel lbl_Language = new JLabel("Language: ");
+		JLabel lbl_Language = new JLabel(HG0551Msgs.Text_8);	// Language:
 		contents.add(lbl_Language, "cell 1 0, alignx left, gap 100");		//$NON-NLS-1$
 		if (initiate) {
 			comboLanguage = new JComboBox<String>();
@@ -369,15 +372,15 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  * Setup General Settings Panel and its contents
  ***********************************************/
 		JPanel settingPanel = new JPanel();
-	    tabPane.addTab(" General Event Settings ", null, settingPanel);
+	    tabPane.addTab(HG0551Msgs.Text_9, null, settingPanel);	// General Event Settings
 		settingPanel.setLayout(new MigLayout("insets 5", "[]50[]", "10[]30[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Setup sub-panel for Event Name, etc
 		JPanel namePanel = new JPanel();
-		namePanel.setBorder(BorderFactory.createTitledBorder ("Event Name and Group"));
+		namePanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_10));	// Event Name and Group
 		namePanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_EventName = new JLabel("Event Name:");
+		JLabel lbl_EventName = new JLabel(HG0551Msgs.Text_11);		// Event Name:
 		namePanel.add(lbl_EventName, "cell 0 0, alignx right");	//$NON-NLS-1$
 
 		text_EventName = new JTextField();
@@ -385,7 +388,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		text_EventName.setText(selectedEventName);
 		namePanel.add(text_EventName, "cell 1 0, alignx left, aligny top");	//$NON-NLS-1$
 
-		JLabel lbl_EventGrp = new JLabel("Event Group:");
+		JLabel lbl_EventGrp = new JLabel(HG0551Msgs.Text_12);		// Event Group:
 		namePanel.add(lbl_EventGrp, "cell 0 1, alignx right");	//$NON-NLS-1$
 
 		comboGroups = new JComboBox<String>();
@@ -395,10 +398,10 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Setup sub-panel for year validity
 		JPanel validPanel = new JPanel();
-		validPanel.setBorder(BorderFactory.createTitledBorder ("Event Validity - Associates and Years"));
+		validPanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_13));	// Event Validity - Associates and Years
 		validPanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_MinKeyAssoc = new JLabel("Minimum Primary Associates:");
+		JLabel lbl_MinKeyAssoc = new JLabel(HG0551Msgs.Text_14);		// Minimum Primary Associates:
 		validPanel.add(lbl_MinKeyAssoc, "cell 0 0, alignx right");	//$NON-NLS-1$
 
 		text_minAssoc = new JFormattedTextField(formatter);
@@ -406,7 +409,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		text_minAssoc.setPreferredSize(new Dimension(40, 20));
 		validPanel.add(text_minAssoc, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-		JLabel lbl_minYear = new JLabel("Minimum Valid Year:");
+		JLabel lbl_minYear = new JLabel(HG0551Msgs.Text_15);		// Minimum Valid Year:
 		validPanel.add(lbl_minYear, "cell 0 1, alignx right");	//$NON-NLS-1$
 
 		text_minYear = new JFormattedTextField(formatter);
@@ -414,7 +417,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		text_minYear.setPreferredSize(new Dimension(40, 20));
 		validPanel.add(text_minYear, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-		JLabel lbl_maxYear = new JLabel("Maximum Valid Year:");
+		JLabel lbl_maxYear = new JLabel(HG0551Msgs.Text_16);		// Maximum Valid Year:
 		validPanel.add(lbl_maxYear, "cell 0 2, alignx right");	//$NON-NLS-1$
 
 		text_maxYear = new JFormattedTextField(formatter);
@@ -425,13 +428,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Setup sub-panel for GEDCOM info
 		JPanel gedPanel = new JPanel();
-		gedPanel.setBorder(BorderFactory.createTitledBorder ("Event GEDCOM Settings"));
+		gedPanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_17));		// Event GEDCOM Settings
 		gedPanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_gedcom = new JLabel("Export to GEDCOM as:");
+		JLabel lbl_gedcom = new JLabel(HG0551Msgs.Text_18);		// Export to GEDCOM as:
 		gedPanel.add(lbl_gedcom, "cell 0 0, alignx right");	//$NON-NLS-1$
 
-		radio_Tag = new JRadioButton("Tag:");
+		radio_Tag = new JRadioButton(HG0551Msgs.Text_19);		// Tag:
 		radio_Tag.setSelected(true);
 		gedPanel.add(radio_Tag, "cell 1 0, alignx left");	//$NON-NLS-1$
 
@@ -453,31 +456,31 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  * Setup Role/Sentence Panel and 3 content panels
  ************************************************/
 		JPanel roleSentPanel = new JPanel();
-	    tabPane.addTab(" Roles and Sentences ", null, roleSentPanel);
+	    tabPane.addTab(HG0551Msgs.Text_20, null, roleSentPanel);	// Roles and Sentences
 		roleSentPanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		// Setup sub-panel for role table
 		JPanel rolePanel = new JPanel();
-		rolePanel.setBorder(BorderFactory.createTitledBorder ("Roles of this Event"));
+		rolePanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_21));	// Roles of this Event
 		rolePanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]50[]10[]10[]10[]30[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JButton btn_Add = new JButton("Add New Role");
+		JButton btn_Add = new JButton(HG0551Msgs.Text_22);		// Add New Role
 		btn_Add.setEnabled(true);
 		rolePanel.add(btn_Add, "cell 0 2, alignx left, growx");	//$NON-NLS-1$
 
-		JButton btn_Delete = new JButton("Delete Role");
+		JButton btn_Delete = new JButton(HG0551Msgs.Text_23);	// Delete Role
 		btn_Delete.setEnabled(true);
-		rolePanel.add(btn_Delete, "cell 0 3, alignx left, growx");		//$NON-NLS-1$
+		rolePanel.add(btn_Delete, "cell 0 3, alignx left, growx");	//$NON-NLS-1$
 
-		JButton btn_Copy = new JButton("Copy Role");
+		JButton btn_Copy = new JButton(HG0551Msgs.Text_24);		// Copy Role
 		btn_Copy.setEnabled(true);
-		rolePanel.add(btn_Copy, "cell 0 4, alignx left, growx");		//$NON-NLS-1$
+		rolePanel.add(btn_Copy, "cell 0 4, alignx left, growx");	//$NON-NLS-1$
 
-		JButton btn_MoveUp = new JButton("Move Up");
+		JButton btn_MoveUp = new JButton(HG0551Msgs.Text_25);		// Move Up
 		btn_MoveUp.setEnabled(true);
 		rolePanel.add(btn_MoveUp, "cell 0 5, alignx left, growx");		//$NON-NLS-1$
 
-		JButton btn_MoveDown = new JButton("Move Down");
+		JButton btn_MoveDown = new JButton(HG0551Msgs.Text_26);		// Move Down
 		btn_MoveDown.setEnabled(true);
 		rolePanel.add(btn_MoveDown, "cell 0 6, alignx left, aligny top, growx");		//$NON-NLS-1$
 
@@ -521,10 +524,10 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Setup sub-panel for sentences
 		JPanel sentPanel = new JPanel();
-		sentPanel.setBorder(BorderFactory.createTitledBorder ("Sentences for the Selected Role"));
+		sentPanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_27));	// Sentences for the Selected Role
 		sentPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]10[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_MaleSent = new JLabel("Male Sentence Structure:");
+		JLabel lbl_MaleSent = new JLabel(HG0551Msgs.Text_28);	// Male Sentence Structure:
 		sentPanel.add(lbl_MaleSent, "cell 0 0, alignx left");	//$NON-NLS-1$
 
 		text_MaleSent = new JTextArea();
@@ -542,7 +545,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		text_MaleSent.setCaretPosition(0);	// set scrollbar to top
 		sentPanel.add(text_MaleSentScroll, "cell 0 1, alignx left, aligny top");	//$NON-NLS-1$
 
-		JLabel lbl_FemaleSent = new JLabel("Female Sentence Structure (if different):");
+		JLabel lbl_FemaleSent = new JLabel(HG0551Msgs.Text_29);	// Female Sentence Structure (if different):
 		sentPanel.add(lbl_FemaleSent, "cell 0 2, alignx left");	//$NON-NLS-1$
 
 		text_FemaleSent = new JTextArea();
@@ -564,10 +567,10 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Setup sub-panel for role settings
 		JPanel validityPanel = new JPanel();
-		validityPanel.setBorder(BorderFactory.createTitledBorder ("Selected Role is valid for:"));
+		validityPanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_30));	// Selected Role is valid for:
 		validityPanel.setLayout(new MigLayout("insets 5", "[]5[]", "[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_Sex = new JLabel("Birth Sex:");
+		JLabel lbl_Sex = new JLabel(HG0551Msgs.Text_31);		// Birth Sex:
 		validityPanel.add(lbl_Sex, "cell 0 0, alignx right");	//$NON-NLS-1$
 
 		comboSex = new JComboBox<String>();
@@ -576,7 +579,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		comboSex.addItem(sexOptions[2]);
 		validityPanel.add(comboSex, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-		JLabel lbl_minAge = new JLabel("Minimum Age:");
+		JLabel lbl_minAge = new JLabel(HG0551Msgs.Text_32);		// Minimum Age:
 		validityPanel.add(lbl_minAge, "cell 0 1, alignx right");	//$NON-NLS-1$
 
 		text_minAge = new JFormattedTextField(formatter);
@@ -584,7 +587,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		text_minAge.setPreferredSize(new Dimension(30, 20));
 		validityPanel.add(text_minAge, "cell 1 1, alignx left");	//$NON-NLS-1$
 
-		JLabel lbl_maxAge = new JLabel("Maximum Age:");
+		JLabel lbl_maxAge = new JLabel(HG0551Msgs.Text_33);		// Maximum Age:
 		validityPanel.add(lbl_maxAge, "cell 0 2, alignx right");	//$NON-NLS-1$
 
 		text_maxAge = new JFormattedTextField(formatter);
@@ -598,12 +601,12 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  * Setup Hint Panel and its contents
  ***********************************************/
 		JPanel hintPanel = new JPanel();
-	    tabPane.addTab(" Event Hints ", null, hintPanel);
+	    tabPane.addTab(HG0551Msgs.Text_34, null, hintPanel);		// Event Hints
 		hintPanel.setLayout(new MigLayout("insets 10", "[]", "[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Setup sub-panel for hints text area
 		JPanel hint2Panel = new JPanel();
-		hint2Panel.setBorder(BorderFactory.createTitledBorder ("Your Hints for Usage of this Event"));
+		hint2Panel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_35));	// Your Hints for Usage of this Event
 		hint2Panel.setLayout(new MigLayout("", "[]", "[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		hintText = new JTextArea();
@@ -627,12 +630,12 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 /*********************************
  * Setup control buttons at bottom
  *********************************/
-		btn_Save = new JButton("Save");
-		btn_Save.setToolTipText("Save the edited Event type");
+		btn_Save = new JButton(HG0551Msgs.Text_36);		// Save
+		btn_Save.setToolTipText(HG0551Msgs.Text_37);	// Save the edited Event type
 		contents.add(btn_Save, "cell 1 2, align right, gapx 20, tag ok"); //$NON-NLS-1$
 
-		JButton btn_Close = new JButton("Close");
-		btn_Close.setToolTipText("Close and exit");
+		JButton btn_Close = new JButton(HG0551Msgs.Text_38);	// Close
+		btn_Close.setToolTipText(HG0551Msgs.Text_39);			// Close and Exit
 		contents.add(btn_Close, "cell 1 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$
 
 /***************************************************
@@ -648,8 +651,10 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				// If error, issue msg and exit
 				if (hbe.getMessage().startsWith("ERR1")) {		//$NON-NLS-1$
 					JOptionPane.showMessageDialog(comboLanguage,
-							"Event does not exist in the " + comboLanguage.getSelectedItem() + " language ",
-							"No Event",
+							HG0551Msgs.Text_40 						// Event does not exist in the
+							+ comboLanguage.getSelectedItem()
+							+ HG0551Msgs.Text_41,					// language
+							HG0551Msgs.Text_42,						// No Event
 							JOptionPane.ERROR_MESSAGE);
 					return;
 				}
@@ -701,9 +706,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				// Check for unsaved changes before exit
 				if (btn_Save.isEnabled())
 					if (JOptionPane.showConfirmDialog (btn_Save,
-							"There are unsaved changes. \n"
-							+ "Do you still wish to exit?",
-							"Define Event",
+							HG0551Msgs.Text_43		// There are unsaved changes. \n
+							+ HG0551Msgs.Text_44,	// Do you still wish to exit?
+							HG0551Msgs.Text_45,		// Define Event
 							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 						// YES option
 						if (HGlobal.writeLogs)
@@ -751,9 +756,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 					// Check for unsaved changes before changing languages
 					if (btn_Save.isEnabled())
 						if (JOptionPane.showConfirmDialog (btn_Save,
-								"There are unsaved changes. \n"
-								+ "Do you still wish to change language?",
-								"Define Event",
+								HG0551Msgs.Text_43		// There are unsaved changes. \n
+								+ HG0551Msgs.Text_47,	// Do you still wish to change language?
+								HG0551Msgs.Text_45,		// Define Event
 								JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 							// NO option - temp remove the listener
 							comboLanguage.removeItemListener(comboLangListener);
@@ -807,13 +812,14 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				// If a role change has not been saved, issue warning
 				if (roleChanged) {
 					JOptionPane.showMessageDialog(comboLanguage,
-	    					"There is unsaved Event data. Please save \n" +
-	    					"all changes before adding a new Role",
-	    					"Save Event Data", JOptionPane.WARNING_MESSAGE);
+	    					HG0551Msgs.Text_49 +	// There is unsaved Event data. Please save \n
+	    					HG0551Msgs.Text_50,		// all changes before adding a new Role
+	    					HG0551Msgs.Text_51,		// Save Event Data
+	    					JOptionPane.WARNING_MESSAGE);
 					return;
 				}
 				// Prompt for new Role name
-				selectedRoleName = JOptionPane.showInputDialog("Enter new Role name:");
+				selectedRoleName = JOptionPane.showInputDialog(HG0551Msgs.Text_52); 	// Enter new Role name:
 				// Create new roleSeq, 1 > highest existing roleSeq
 				int newRoleSeq = Arrays.stream(eventRoleSeq).max().getAsInt() + 1;
 				// Add the new role entry into T461 table
@@ -968,9 +974,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		    	// Check if roleChanged true - means unsaved changes
            		if (roleChanged) {
 	           		if (JOptionPane.showConfirmDialog (btn_Save,
-							"There are unsaved changes. \n"
-							+ "Do you still wish to change Role?",
-							"Role Change",
+							HG0551Msgs.Text_43		// There are unsaved changes. \n
+							+ HG0551Msgs.Text_54,	// Do you still wish to change Role?
+							HG0551Msgs.Text_55,		// Role Change
 							JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 							// NO option - reset back to role we left
 		           			notSavingRole = true;
@@ -1026,9 +1032,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				radio_Even.setSelected(true);
 				// And trigger the ActionListener programmatically
 				for (ActionListener al : radio_Even.getActionListeners()) {
-				    al.actionPerformed(new ActionEvent(radio_Even, ActionEvent.ACTION_PERFORMED, "manual"));
+				    al.actionPerformed(new ActionEvent(radio_Even, ActionEvent.ACTION_PERFORMED, "manual")); //$NON-NLS-1$
 				}
-				text_gedTag.setText("");			//$NON-NLS-1$
+				text_gedTag.setText("");	//$NON-NLS-1$
 	        	eventChanged = true;
 	        	btn_Save.setEnabled(true);
 	        }
@@ -1090,7 +1096,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 						e.printStackTrace();
 					}
 					if (reminderDisplay != null) reminderDisplay.dispose();
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved new event " +
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved new event " + //$NON-NLS-1$
 											newEventName + " in HG0551DefineEvent"); //$NON-NLS-1$
 					dispose();
 			}
@@ -1117,7 +1123,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 							e.printStackTrace();
 						}
 						roleChanged = false;
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved role " +
+						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved role " + //$NON-NLS-1$
 												selectedRoleName + " in HG0551DefineEvent"); //$NON-NLS-1$
 						// If only role needed saving, turn off btn_Save
 						if (!eventChanged) btn_Save.setEnabled(false);
@@ -1134,7 +1140,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 							e.printStackTrace();
 						}
 						if (reminderDisplay != null) reminderDisplay.dispose();
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved event " +
+						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved event " + //$NON-NLS-1$
 												newEventName + " in HG0551DefineEvent"); //$NON-NLS-1$
 						dispose();
 					}
@@ -1300,13 +1306,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	                													roleNum, selectedLangCode, dataBaseIndex);
 		} catch (HBException | NullPointerException ex) {
 				// Handle new HRE project which has no sentences
-				 roleSentence = "";
+				 roleSentence = ""; //$NON-NLS-1$
 				 return;
 		}
 
 		// If roleSentence has error flag, or is default en-US language, set sentence msg and return
 		if (roleSentence.equals("NOSENTENCE") || roleSentence.startsWith("(en-US)")) {		//$NON-NLS-1$ //$NON-NLS-2$
-			text_MaleSent.append("No sentences exist in this language for this Role");
+			text_MaleSent.append(HG0551Msgs.Text_61);	// No sentences exist in this language for this Role
 			return;
 		}
 
@@ -1380,9 +1386,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
     		// Check if no match found; if so throw error msg and return null as error flag
     		if (replacement.isEmpty()) {
     			JOptionPane.showMessageDialog(comboLanguage,
-    					"The role " + value + " does not exist in " + comboLanguage.getSelectedItem() +
-    					"\n for this event. Please revise your edit.",
-    					"Role not matched", JOptionPane.WARNING_MESSAGE);
+    					HG0551Msgs.Text_62 						// The role
+    					+ value
+    					+ HG0551Msgs.Text_63 					// does not exist in
+    					+ comboLanguage.getSelectedItem() +
+    					HG0551Msgs.Text_64,						// for this event. Please revise your edit.
+    					HG0551Msgs.Text_65, 					// Role not matched
+    					JOptionPane.WARNING_MESSAGE);
     			btn_Save.setEnabled(false);
     			return null;
     		}

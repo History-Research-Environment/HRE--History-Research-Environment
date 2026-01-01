@@ -5,9 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.swing.JOptionPane;
-
 import hre.nls.HGlobalMsgs;
 
 /************************************************************************************************
@@ -19,7 +16,7 @@ import hre.nls.HGlobalMsgs;
  * v0.04.0032 2025-11-03 - First draft (D Ferguson)
  *			  2025-11-03 - Routine for parsing Source templates for Citations (D Ferguson)
  *			  2025-11-14 - Add ex-HGlobalcode Source Element name/number conversion (D Ferguson)
- *
+ *			  2025-12-22 - convertNamesToNums modified to return HBException(N. Tolleshaug)
  *********************************************************************************************/
 
 public class HBReportHandler extends HBBusinessLayer {
@@ -429,8 +426,10 @@ public class HBReportHandler extends HBBusinessLayer {
         		tokensPh3[i] = "";											//$NON-NLS-1$
         		// check first letter  of token after a dead one - if its punctuation, delete it as well
         		if (i < tokenNumPh3) {
-        			char c = tokensPh3[i+1].charAt(0);
-        			if (!Character.isLetterOrDigit(c)) tokensPh3[i+1] = "";	//$NON-NLS-1$
+        			if (tokensPh3[i].length() > 0) {	// check it isn't blank
+        				char c = tokensPh3[i+1].charAt(0);
+        				if (!Character.isLetterOrDigit(c)) tokensPh3[i+1] = "";	//$NON-NLS-1$
+        			}
         		}
         	}
         	if (tokensPh3[i].contains("{{")) tokensPh3[i] = "";				//$NON-NLS-1$ //$NON-NLS-2$
@@ -495,8 +494,9 @@ public class HBReportHandler extends HBBusinessLayer {
  * @param template
  * @param hashmap
  * @return converted template
+ * @throws HBException 
  */
-	public String convertNamesToNums(String template, Map<String, String> textToCodeMap) {
+	public String convertNamesToNums(String template, Map<String, String> textToCodeMap) throws HBException {
 	// Setup a regex to find [Element names] entries in template
 		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");		//$NON-NLS-1$
 		Matcher matcher = pattern.matcher(template);
@@ -511,11 +511,12 @@ public class HBReportHandler extends HBBusinessLayer {
             String code = textToCodeMap.get(original.trim());
             // Throw an error if no match - user used an element name that doesn't exist
             if (code == null) {
-                JOptionPane.showMessageDialog(null,
+/*                JOptionPane.showMessageDialog(null,
                     HGlobalMsgs.Text_0 + original,			// Unknown Source Element name:
                     HGlobalMsgs.Text_1,						// Source Element name error
                     JOptionPane.ERROR_MESSAGE);
-                return null; // halt processing
+                return null; // halt processing */
+                throw new HBException(original);
             }
             // otherwise keep going
             matcher.appendReplacement(result, "[" + Matcher.quoteReplacement(code) + "]"); //$NON-NLS-1$ //$NON-NLS-2$

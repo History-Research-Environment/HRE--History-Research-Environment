@@ -28,6 +28,21 @@ public class HG0570Msgs extends NLS {
 	public static String Text_24;
 	public static String Text_25;
 	public static String Text_26;
+	// Text after here used by HG0569 (which also uses others above)
+	public static String Text_30;
+	public static String Text_31;
+	public static String Text_32;
+	public static String Text_33;
+	public static String Text_34;
+	public static String Text_35;
+	public static String Text_36;
+	public static String Text_37;
+	public static String Text_39;
+	public static String Text_40;
+	public static String Text_41;
+	public static String Text_42;
+	public static String Text_43;
+	public static String Text_44;
 
 	public HG0570Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language

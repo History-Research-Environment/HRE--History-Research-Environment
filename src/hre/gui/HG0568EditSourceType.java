@@ -8,11 +8,11 @@ package hre.gui;
  * 			  2025-09-27 Load the Source templates converted to readable Element names (D Ferguson)
  * 			  2025-10-17 When add new type, create empty data for adding text (N. Tolleshaug)
  * 			  2025-11-17 Change HGlobalCode routines to be in ReportHandler (D Ferguson)
- *
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE01 action Save button
- *
+ *			  2025-12-22 Save edited source type implemented (N. Tolleshaug)
+ *			  2025-12-28 Set Save button enabled if this is a Copy (D Ferguson)
+ *						 Added Unsaved chnages warning to Cancel button (D Ferguson)
+ *			  2025-12-29 NLS all code to this point (D Ferguson)
+ *			  2025-12-31 Updated language setting for add source definition (N. Tolleshaug)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -29,6 +29,7 @@ import java.util.Map;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -47,6 +48,7 @@ import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBReportHandler;
+import hre.nls.HG0567Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -63,27 +65,47 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 	HBReportHandler pointReportHandler;
 
 	public static final String screenID = "56800"; //$NON-NLS-1$
+	boolean editSourceType, copySourceType;
 	private JPanel contents;
+	String sourceDefinLanguage = HGlobal.dataLanguage;
 	Object[] sourceDefnData = null;
+	Object[] sourceTypeStoreData;
 	String[][] tableSrcElmntData;
+	JTextField sourceDefnName;
 	JTextArea fullFootText, shortFootText, biblioText, remindText;
-	DocumentListener fullFootChange, shortFootChange, biblioChange, remindChange;
-	boolean fullFootEdited = false, shortFootEdited = false, biblioEdited = false, remindEdited = false;
-	long sorcDefnPID;
+	DocumentListener sourceTypeNameCahnge, fullFootChange, shortFootChange, biblioChange, remindChange;
+	String fullFootToSave, shortFootToSave, biblioFootToSave;
+	boolean typeNameEdited = false, fullFootEdited = false,
+			shortFootEdited = false, biblioEdited = false, remindEdited = false;
+	long sourceDefnTablePID;
+	int sourceDefType = 0;
+
+	JButton btn_Save;
+
+	Map<String, String> codeToTextMap;
+	Map<String, String> textToCodeMap;
 
 /**
  * Create the dialog
  */
-	public HG0568EditSourceType(HBProjectOpenData pointOpenProject, long sorcDefnPID)  {
+	public HG0568EditSourceType(HBProjectOpenData pointOpenProject,
+								boolean editSourceType,
+								boolean copySourceType,
+								long defnTablePID)  {
 		this.pointOpenProject = pointOpenProject;
+		this.editSourceType = editSourceType;
+		this.copySourceType = copySourceType;
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 		pointReportHandler = pointOpenProject.getReportHandler();
-		this.sorcDefnPID = sorcDefnPID;
+		this.sourceDefnTablePID = defnTablePID;
 
-		setTitle("Edit Source Type");
-	// Setup references for HG0450
+		if (editSourceType) setTitle(HG0567Msgs.Text_20);		// Edit Source Type
+		else if (copySourceType) setTitle(HG0567Msgs.Text_21);	// Copy Source Type
+		else setTitle(HG0567Msgs.Text_22);						// Add Source Type
+
+		// Setup references for HG0450
 		windowID = screenID;
-		helpName = "editsourcetype";		 //$NON-NLS-1$
+		helpName = "editsourcetype";	//$NON-NLS-1$
 
 	// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -101,19 +123,20 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
     	toolBar.setFloatable(false);
     	toolBar.setAlignmentX(Component.LEFT_ALIGNMENT);
     	toolBar.add(Box.createHorizontalGlue());
-    	// Add the HG0450 icons
+    // Add the HG0450 icons
 		toolBar.add(btn_Remindericon);
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
-		JLabel sourceLabel = new JLabel("Source Type");
+		JLabel sourceLabel = new JLabel(HG0567Msgs.Text_23);		// Source Type Name
 		contents.add(sourceLabel, "cell 0 0, alignx right");	//$NON-NLS-1$
-		JTextField sourceDefnName = new JTextField();
+		sourceDefnName = new JTextField();
 		sourceDefnName.setColumns(30);
-		sourceDefnName.setEditable(false);
+		//sourceDefnName.setEditable(false);
+		sourceDefnName.setEditable(true);
 		contents.add(sourceDefnName, "cell 1 0, alignx left");	//$NON-NLS-1$
 
-		JLabel fullFoot = new JLabel("Full footnote");
+		JLabel fullFoot = new JLabel(HG0567Msgs.Text_7);		// Full footnote
 		contents.add(fullFoot, "cell 0 1, alignx right");	//$NON-NLS-1$
 		fullFootText = new JTextArea();
 		fullFootText.setWrapStyleWord(true);
@@ -131,7 +154,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		fullFootText.setCaretPosition(0);	// set scrollbar to top
 		contents.add(fullFootTextScroll, "cell 1 1, grow, alignx left");	//$NON-NLS-1$
 
-		JLabel shortFoot = new JLabel("Short footnote");
+		JLabel shortFoot = new JLabel(HG0567Msgs.Text_8);		// Short footnote
 		contents.add(shortFoot, "cell 0 2, alignx right");	//$NON-NLS-1$
 		shortFootText = new JTextArea();
 		shortFootText.setWrapStyleWord(true);
@@ -149,7 +172,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		shortFootText.setCaretPosition(0);	// set scrollbar to top
 		contents.add(shortFootTextScroll, "cell 1 2, grow, alignx left");	//$NON-NLS-1$
 
-		JLabel biblio = new JLabel("Bibliography");
+		JLabel biblio = new JLabel(HG0567Msgs.Text_9);		// Bibliography
 		contents.add(biblio, "cell 0 3, alignx right");	//$NON-NLS-1$
 		biblioText = new JTextArea();
 		biblioText.setWrapStyleWord(true);
@@ -167,7 +190,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		biblioText.setCaretPosition(0);	// set scrollbar to top
 		contents.add(biblioTextScroll, "cell 1 3, grow, alignx left");	//$NON-NLS-1$
 
-		JLabel remind = new JLabel("Reminder");
+		JLabel remind = new JLabel(HG0567Msgs.Text_24);		// Reminder
 		contents.add(remind, "cell 0 4, alignx right");	//$NON-NLS-1$
 		remindText = new JTextArea();
 		remindText.setWrapStyleWord(true);
@@ -186,11 +209,12 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		contents.add(remindTextScroll, "cell 1 4, grow, alignx left");	//$NON-NLS-1$
 
 	// Define control buttons
-		JButton btn_Cancel = new JButton("Cancel");		// Cancel
+		JButton btn_Cancel = new JButton(HG0567Msgs.Text_10);		// Cancel
 		btn_Cancel.setEnabled(true);
 		contents.add(btn_Cancel, "cell 1 6, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		JButton btn_Save = new JButton("Save");		// Save
-		btn_Save.setEnabled(false);
+		btn_Save = new JButton(HG0567Msgs.Text_25);		// Save
+		if (copySourceType) btn_Save.setEnabled(true);
+		else btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 1 6, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
 	// End of Panel Definitions
@@ -199,17 +223,17 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage());
+			System.out.println( "Error loading Source Element list: " + hbe.getMessage());	//$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 	    // Then construct a lookup for "12345" → "[element text]" conversion
-        Map<String, String> codeToTextMap = new HashMap<>();
+        codeToTextMap = new HashMap<>();
         for (String[] row : tableSrcElmntData) {
             if (row.length >= 2)
                 codeToTextMap.put(row[1], row[0].trim());
         }
         // Then construct a lookup for "[text here]" → "12345" conversion back
-        Map<String, String> textToCodeMap = new HashMap<>();
+        textToCodeMap = new HashMap<>();
         for (String[] row : tableSrcElmntData) {
             if (row.length >= 2) {
                 String trimmedText = row[0].trim();
@@ -220,27 +244,35 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 	// Get the data for this Source Defn, then load into the screen
     // if add with no sourceDefPID,  empty sourceDefnData  must be created
 		try {
-			if (sorcDefnPID != null_RPID)
-				sourceDefnData = pointCitationSourceHandler.getSourceDefnEditData(sorcDefnPID);
+			if (sourceDefnTablePID != null_RPID)
+				sourceDefnData = pointCitationSourceHandler.getSourceDefnEditData(sourceDefnTablePID);
 			else {
 				sourceDefnData = new String[7];
-				for (int i = 0; i < sourceDefnData.length; i++)
-					sourceDefnData[i] = "";
+			// Set add source type default values for sourceDefnData
+				sourceDefnData[0] = HG0567Msgs.Text_34;		// New Source Type Name
+				sourceDefnData[1] = "";		//$NON-NLS-1$
+				sourceDefnData[2] = "";		//$NON-NLS-1$
+				sourceDefnData[3] = HG0567Msgs.Text_35;		// [CD] or [DC] if French
+				sourceDefnData[4] = HG0567Msgs.Text_35; 	// [CD] or [DC] if French
+				sourceDefnData[5] = HG0567Msgs.Text_35; 	// [CD] or [DC] if French
+				sourceDefnData[6] = "";		//$NON-NLS-1$
 			}
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Defn data: " + hbe.getMessage());
+			System.out.println( "Error loading Source Defn data: " + hbe.getMessage());	//$NON-NLS-1$
 			hbe.printStackTrace();
 		}
-		sourceDefnName.setText(" " + (String)sourceDefnData[0]);	//$NON-NLS-1$
-		// Get the source templates and convert the Element [nnnnn] entries into
-		// Element Names via the hashmap codeToTextMap and load into the text areas for display.
-		// Start with the Full footer
+		if (copySourceType)
+			sourceDefnName.setText(HG0567Msgs.Text_26 + (String)sourceDefnData[0]);		//  COPY -
+		else sourceDefnName.setText(" " + (String)sourceDefnData[0]);	//$NON-NLS-1$
+	// Get the source templates and convert the Element [nnnnn] entries into
+	// Element Names via the hashmap codeToTextMap and load into the text areas for display.
+	// Start with the Full footer
 		fullFootText.setText(pointReportHandler.convertNumsToNames((String)sourceDefnData[3], codeToTextMap));
-		// then the Short footer
+	// then the Short footer
 		shortFootText.setText(pointReportHandler.convertNumsToNames((String)sourceDefnData[4], codeToTextMap));
-		// then the Bibliography template
+	// then the Bibliography template
 		biblioText.setText(pointReportHandler.convertNumsToNames((String)sourceDefnData[5], codeToTextMap));
-		// and the Reminder text
+	// and the Reminder text
 		remindText.setText((String)sourceDefnData[6]);
 
 		pack();
@@ -256,7 +288,27 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for edit of fullFoot text
+	// Listener for edit of source type name text
+		sourceTypeNameCahnge = new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				typeNameEdited = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				typeNameEdited = true;
+				btn_Save.setEnabled(true);
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				typeNameEdited = true;
+				btn_Save.setEnabled(true);
+			}
+		};
+		sourceDefnName.getDocument().addDocumentListener(sourceTypeNameCahnge);
+
+	// Listener for edit of fullFoot text
 		fullFootChange = new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
@@ -276,7 +328,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		};
 		fullFootText.getDocument().addDocumentListener(fullFootChange);
 
-		// Listener for edit of shortFoot text
+	// Listener for edit of shortFoot text
 		shortFootChange = new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
@@ -296,7 +348,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		};
 		shortFootText.getDocument().addDocumentListener(shortFootChange);
 
-		// Listener for edit of biblio text
+	// Listener for edit of biblio text
 		biblioChange = new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
@@ -316,7 +368,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		};
 		biblioText.getDocument().addDocumentListener(biblioChange);
 
-		// Listener for edit of remind text
+	// Listener for edit of reminder text
 		remindChange = new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
@@ -340,21 +392,29 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE01 save any changed data by checking the xxxEdited booleans
-
+				// Save any changed data by checking the xxxEdited booleans
 				// When saving source templates use the convertNamesToNums routine with the textToCodeMap hashmap
 				// to check all Element names exist and can be converted back to Element numbers, and do the
 				// conversion back to the numbered version for saving.
-				// It throws error msg and returns null, so if null returned, do not save!
-				// Example usage using fullFoot text, with before/after console routines:
-				//    System.out.println("Input="+fullFootText.getText());
-				//    String fullFootToSave = pointReportHandler.convertNamesToNums(fullFootText.getText(), textToCodeMap);
-				//    System.out.println("Output="+fullFootToSave);
-				// then check for null response and do NOT dispose! (leave user to fix it and try again!)
+				// If error throw new HBExcption with element name error
+				boolean enableDispose = false;
+				if (!evaluateFootNotes()) return;
+				enableDispose = true;
+				try {
+					if (copySourceType)
+						pointCitationSourceHandler.createSourceDefRecord(storeSourceDefData());
+					if (editSourceType)
+						pointCitationSourceHandler.updateSourceDefRecord(sourceDefnTablePID, storeSourceDefData());
+					if (!copySourceType && !editSourceType)
+						pointCitationSourceHandler.createSourceDefRecord(storeSourceDefData());
+				} catch (HBException hbe) {
+					System.out.println("HG0568EditSourceType - save error: " + hbe.getMessage());	//$NON-NLS-1$
+					hbe.printStackTrace();
+				}
 
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit of HG0568EditSourceType");	//$NON-NLS-1$
-				dispose();
+				if (enableDispose) dispose();
 			}
 		});
 
@@ -362,15 +422,82 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		btn_Cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-
-				// need to check for unsaved data...
-
-				if (reminderDisplay != null) reminderDisplay.dispose();
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0568EditSourceType");	//$NON-NLS-1$
-				dispose();
+				// Check for unsaved changes before exit
+				if (btn_Save.isEnabled())
+					if (JOptionPane.showConfirmDialog (btn_Save,
+							HG0567Msgs.Text_27			// There are unsaved changes. \n
+							+ HG0567Msgs.Text_28,		// Do you still wish to exit?
+							getTitle(),					// (use dialog title as msg title)
+							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+						// YES option
+						if (HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: closing without saving from HG0568EditSourceType"); //$NON-NLS-1$
+						// Clear Reminder if present
+						if (reminderDisplay != null) reminderDisplay.dispose();
+						dispose();
+						}
+						else; // NO option - do nothing
+				else { // btn_Save not enabled - exit
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: closing HG0568EditSourceType"); //$NON-NLS-1$
+					// Clear Reminder if present
+					if (reminderDisplay != null) reminderDisplay.dispose();
+					dispose();
+				}
 			}
 		});
 
 	}	// End HG0568EditSourceType constructor
+
+/**
+ * private boolean testFootNotes()
+ * @return
+ */
+	private boolean evaluateFootNotes() {
+		boolean testOK = true;
+		String footTextType = "";		//$NON-NLS-1$
+		for (int ix = 1; ix < 4; ix++)
+			try {
+				if (ix == 1) {
+					footTextType = HG0567Msgs.Text_29;		//  in Full footnote
+					fullFootToSave = pointReportHandler.convertNamesToNums(fullFootText.getText(), textToCodeMap);
+				}
+				if (ix == 2) {
+					footTextType = HG0567Msgs.Text_30;		//  in Short footnote
+					shortFootToSave = pointReportHandler.convertNamesToNums(shortFootText.getText(), textToCodeMap);
+				}
+				if (ix == 3) {
+					footTextType = HG0567Msgs.Text_31;		//  in Bibliography
+					biblioFootToSave = pointReportHandler.convertNamesToNums(biblioText.getText(), textToCodeMap);
+				}
+			} catch (HBException hbe) {
+		        JOptionPane.showMessageDialog(btn_Save,
+		        		HG0567Msgs.Text_32			// Unknown Source Element Name \n
+		        		+ hbe.getMessage()			// (shows the name)
+		        		+ footTextType,				// in Full/Short/Bibliography
+		        		HG0567Msgs.Text_33,			// Source Element Name error
+		                JOptionPane.ERROR_MESSAGE);
+		        testOK = false;
+
+			}
+		return testOK;
+	}
+
+/**
+ * private Object[] storeData()
+ * @return
+ */
+	private Object[] storeSourceDefData() {
+		sourceTypeStoreData = new Object[7];
+		sourceTypeStoreData[0] = sourceDefnName.getText().trim();
+		sourceTypeStoreData[1] = sourceDefnData[1];
+		if (!copySourceType && !editSourceType)
+			sourceTypeStoreData[2] = sourceDefinLanguage;
+		else sourceTypeStoreData[2] = sourceDefnData[2];
+		sourceTypeStoreData[3] = fullFootToSave;
+		sourceTypeStoreData[4] = shortFootToSave;
+		sourceTypeStoreData[5] = biblioFootToSave;
+		sourceTypeStoreData[6] = remindText.getText().trim();
+		return sourceTypeStoreData;
+	}
 
 }  // End of HG0568EditSourceType

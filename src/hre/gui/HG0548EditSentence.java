@@ -9,6 +9,8 @@ package hre.gui;
  *			  2025-07-10 Display sentence with roleNumbers changed to roleNames (D Ferguson)
  *			  2025-07-11 Convert sentence to internal format (roleNumbers) for Save (D Ferguson)
  *			  2025-07-13 Handle TMG male/female sentence structures (D Ferguson)
+ *			  2025-12-17 NLS code up to this point (D Ferguson)
+ *
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 sentence saving after edit
@@ -47,10 +49,11 @@ import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBWhereWhenHandler;
+import hre.nls.HG0548Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
- * Edit Citation
+ * Edit Sentence
  * @author D Ferguson
  * @version v0.04.0032
  * @since 2025-06-25
@@ -108,7 +111,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "editsentence";		 //$NON-NLS-1$
-		setTitle("Sentence Editor");
+		setTitle(HG0548Msgs.Text_0);		// Sentence Editor
 		setResizable(false);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0548EditSentence");	//$NON-NLS-1$
@@ -149,7 +152,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
-		JLabel role = new JLabel("Select Role");		// Select Role:
+		JLabel role = new JLabel(HG0548Msgs.Text_1);		// Select Role
 		contents.add(role, "cell 0 0, alignx left");		//$NON-NLS-1$
 		// Load the combobox with the rolenames and set the selected one to match roleName parameter
 		comboRoleNames = new JComboBox<String>();
@@ -161,7 +164,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		// And save the combobox setting
 		currentComboIndex = comboRoleNames.getSelectedIndex();
 
-		JLabel lbl_lang = new JLabel("Language is set to: ");		// Language is set to:
+		JLabel lbl_lang = new JLabel(HG0548Msgs.Text_2);		// Language is set to:
 		contents.add(lbl_lang, "cell 1 0, alignx left");		//$NON-NLS-1$
 		JLabel langCode = new JLabel(displayLanguage);
 		contents.add(langCode, "cell 1 0, alignx left");		//$NON-NLS-1$
@@ -173,9 +176,9 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		//**********************************************************************************************
 
 	// Setup panel with labels and Sentence text areas
-		JLabel sentence = new JLabel("Sentence template: ");	// Sentence template:
+		JLabel sentence = new JLabel(HG0548Msgs.Text_3);	// Sentence template:
 		contents.add(sentence, "cell 0 1, alignx left");		//$NON-NLS-1$
-		JLabel lbl_default = new JLabel("(default):");				// (default):
+		JLabel lbl_default = new JLabel(HG0548Msgs.Text_4);		// (default):
 		contents.add(lbl_default, "cell 0 1, alignx left");		//$NON-NLS-1$
 
 		sentenceTextArea = new JTextArea();
@@ -194,10 +197,10 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		sentenceTextArea.setCaretPosition(0);	// set scrollbar to top
 		contents.add(sentenceTextScroll, "cell 0 2 2, alignx left");	//$NON-NLS-1$
 
-		lbl_Preview = new JLabel("Preview of output sentence:");		// Preview
+		lbl_Preview = new JLabel(HG0548Msgs.Text_5);		// Preview of output sentence:
 		contents.add(lbl_Preview, "cell 0 3, alignx left"); //$NON-NLS-1$
 
-		previewTextArea = new JTextArea("       Sentence previews not yet implemented");  // NOTE04
+		previewTextArea = new JTextArea(HG0548Msgs.Text_6);  // NOTE04 // Sentence previews not yet implemented
 		previewTextArea.setEditable(false);
 		previewTextArea.setFocusable(false);
 		previewTextArea.setWrapStyleWord(true);
@@ -212,10 +215,10 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		contents.add(previewTextScroll, "cell 0 4 2, alignx left");	//$NON-NLS-1$
 
 	// Define control buttons
-		JButton btn_Cancel = new JButton("Cancel");		// Cancel
+		JButton btn_Cancel = new JButton(HG0548Msgs.Text_7);	// Cancel
 		btn_Cancel.setEnabled(true);
 		contents.add(btn_Cancel, "cell 1 5, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		btn_Save = new JButton("Save");			// Save
+		btn_Save = new JButton(HG0548Msgs.Text_8);		// Save
 		btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 1 5, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
@@ -269,9 +272,9 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 				comboRoleNames.getUI().setPopupVisible(comboRoleNames, false);
 				if (sentenceChanged) {
 					if (JOptionPane.showConfirmDialog(lbl_Preview,
-							"This sentence edit has not been saved. \n" +
-							"Continue editing or Save this sentence? ",
-							"Sentence not saved?",
+							HG0548Msgs.Text_9 +		// This sentence edit has not been saved. \n
+							HG0548Msgs.Text_10,		// Continue editing or Save this sentence?
+							HG0548Msgs.Text_11,		// Sentence not saved?
 							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 								// YES option - reset combobox and return
 								comboRoleNames.setSelectedIndex(currentComboIndex);
@@ -344,7 +347,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 		// If roleSentence has error flag, change error message and return
 		if (roleSentence.equals("NOSENTENCE")) {			//$NON-NLS-1$
-			roleSentence = "No sentence exists for this role in this language.";
+			roleSentence = HG0548Msgs.Text_12;		// No sentence exists for this role in this language
 			return roleSentence;
 		}
 		// Check for male/female sentences needing to be split at the TMG $!& marker
@@ -401,9 +404,11 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		comboRoleNames.getUI().setPopupVisible(comboRoleNames, false);
 		// show warning msg
 		JOptionPane.showMessageDialog(lbl_Preview,
-				"No sentence exists in " + displayLanguage + " for this Role. \n" +
-				"The English(US) sentence is shown for reference.",
-				"Role sentence missing", JOptionPane.WARNING_MESSAGE);
+				HG0548Msgs.Text_13 + displayLanguage 	// No sentence exists in
+				+ HG0548Msgs.Text_14					// for this Role. \n
+				+ HG0548Msgs.Text_15,					// The English(US) sentence is shown for reference.
+				HG0548Msgs.Text_16, 					// Role sentence missing
+				JOptionPane.WARNING_MESSAGE);
 	}		// End warningMsg
 
 /**
@@ -436,9 +441,11 @@ public class HG0548EditSentence extends HG0450SuperDialog {
     		// Check if no match found; if so throw error msg and return null as error flag
     		if (replacement.isEmpty()) {
     			JOptionPane.showMessageDialog(lbl_Preview,
-    					"The role " + value + " does not exist in " + displayLanguage +
-    					"\n for this event. Please revise your edit.",
-    					"Role not matched", JOptionPane.WARNING_MESSAGE);
+    					HG0548Msgs.Text_17 							// The role
+    					+ value + HG0548Msgs.Text_18 				// does not exist in
+    					+ displayLanguage + HG0548Msgs.Text_19,		// for this event. Please revise your edit.
+    					HG0548Msgs.Text_20, 						// Role not matched
+    					JOptionPane.WARNING_MESSAGE);
     			btn_Save.setEnabled(false);
     			return null;
     		}

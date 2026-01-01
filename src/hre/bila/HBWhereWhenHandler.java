@@ -390,8 +390,8 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		return pointManageLocationData.getNameData();
 	}
 
-	public int updateManageLocationNameTable(long locationTablePID) throws HBException {
-		return pointManageLocationData.updateManageLocationNameTable(locationTablePID);
+	public int updateManageLocationNameTable(long locationTablePID, boolean copyRepository) throws HBException {
+		return pointManageLocationData.updateManageLocationNameTable(locationTablePID, copyRepository);
 	}
 
 	public int updateManageLocationNameTable() throws HBException {
@@ -1134,7 +1134,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 		// NOTE null_RPID if no location name data
 			locationNamePID = pointManageLocationData.findLocationNameTablePID(locationTablePID);
-			int error = pointManageLocationData.updateManageLocationNameTable(locationNamePID);
+			int error = pointManageLocationData.updateManageLocationNameTable(locationNamePID, false);
 
 		// Temp error report
 			if (error > 0)
@@ -1664,7 +1664,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		// Mod 17.11.2024
 			long locationNamePID = pointManageLocationData.findLocationNameTablePID(locationTablePID);
 			//errorCode = pointManageLocationData.updateManageLocationNameTable(locationTablePID);
-			errorCode = pointManageLocationData.updateManageLocationNameTable(locationNamePID);
+			errorCode = pointManageLocationData.updateManageLocationNameTable(locationNamePID, false);
 			errorCode = pointManageLocationData.initiateImageExhibits(locationTablePID);
 
 		// Select date format
@@ -2178,7 +2178,7 @@ class ManageLocationNameData extends HBBusinessLayer {
  */
 	public int updateManageLocationNameTable() throws HBException  {
 		hiddenElements = true;
-		return updateManageLocationNameTable(locationNamePID);
+		return updateManageLocationNameTable(locationNamePID, false);
 	}
 /**
  * updateManagePersonNameTable
@@ -2186,7 +2186,7 @@ class ManageLocationNameData extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-	public int updateManageLocationNameTable(long locNamePID) throws HBException  {
+	public int updateManageLocationNameTable(long locNamePID, boolean copyRepository) throws HBException  {
 		this.locationNamePID = locNamePID;
 		int errorCode = 0;
 		String[] personNameStyleDestriptions;
@@ -2194,11 +2194,10 @@ class ManageLocationNameData extends HBBusinessLayer {
 		//setNameStyleTable(); // Test  31.10-2025
 		
     	nameStyleElementCodes = nameStyleCodeString[nameStyleIndex].split("\\|");
-      	personNameElementsData = updateRecordedNameData(locationNamePID);
+      	personNameElementsData = updateRecordedNameData(locationNamePID, copyRepository); // Mod 5.12.2025 NTo
       	
       	exstractStyleAndDates(locationNamePID);
       	
-
 		if (isTmgNameStyle[nameStyleIndex]) {
 		      	personNameStyleDestriptions = nameStyleDescriptionString[nameStyleIndex].split("\\|");
 		    // Set up list of descriptions for TMG US standard Name style - second style in list
@@ -2395,7 +2394,7 @@ class ManageLocationNameData extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-	private String[][] updateRecordedNameData(long locationNamePID) throws HBException {
+	private String[][] updateRecordedNameData(long locationNamePID, boolean copyRepository) throws HBException {
 
 		String selectString;
 		//ResultSet nameElementTable;
@@ -2410,6 +2409,8 @@ class ManageLocationNameData extends HBBusinessLayer {
 			while (nameElementRSet.next()) {
 				tableData[rowIndex][0] = nameElementRSet.getString("ELEMNT_CODE").trim();
 				tableData[rowIndex][1] = nameElementRSet.getString("NAME_DATA").trim();
+			// modified 5.12.2025 NTo
+				if (copyRepository) addToNameChangeList(tableData[rowIndex][0],tableData[rowIndex][1]);
 				rowIndex++;
 			}
 
@@ -2490,9 +2491,21 @@ class ManageLocationNameData extends HBBusinessLayer {
 		//System.out.println(" addToLocationNameChangList(): " +  nameElementCode + "/" + nameData);
 		locationNameChanges.put(nameElementCode, nameData);
 	}
+	
+/**
+ * public void addToNameChangeList(String nameElementCode, String nameData) 	
+ * @param nameElementCode
+ * @param nameData
+ */
+	public void addToNameChangeList(String nameElementCode, String nameData) {
+		locationNameChanges.put(nameElementCode, nameData);
+	}
+	
+	
 
 /**
- * updateElementData()
+ * public void updateLocationElementData(long locationNamePID)
+ * @param locationNamePID
  * @throws HBException
  */
 	public void updateLocationElementData(long locationNamePID) throws HBException {

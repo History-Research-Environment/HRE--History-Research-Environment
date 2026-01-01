@@ -13,10 +13,8 @@ package hre.gui;
  *     		  2025-11-08 Code for delete and check repositor is in use (N.Tolleshaug)
  *     		  2025-11-22 Fix Repo table display when reset; remove Save btn (D Ferguson)
  *     					 Make double-click on Repo go to Edit (D Ferguson)
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE03 implement Copy button
- *	NB: Use of Select doesn't seem to do anything!
+ *     		  2025-12-05 Code for copy repositories (N.Tolleshaug)
+ *			  2025-12-15 NLS all code into HG0570Msgs (D Ferguson)
  *
  ************************************************************************************/
 
@@ -62,6 +60,7 @@ import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBRepositoryHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
+import hre.nls.HG0570Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -102,14 +101,14 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 		pointRepositoryHandler.pointManageRepos = this;
 
-		setTitle("Manage Repositories");
+		setTitle(HG0570Msgs.Text_30);	// Manage Repositories
 	// Setup references for HG0450
 		windowID = screenID;
 		helpName = "managerepository";		 //$NON-NLS-1$
 
 	// Setup close and logging actions
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0569ManageRepos");	//$NON-NLS-1$
+		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0570ManageRepos");	//$NON-NLS-1$
 
 	// Collect static GUI text from T204 for Repository table
 		tableRepoColHeads = pointCitationSourceHandler.setTranslatedData("56900", "1", false); // ID, Repository //$NON-NLS-1$ //$NON-NLS-2$
@@ -133,19 +132,19 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		JPanel actionPanel = new JPanel();
 		actionPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		actionPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		JButton btn_Add = new JButton("Add");		// Add
+		JButton btn_Add = new JButton(HG0570Msgs.Text_31);		// Add
 		btn_Add.setEnabled(true);
 		actionPanel.add(btn_Add, "cell 0 0, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Edit = new JButton("Edit");		// Edit
+		JButton btn_Edit = new JButton(HG0570Msgs.Text_32);		// Edit
 		btn_Edit.setEnabled(false);
 		actionPanel.add(btn_Edit, "cell 0 1, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Copy = new JButton("Copy");		// Copy
+		JButton btn_Copy = new JButton(HG0570Msgs.Text_33);		// Copy
 		btn_Copy.setEnabled(false);
 		actionPanel.add(btn_Copy, "cell 0 2, alignx center, grow"); //$NON-NLS-1$
-		JButton btn_Delete = new JButton("Delete");		// Delete
+		JButton btn_Delete = new JButton(HG0570Msgs.Text_34);		// Delete
 		btn_Delete.setEnabled(false);
 		actionPanel.add(btn_Delete, "cell 0 3, alignx center, grow"); //$NON-NLS-1$
-		JLabel find = new JLabel("Find:");		// Find:
+		JLabel find = new JLabel(HG0570Msgs.Text_35);		// Find:
 		actionPanel.add(find, "cell 0 4, alignx center"); //$NON-NLS-1$
 		JTextField findText = new JTextField();
 		findText.setColumns(10);
@@ -177,10 +176,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		contents.add(repoPanel, "cell 1 0, grow"); //$NON-NLS-1$
 
 	// Define control buttons
-		JButton Btn_Close = new JButton("Close");		// Close
+		JButton Btn_Close = new JButton(HG0570Msgs.Text_12);		// Close
 		Btn_Close.setEnabled(true);
 		contents.add(Btn_Close, "cell 1 1, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
-		JButton btn_Select = new JButton("Select");		// Select
+		JButton btn_Select = new JButton(HG0570Msgs.Text_37);		// Select
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 1 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
@@ -190,13 +189,13 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		try {
 			tableRepoData = pointRepositoryHandler.getRepoList(true);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Repository list: " + hbe.getMessage());
+			System.out.println( " Error loading Repository list: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 		if (tableRepoData.length == 0 ) {
-			JOptionPane.showMessageDialog(scrollTable, "No data found in HRE database\n"	// No data found in HRE database\n
-													 + "Repository Select error",		// Repository Select error
-													   "Repository Select", 			// Repository Select
+			JOptionPane.showMessageDialog(scrollTable, HG0570Msgs.Text_39	// No data found in HRE database\n
+													 + HG0570Msgs.Text_40,		// Repository Select error
+													   HG0570Msgs.Text_41, 			// Repository Select
 													   JOptionPane.ERROR_MESSAGE);
 			dispose();
 		}
@@ -237,7 +236,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 	    tableRepo.setRowSorter(sorter);
 
 	    // Set tooltips and header format
-		tableRepo.getTableHeader().setToolTipText("Click to sort; Click again to sort in reverse order");	// Click to sort; Click again to sort in reverse order
+		tableRepo.getTableHeader().setToolTipText(HG0570Msgs.Text_42);	// Click to sort; Click again to sort in reverse order
 		JTableHeader pHeader = tableRepo.getTableHeader();
 		pHeader.setOpaque(false);
 		TableCellRenderer prendererFromHeader = tableRepo.getTableHeader().getDefaultRenderer();
@@ -297,13 +296,14 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 				HG0570EditRepository addScreen;
 				try {
 					addScreen = pointRepositoryHandler.
-												activateeAddRepository(pointOpenProject, findLargestSequenceNumber());
+												activateeAddRepository(pointOpenProject,
+														findLargestSequenceNumber());
 					addScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyEdit = btn_Add.getLocationOnScreen();
 					addScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 					addScreen.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println(" Activate repository add Error " + hbe.getMessage());
+					System.out.println(" Activate repository add Error " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 			}
@@ -325,7 +325,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 					editScreen.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println(" Activate repository edit Error " + hbe.getMessage());
+					System.out.println(" Activate repository edit Error " + hbe.getMessage()); //$NON-NLS-1$
 					hbe.printStackTrace();
 				}
 			}
@@ -335,7 +335,20 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		btn_Copy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// NOTE03 does nothing yet
+				if (tableRepo.getSelectedRow() == -1) return;
+				HG0570EditRepository copyScreen;
+				try {
+					copyScreen = pointRepositoryHandler.
+												activateCopyRepository(pointOpenProject, findLargestSequenceNumber()
+														,(long) tableRepoData[selectedRowInTable][2]);
+					copyScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyEdit = btn_Add.getLocationOnScreen();
+					copyScreen.setLocation(xyEdit.x, xyEdit.y + 30);
+					copyScreen.setVisible(true);
+				} catch (HBException hbe) {
+					System.out.println(" Activate repository copy Error " + hbe.getMessage()); //$NON-NLS-1$
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -348,10 +361,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					resetRepositoryTable();
 					tableRepo.getSelectionModel().clearSelection(); // clear selectedRow setting
 				} catch (HBException hbe) {
-					if (HGlobal.DEBUG) System.out.println(" HG0569ManageRepos - deleteRepository error: " + hbe.getMessage());
-					JOptionPane.showMessageDialog(pointManageRepos, "Cannot delete repository\n"	// No data found in HRE database\n
-							 + hbe.getMessage(),		// Repository delete
-							   "Repository Delete", 			// Repository Select
+					if (HGlobal.DEBUG) System.out.println(" HG0569ManageRepos - deleteRepository error: " + hbe.getMessage()); //$NON-NLS-1$
+					JOptionPane.showMessageDialog(pointManageRepos, HG0570Msgs.Text_43	// Cannot delete Repository\n
+							 + hbe.getMessage(),
+							   HG0570Msgs.Text_44, 			// Repository Delete
 							   JOptionPane.ERROR_MESSAGE);
 					if (HGlobal.DEBUG) hbe.printStackTrace();
 				}
@@ -371,7 +384,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					try {
 						pointRepositoryHandler.addNewRespositoryLink((long)tableRepoData[selectedRowInTable][2]);
 					} catch (HBException hbe) {
-						// TODO Auto-generated catch block
+						System.out.println(" HG0569ManageRepos - Select button: " + hbe.getMessage()); //$NON-NLS-1$
 						hbe.printStackTrace();
 					}
 				}
@@ -448,7 +461,7 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		    tableRepo.setRowSorter(sorter);
 
 		} catch (HBException hbe) {
-			System.out.println(" HG0569ManageRepos - resetRepositoryTable() error: " + hbe.getMessage());
+			System.out.println(" HG0569ManageRepos - resetRepositoryTable() error: " + hbe.getMessage()); //$NON-NLS-1$
 			hbe.printStackTrace();
 		}
 	}

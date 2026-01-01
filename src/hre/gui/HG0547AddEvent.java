@@ -77,7 +77,7 @@ public class HG0547AddEvent extends HG0547EditEvent {
 
 	// Update the location table
 
-		pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID);
+		pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID, false);
 		tableLocationData = pointWhereWhenHandler.getLocationNameTable();
 
 		DefaultTableModel tableModel = (DefaultTableModel) tableLocation.getModel();
@@ -188,7 +188,7 @@ public class HG0547AddEvent extends HG0547EditEvent {
 					tableModel.setNumRows(0);	// clear table
 					try {
 						pointWhereWhenHandler.setNameStyleIndex(index);
-						pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID);
+						pointWhereWhenHandler.updateManageLocationNameTable(locationNamePID, false);
 						tableLocationData = pointWhereWhenHandler.getLocationNameTable();
 						tableModel.setDataVector(tableLocationData, tableBirthHeader);
 					// reset table rows
