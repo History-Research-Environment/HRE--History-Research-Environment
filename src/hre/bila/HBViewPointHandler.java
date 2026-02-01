@@ -132,7 +132,7 @@ public class HBViewPointHandler extends HBBusinessLayer {
     long proOffset = 1000000000000000L;
     long null_RPID  = 1999999999999999L;
 
-	int dataBaseIndex;
+	int dataBaseIndex = -1;
 	String selectSQL;
 
 	boolean initiatedPersonWindows = false;
@@ -146,6 +146,7 @@ public class HBViewPointHandler extends HBBusinessLayer {
  */
 	public HBViewPointHandler(HBProjectOpenData pointOpenProject) {
 		super();
+		dataBaseIndex =  pointOpenProject.getOpenDatabaseIndex();
 	}
 
 /**

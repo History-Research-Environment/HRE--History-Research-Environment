@@ -62,13 +62,15 @@ package hre.tmgjava;
  * 		  	  2024-09-04 - Removed alterColumnInTable("T404_PARTNER","IMP_TMG","BOOLEAN");
  *  		  2024-11-11 - Included PER1 == 0 and PER2 != as primary assoc (N. Tolleshaug)
  *   		  2024-11-23 - Added PER1 == 0 and PER2 != 0 role prosessing (N. Tolleshaug)
- * v0.03.0032 2025-01-30 - Added import of event reminder text (N. Tolleshaug)
+ * v0.04.0032 2025-01-30 - Added import of event reminder text (N. Tolleshaug)
  * 			  2025-01-31 - Removed console print messages (N. Tolleshaug)
  * 			  2025-02-11 - Added code to cross ref T450 PID with RECNO (N. Tolleshaug)
  * 			  2025-06-29 - Added TMG sentence addToT168_SENTENCE_SET (N. Tolleshaug)
  * 			  2025-07-01 - Added processing of [C= ,0,110] data for roles (N. Tolleshaug)
  * 			  2025-07-07 - Upated splitting of sentencess for roles (D Ferguson)
  * 			  2025-08-02 - Extract Primary roles; remove adding 'Subject' role (D Ferguson)
+ * 			  2026-01-13 - Setting up SENTENCE_SET_RPID in T461 role table (N. Tolleshaug)
+ * 			  2026-01-17 - Log all catch blocks (D Ferguson)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -80,9 +82,11 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.linuxense.javadbf.DBFRow;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.gui.HGlobal;
 /**
- * TMGpass_V22a_Events
+ * TMGpass_Events
  * Convert event data from TMG to HRE
  * @author NTo - Nils Tolleshaug
  * @since 2020-03-05
@@ -129,7 +133,7 @@ class TMGpass_Events  {
 /**
  * Role parameters init roleSex, minRoleAge, maxRoleAge, default Primary roles
  */
-	static final String roleSex = " ";
+	static final String roleSex = "U";
 	static final int minRoleAge = 0;
 	static final int maxRoleAge = 110;
 	int defPrimary1 = 1;
@@ -139,6 +143,10 @@ class TMGpass_Events  {
  * Map for retrieving event admin group.
  */
 	private HashMap<Integer,Integer> eventAdminTMGmap = new HashMap<>();
+/**
+ * 	Records the role data and sentence RPID
+ */
+	private HashMap<String, HashMap<Integer, Object[]>>  roleSenteceLanguageMap;
 
 /**
  * Record born place and death place PID
@@ -159,7 +167,7 @@ class TMGpass_Events  {
 	private long locationTablePID = proOffset + 1;
 	private long eventDefnPID = proOffset;
 	private long eventRolePID = proOffset;
-	private long eventSentencPID = proOffset;
+	private long eventSentencPID = proOffset + 1;
 
 	public int getAdminGroup(int eventTypeNr) {
 		if (eventAdminTMGmap.containsKey(eventTypeNr))
@@ -184,10 +192,13 @@ class TMGpass_Events  {
 			if (TMGglobal.DEBUG) System.out.println(" Last PID in Table: " + eventDefnTable + " -  " + eventDefnPID);
 			if (TMGglobal.DEBUG) System.out.println(" Last PID in Table: " + eventRoleTable + " -  " + eventRolePID);
 		} catch (HBException hbe) {
-			System.out.println("Table " + eventDefnTable + "/" + eventRoleTable + " empty");
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents empty Table "
+									+ eventDefnTable + "/" + eventRoleTable + hbe.getMessage());
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 			eventDefnPID  = proOffset;
 			eventRolePID = proOffset;
-			hbe.printStackTrace();
 		}
 	}
 
@@ -309,10 +320,12 @@ class TMGpass_Events  {
 			persont401 = null;
 
 		} catch (SQLException sqle) {
-			System.out.println(" Error update born/death person: " + personPID);
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents addEvent for person "
+									+ personPID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 		}
-		if (TMGglobal.DUMP) System.out.println("Test Event processing ended!\n");
 	}	// End AddEventTable
 
 /**
@@ -415,8 +428,10 @@ class TMGpass_Events  {
 		// Insert row
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			System.out.println("TMGpass_Events - addTo table T450_EVNT - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT450 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGpass_Events - addTo table T450_EVNT - error: " + sqle.getMessage());
 		}
 	}
@@ -498,9 +513,10 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGpass_Events - addTo table addToT404_PARTNER - error: "
-					+ sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT404 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGpass_Events - addTo table addToT404_PARTNER - error: "
 					+ sqle.getMessage());
 		}
@@ -512,7 +528,7 @@ class TMGpass_Events  {
  */
 	public void addEventTagTables(TMGHREconverter tmgHreConverter) throws HCException {
 		this.tmgHreConverter = tmgHreConverter;
-		HashMap<Integer, Object[]> roleParamMap;
+		//HashMap<Integer, Object[]> roleParamMap;
 		int currentRow = 0;
 		int progress;
 		int nrOftmgTRows = tmgTtable.getNrOfRows();
@@ -576,9 +592,12 @@ class TMGpass_Events  {
 				 }
 
 			// Get role sentences
-				roleParamMap = extractRoleSentence(eventTypeNr, etypeName, tsentence);
+				//roleParamMap = extractRoleSentence(eventTypeNr, etypeName, tsentence);
+				extractRoleSentence(eventTypeNr, etypeName, tsentence);
+
 			// Extract roles and get Primary roles
-				extractRoles(eventTypeNr, tsentence, roleParamMap, properties, tableT461);
+				//extractRoles(eventTypeNr, tsentence, roleParamMap, properties, tableT461);
+				extractRoles(eventTypeNr, tsentence, properties, tableT461);
 			}
 		}
 	}
@@ -587,25 +606,20 @@ class TMGpass_Events  {
  * private void extractRoles( int eventType, String roleString, HashMap<Integer,Object[]> roleParamMap, ResultSet hreTable)
  * @param eventType
  * @param roleString
- * @param roleParamMap
+ * @param roleSenteceLanguageMap
  * @param hreTable
  * @throws HCException
  */
 	private void extractRoles( int eventType,
 								String roleString,
-								HashMap<Integer,Object[]> roleParamMap,
 								String properties,
 								ResultSet hreTable) throws HCException {
 		String roleName;
 		String usRolename = "";
 		int roleCode;
+		String lang_code = "en-US";
 
-		Object[] roleParams =  new Object[3];
-		roleParams[0] = roleSex;
-		roleParams[1] = minRoleAge;
-		roleParams[2] = maxRoleAge;
-
-		// Extract the Primary role settings (if any) out of the properties text
+	// Extract the Primary role settings (if any) out of the properties text
 		defPrimary1 = 1;
 		defPrimary2 = 1;
 	    String [] tagLang = properties.split("\\r\\n");
@@ -633,31 +647,31 @@ class TMGpass_Events  {
 				if (roleNumber.startsWith("\\")) roleCode = 0;
 				else roleCode  = Integer.parseInt(roleNumber);
 
-		// Get role param sex and age
-				if (roleParamMap.containsKey(roleCode))
-						roleParams = roleParamMap.get(roleCode);
-
 /*				System.out.println(" Role setting for event: " + eventType
-						+ " - Role: " + roleCode + " - " + roleParams[0] + "/" + roleParams[1] + "/" + roleParams[2]);
-*/
+						+ " - Role: " + roleCode + " - " + roleParams[0] + "/" + roleParams[1]
+						+ "/" + roleParams[2]
+						+ "/" + roleParams[3]
+						+ "/" + roleParams[4]); */
+
 		// Now split the role tranlation string
 				String [] translate = roleType[i].split("L=");
 				for (int j=1; j < translate.length; j++) {
 					translate[j] = translate[j].replace('[', ' ');
 					translate[j] = translate[j].trim();
 					String[] role = translate[j].split("]");
-					String lang_code = getLangCode(role[0]);
+					lang_code = getLangCode(role[0]);
 					if (lang_code.equals("en-GB")) foundENGUK = true;
 					if (j == 1) usRolename = role[1];
 					if (role[1] != null) roleName = role[1]; else roleName = " ";
 					roleName = roleName.trim();
 					eventRolePID++;
-					addToT461_EVNT_ROLE(eventRolePID, eventType, roleCode , i, roleName, roleParams, lang_code, hreTable);
+					addToT461_EVNT_ROLE(eventRolePID, eventType, roleCode , i, roleName, lang_code, hreTable);
 				}
+
 		// Case if no ENGLISHUK tranlation copy the ENGLISHUS rolename
 				if (!foundENGUK && languageTMG.equals("en-GB")) {
 					eventRolePID++;
-					addToT461_EVNT_ROLE(eventRolePID, eventType, roleCode , i, usRolename, roleParams, "en-GB", hreTable);
+					addToT461_EVNT_ROLE(eventRolePID, eventType, roleCode , i, usRolename, "en-GB", hreTable);
 				}
 			}
 		}
@@ -671,17 +685,21 @@ class TMGpass_Events  {
  * @return
  * @throws HCException
  */
-	private HashMap<Integer, Object[]> extractRoleSentence(int eventTypeNr, String etypeName, String roleString) throws HCException {
-		HashMap<Integer, Object[]> roleParamMap = new HashMap<Integer, Object[]>();
+	private void extractRoleSentence(int eventTypeNr,
+						String etypeName, String roleString) throws HCException {
+	// Parameter to enable debug printputs in this method
+		boolean printSentenceControl = false;
+	//Initiate the language HashMap
+		roleSenteceLanguageMap = new HashMap<String, HashMap<Integer, Object[]>>();
 		String[] roleParamSet;
 		String roleSentenceString, language, stringLine ;
 		String roleTextNumber = "", roleParam;
 		String roleTMGsentence = "";
 		String[] roleSentence;
-		boolean printSentenceControl = false;
 		int roleNumber = 0;
+
 		int posLabel = roleString.indexOf("[:LABELS]"); // result -1 of not found
-		if (roleString.length() == 0) return roleParamMap;
+		if (roleString.length() == 0) return;
 		if (posLabel < 0) posLabel = 0;
 		roleSentenceString = roleString.substring(posLabel, roleString.length());
 		roleSentenceString = roleSentenceString.replace("[:LABELS]","");
@@ -689,65 +707,79 @@ class TMGpass_Events  {
 		if (printSentenceControl)
 				System.out.println(" ROLES for EVENT nr: " + eventTypeNr + " name: " + etypeName);
 		if (sentenceLaguages.length > 0)
-		for (int i = 1; i < sentenceLaguages.length; i++) {
-			stringLine = sentenceLaguages[i];
-				if (stringLine.length() > 20) {
-					roleSentence = stringLine.split("\\[R=");
-					language = roleSentence[0].substring(0, roleSentence[0].length() - 1);
-					if (printSentenceControl)
-							System.out.println(" Language: " + i + " - " + language + " Code: " + getLangCode(language));
-					for (int j = 1; j < roleSentence.length; j++) {
-						roleTextNumber = " ";
-						Object[] roleParamArray = new Object[3];
-						if (roleSentence[j].length() > 2) {
-							roleTextNumber = roleSentence[j].substring(0,5);
-							if (HREhdate.isInteger(roleTextNumber)) {
-								roleNumber = Integer.parseInt(roleTextNumber);
-								if (printSentenceControl) System.out.print(" Role: " + roleTextNumber);
-								roleTMGsentence = roleSentence[j].substring(6, roleSentence[j].length());
+			for (int i = 1; i < sentenceLaguages.length; i++) {
+				stringLine = sentenceLaguages[i];
+					if (stringLine.length() > 20) {
+						roleSentence = stringLine.split("\\[R=");
+						language = roleSentence[0].substring(0, roleSentence[0].length() - 1);
 
-/* Examples: 			 [C=F,12 ,110][RP:00005] became [R:00003]'s adoptive mother <at [L2]> <in [L3]> <[D]>. <[M]>
-				  		 [C= ,10 ,110]At [R:00003]'s birth, <[D]> <[L]> [W] assisted as a midwife. <[M]>
-*/
-								if (roleTMGsentence.startsWith("[C=")) {
-									roleParamArray[0] = roleSex;
-									roleParamArray[1] = minRoleAge;
-									roleParamArray[2] = maxRoleAge;
+				// Create new HashMap for role data
+						HashMap<Integer, Object[]> roleSenteceRoleMap = new HashMap<Integer, Object[]>();
+				// Record the role HashMap in the language HashMap
+						roleSenteceLanguageMap.put(getLangCode(language), roleSenteceRoleMap);
 
-									int rightBracketPos = roleTMGsentence.indexOf(']', 0);
-									roleParam = roleTMGsentence.substring(3, rightBracketPos);
-									roleParamSet = roleParam.split(",");
-							//Test for roleParamSet[x] with only "   " space
-									if (roleParamSet[1].trim().length() == 0) roleParamSet[1] = "0";
-									if (roleParamSet[2].trim().length() == 0) roleParamSet[2] = "110";
-									roleParamArray[0] = roleParamSet[0];
-									roleParamArray[1] = Integer.parseInt(roleParamSet[1].trim());
-									roleParamArray[2] = Integer.parseInt(roleParamSet[2].trim());
-/*
-									System.out.println(" Event: " + etypeName + " EvNr: " + eventTypeNr + " Role: " + roleNumber
-															+ " RoleParamSet: /"
-															+ roleParamArray[0] + ","
-															+ roleParamArray[1] + ","
-															+ roleParamArray[2] + "/");  */
+						if (printSentenceControl)
+								System.out.println(" Language: " + i + " - " + language + " Code: " + getLangCode(language));
+						for (int j = 1; j < roleSentence.length; j++) {
+							roleTextNumber = " ";
+							Object[] roleParamArray = new Object[4];
+							if (roleSentence[j].length() > 2) {
+								roleTextNumber = roleSentence[j].substring(0,5);
+								if (HREhdate.isInteger(roleTextNumber)) {
+									roleNumber = Integer.parseInt(roleTextNumber);
+									if (printSentenceControl) System.out.print(" Role: " + roleTextNumber);
+									roleTMGsentence = roleSentence[j].substring(6, roleSentence[j].length());
 
-									roleTMGsentence = roleTMGsentence.substring(rightBracketPos + 1, roleTMGsentence.length());
-									roleParamMap.put(roleNumber, roleParamArray);
-								}
-								if (printSentenceControl) System.out.println("  Sentence: " + roleTMGsentence);
+	/* Examples: 			 [C=F,12 ,110][RP:00005] became [R:00003]'s adoptive mother <at [L2]> <in [L3]> <[D]>. <[M]>
+					  		 [C= ,10 ,110]At [R:00003]'s birth, <[D]> <[L]> [W] assisted as a midwife. <[M]>
+	*/
+									if (roleTMGsentence.startsWith("[C=")) {
+										roleParamArray[0] = roleSex;
+										roleParamArray[1] = minRoleAge;
+										roleParamArray[2] = maxRoleAge;
 
-								eventSentencPID = eventSentencPID + 1;
-								addToT168_SENTENCE_SET(tableT168, eventSentencPID, getLangCode(language), eventTypeNr,
-										roleNumber, roleTMGsentence);
-							} else System.out.println(" ** ROLE NUMBER NOT FOUND for: " + language + " Event: " + etypeName
+										int rightBracketPos = roleTMGsentence.indexOf(']', 0);
+										roleParam = roleTMGsentence.substring(3, rightBracketPos);
+										roleParamSet = roleParam.split(",");
+								//Test for roleParamSet[x] with only "   " space
+										if (roleParamSet[1].trim().length() == 0) roleParamSet[1] = "0";
+										if (roleParamSet[2].trim().length() == 0) roleParamSet[2] = "110";
+										roleParamArray[0] = roleParamSet[0];
+										roleParamArray[1] = Integer.parseInt(roleParamSet[1].trim());
+										roleParamArray[2] = Integer.parseInt(roleParamSet[2].trim());
+	/*									System.out.println(" Event: " + etypeName + " EvNr: " + eventTypeNr + " Role: " + roleNumber
+																+ " RoleParamSet: /"
+																+ roleParamArray[0] + ","
+																+ roleParamArray[1] + ","
+																+ roleParamArray[2] + "/");  */
+										roleTMGsentence = roleTMGsentence.substring(rightBracketPos + 1, roleTMGsentence.length());
+									} else {
+										roleParamArray[0] = roleSex;
+										roleParamArray[1] = minRoleAge;
+										roleParamArray[2] = maxRoleAge;
+									}
+
+									roleParamArray[3] = eventSentencPID;
+									roleSenteceRoleMap.put(roleNumber, roleParamArray);
+
+									if (printSentenceControl)
+										System.out.println("  Sentence: " + roleTMGsentence);
+
+									addToT168_SENTENCE_SET(tableT168, eventSentencPID, getLangCode(language), eventTypeNr,
+											roleNumber, roleTMGsentence);
+
+									eventSentencPID = eventSentencPID + 1;
+
+								} else System.out.println(" ** ROLE NUMBER NOT FOUND for: " + language + " Event: " + etypeName
+										+ " Evnr: " + eventTypeNr + " Role sentence: [R=" + roleSentence[j]);
+
+							} else System.out.print(" ** MISSING ROLE NUMBER for: " + language + " Event: " + etypeName
 									+ " Evnr: " + eventTypeNr + " Role sentence: [R=" + roleSentence[j]);
-
-						} else System.out.print(" ** MISSING ROLE NUMBER for: " + language + " Event: " + etypeName
-								+ " Evnr: " + eventTypeNr + " Role sentence: [R=" + roleSentence[j]);
-					}
-				} else System.out.print(" ** INCOMPLETE SENTENCE for Event: " + etypeName
+						}
+					} else System.out.print(" ** INCOMPLETE SENTENCE for Event: " + etypeName
 							+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
-		}
-		return roleParamMap;
+			}
+		return;
 	}
 
 /**
@@ -911,8 +943,10 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGPass_events - addToT168_SENTENCE_SET - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT168 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGPass_events - addToT168_SENTENCE_SET - error: " + sqle.getMessage());
 		}
 	}
@@ -959,8 +993,10 @@ class TMGpass_Events  {
 									+ " Hint: " + hintText);
 			}
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println(" TMGpass_Events updateT460_EVNT_DEFS error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents updateT460 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException(" TMGpass_Events updateT460_EVNT_DEFS error: " + sqle.getMessage());
 		}
 
@@ -1021,8 +1057,10 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGpass_Events - addTo table T460_EVNT_DEFN - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT460 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGpass_Events - addTo table T460_EVNT_DEFN - error: " + sqle.getMessage());
 		}
 	}
@@ -1038,9 +1076,18 @@ class TMGpass_Events  {
 											int eventRoleNr,
 											int eventRoleSequence,
 											String eventRoleName,
-											Object[] roleData,
+											//Object[] roleData,
 											String lang_code,
 											ResultSet hreTable) throws HCException {
+		HashMap<Integer, Object[]> roleSenteceRoleMap;
+
+	// Initiate the role data for the selected role
+		Object[] roleData = new Object[4];
+		roleData[0] = roleSex;
+		roleData[1] = minRoleAge;
+		roleData[2] = maxRoleAge;
+		roleData[3] = null_RPID;
+
 		if (TMGglobal.DEBUG)
 			System.out.println("** addTo T461_EVNT_ROLE PID: " + primaryPID);
 
@@ -1049,6 +1096,31 @@ class TMGpass_Events  {
 								+ eventRoleName.length() + "/40");
 			eventRoleName = eventRoleName.substring(0,40);
 		}
+
+	// Collect the roleData[] (as ex. sentence PID) from method extractRoleSentence()
+		if (roleSenteceLanguageMap.containsKey(lang_code))
+			roleSenteceRoleMap = roleSenteceLanguageMap.get(lang_code);
+		else {
+			roleSenteceRoleMap = null;
+			if (TMGglobal.DEBUG)
+				System.out.println(" Missing language data: "
+									+ " Event type: " + eventTypeNr
+									+ " Event role: " + eventRoleNr
+									+ " Language: "  + lang_code);
+		}
+
+		if  (roleSenteceRoleMap != null)
+			if (roleSenteceRoleMap.containsKey(eventRoleNr))
+				roleData = roleSenteceRoleMap.get(eventRoleNr);
+			else {
+				if (TMGglobal.DEBUG)
+					System.out.println(" Missing role data: "
+									+ " Event type: " + eventTypeNr
+									+ " Event role: " + eventRoleNr
+									+ " Language: "  + lang_code);
+			}
+
+	// Update the HRE table
 		try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
@@ -1059,21 +1131,24 @@ class TMGpass_Events  {
 			hreTable.updateString("LANG_CODE", lang_code);
 			hreTable.updateInt("EVNT_TYPE", eventTypeNr);
 			hreTable.updateInt("EVNT_ROLE_NUM", eventRoleNr);
-			hreTable.updateInt("EVNT_ROLE_SEQ", eventRoleSequence); // ************Need update
+			hreTable.updateInt("EVNT_ROLE_SEQ", eventRoleSequence);
 			hreTable.updateString("EVNT_ROLE_NAME", eventRoleName);
 			hreTable.updateString("EVNT_ROLE_SEX", (String) roleData[0]);
 			hreTable.updateInt("EVNT_ROLE_MINAGE", (Integer) roleData[1]);
 			hreTable.updateInt("EVNT_ROLE_MAXAGE", (Integer) roleData[2]);
-			hreTable.updateLong("ROLE_SENTENCE_RPID", null_RPID);
+			hreTable.updateLong("ROLE_SENTENCE_RPID", (long) roleData[3]);
 			if (defPrimary1 == eventRoleNr || defPrimary2 == eventRoleNr)
 								hreTable.updateBoolean("KEY_ASSOC", true);
 			else hreTable.updateBoolean("KEY_ASSOC", false);
+
 		//Insert row
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("Not able to update table - T461_EVNT_ROLE" + " Event role name: " + eventRoleName);
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents updateT461 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGpass_Events - addTo table T461_EVNT_ROLE - error: "
 					+ sqle.getMessage());
 		}
@@ -1233,7 +1308,7 @@ class TMGpass_Events  {
 			}
 		}
 
-		//if (TMGglobal.TRACE)
+		if (TMGglobal.TRACE)
 			System.out.println(" *** E.dbf witness data extract statistics *****"
 								+ "\n * Total E.dbf rows: " + nrOftmgERows
 							    + "\n * PER2 assocs: " + per2assocs
@@ -1307,8 +1382,10 @@ class TMGpass_Events  {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("TMGpass_Events - addTo table T451_EVNT_ASSOC - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT451 " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGpass_Events - addTo table T451_EVNT_ASSOC - error: " + sqle.getMessage());
 		}
     }
@@ -1336,8 +1413,10 @@ class TMGpass_Events  {
 	    	if (TMGglobal.TRACE)
 	    		if (missingPartRole > 0)System.out.println(" Missing partner roles: " + missingPartRole);
 		} catch (SQLException sqle) {
-			System.out.println(" TMGpass_Events Update updatePartnerRoles(): " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents updatepartnerRoles " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 		}
     }
 
@@ -1360,8 +1439,10 @@ class TMGpass_Events  {
 	    	if (TMGglobal.TRACE)
 	    		if (missingBirthEvent > 0) System.out.println(" Missing birth events: " + missingBirthEvent);
 		} catch (SQLException sqle) {
-			System.out.println(" Update updateBirthEvents(): " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassEvents updateBirthEvent " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 		}
     }
 

@@ -33,12 +33,13 @@ package hre.tmgjava;
  * 			  2022-12-05 - TMG styles with DSID = 0 set IS_SYSTEM = TRUE
  * 			  2022-01-10 - Error in HRE codes when converted from TMG (N. Tolleshaug)
  * 			  2022-01-20 - Corrected location code converted from TMG (N. Tolleshaug)
- * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-07-06 - Removed dump of flags (N. Tolleshaug)
+ * v0.02.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
+ * v0.03.0030 2023-07-06 - Removed dump of flags (N. Tolleshaug)
  * 			  2023-08-08 - Implemented TMG translation of flag data to T204 (N. Tolleshaug)
  * 			  2023-08-14 - Implemented fix for multiple datasets  (N. Tolleshaug)
  * 			  2023-08-15 - Fix if project contains TMG default flags dupl. (N. Tolleshaug)
- * v0.01.0031 2024-09-29 - Updated with this version in Build31 and Master 31 (N. Tolleshaug)
+ * v0.03.0031 2024-09-29 - Updated with this version in Build31 and Master 31 (N. Tolleshaug)
+ * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
  ***************************************************************************************
  * NOTE 01 - 	Insert updates only the database
  * 				To see the inserted rows in ResultSet
@@ -52,10 +53,12 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Vector;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.gui.HGlobal;
 
 /**
- * class TMGpass_V22a_Support
+ * class TMGpass_Support
  * @author NTo
  * @since 2022-10-02
  */
@@ -75,27 +78,27 @@ public class TMGpass_Support {
 	String[] flagFields;
 	String translatedFlag = "T204_FLAG_TRAN";
 	boolean updateFlags = TMGglobal.CONVERT_ALL_FLAG;
-	
+
 // Temp solution to identify preloaded flag definitions
 	String[] flagFieldsT251 = {"SEX","LIVING","BIRTHORDER","MULTIBIRTH","ADOPTED","ANCE_INT","DESC_INT"};
 	int[] defaultIndexList = {0,0,0,0,0,0,0};
-	
-// To find the flagIdent	
+
+// To find the flagIdent
 	HashMap<String,Integer> tmgFlagFieldIndex = new HashMap<String,Integer>();
-	
+
 // Index to find row for specific flag field
 	HashMap<String,Integer> flagIdentIndex = new HashMap<String,Integer>();
-	
+
 // To find the PID's for T251
 	HashMap<Integer,Long> flagDefsT251PID = new HashMap<Integer,Long>();
-	
+
 // This is not used
-	HashMap<Integer,Integer> defaultindex = new HashMap<Integer,Integer>();	
-	
-// For Translated flag data from PROPERTY	
+	HashMap<Integer,Integer> defaultindex = new HashMap<Integer,Integer>();
+
+// For Translated flag data from PROPERTY
 	HashMap<String,String[]> languagTransIndex = new HashMap<String,String[]>();
-	
-// Name Code jndex	
+
+// Name Code jndex
 	HashMap<String,String> nameCodes;
 
 	long proOffset = 1000000000000000L;
@@ -146,15 +149,15 @@ public class TMGpass_Support {
 	public HashMap<Integer, NameStyleStat> getNameStyleHashMap() {
 		return nameStyleMap;
 	}
-	
+
 	public HashMap<String,Integer> getTmgFlagFieldIndex() {
 		return tmgFlagFieldIndex;
 	}
-	
+
 	public HashMap<String,Integer> getFlagIdentIndex() {
 		return flagIdentIndex;
 	}
-	
+
 	public HashMap<Integer,Long>  getFlagDefsT251PID() {
 		return flagDefsT251PID;
 	}
@@ -170,7 +173,7 @@ public class TMGpass_Support {
 	public void addUsedStyle(int styleId) {
 		if (nameStyleMap.containsKey(styleId))
 				nameStyleMap.get(styleId).addUsedStyles();
-		else System.out.println(" WARNING - TMGpass_V22a_Support - addUsedStyle: no styleID: "
+		else System.out.println(" WARNING - TMGpass_Support - addUsedStyle: no styleID: "
 				+ styleId + " in name style ..st.dbf table!");
 	}
 
@@ -182,20 +185,18 @@ public class TMGpass_Support {
 	public long getNameStylePID(int styleId) {
 		if (nameStyleMap.containsKey(styleId))
 			return nameStyleMap.get(styleId).getNameStylePID();
-		else {
-			System.out.println(" WARNING - TMGpass_V22a_Support - getNameStylePID: no styleID: "
-					+ styleId + " in name style ..st.dbf table!");
-			return null_RPID;
-		}
+		System.out.println(" WARNING - TMGpass_Support - getNameStylePID: no styleID: "
+				+ styleId + " in name style ..st.dbf table!");
+		return null_RPID;
 	}
-	
+
 	public String getFlagFieldString() {
 		String flagFieldString = "";
 		for (int i = 0; i < flagFields.length; i++)
 			flagFieldString = flagFieldString + flagFields[i] + "|";
 		return flagFieldString;
 	}
-	
+
 	public String[] getFlagFields() {
 		return flagFields;
 	}
@@ -277,7 +278,6 @@ public class TMGpass_Support {
 /**
  * 	NAME_STYLE	processing		Testing DSID in TMG ST.dbf
  */
-
 					if (TMGglobal.dataSetID == tmgSTtable.getValueInt(index, "DSID")) { // DSID = 1
 
 						nameCodes = new HashMap<String,String>();
@@ -358,7 +358,6 @@ public class TMGpass_Support {
 						nameStyleMap.put(styleID, pointNameStyleStat);
 
 			// generate output style in T162
-
 						pidTableT162++;
 						if (styleGroup.equals("N")) outType = "R"; else outType = "D";
 						outputStyleString = tmgSTtable.getValueString(index,"ST_OUTPUT");
@@ -367,7 +366,6 @@ public class TMGpass_Support {
 							System.out.println(" TMG TMG DSID 0 - ST_OUTPUT " + styleGroup + " = " + outputStyleString);
 
 						if (styleGroup.equals("N")) {
-
 							pidTableT162++;
 							outType = "D";
 							outStyleNameType = "GVNAMEDISP";
@@ -390,16 +388,14 @@ public class TMGpass_Support {
 				}
 			}
 
-		} catch (SQLException sqle) {
-			System.out.println("SQLxception - addNameStyle: " + sqle.getMessage()
-				+ "\nTMG name_ST.dbf - index: " + currentRow);
+		} catch (SQLException | HCException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport SQL exception adding name style: "
+							+ sqle.getMessage() + "\nTMG name_ST.dbf - index: " + currentRow);
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("SQLxception - addNameStyle: " + sqle.getMessage()
-			+ "\nTMG name_ST.dbf - index: " + currentRow + "\n" + sqle.getMessage());
-		} catch (HCException hre) {
-			System.out.println("HRException - addNameStyle: " + hre.getMessage()
-				+ "\nTMG name_ST.dbf - index: " + currentRow);
-			throw new HCException("HRException - addNameStyle: " + hre.getMessage()
-			+ "\nTMG name_ST.dbf - index: " + currentRow + "\n" + hre.getMessage());
+			+ "\nTMG name_ST.dbf - index: " + currentRow);
 		}
 	}
 
@@ -435,7 +431,7 @@ public class TMGpass_Support {
 						outputCodeStyle[i] = nameCodes.get(elementName) + addSeparator;
 					else {
 						outputCodeStyle[i] = "0000";
-						System.out.println(" WARNING - TMGpass_V22a_Support - missing element code for: " + outputNameStyle[i]);
+						System.out.println(" WARNING - TMGpass_Support - missing element code for: " + outputNameStyle[i]);
 					}
 				}
 				if (debug) System.out.println();
@@ -490,9 +486,12 @@ public class TMGpass_Support {
 
 			if (TMGglobal.DEBUG)  System.out.println("End - addToT160_PERSON_NAME_STYLE row: " + tablePID);
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println(" update table - T160_PERSON_NAME_STYLE row: " + tablePID);
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names_Styles - addToT160_PERSON_NAME_STYLE: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport adding to T160_PERSON_NAME_STYLE row: "
+						+ tablePID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Support - addToT160_PERSON_NAME_STYLE: " + sqle.getMessage());
 		}
 	}
 
@@ -550,9 +549,12 @@ public class TMGpass_Support {
 
 			if (TMGglobal.DEBUG)  System.out.println("End - addto - T162_NAME_STYLE_OUTPUT row: " + tablePID);
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println(" update table - - T162_NAME_STYLE_OUTPUT row: " + tablePID);
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names_Styles - addToT162_NAME_STYLE_OUTPUT - : " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport adding to T162_NAME_STYLE_OUTPUT row: "
+						+ tablePID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Support - addToT162_NAME_STYLE_OUTPUT - : " + sqle.getMessage());
 		}
 	}
 
@@ -618,33 +620,33 @@ public class TMGpass_Support {
 	     }
 	     System.out.println();
 	}//end printRs()
-   
+
 /***************************************************************************************************
- * HRE table Convert flags from TMG Flags 
+ * HRE table Convert flags from TMG Flags
  ****************************************************************************************************/
-   
+
 /**
- * updateFlagFromTMG(TMGHREconverter tmgHreConverter)   
+ * updateFlagFromTMG(TMGHREconverter tmgHreConverter)
  * @param tmgHreConverter
  * @throws HCException
  */
    public void updateFlagFromTMG(TMGHREconverter tmgHreConverter) throws HCException {
-	    
+
 		int currentRow = 0;
 		String propertyTrans = "";
 		try {
 		// Find last PID
 			tableT251.last();
-		
+
 			if (TMGglobal.DEBUG)
 				System.out.println(" T251 Table ResultSet size before insert: " + tableT251.getRow());
-	
-			if (TMGglobal.DEBUG) 
-				System.out.println(" T251 tmgCable end PID: " + (proOffset + tmgCtable.getNrOfRows()));	
-			
-		// Update ACTIVE and GUI seq in preloaded table			
+
+			if (TMGglobal.DEBUG)
+				System.out.println(" T251 tmgCable end PID: " + (proOffset + tmgCtable.getNrOfRows()));
+
+		// Update ACTIVE and GUI seq in preloaded table
 			int nrOftmgCrows = tmgCtable.getNrOfRows();
-			int index251 = 0;	
+			int index251 = 0;
 			tableT251.beforeFirst();
 			while (tableT251.next()) {
 				String flagField = flagFieldsT251[index251];
@@ -653,42 +655,42 @@ public class TMGpass_Support {
 						flagIdentIndex.put(flagField, flagIdent);
 				if (TMGglobal.DEBUG) System.out.println("Flag field: " + flagField + "/" + flagIdent);
 				int defaultIndex = defaultIndexList[index251];
-				defaultindex.put(flagIdent, defaultIndex);		
+				defaultindex.put(flagIdent, defaultIndex);
 				for (index = 0; index < nrOftmgCrows; index++) {
 					String tmgFlagField = tmgCtable.getValueString(index,"FLAGFIELD");
 					int DSID = tmgCtable.getValueInt(index,"DSID");
-					if (flagField.equals(tmgFlagField) && DSID == 0) { 
-					//if (flagField.equals(tmgFlagField)) { 
+					if (flagField.equals(tmgFlagField) && DSID == 0) {
+					//if (flagField.equals(tmgFlagField)) {
 						propertyTrans = tmgCtable.getValueString(index,"PROPERTY");
 						tableT251.updateBoolean("ACTIVE", tmgCtable.getValueBoolean(index,"ACTIVE"));
-						tableT251.updateInt("GUI_SEQ", tmgCtable.getValueInt(index,"SEQUENCE"));		
-						tableT251.updateInt("DEFAULT_INDEX", defaultIndex);							
-						tableT251.updateRow();		
+						tableT251.updateInt("GUI_SEQ", tmgCtable.getValueInt(index,"SEQUENCE"));
+						tableT251.updateInt("DEFAULT_INDEX", defaultIndex);
+						tableT251.updateRow();
 						//continue;
 						break;
 					}
 				}
-			// update T204_FLAG_TRAN for language flag translations		
+			// update T204_FLAG_TRAN for language flag translations
 				processPropertyTransTMG(propertyTrans);
 				updateT204_FLAG_TRAN(flagIdent, updateFlags);
-				if (TMGglobal.DEBUG) 
+				if (TMGglobal.DEBUG)
 					 System.out.println("Updated index: " + index251 + "/" + flagIdent + "\n" + propertyTrans);
-				index251++;		
+				index251++;
 			}
-			
+
 			flagFields = new String[nrOftmgCrows];
 			if (TMGglobal.DEBUG)
 				System.out.println(" tmg _C.dbf Table size: " + nrOftmgCrows + " rows");
-	
+
 			int progress;
 			tmgHreConverter.setStatusProgress(0);
-	
+
 			if (TMGglobal.DEBUG)
 				System.out.println("*** Updating HRE T204/251 Flags");
-			
+
 			long lastT251PID = pointHREbase.lastRowPID("T251_FLAG_DEFN");
 			long lastT204PID = pointHREbase.lastRowPID("T204_FLAG_TRAN");
-	
+
 		// Insert new records - number starts from  = 1
 			for (index = 0; index < nrOftmgCrows; index++) {
 				currentRow = index + 1;
@@ -696,62 +698,62 @@ public class TMGpass_Support {
 		// Report progress in %
 				progress = (int)Math.round(((double)currentRow / (double)nrOftmgCrows) * 100);
 				tmgHreConverter.setStatusProgress(progress);
-				
-		// Set up list of Flag Fields in C.dbf	
+
+		// Set up list of Flag Fields in C.dbf
 				String flagField = tmgCtable.getValueString(index,"FLAGFIELD");
 				int tmgFlagIdent = tmgCtable.getValueInt(index,"FLAGID");
 				flagFields[index] = flagField;
-				
+
 		// Set up index to find row for specific flag field
 				tmgFlagFieldIndex.put(flagField, tmgFlagIdent);
-							
+
 				if (TMGglobal.DEBUG)
-					System.out.println(" TMG flag id: " + tmgFlagIdent 
+					System.out.println(" TMG flag id: " + tmgFlagIdent
 						+ " - Active = " + tmgCtable.getValueBoolean(index, "ACTIVE")
-						+ " - Label: " + tmgCtable.getValueString(index,"FLAGLABEL")   
+						+ " - Label: " + tmgCtable.getValueString(index,"FLAGLABEL")
 						+ " - Field: " + tmgCtable.getValueString(index,"FLAGFIELD"));
-				
+
 				if (tmgCtable.getValueInt(index, "DSID") == 1) {
-					
-					//System.out.println(" TMG-Label: " + tmgCtable.getValueString(index,"FLAGLABEL") + " Field: "  
-					//					+ tmgCtable.getValueString(index,"FLAGFIELD"));
-					
+
 					long table251PID = ++lastT251PID;
-					
+
 			// If project contain duplicates of the TMG default flags
 					if (!flagIdentIndex.containsKey(flagField))
 						flagIdentIndex.put(flagField, ++flagIdent);
-					
+
 			// Set up index table to find RPID from flagId
 					flagDefsT251PID.put(tmgFlagIdent, table251PID);
-			
+
 					int defaultIndex = 0;
 					defaultindex.put(tmgFlagIdent, defaultIndex);
-					
+
 			// PID for person in T169
-					long baseTypeRPID = 1000000000000001L;  // Base Type Person		
-					
-			// Add T251_FLAG_DEFN row		
+					long baseTypeRPID = 1000000000000001L;  // Base Type Person
+
+			// Add T251_FLAG_DEFN row
 					addToT251_FLAG_DEFN(table251PID, flagIdent ,baseTypeRPID, defaultIndex, tableT251);
-					
+
 			// Add T204_FLAG_TRAN row
 					long table204PID = ++lastT204PID;
 					addToT204_FLAG_TRAN(table204PID, flagIdent, tmgHreConverter.languageTMG(), tableT204 );
-				}			
-			}		
-			
+				}
+			}
+
 		} catch (SQLException | HBException sqle) {
-			System.out.println("SQLxception - updateFlagFromTMG: " + sqle.getMessage()
-			+ "\nTMG name_C.dbf - index: " + currentRow);
-		throw new HCException("SQLxception - updateFlagFromTMG: " + sqle.getMessage()
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport updating flag. TMG C.dbf - index: "
+						+ currentRow + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("SQLxception - updateFlagFromTMG: " + sqle.getMessage()
 					+ "\nTMG name_ST.dbf - index: " + currentRow + "\n" + sqle.getMessage());
-		}	
+		}
    }
-   
+
 /**
  * processPropertyTransTMG(String flagProperty)
  * @param flagProperty
- * 
+ *
 	n_Norwegian=ADOPTERT
 	v_Norwegian=?,N,J
 	d_Norwegian=  ?=ukjent|N=ikke adoptert|J=adoptert
@@ -762,7 +764,7 @@ public class TMGpass_Support {
 	   String[] propertyCont;
 	   String[] flagTransData;
 	   languagTransIndex = new HashMap<String,String[]>();
-	   if (TMGglobal.DEBUG) 
+	   if (TMGglobal.DEBUG)
 		   System.out.println("Property:\n" + flagProperty);
 	   String[] propertyLines = flagProperty.split("\n");
 	   for (int i = 0; i < propertyLines.length; i++) {
@@ -770,7 +772,7 @@ public class TMGpass_Support {
 		   if (propertyLines[i].startsWith("n_")) {
 			   propertyCont = propertyLines[i].split("=");
 			   language = propertyCont[0].replace("n_", "").trim();
-			   flagName = propertyCont[1];	
+			   flagName = propertyCont[1];
 			   index++;
 		   } else if (propertyLines[i].startsWith("d_")) {
 			   propertyCont = propertyLines[i].split("=");
@@ -784,19 +786,19 @@ public class TMGpass_Support {
 		   if (index == 3) {
 			   String langCode = getTagLangCode(language);
 			   flagTransData = new String[3];
-			   		   
+
 			   flagTransData[0] = flagName;
 			   flagTransData[1] = flagValues;
-			   flagTransData[2] = flagDescr.replace("|", "\n");		   
+			   flagTransData[2] = flagDescr.replace("|", "\n");
 			   index = 0;
 			   languagTransIndex.put(langCode, flagTransData);
-			   if (TMGglobal.DEBUG) 
-				   System.out.println("Data translation: " + langCode 
+			   if (TMGglobal.DEBUG)
+				   System.out.println("Data translation: " + langCode
 						   + "/" + flagName + "/" + flagValues + "/" + flagDescr);
 		   }
 	   }
    }
-   
+
 /**
  * getLangCode(String language)
  * @param language
@@ -816,29 +818,29 @@ public class TMGpass_Support {
    		if (language.contains("Norwegia2")) code = "no-NN";
    		return code;
    	}
-   	
+
  /**
-  * updateT204_FLAG_TRAN(int flagIdent)  	
+  * updateT204_FLAG_TRAN(int flagIdent)
   * @param flagIdent
   * @throws HCException
   */
    	private void updateT204_FLAG_TRAN(int flagIdent, boolean useImport) throws HCException {
-		String selectString = pointHREbase.setSelectSQL("*", translatedFlag, "FLAG_IDENT = " + flagIdent);	
+		String selectString = pointHREbase.setSelectSQL("*", translatedFlag, "FLAG_IDENT = " + flagIdent);
 		ResultSet flagTranslationSet = pointHREbase.requestTabledata(translatedFlag, selectString);
 		try {
 			flagTranslationSet.beforeFirst();
 			while (flagTranslationSet.next())  {
 				String lanCode = flagTranslationSet.getString("LANG_CODE");
-				if (TMGglobal.DEBUG) 
+				if (TMGglobal.DEBUG)
 					System.out.println( " Lang code: " + lanCode);
 				if (languagTransIndex.containsKey(lanCode)) {
 					String [] flagData = languagTransIndex.get(lanCode);
 					if (TMGglobal.DEBUG) {
-						System.out.println(" Pre: " + flagTranslationSet.getString("FLAG_NAME").trim() 
+						System.out.println(" Pre: " + flagTranslationSet.getString("FLAG_NAME").trim()
 								+ "/" + flagTranslationSet.getString("FLAG_VALUES"));
-						System.out.println(" Impoted name: " + flagData[0] + "/Value: " + flagData[1]);	
+						System.out.println(" Impoted name: " + flagData[0] + "/Value: " + flagData[1]);
 					}
-					flagTranslationSet.updateString("FLAG_VALUES", 
+					flagTranslationSet.updateString("FLAG_VALUES",
 							convertFlagValues(flagTranslationSet.getString("FLAG_VALUES"), flagData[1]));
 					if (useImport) flagTranslationSet.updateString("FLAG_NAME", flagData[0]);
 					if (useImport) flagTranslationSet.updateString("FLAG_VALUES", flagData[1]);
@@ -847,13 +849,16 @@ public class TMGpass_Support {
 				}
 			}
 		} catch (SQLException sqle) {
-			System.out.println(" TMGpass_V22a_Support - updateT204_FLAG_TRAN" + sqle.getMessage());
-			throw new HCException(" TMGpass_V22a_Support - updateT204_FLAG_TRAN" + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport updating T204_FLAG_TRAN: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException(" TMGpass_Support - updateT204_FLAG_TRAN" + sqle.getMessage());
 		}
    	}
-   	
+
 /**
- * convertFlagValues(String preValues, String newValues)   	
+ * convertFlagValues(String preValues, String newValues)
  * @param preValues
  * @param newValues
  * @return
@@ -867,29 +872,27 @@ public class TMGpass_Support {
    		String[] outList = new String[newList.length];
    		if (preList.length == newList.length) {
    			for (int i = 0; i < preList.length; i++)
-   				if (preList[i].charAt(0) == newList[i].charAt(0)) equal++;;
+   				if (preList[i].charAt(0) == newList[i].charAt(0)) equal++;
    		}
    		if (equal == preList.length) return preValues;
-   		else {
-   			for (int i = 0; i < newList.length; i++) {
-   				first = newList[i].charAt(0);
-   				for (int j = 0; j < preList.length; j++)
-   					if (preList[j].charAt(0) == first) outList[i] = preList[j];				
-   			}
-   			outString = outList[0];
-   			for (int k = 1; k < outList.length; k++) outString = outString + "," + outList[k];
-   			return outString; 			
-   		}
+		for (int i = 0; i < newList.length; i++) {
+			first = newList[i].charAt(0);
+			for (int j = 0; j < preList.length; j++)
+				if (preList[j].charAt(0) == first) outList[i] = preList[j];
+		}
+		outString = outList[0];
+		for (int k = 1; k < outList.length; k++) outString = outString + "," + outList[k];
+		return outString;
    	}
-   
+
 /**
  * addToT251_FLAG_DEFN(long tablePID, ResultSet hreTable)
  * @param tablePID
  * @param hreTable
  * @throws HCException
  */
-   private void addToT251_FLAG_DEFN(long tablePID, int flagIdent, long baseTypeRPID, 
-		   					int defaultIndex, ResultSet hreTable) throws HCException {	
+   private void addToT251_FLAG_DEFN(long tablePID, int flagIdent, long baseTypeRPID,
+		   					int defaultIndex, ResultSet hreTable) throws HCException {
 	   try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
@@ -906,17 +909,20 @@ public class TMGpass_Support {
 
 		//Insert row in database
 			hreTable.insertRow();
-			
+
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println(" update table - T251_FLAG_DEFN row: " + tablePID);
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names_Styles - addToT251_FLAG_DEFN - : " + sqle.getMessage());
-		}	
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport updating T251_FLAG_DEFN row: "
+						+ tablePID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Support - addToT251_FLAG_DEFN - : " + sqle.getMessage());
+		}
    }
-   
-   
+
+
 /**
- * addToT204_FLAG_TRAN(long tablePID, String flagLang, ResultSet hreTable)   
+ * addToT204_FLAG_TRAN(long tablePID, String flagLang, ResultSet hreTable)
  * @param tablePID
  * @param flagLang
  * @param hreTable
@@ -933,20 +939,23 @@ public class TMGpass_Support {
 			hreTable.updateInt("FLAG_IDENT", flagIdent);
 			hreTable.updateString("LANG_CODE",flagLang);
 			hreTable.updateString("FLAG_NAME", tmgCtable.getValueString(index,"FLAGLABEL"));
-			hreTable.updateString("FLAG_VALUES", tmgCtable.getValueString(index,"FLAGVALUE"));	
+			hreTable.updateString("FLAG_VALUES", tmgCtable.getValueString(index,"FLAGVALUE"));
 			String decript = HREmemo.returnStringContent(tmgCtable.getValueString(index,"DESCRIPT"));
-			if (decript.length() > 2000) {	
-				System.out.println(" *** Long T204_FLAG_TRAN - DESCRIPT - Length: " 
+			if (decript.length() > 2000) {
+				System.out.println(" *** Long T204_FLAG_TRAN - DESCRIPT - Length: "
 						+ decript.length() + "/2000");
-				decript = decript.substring(0,2000);	
-			} 
-			hreTable.updateString("FLAG_DESC", decript);		
+				decript = decript.substring(0,2000);
+			}
+			hreTable.updateString("FLAG_DESC", decript);
 		//Insert row in database
-			hreTable.insertRow();				
+			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println(" update table - T204_FLAG_TRAN row: " + tablePID);
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names_Styles - T204_FLAG_TRAN - : " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSupport updating T204_FLAG_TRAN row: "
+						+ tablePID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Support - T204_FLAG_TRAN: " + sqle.getMessage());
 		}
    }
 } // End TMGpass_Support

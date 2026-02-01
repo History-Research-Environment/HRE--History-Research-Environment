@@ -19,7 +19,8 @@ package hre.gui;
  * 			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
  * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
  * 			  2025-06-05 Partial fix to layout issues with large fonts (D Ferguson)
- * 			  2025-11-28 Modified for used with HG0566EditSource (N.Tolleshaug)
+ * 			  2025-11-28 Modified for use with HG0566EditSource (N.Tolleshaug)
+* 			  2026-01-06 Log catch block msgs (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -99,7 +100,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 // Controls the added memo panel
 	public boolean additionalPanel = true; // Turned off in HG0566EditSource
-	
+
 	HG0507SelectPerson thisSelectPerson = this;
 	public HG0547EditEvent pointEditEvent;
     public HBPersonHandler pointPersonHandler;
@@ -159,7 +160,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
 	Object objTempCiteData[] = new Object[2];   // to temporarily hold a row of data when moving rows around
 	String[] tableCiteHeader;
-	String citeTableName = "";
+	String citeTableName = "";	//$NON-NLS-1$
 
 	JLabel lbl_Relate, lbl_Parent;
 	JComboBox<String> comboBox_Relationships;
@@ -189,13 +190,13 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		lbl_nRole2 = new JLabel(HG05070Msgs.Text_130);	// New Selected?
 
 	// Collect static GUI text from T204 for filter drop-down
-		String[] translatedTexts = pointPersonHandler.setTranslatedData("50700", "0", false);		//$NON-NLS-1$
+		String[] translatedTexts = pointPersonHandler.setTranslatedData("50700", "0", false);	//$NON-NLS-1$ //$NON-NLS-2$
 		idText = translatedTexts[0];
 		allColumnsText1 = translatedTexts[1];
 		allColumnsText2 = translatedTexts[2];
 
 	// Collect static GUI text from T204 for Person table
-		String[] tableHeaders = pointPersonHandler.setTranslatedData("50700", "1", false);		//$NON-NLS-1$
+		String[] tableHeaders = pointPersonHandler.setTranslatedData("50700", "1", false);	//$NON-NLS-1$ //$NON-NLS-2$
 
 	// Collect static GUI text from T204 for Citation table
 		tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
@@ -768,7 +769,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					findPanel.setVisible(false);
 					personPanel.setVisible(false);
 					control1Panel.setVisible(false);
-	
+
 				// Display the Relationship/memo/Citation panels instead
 					persRolePanel.setVisible(true);
 					memoPanel.setVisible(true);
@@ -776,12 +777,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					if (thisSelectPerson instanceof HG0507SelectParent) citePanel.setVisible(true);
 					if (thisSelectPerson instanceof HG0507SelectPartner) citePanel.setVisible(true);
 					control2Panel.setVisible(true);
-	
+
 				// Change the title from Select to Add
 					setTitle(addTitle);
 					pack();
 				} else {
-					
+
 				// If only used to collec the selected peron PID
 					if (tablePersons.getSelectedRow() == -1) return;
 				// Otherwise, find personPID clicked
@@ -789,9 +790,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
 					dispose();
-					//System.out.println(" Selected person PID: " + personPID);
+
 					pointCitationSourceHandler.updatePersonName(personPID);
-					//dispose();
 				}
 			}
 		});
@@ -851,8 +851,10 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					citeModel.removeRow(atRow);
 					pack();
 				} catch (HBException hbe) {
-					System.out.println("HG0507SelectPerson delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507SelPer delete citation: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});

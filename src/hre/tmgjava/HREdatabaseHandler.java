@@ -1,9 +1,10 @@
 package hre.tmgjava;
 /***********************************************************************************
  * DatabaseH2handler handles data transfer to/from H2 database
- * v0.00.0017 2020-02-14 added no empty database parameter in connect (N. Tolleshaug)
- * v0.00.0025 2021-02.22 - Added create table and delete table actions(N. Tolleshaug)
- * v0.00.0031 2024-04.12 - Added and changed updateTableInBase (N. Tolleshaug)
+ * v0.01.0017 2020-02-14 added no empty database parameter in connect (N. Tolleshaug)
+ * v0.02.0025 2021-02.22 - Added create table and delete table actions(N. Tolleshaug)
+ * v0.03.0031 2024-04.12 - Added and changed updateTableInBase (N. Tolleshaug)
+ * v0.04.0032 2026-01-14 - Log catch block and other msgs (D Ferguson)
  * ***********************************************************************************
  */
 import java.sql.Clob;
@@ -13,8 +14,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
-
+import hre.gui.HGlobal;
 
 /**
  * DatabaseH2handler
@@ -26,7 +28,7 @@ import hre.bila.HBException;
 public class HREdatabaseHandler {
 
 	Connection dataH2conn = null;
-	
+
 	static long proOffset = 1000000000000000L;
 	static long null_RPID  = 1999999999999999L;
 
@@ -46,7 +48,7 @@ public class HREdatabaseHandler {
 		String connectString;
     	try {
     		Class.forName("org.h2.Driver");
- 
+
 /**
  * If urlH2loc points to a non exiting database - ;IFEXISTS=TRUE
  * disable creation of a new empty H2 database
@@ -57,10 +59,15 @@ public class HREdatabaseHandler {
     		dataH2conn =  DriverManager.getConnection(connectString, userId, passWord);
 
     	} catch(SQLException exc) {
-    		exc.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler SQL connect " + exc.getMessage());
+				HB0711Logging.printStackTraceToFile(exc);
+			}
     		closeSQLconnect();
     		throw new HCException("Connect SQL error:\n" + exc.getMessage());
     	} catch(ClassNotFoundException clx) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler class not found " + clx.getMessage());
     		throw new HCException("Class Not Found error:\n" + clx.getMessage());
     	}
 	}
@@ -71,15 +78,14 @@ public class HREdatabaseHandler {
  */
 
 	public void closeSQLconnect() throws HCException {
-		if (TMGglobal.DEBUG) System.out.println("Close H2 Database!");
+ 		if (TMGglobal.DEBUG) System.out.println("Closing H2 Database!");
 		try {
 			if (dataH2conn != null) {dataH2conn.close();
-				dataH2conn = null;
-			//if (TMGglobal.DEBUG)
-				System.out.println(" H2 Database Closed!");
+				dataH2conn = null;								   
 			}
 		} catch(SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("Database H2 close error: " + sqle.getMessage());
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler H2 Database close: " + sqle.getMessage());
 			throw new HCException("Close Database error: \n" + sqle.getMessage());
 		}
 	}
@@ -97,11 +103,12 @@ public class HREdatabaseHandler {
 					ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 	    	return stmt.executeQuery(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request error " + exc.getMessage());
 			throw new HCException("Request record SQL error: \n" + exc.getMessage());
 		}
 	}
-	
+
 /**
  * Generate SELECT SQL command String according to:
  * SELECT column1, column2, ...FROM table_name WHERE condition;
@@ -117,9 +124,9 @@ public class HREdatabaseHandler {
 			System.out.println("Request SQL String: \n" + sqlRequestString);
 		return sqlRequestString;
 	}
-	
+
 /**
- * requestTabledata(String tableName, String selectSQL)	
+ * requestTabledata(String tableName, String selectSQL)
  * @param tableName
  * @param selectSQL
  * @return
@@ -131,13 +138,14 @@ public class HREdatabaseHandler {
 					ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 	    	return stmt.executeQuery(selectSQL);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
 			throw new HCException("Request record SQL error: \n" + exc.getMessage());
 		}
-	}	
-	
+	}
+
 /**
- * lastRowPID(String tableName, int dataBaseIndex)	
+ * lastRowPID(String tableName, int dataBaseIndex)
  * @param tableName
  * @param dataBaseIndex
  * @return
@@ -150,6 +158,8 @@ public class HREdatabaseHandler {
 			lastPID = requestTabledata(tableName, selectSQL);
 	        if (lastPID.first()) return lastPID.getLong("PID");
 		} catch (SQLException | HCException sqle) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler lastRowPID " + sqle.getMessage());
 			throw new HBException(" HBBusinessLayer - lastRowPID error: " + sqle.getMessage());
 		}
 		return proOffset;
@@ -167,7 +177,8 @@ public class HREdatabaseHandler {
 					ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 		    	return stmt.executeQuery(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
 			throw new HCException("Request table SQL error: \n" + exc.getMessage());
 		}
 	}
@@ -186,7 +197,8 @@ public class HREdatabaseHandler {
 			Statement stmt = dataH2conn.createStatement();
 		    	 stmt.executeUpdate(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
 			throw new HCException("Request table SQL error: \n" + exc.getMessage());
 		}
 	}
@@ -204,7 +216,8 @@ public class HREdatabaseHandler {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
 			throw new HCException("Alter column SQL error: \n" + exc.getMessage());
 		}
 	}
@@ -221,14 +234,15 @@ public class HREdatabaseHandler {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database request error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
 			throw new HCException("Create table SQL error: \n" + exc.getMessage());
 		}
 	}
-	
-	
+
+
 /**
- * updateTableInBase(String tableName, String sqlCommand)	
+ * updateTableInBase(String tableName, String sqlCommand)
  * @param tableName
  * @param sqlCommand
  * @throws HCException
@@ -252,7 +266,8 @@ public class HREdatabaseHandler {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database update error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler table update " + exc.getMessage());
 			throw new HCException("Update table SQL error: \n" + exc.getMessage());
 		}
 	}
@@ -270,7 +285,8 @@ public class HREdatabaseHandler {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
 		} catch(SQLException exc) {
-			if (TMGglobal.DEBUG) System.out.println("Database delete error!");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler table delete " + exc.getMessage());
 			throw new HCException("Create User SQL error: \n" + exc.getMessage());
 		}
 	}
@@ -287,13 +303,12 @@ public class HREdatabaseHandler {
 			if (TMGglobal.DEBUG)
 				System.out.println("Charac in Clob: " + nrOfChar);
 	        return myClob;
-	    } catch (HCException hre) {
-			if (TMGglobal.DEBUG) System.out.println("Write Clob error: " + hre.getMessage());
-			hre.printStackTrace();
-	    } catch (SQLException sqle) {
-	    	if (TMGglobal.DEBUG) System.out.println("Write Clob error: " + sqle.getMessage());
-			sqle.printStackTrace();
-		}
+	    } catch (HCException | SQLException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler CLOB write " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+	    }
 	    return myClob;
 	}
 
@@ -308,10 +323,10 @@ public class HREdatabaseHandler {
 			myClob = this.dataH2conn.createNClob();
 			return myClob;
 		} catch (SQLException sqle) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler CLOB create " + sqle.getMessage());
 			throw new HCException("Request record SQL error: \n" + sqle.getMessage());
-			//e.printStackTrace();
 		}
 	}
-
 
 } // End DatabaseH2handler

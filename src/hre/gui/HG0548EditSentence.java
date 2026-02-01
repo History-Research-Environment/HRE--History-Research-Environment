@@ -10,7 +10,8 @@ package hre.gui;
  *			  2025-07-11 Convert sentence to internal format (roleNumbers) for Save (D Ferguson)
  *			  2025-07-13 Handle TMG male/female sentence structures (D Ferguson)
  *			  2025-12-17 NLS code up to this point (D Ferguson)
- *
+ *            2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+ *			  2026-01-04 Log catch block errors (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 sentence saving after edit
@@ -46,6 +47,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBWhereWhenHandler;
@@ -61,6 +63,7 @@ import net.miginfocom.swing.MigLayout;
 public class HG0548EditSentence extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBWhereWhenHandler pointWhereWhenHandler;
+	HBEventRoleManager pointEventRoleManager;
 	HG0547EditEvent pointEditEvent;
 	int dataBaseIndex;
 	int eventNumber;
@@ -103,6 +106,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 								int eventNumber, String roleName, String sexCode)  {
 		this.pointEditEvent = pointEditEvent;
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+		pointEventRoleManager = pointOpenProject.getEventRoleManager();
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 		this.roleName = roleName;
 		this.eventNumber = eventNumber;
 		this.sexCode = sexCode;
@@ -118,18 +123,20 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 		// Get the lists of Roles and their reference Numbers for this eventNumber
 		try {
-			eventRoleNames = pointWhereWhenHandler.getEventRoleList(eventNumber, "");	//$NON-NLS-1$
-			eventRoleNumbers = pointWhereWhenHandler.getEventRoleTypes();
+			eventRoleNames = pointEventRoleManager.getRolesForEvent(eventNumber, "");	//$NON-NLS-1$
+			eventRoleNumbers = pointEventRoleManager.getEventRoleNumbers();
 			// Above gets the data for the current language, but we also need to get the Eng(US) versions
 			// To do this, temporarily set the global datalanguage to ENG(US) and then restore it
 			String tempLang = HGlobal.dataLanguage;
 			HGlobal.dataLanguage = "en-US";	//$NON-NLS-1$
-			usRoleNames = pointWhereWhenHandler.getEventRoleList(eventNumber, "");	//$NON-NLS-1$
-			usRoleNumbers = pointWhereWhenHandler.getEventRoleTypes();
+			usRoleNames = pointEventRoleManager.getRolesForEvent(eventNumber, "");	//$NON-NLS-1$
+			usRoleNumbers = pointEventRoleManager.getEventRoleNumbers();
 			HGlobal.dataLanguage = tempLang;
-		} catch (HBException e) {
-			System.out.println("HG0548EditSentence role load error: " + e.getMessage());	//$NON-NLS-1$
-			e.printStackTrace();
+		} catch (HBException hbe) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0548 sentence role loading " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		// Get the proper language name of current HGlobal dataLanguage code
@@ -341,8 +348,11 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			roleSentence = pointWhereWhenHandler.pointLibraryResultSet.
 					selectSentenceString(eventNumber, eventRoleNumbers[comboRoleNames.getSelectedIndex()],
 										 lang_code, dataBaseIndex);
-		} catch (HBException e) {
-			e.printStackTrace();
+		} catch (HBException hbe) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0548 sentence loading " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		// If roleSentence has error flag, change error message and return

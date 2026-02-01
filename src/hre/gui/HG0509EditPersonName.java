@@ -7,9 +7,7 @@ package hre.gui;
  * 			  2024-10-05 Updated for reset PM/PS (N Tolleshaug)
  * 			  2024-11-29 Fixed reset PM/PS (N Tolleshaug)
  * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
- ******************************************************************************
- * Notes on functions not yet enabled
- * NOTE02 load/edit/save/move of Citation data
+ * 			  2026-01-08 Log catch block msgs (D Ferguson)
  *****************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -47,8 +45,8 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 			 						long personNameTablePID) throws HBException {
 		super(pointPersonHandler, pointOpenProject, personNameTablePID);
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-		if (HGlobal.DEBUG)
-			System.out.println("HG0509EditPersonName initated");	//$NON-NLS-1$
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0509EditPersonName");}	//$NON-NLS-1$
 
     	this.setResizable(true);
     // Setup screenID and helpName for 50600 as Help for this dialog is part of
@@ -57,8 +55,6 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
     	windowID = screenID;
 		helpName = "manageperson";	//$NON-NLS-1$
 
-		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0509EditPersonName");}	//$NON-NLS-1$
 	    setTitle(HG0509Msgs.Text_15);		// Edit Person Name
 
 	 // Get Name style and start/end dates
@@ -126,7 +122,6 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 							}
 						// Update name element table T403
 							pointPersonHandler.updateElementData(nameEventType);
-
 						// Update all names table in manage person
 							pointPersonHandler.updateAllNameTable();
 							pointPersonHandler.managePersonScreen.resetAllNametable(pointOpenProject);
@@ -155,8 +150,10 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 				pointPersonHandler.resetPersonSelect();
 
 			} catch (HBException hbe) {
-				System.out.println("HG0509EditPersonName - Save error: " + hbe.getMessage());	//$NON-NLS-1$
-				hbe.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0509EditPerName Save " + hbe.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(hbe);
+				}
 				errorJOptionMessage("HG0509EditPersonName", HG0509Msgs.Text_26 + hbe.getMessage());	//$NON-NLS-1$  // Save Error:
 			}
 			btn_Save.setEnabled(false);

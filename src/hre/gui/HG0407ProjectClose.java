@@ -37,6 +37,7 @@ package hre.gui;
  * 			  2022-05-29 auto-select the project if only 1 project open (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
  * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
  **********************************************************************************************
  * NOTES for incomplete functionality
  ************************************************
@@ -85,7 +86,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Close
  * @author R Thompson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-02-25
  */
 
@@ -221,6 +222,10 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 					} catch (HBException hbe) {
 						JOptionPane.showMessageDialog(contents, HG0407Msgs.Text_28
 								+  hbe.getMessage(), HG0407Msgs.Text_29,JOptionPane.ERROR_MESSAGE);
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0407 project summary error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 				if (summaryData != null) {
@@ -229,7 +234,7 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 					Point xy = btn_Summary.getLocationOnScreen();          	  // Gets Summary button location on screen
 					summscreen.setLocation(xy.x + 50, xy.y);     			  // Sets Summary screen top-left corner relative to that
 					summscreen.setVisible(true);
-				} else if (HGlobal.DEBUG) System.out.println("Summary data is null"); //$NON-NLS-1$
+				} else if (HGlobal.writeLogs) HB0711Logging.logWrite("Result: in HG0407 Summary data is null"); //$NON-NLS-1$
 			}
 		});
 

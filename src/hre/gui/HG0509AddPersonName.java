@@ -9,9 +9,7 @@ package hre.gui;
  * 			  2024-12-08 Updated name styles and event type handling (N Tolleshaug)
  * v0.04.0032 2024-12-22 Updated for Build 32 (N Tolleshaug)
  * 			  2025-04-21 Remove redundant citationchanged code (D Ferguson)
- ******************************************************************************
- * Notes on functions not yet enabled
- * NOTE02 load/edit/save/move of Citation data
+ * 			  2026-01-08 Log catch block msgs (D Ferguson)
  *****************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -123,8 +121,10 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 					pointPersonHandler.resetPersonManager();
 
 				} catch (HBException hbe) {
-					System.out.println("HG0509AddPersonName - Save error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0509AddPerName Save " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorJOptionMessage("HG0509AddPersonName", HG0509Msgs.Text_32 + hbe.getMessage());	//$NON-NLS-1$	// Save Error:
 				}
 

@@ -121,6 +121,9 @@ package hre.bila;
   * 		   2025-04-17 - Only count children if bio relationship (Issue 31.67) (D Ferguson)
   * 		   2025-04-26 - If parent not known pass '---' parent-name in parentTable (D Ferguson)
   *            2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
+  *            2026-01-27 - line 234 - pointEventRoleManager = 
+  *            				pointOpenProject.getEventRoleManager(); (N.Tolleshaug)
+  *            
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -229,11 +232,12 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public HBPersonHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		this.pointOpenProject = pointOpenProject;
-		if (pointOpenProject != null)
-			pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
-		else System.out.println(" HBPersonHandler() - pointOpenProject == null!");
+		if (pointOpenProject != null) {
+			pointEventRoleManager = pointOpenProject.getEventRoleManager(); // Updated 28.1.2026 NTo
+		} else System.out.println(" HBPersonHandler() - pointOpenProject == null!");
 		if (HGlobal.DEBUG)
 			System.out.println("Person Handler initiated!");
+		
 	}
 
 /**
@@ -592,6 +596,7 @@ public class HBPersonHandler extends HBBusinessLayer {
  * API for Event Role manager
  */
 	public String[] getEventTypeList(int eventGroup) throws HBException {
+		pointEventRoleManager = pointOpenProject.getEventRoleManager();
 		return pointEventRoleManager.getEventTypeList(eventGroup);
 	}
 

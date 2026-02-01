@@ -14,7 +14,7 @@ package hre.gui;
 * v0.01.0029 2023-04-14 Convert function modified (D Ferguson)
 * 			 2023-04-19 All NLS entries moved to HG0524Msgs (D Ferguson)
 * v0.04.0032 2025-02-23 Dispose of Reminder on Close (D Ferguson)
-*
+* 			 2026-01-08 Log catch block msgs (D Ferguson)
 ***********************************************************************************/
 
 import java.awt.Point;
@@ -150,9 +150,11 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 					// Reset elements lists when changing HRE name element description
 						resetElementLists();
 					} catch (HBException hbe) {
-						System.out.println("Save all name style changes error: " + hbe.getMessage()); //$NON-NLS-1$
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0526 saving nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 						errorMessage("HBE00","Save all name style changes error: \n" + hbe.getMessage(), 0, nameType); //$NON-NLS-1$ //$NON-NLS-2$
-						hbe.printStackTrace();
 					}
 				}
 				btn_Save.setEnabled(false);
@@ -179,8 +181,10 @@ public class HG0526ManageLocationNameStyles extends HG0524ManageNameStyles {
 						pointStyleHandler.setOutputStyleTable(nameType);
 						resetElementLists();
 					} catch (HBException hbe) {
-						System.out.println("HG0526ManageLocationNameStyles - Save output style error: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0526 saving nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 				btn_OutSave.setEnabled(false);

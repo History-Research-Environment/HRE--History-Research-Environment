@@ -11,11 +11,12 @@ package hre.gui;
  * v0.01.0023 2020-08-04 changed from JDialog to extend HG0450SuperDialog (D Ferguson)
  *            2020-09-11 removed Reminder icon from Toolbar (D Ferguson)
  *            2020-09-30 changed to MigLayout; fonts removed for JTattoo install (D Ferguson)
- * v0.01.0026 2021-09-15 Apply tag codes to screen control buttons (D Ferguson)
- * v0.01.0027 2021-09-27 Revised screen for DB login instead of server (D Ferguson)
+ * v0.02.0026 2021-09-15 Apply tag codes to screen control buttons (D Ferguson)
+ * v0.02.0027 2021-09-27 Revised screen for DB login instead of server (D Ferguson)
  * 			  2021-09-29 renamed to HG0575DBLogon and modified (N Tolleshaug)
  * 			  2021-10-28 get server IP/port from AUX server entry (D Ferguson)
- * v0.01.0030 2023-06-21 set an errorCode for login cancel to avoid open error (D Ferguson)
+ * v0.03.0030 2023-06-21 set an errorCode for login cancel to avoid open error (D Ferguson)
+ * v0.04.0032 2026-01-04 Log debug msgs (D Ferguson)
  *************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -42,7 +43,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Database Logon (was Server logon/off)
  * @author R Thompson
- * @version v0.01.0030
+ * @version v0.01.0032
  * @since 2019-02-17
  */
 
@@ -175,7 +176,8 @@ public class HG0575DBLogon extends HG0450SuperDialog {
 				HGlobal.remoteID = txt_UserID.getText();
 				HGlobal.passWord = txt_Password.getText();
 				errorCode = pointProHand.openProjectAction(true, projectsData[0], loginData);
-				if (HGlobal.DEBUG) System.out.println("Remote Logon errorcode = " + errorCode + "  Server: " + projectsData[3]); //$NON-NLS-1$ //$NON-NLS-2$
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Status: in HG0575 Remote Logon errorcode = " + errorCode + "  Server: " + projectsData[3]); //$NON-NLS-1$ //$NON-NLS-2$
 				if (errorCode == 0) logonOK = true;
 				if (logonOK) {  // lookup userServers table and set logged in flag to true for this server
 					if (HGlobal.writeLogs)

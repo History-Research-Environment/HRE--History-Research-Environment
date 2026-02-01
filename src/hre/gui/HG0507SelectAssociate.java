@@ -9,7 +9,9 @@ package hre.gui;
  * 			  2024-05-20 Add and edit associate and memo (N. Tolleshaug)
  * 			  2024-07-31 Revised HG0507SelectAssociate buttons (N. Tolleshaug)
  * 			  2024-08-24 NLS conversion (D Ferguson)-
- * 			  2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
+ * 			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
+ *       	  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+ * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
  **************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -18,6 +20,8 @@ import java.awt.event.ActionListener;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 
+import hre.bila.HB0711Logging;
+import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -27,7 +31,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectAssociate
  * @author N Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-04-05
  */
 
@@ -36,7 +40,8 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 
 	HBWhereWhenHandler pointWhereWhenHandler;
 	HG0507SelectAssociate pointSelectAssociate = this;
-	//HG0547EditEvent pointEditEvent;
+	HBEventRoleManager pointEventRoleManager;
+
 	Object[][] roleData;
 	String[] assocRoleList;
 	int[] assocRoleNumber;
@@ -53,11 +58,12 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
  * @throws HBException
  */
 	public HG0507SelectAssociate(HBPersonHandler pointPersonHandler, HBProjectOpenData pointOpenProject,
-													int eventNumber, int indexInAssocTable, boolean addAssoc) throws HBException {
+									int eventNumber, int indexInAssocTable, boolean addAssoc) throws HBException {
 		super(pointPersonHandler, pointOpenProject, addAssoc);
 		this.addRelation = addAssoc;
-		
-		//HG0547EditEvent pointEditEvent = null;
+		pointEventRoleManager = pointOpenProject.getEventRoleManager();
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+
 	// Set titles for Associate Select
 		selectTitle = HG05070Msgs.Text_150;	// Select New Associate
 		newTitle = HG05070Msgs.Text_151;	// New Associate:
@@ -73,38 +79,39 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		assocRelationData = pointWhereWhenHandler.getAssocTableData(indexInAssocTable);
 		if (assocRelationData != null) {
-			if(HGlobal.DEBUG)	 
-				System.out.println(" AssocData: " + assocRelationData[0] + "/" + assocRelationData[1] + "/" 
-						+ assocRelationData[2]); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$	
+			if(HGlobal.DEBUG && HGlobal.writeLogs)
+				HB0711Logging.logWrite("Status: in HG0507SelAssoc AssocData: " 		//$NON-NLS-1$
+						+ assocRelationData[0] + "/" + assocRelationData[1] + "/"	//$NON-NLS-1$ //$NON-NLS-2$
+						+ assocRelationData[2]);
 		}
-		roleData = pointWhereWhenHandler.getEventRoleData(eventNumber, "");		//$NON-NLS-1$
+		roleData = pointEventRoleManager.getRolesDataForEvent(eventNumber, ""); //$NON-NLS-1$
 
 	// Update event memo
 	// Disable memoText listener first
 		memoText.getDocument().removeDocumentListener(memoTextChange);
-		if (assocRelationData != null) 
+		if (assocRelationData != null)
 			memoString = pointPersonHandler.readSelectGUIMemo((long)assocRelationData[0],
 							pointPersonHandler.eventAssocTable);
-		 else 
+		 else
 			memoString = HG05070Msgs.Text_155;		//  No memo found
-		
+
 		memoText.append(memoString);
 	// and enable it again
 		memoText.getDocument().addDocumentListener(memoTextChange);
 
 	// Set assoc name in window
 		if (assocRelationData != null)
-			lbl_ParentName.setText(HG05070Msgs.Text_156 + (String) assocRelationData[2]);		// Edit assoc:
-		
+			lbl_ParentName.setText(HG05070Msgs.Text_156 + (String) assocRelationData[2]);	// Edit assoc:
+
 	// Collect assoc role data
 		assocRoleList = new String[roleData.length];
 		assocRoleNumber = new int[roleData.length];
-		for (int i= 0; i < roleData.length; i++) 
+		for (int i= 0; i < roleData.length; i++)
 			assocRoleList[i] = (String)roleData[i][0];
-		
-		for (int i= 0; i < roleData.length; i++) 
+
+		for (int i= 0; i < roleData.length; i++)
 			assocRoleNumber[i] = (Integer)roleData[i][1];
-		
+
 	    updateComboPanel(comboBox_Relationships, assocRoleList);
 		comboBox_Relationships.setVisible(true);
 
@@ -118,27 +125,29 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 					if (addRelation) {
 						assocTablePID = pointWhereWhenHandler.createAssocTableRow(roleNumber, personPID);
 						pointPersonHandler.setAssociateTablePID(assocTablePID);
-						if (memoEdited) 
+						if (memoEdited)
 							pointPersonHandler.createSelectGUIMemo(memoText.getText(),
 									pointPersonHandler.eventAssocTable);
 					} else {
-						if (memoEdited) 
+						if (memoEdited)
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 								(long)assocRelationData[0], pointPersonHandler.eventAssocTable);
 						pointWhereWhenHandler.updateAssocTableRow((long)assocRelationData[0], roleNumber);
 					}
-					
-					if (pointEditEvent != null) 
+
+					if (pointEditEvent != null)
 						pointEditEvent.resetAssociateTable(assocTablePID);
-					else System.out.println(" HG0507SelectAssociate pointEditEvent == null");
+					else if (HGlobal.writeLogs)
+						HB0711Logging.logWrite("Status: in HG0507SelAssoc pointEditEvent == null");
 
 					persRolePanel.setVisible(false);
 					persRolePanel.remove(pointSelectAssociate);
-					//pointPersonHandler.resetPersonManager();		
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0507SelectAssociate error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507SelAssoc save: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -149,9 +158,8 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
  */
 	public void setAssocRoleEdit()	{
     	int assocRole = 0;
-    	if (assocRelationData != null) {
+    	if (assocRelationData != null)
 			assocRole = (int) assocRelationData[1];
-		}
     	int assocRoleindex = 0;
 		btn_SaveEvent.setEnabled(false);
 		btn_SaveEvent.setVisible(false);
@@ -159,9 +167,7 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 		btn_Save.setVisible(true);
 		btn_Save.setText(HG05070Msgs.Text_157);	// Update Associate
     	for (int i = 0; i < assocRoleNumber.length; i++) {
-    		if (assocRoleNumber[i] == assocRole) {
-				assocRoleindex = i;
-			}
+    		if (assocRoleNumber[i] == assocRole) assocRoleindex = i;
     	}
     	comboBox_Relationships.setSelectedIndex(assocRoleindex);
 	}

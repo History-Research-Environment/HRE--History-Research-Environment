@@ -12,13 +12,15 @@ package hre.tmgjava;
  * v0.00.0018 2020-03-25 - Changed to ArrayList for getMethods (N. Tolleshaug)
  * 						   HashMap used for findMethods (N. Tolleshaug)
  * v0.00.0018 2020-03-26 - Exception handling in get and find methods
- * v0.00.0027 2022-01-29 - Added methods getValueBoolean(N. Tolleshaug)
+ * v0.01.0027 2022-01-29 - Added methods getValueBoolean(N. Tolleshaug)
  * 			  2022-05-16 - Progress bar implemented for TMG file load (N. Tolleshaug)
+ * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
  * ************************************************************************************
  * NOTE 1
  * The HashMap for access to PID_Number handles only the first occurrence of the ID_Numner
  * Introduced a Vector for multiple occurrence of PID's in the table
  *****************************************************************************************/
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import com.linuxense.javadbf.DBFReader;
 import com.linuxense.javadbf.DBFRow;
 
 import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 
 /**
  * class TMGtableData contains the data from a TMG table
@@ -69,7 +72,10 @@ public class TMGtableData {
 		try {
 			dbfReader.close();
 		 } catch (Exception ex) {
-			System.out.println("TMG close exception " + ex.getMessage());
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGtableData table close exception: " + ex.getMessage());
+					HB0711Logging.printStackTraceToFile(ex);
+				}
 		}
 	}
 
@@ -120,8 +126,10 @@ public class TMGtableData {
 			}
 			nrOFRows = rowIndex;
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/TMGtableSingleData/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData SingleData DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/TMGtableSingleData/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -161,8 +169,10 @@ public class TMGtableData {
 			rowMultiRows = rowMultiIndex;
 			nrOFRows = rowIndex;
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/TMGtableMultiData/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData MultiData DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/TMGtableMultiData/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -178,8 +188,10 @@ public class TMGtableData {
 			row = dbfReader.nextRow();
 			return row;
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/readDBFrow/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData readDBFrow exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/readDBFrow/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -201,8 +213,10 @@ public class TMGtableData {
 				System.out.println();
 			}
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/writeDbfObjects/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData objects DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/writeDbfObjects/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -223,11 +237,12 @@ public class TMGtableData {
 				throw new HCException("TMGtableData/Arraylist get Bytes Error Key: "
 							+ listIndex + " - FieldName: " + fieldName);
 			}
-			//System.out.println("\ngetByteContent: " + listIndex + " / " + fieldName);
 			return PIDlist.get(listIndex).getBytes(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/getByteContent/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData getByteContent DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/getByteContent/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -250,8 +265,10 @@ public class TMGtableData {
 			}
 			return PIDlist.get(listIndex).getString(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/getValueString/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData getValueString DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/getValueString/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -273,8 +290,10 @@ public class TMGtableData {
 			}
 			return PIDmap.get(PID).getString(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findValueString/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findValueString DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findValueString/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -301,8 +320,10 @@ public class TMGtableData {
 			}
 			return multiPidMap.get(PID).get(vectorIndex).getString(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findVectorString/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findVectorString DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findVectorString/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -315,10 +336,13 @@ public class TMGtableData {
  */
 	public boolean existVector(int PID) throws HCException {
 		try {
-			if (multiPidMap.get(PID) == null) return false; else return true;
+			if (multiPidMap.get(PID) == null) return false;
+			return true;
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/existVector/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData existVector DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/existVector/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -331,10 +355,13 @@ public class TMGtableData {
  */
 	public boolean existInMap(int PID) throws HCException {
 		try {
-			if (PIDmap.get(PID) == null) return false; else return true;
+			if (PIDmap.get(PID) == null) return false;
+			return true;
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/existInMap/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData existInMap DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/existInMap/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -347,14 +374,14 @@ public class TMGtableData {
 	public int getVectorSize(int PID) throws HCException {
 		try {
 			if (existVector(PID)) return multiPidMap.get(PID).size();
-			else {
-				if (TMGglobal.DEBUG) System.out.println("TMGtableData - HashMap vector size = 0 for PID: " + PID);
-				HB0711Logging.logWrite("TMG to HRE - TMGtableData - Name or place elements missing for PID: " + PID);
-				return 0;
-			}
+			if (TMGglobal.DEBUG) System.out.println("TMGtableData - HashMap vector size = 0 for PID: " + PID);
+			HB0711Logging.logWrite("TMG to HRE - TMGtableData - Name or place elements missing for PID: " + PID);
+			return 0;
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/getVectorSize/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData getVectorSize DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/getVectorSize/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -378,8 +405,10 @@ public class TMGtableData {
 			}
 			return PIDmap.get(PID).getObject(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findValueObject/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findValueObject DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findValueObject/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -402,8 +431,10 @@ public class TMGtableData {
 			}
 			return PIDlist.get(listIndex).getInt(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/getValueInt/DBFException line: " + listIndex + " / " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData getValueInt DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/getValueInt/DBFException line: " + listIndex + " / " + dbfe.getMessage());
 		}
 	}
@@ -426,11 +457,12 @@ public class TMGtableData {
 			}
 			return PIDmap.get(PID).getInt(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findValueInt/DBFException line: " + PID + " / " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findValueInt DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findValueInt/DBFException line: " + PID + " / " + dbfe.getMessage());
 		}
-		//return 0;
 	}
 
 /**
@@ -454,8 +486,10 @@ public class TMGtableData {
 			}
 			return multiPidMap.get(PID).get(vectorIndex).getInt(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findVectorInt/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findVectorInt DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findVectorInt/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -478,14 +512,16 @@ public class TMGtableData {
 			}
 			return PIDlist.get(listIndex).getBoolean(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/getValueBoolean/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData getValueBoolean DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/getValueBoolean/DBFException: " + dbfe.getMessage());
 		}
 	}
-	
+
 /**
- * findValueBoolean(int PID, String fieldName)	
+ * findValueBoolean(int PID, String fieldName)
  * @param PID
  * @param fieldName
  * @return
@@ -502,9 +538,11 @@ public class TMGtableData {
 			}
 			return PIDmap.get(PID).getBoolean(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findValueInt/DBFException line: " + PID + " / " + dbfe.getMessage());
-			dbfe.printStackTrace();
-			throw new HCException("TMGtableData/findValueInt/DBFException line: " + PID + " / " + dbfe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findValueBoolean DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
+			throw new HCException("TMGtableData/findValueBoolean/DBFException line: " + PID + " / " + dbfe.getMessage());
 		}
 	}
 /**
@@ -529,8 +567,10 @@ public class TMGtableData {
 			}
 			return multiPidMap.get(PID).get(vectorIndex).getBoolean(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findVectorBoolean/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findVectorBoolean DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findVectorBoolean/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -546,8 +586,10 @@ public class TMGtableData {
 		try {
 			return PIDlist.get(listIndex).getDate(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/getValueDate/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData getValueDate DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/getValueDate/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -563,8 +605,10 @@ public class TMGtableData {
 		try {
 			return PIDlist.get(PID).getDate(fieldName);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findValueDate/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findValueDate DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 			throw new HCException("TMGtableData/findValueDate/DBFException: " + dbfe.getMessage());
 		}
 	}
@@ -579,9 +623,11 @@ public class TMGtableData {
 		try {
 			return multiPidMap.get(PID);
 		} catch (DBFException dbfe) {
-			System.out.println("TMGtableData/findValueDate/DBFException: " + dbfe.getMessage());
-			dbfe.printStackTrace();
-			throw new HCException("TMGtableData/findValueDate/DBFException: " + dbfe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData findVectorRows DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
+			throw new HCException("TMGtableData/findVectorRows/DBFException: " + dbfe.getMessage());
 		}
 	}
 

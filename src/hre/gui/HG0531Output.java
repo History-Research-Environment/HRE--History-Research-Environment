@@ -13,6 +13,7 @@ package hre.gui;
  * 			  2023-09-28 Implement NLS (D Ferguson)
  * v0.03.0031 2024-10-01 Clean whitespace (D Ferguson)
  * v0.04.0032 2025-06-14 Modify headerfooter eventHandler for iText v9.2.0 (D Ferguson)
+ * 			  2026-01-05 Log catch block errors (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Cursor;
@@ -234,7 +235,8 @@ public class HG0531Output extends JDialog {
 			            JOptionPane.showMessageDialog(btn_Print, HG0531Msgs.Text_19 + pe.getMessage(), 	// Printing Failed:
 			            										 HG0531Msgs.Text_16, 					// Printing Result
 			            										 JOptionPane.ERROR_MESSAGE);
-			            if (HGlobal.writeLogs) HB0711Logging.logWrite("Error: print error " + pe.getMessage() + " in HG0531Output"); //$NON-NLS-1$ //$NON-NLS-2$
+			            if (HGlobal.writeLogs)
+			            	HB0711Logging.logWrite("ERROR: in HG0531 print error " + pe.getMessage()); //$NON-NLS-1$
 			        }
 			        rdbtn_Printer.setSelected(false);				// de-select button once printing done
 			        headerBox.setVisible(false); 					// and make all print selections invisible
@@ -388,7 +390,8 @@ public class HG0531Output extends JDialog {
 			        	JOptionPane.showMessageDialog(btn_Write, HG0531Msgs.Text_39 + iox.getMessage(), 	// Write failed; I/O error:
 			        											 HG0531Msgs.Text_38,						// Write File
 			        											 JOptionPane.ERROR_MESSAGE);
-			        	if (HGlobal.writeLogs) HB0711Logging.logWrite("Error: file output error " + iox.getMessage() + " in HG0531Output"); //$NON-NLS-1$ //$NON-NLS-2$
+			        	if (HGlobal.writeLogs)
+			        		HB0711Logging.logWrite("ERROR: in HG0531 CSV/TSV file output error " + iox.getMessage()); //$NON-NLS-1$
 			        }
 				}
 
@@ -404,7 +407,8 @@ public class HG0531Output extends JDialog {
 			        	JOptionPane.showMessageDialog(btn_Write, HG0531Msgs.Text_41 + e.getMessage(), 	// Write failed; I/O error:
 																 HG0531Msgs.Text_38, 					// Write File
 																 JOptionPane.ERROR_MESSAGE);
-			        	if (HGlobal.writeLogs) HB0711Logging.logWrite("Error: file output error " + e.getMessage() + " in HG0531Output"); //$NON-NLS-1$ //$NON-NLS-2$
+			        	if (HGlobal.writeLogs)
+			        		HB0711Logging.logWrite("ERROR: in HG0531 PDF file output error " + e.getMessage()); //$NON-NLS-1$
 					}
 				}
 
@@ -412,7 +416,8 @@ public class HG0531Output extends JDialog {
                 JOptionPane.showMessageDialog(btn_Write, (HG0531Msgs.Text_43 + HGlobal.chosenFilename),  // Data written to
                 										  HG0531Msgs.Text_38,							// Write File
                 										  JOptionPane.INFORMATION_MESSAGE);
-                if (HGlobal.writeLogs) HB0711Logging.logWrite( "Action: data written to " + HGlobal.chosenFilename + " from HG0531Output"); //$NON-NLS-1$ //$NON-NLS-2$
+                if (HGlobal.writeLogs)
+                	HB0711Logging.logWrite( "Action: data written to " + HGlobal.chosenFilename + " from HG0531Output"); //$NON-NLS-1$ //$NON-NLS-2$
                 dispose();
 				}
 		});
@@ -458,32 +463,35 @@ public class HG0531Output extends JDialog {
  */
 	protected class headerFooterEventHandler  extends AbstractPdfDocumentEventHandler {
 		public void onAcceptedEvent(AbstractPdfDocumentEvent event) {
-	        PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
-	        PdfDocument pdfDoc = docEvent.getDocument();
-	        PdfPage page = docEvent.getPage();
-	        int pageNumber = pdfDoc.getPageNumber(page);
-	        Rectangle pageSize = page.getPageSize();
-	        PdfCanvas pdfCanvas = new PdfCanvas(
-	            page.newContentStreamBefore(), page.getResources(), pdfDoc);
-	        // Set the font and size
-            try {
-            	pdfCanvas.setFontAndSize(PdfFontFactory.createFont(StandardFonts.HELVETICA), 10);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-	        //Add document name header and an iText note/page number footer
-	        pdfCanvas.beginText()
-	        		// Position header and show it (PDFs use 72 points/inch)
-	                .moveText(pageSize.getWidth()/2-60, pageSize.getTop()-20)
-	                .showText(docHeader)
-	                // Position footer and show it
-	                .moveText(-(pageSize.getWidth()/2-100), -pageSize.getTop()+40)
-	                .showText(HG0531Msgs.Text_45)			// PDF output formatted by iText
-	                .moveText(pageSize.getWidth()/2-60, 0)
-	                .showText(String.valueOf(pageNumber))
-	                .endText();
-	        pdfCanvas.release();
-	    }
+			PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+			PdfDocument pdfDoc = docEvent.getDocument();
+			PdfPage page = docEvent.getPage();
+			int pageNumber = pdfDoc.getPageNumber(page);
+			Rectangle pageSize = page.getPageSize();
+			PdfCanvas pdfCanvas = new PdfCanvas(
+					page.newContentStreamBefore(), page.getResources(), pdfDoc);
+			// Set the font and size
+			try {
+				pdfCanvas.setFontAndSize(PdfFontFactory.createFont(StandardFonts.HELVETICA), 10);
+			} catch (IOException e) {
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0531 iText canvas setting error " + e.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(e);
+				}
+			}
+			//Add document name header and an iText note/page number footer
+			pdfCanvas.beginText()
+			// Position header and show it (PDFs use 72 points/inch)
+			.moveText(pageSize.getWidth()/2-60, pageSize.getTop()-20)
+			.showText(docHeader)
+			// Position footer and show it
+			.moveText(-(pageSize.getWidth()/2-100), -pageSize.getTop()+40)
+			.showText(HG0531Msgs.Text_45)			// PDF output formatted by iText
+			.moveText(pageSize.getWidth()/2-60, 0)
+			.showText(String.valueOf(pageNumber))
+			.endText();
+			pdfCanvas.release();
+		}
 	}
 
 /**

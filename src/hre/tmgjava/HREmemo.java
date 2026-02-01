@@ -7,11 +7,14 @@ package hre.tmgjava;
  * v0.03.0030 2023-08-15 - Test for long CLOB element (N. Tolleshaug)
  * 		      2023-09-06 - if (language.equals("DUTCH")) code = "nl-NL"; (N. Tolleshaug)
  * v0.04.0032 2025-09-18 - if (language.equals("FRENCH2")) code = "fr-FR"; (D Ferguson)
+ * 			  2026-01-14 - Log catch block and other msgs (D Ferguson)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.gui.HGlobal;
 /**
  * Converter from TMG date to HRE HDate
  * v0.00.0030 2023-04-24 - Implemented according to T167
@@ -24,20 +27,22 @@ public class HREmemo {
 	static long null_RPID  = 1999999999999999L;
 	static long memoPID  = proOffset;
 	HREdatabaseHandler pointHREbase;
-	//ResultSet hreTable;
+
 	String memoTable = "T167_MEMO_SET";
 
 	public HREmemo(HREdatabaseHandler pointHREbase) {
 		this.pointHREbase = pointHREbase;
-		//hreTable = TMGglobal.T167;
+
 		try {
 			memoPID = pointHREbase.lastRowPID(memoTable);
 			if (TMGglobal.DEBUG)
 				System.out.println(" Last PID in Table " + memoPID);
 		} catch (HBException hbe) {
-			System.out.println("Table " + memoTable + " empty");
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREmemo empty memotable " + memoTable + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 			memoPID  = proOffset;
-			hbe.printStackTrace();
 		}
 	}
 
@@ -86,9 +91,10 @@ public class HREmemo {
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println("HREmemo - addToT167_MEMO_SET - error: ");
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREmemo adding to T167: " + sqle.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("HREmemo - addToT167_MEMO_SET - error: "
 					+ sqle.getMessage());
 		}
@@ -127,9 +133,10 @@ public class HREmemo {
 		//Insert row in database
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println("HREmemo - addToT204_DATA_TRAN - error: ");
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREmemo adding to T204_DATA_TRAN: " + sqle.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("HREmemo - T204_DATA_TRAN - error: "
 					+ sqle.getMessage());
 		}

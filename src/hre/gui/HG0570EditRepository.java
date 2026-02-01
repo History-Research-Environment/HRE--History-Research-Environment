@@ -10,10 +10,8 @@ package hre.gui;
  *			  2025-11-23 Fix test for empty repo Name/Abbrev text (D Ferguson)
  *			  2025-11-28 NLS all code (D Ferguson)
  *			  2025-12-05 Code for copy repositories (N.Tolleshaug)
- ********************************************************************************
- * NOTES for incomplete functionality:
- * NOTE01 needs Save code
- *
+ *			  2026-01-04 Log catch block errors (D Ferguson)
+ *			  2026-01-27 Upfated for more than one project (N.Tolleshaug)
  ********************************************************************************/
 
 import java.awt.Color;
@@ -86,6 +84,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 	public String screenID = "57000";	//$NON-NLS-1$
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
+	//int dataBaseIndex;
 
 	private JPanel contents;
 	boolean locationChanged = false;
@@ -125,16 +124,15 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 /**
  * Create the dialog
  */
-	public HG0570EditRepository(HBProjectOpenData pointOpenProject, 
-								boolean editRespository, 
-								boolean copyRespository, 
+	public HG0570EditRepository(HBProjectOpenData pointOpenProject,
+								boolean editRespository,
+								boolean copyRespository,
 								long repositoryTablePID)  {
 		this.pointOpenProject = pointOpenProject;
 		this.repositoryTablePID = repositoryTablePID;
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
 		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-
 	// Setup references
 		windowID = screenID;
 		helpName = "editrepository";	//$NON-NLS-1$
@@ -143,7 +141,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
     	if (editRespository) setTitle(HG0570Msgs.Text_1); // Edit Repository Details
     	else setTitle(HG0570Msgs.Text_2);		// Add Repository
     	if (copyRespository) setTitle(" Copy repository");
-    		
+
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0570EditRepository");	//$NON-NLS-1$
 
@@ -160,8 +158,10 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 				locationTablePID = (long) repositoryData[5];
 			}
 		} catch (HBException hbe) {
-			System.out.println(" Respository data error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0570 loading Repository data " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 /************************************
@@ -191,9 +191,9 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		JLabel name = new JLabel(HG0570Msgs.Text_4);		// Abbreviated Name:
 		namePanel.add(name, "cell 0 0");	//$NON-NLS-1$
 		if (copyRespository)
-			repoAbbrev = new JTextField(" COPY - " + (String)repositoryData[1]);	
+			repoAbbrev = new JTextField(" COPY - " + (String)repositoryData[1]);
 		else repoAbbrev = new JTextField((String)repositoryData[1]);
-		
+
 		repoAbbrev.setColumns(30);
 		repoAbbrev.setEditable(true);
 		namePanel.add(repoAbbrev, "cell 1 0, alignx left");	//$NON-NLS-1$
@@ -210,9 +210,9 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 		JLabel fullName = new JLabel(HG0570Msgs.Text_6);	// Repository Name:
 		namePanel.add(fullName, "cell 0 2");	//$NON-NLS-1$
 		if (copyRespository)
-			fullNameText = new JTextArea(" COPY - " + (String)repositoryData[0]);	
+			fullNameText = new JTextArea(" COPY - " + (String)repositoryData[0]);
 		else fullNameText = new JTextArea((String)repositoryData[0]);
-		
+
 		fullNameText.setWrapStyleWord(true);
 		fullNameText.setLineWrap(true);
 		fullNameText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
@@ -290,8 +290,10 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 			if (!editRespository) locationTablePID =  pointWhereWhenHandler.createLocationRecord();
 			pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID, true);
 		} catch (HBException hbe) {
-			System.out.println(" Set up location name style error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0570 setting location name style " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		tableLocationData = pointWhereWhenHandler.getLocationNameTable();
 		tableLocation.setModel(new DefaultTableModel(tableLocationData, tableLocationHeader));
@@ -451,9 +453,9 @@ public class HG0570EditRepository extends HG0450SuperDialog {
                     int row = tme.getFirstRow();
                     if (row > -1) {
 						String nameElementData =  (String) tableLocation.getValueAt(row, 1);
-						if (HGlobal.DEBUG) {
+						if (HGlobal.DEBUG && HGlobal.writeLogs) {
 								String element = (String) tableLocation.getValueAt(row, 0);
-								System.out.println("HG0570ManageRepository loc.table changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
+								HB0711Logging.logWrite("Result: in HG0570 locationtable selection changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
 										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
 						}
 						if (nameElementData != null) {
@@ -479,8 +481,10 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 					try {
 						pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID, true);
 					} catch (HBException hbe) {
-						System.out.println(" HG0570EditRepository: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0570 updating location name style " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 					tableLocationData = pointWhereWhenHandler.getLocationNameTable();
 					tableModel.setDataVector(tableLocationData, tableLocationHeader);
@@ -509,7 +513,7 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 								JOptionPane.WARNING_MESSAGE);
 							return;
 						}
-					
+
 					if (copyRespository) {
 						locationTablePID =  pointWhereWhenHandler.createLocationRecord();
 						locationChanged = true;
@@ -522,20 +526,21 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 					}
 					pointWhereWhenHandler.updateStoredNameStyle(locationNameStyles.getSelectedIndex(), locationTablePID);
 
-					if (!copyRespository) 
-						if (editRespository) 
+					if (!copyRespository)
+						if (editRespository)
 							pointRepositoryHandler.updateRepositoryTable(repositoryTablePID, saveRespositoryData());
 						else pointRepositoryHandler.addRepositoryTable(locationTablePID, saveRespositoryData());
-					if (copyRespository) 
+					if (copyRespository)
 						pointRepositoryHandler.addRepositoryTable(locationTablePID, saveRespositoryData());
 				// Reset repository table after add/update
 					pointRepositoryHandler.pointManageRepos.resetRepositoryTable();
 					dispose();
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0570EditRepository: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
-					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0570 saving Repository edit " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 
 			// Set reset location data

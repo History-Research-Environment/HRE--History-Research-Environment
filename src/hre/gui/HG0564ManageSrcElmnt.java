@@ -16,10 +16,10 @@ package hre.gui;
  *			  2025-12-18 Removed Select button; made new Name checks consistent (D Ferguson)
  *			  2025-12-19 Change Translate button to ask for new language (D Ferguson)
  *			  2025-12-20 NLS all code to this point (D Ferguson)
- *
+ *			  2026-01-06 Log catch block msgs (D Ferguson)
  *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE03 implement a Delete button
+ * Notes for code still outstanding
+ * NOTE03 implement a Delete button (complex but may be required)
  *
  ************************************************************************************/
 
@@ -195,8 +195,10 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 			try {
 				tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 			} catch (HBException hbe) {
-				System.out.println( "Error loading Source Element list: " + hbe.getMessage()); //$NON-NLS-1$
-				hbe.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0564 loading Source Elements: " + hbe.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(hbe);
+				}
 			}
 		if (tableSrcElmntData.length == 0 ) {
 			JOptionPane.showMessageDialog(tableSrcElmnt, HG0564Msgs.Text_5	// No data found in the HRE database\n
@@ -328,9 +330,10 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 											selectedLangCode,
 											pointManageSrcElmnt);
 								} catch (HBException hbe) {
-									System.out.println("HG0564ManageSrcElmnt update element error: "	//$NON-NLS-1$
-															+ hbe.getMessage());
-									hbe.printStackTrace();
+									if (HGlobal.writeLogs) {
+										HB0711Logging.logWrite("ERROR: in HG0564 saving Source Element: " + hbe.getMessage()); //$NON-NLS-1$
+										HB0711Logging.printStackTraceToFile(hbe);
+									}
 								}
 		           	}
 				}
@@ -383,8 +386,10 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 									HG0564Msgs.Text_19,			// Duplicate Element Name
 									JOptionPane.ERROR_MESSAGE);
 						else {
-							System.out.println("HG0564ManageSrcElmnt - add new element error: " + hbe.getMessage()); //$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0564 adding Source Element: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
 					}
 				}
@@ -437,8 +442,10 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 							JOptionPane.ERROR_MESSAGE);
 
 				} catch (HBException hbe) {
-						System.out.println("HG0564ManageSrcElmnt - translate element error: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0564 adding Element in new language: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -506,8 +513,10 @@ public class HG0564ManageSrcElmnt extends HG0450SuperDialog {
 			sorter.setSortKeys(psortKeys1);
 		    tableSrcElmnt.setRowSorter(sorter);
 		} catch (HBException hbe) {
-			System.out.println(" HG0564ManageSrcElmnt - resetEelementList() error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0564 resetting Element list: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	}		// End resetElementList
 

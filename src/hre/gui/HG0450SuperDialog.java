@@ -9,6 +9,7 @@ package hre.gui;
  * v0.01.0031 2024-07-14 Added dummy methods for save Hdate H (N Tolleshaug)
  * 			  2024-07-24 Updated for use of HG0590EditDate (N Tolleshaug)
  * v0.03.0031 2024-08-15 NLS conversion (D Ferguson)
+ * v0.04.0032 2026-01-03 Logged Reminder store msgs (D Ferguson)
  *******************************************************************************************/
 
 import java.awt.Dimension;
@@ -30,6 +31,7 @@ import javax.swing.JTable;
 import javax.swing.KeyStroke;
 
 import hre.bila.HB0614Help;
+import hre.bila.HB0711Logging;
 import hre.bila.HBBusinessLayer;
 import hre.bila.HBProjectOpenData;
 import hre.nls.HG0450Msgs;
@@ -37,7 +39,7 @@ import hre.nls.HG0450Msgs;
 /**
  * HG0450SuperDialog
  * @author N. Tolleshaug
- * @version v0.01.0025
+ * @version v0.01.0032
  * @since 2020-08-05
  */
 
@@ -187,8 +189,9 @@ public class HG0450SuperDialog extends JDialog {
  * @param text
  */
 	public void storeReminderText(String text) {
-		if (HGlobal.DEBUG) System.out.println("HG0450 Store Reminder txt:\nWindow ID: "	//$NON-NLS-1$
-				+ windowID + "\n" + text);	//$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0450 Storing Reminder text for \nWindow ID: "	//$NON-NLS-1$
+											+ windowID + "\n" + text);	//$NON-NLS-1$
 		pointOpenProject.pointGuiData.setDispRemindText(windowID,text) ;
 	}	// End storeReminderTetxt
 
@@ -198,11 +201,12 @@ public class HG0450SuperDialog extends JDialog {
  */
 	public String readReminderText() {
 		String reminder = pointOpenProject.pointGuiData.getDispRemindText(windowID);
-		if (HGlobal.DEBUG) System.out.println("HG0450 Read Reminder txt: \nWindow ID: "	//$NON-NLS-1$
-				+ windowID + "\n" + reminder);	//$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0450 Reading Reminder text for \nWindow ID: "	//$NON-NLS-1$
+											+ windowID + "\n" + reminder);	//$NON-NLS-1$
 		return reminder;
 	}	// End readReminderText
-	
+
 /**
  * Dummy overidden by parent class
  * @param returnDate
@@ -216,47 +220,47 @@ public class HG0450SuperDialog extends JDialog {
 	}
 
 	public void saveSortDate() {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
 
 	public void saveBirthDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void saveBirthSortDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void saveBaptDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void saveBaptSortDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void saveDeathDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void saveDeathSortDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void savePartnerSortDate() {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
 
 	public void savePartnerDate() {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
 
 	public void saveBurialSortDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 	public void saveBurialDate() {
-		// TODO Auto-generated method stub		
+		// TODO Auto-generated method stub
 	}
 
 }	// End HG0450SuperDialog

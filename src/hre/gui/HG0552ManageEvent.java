@@ -30,10 +30,14 @@ package hre.gui;
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
  * 			  2025-07-03 Correctly handle partner events when invoked from menu (D Ferguson)
  * 			  2025-07-16 Load HG0551 with corrected position and modality (D Ferguson)
+ * 			  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+ * 			  2026-01-13 Implemented add, edit and copy eventtype (N. Tolleshaug)
+ * 			  2026-01-22 Implemented reset event list after DefineEvent action (N. Tolleshaug)
+ * 			  2026-01-30 Make event double-click invoke Edit automatically (D Ferguson)
+ * 			  2026-01-31 Reload Event List for correct event group after changes (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
- * NOTE04 need code to load disabled events
- * NOTE05 code needed for Disable/Enable Event, Copy Event, Grouped Events
+ * NOTE05 code needed for Grouped Events, Enable/Disable Events
  ********************************************************************************/
 
 import java.awt.Component;
@@ -41,6 +45,8 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -103,6 +109,7 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0552ManageEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	private static final int marriageRelatedEventGroup = 6;
 
 	public String screenID = "55200";	//$NON-NLS-1$
 	private String className;
@@ -110,7 +117,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 
 	long null_RPID  = 1999999999999999L;
 
-	HBWhereWhenHandler pointHBWhereWhenHandler;
+	HBEventRoleManager pointEventRoleManager;
 
 	// Lists for holding event/role data
 	private JList<String> eventList;
@@ -166,12 +173,13 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0552ManageEvent");}	//$NON-NLS-1$
 	    setTitle(HG0552Msgs.Text_0);	// Manage Events
-	    pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-	    //System.out.println(" HG0552ManageEvent! activated for person: " + forPerson);
+
+	    pointEventRoleManager = pointOpenProject.getEventRoleManager();
+	    pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 
 	 // Get all partner event type codes
-	    pointHBWhereWhenHandler.getEventTypeList(6);
-    	marrTypes = pointHBWhereWhenHandler.getEventTypes();
+    	pointEventRoleManager.getEventTypeList(marriageRelatedEventGroup);
+    	marrTypes = pointEventRoleManager.getEventTypes();
 
 	// Setup initial All Events event/role lists
 	    DefaultListModel<String> eventListmodel = new DefaultListModel<String>();
@@ -358,10 +366,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		JLabel lblEventList = new JLabel(HG0552Msgs.Text_37);		// Events
 		eventPanel.add(lblEventList, "cell 0 0, alignx center");	//$NON-NLS-1$
 
-		// Load the Event list
+	// Load the Event list
 		eventList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 	    eventList.setLayoutOrientation(JList.VERTICAL);
-	    // But don't add the list to the scrollpane yet!
+	// But don't add the list to the scrollpane yet!
 	    JScrollPane eventScrollPane = new JScrollPane();
 		eventScrollPane.setMinimumSize(new Dimension(180, 300));
 		eventPanel.add(eventScrollPane, "cell 0 1");	//$NON-NLS-1$
@@ -397,17 +405,17 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		btn_Cancel.setToolTipText(HG0552Msgs.Text_42);			// Close and Exit
 		contents.add(btn_Cancel, "cell 3 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$
 
-		// Size the screen - pass #1
+	// Size the screen - pass #1
 		pack();
-		// Get the height of the secondPanel, less heading row and insets
+	// Get the height of the secondPanel, less heading row and insets
 		int height = secondPanel.getHeight() - lblEventList.getHeight() - 20;
-		// Use it to resize the Event and Role scrollpanes
+	// Use it to resize the Event and Role scrollpanes
 		eventScrollPane.setPreferredSize(new Dimension(180, height));
 		roleScrollPane.setPreferredSize(new Dimension(180, height));
-		// Load the lists into their correctly sized scrollpanes
+	// Load the lists into their correctly sized scrollpanes
 		eventScrollPane.getViewport().setView(eventList);
 		roleScrollPane.getViewport().setView(roleList);
-		// Size the screen - pass #2, and display it
+	// Size the screen - pass #2, and display it
 		pack();
 
 /******************
@@ -809,7 +817,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				btn_Select.setEnabled(false);
 				clearBothLists();
 
-				// NOTE04 - need code to get disabled event list loaded
+				// NOTE05 - need code to get disabled event list loaded
 
 			}
 		};
@@ -832,7 +840,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					// Save the eventList index and selected value for use
 					indexSelectedEvent = eventList.getSelectedIndex();
 					if (indexSelectedEvent < 0) return;
-					int[] eventTypes = pointHBWhereWhenHandler.getEventTypes();
+					int[] eventTypes = pointEventRoleManager.getEventTypes();
 					selectedEventType = eventTypes[indexSelectedEvent];
 					// Load the rolelist for this event
 					try {
@@ -842,18 +850,29 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 						hbe.printStackTrace();
 					}
 					btn_Select.setEnabled(false);
-					// Enable all the relevant action buttons
+				// Enable all the relevant action buttons
 					btn_Edit.setEnabled(true);
 					btn_Delete.setEnabled(true);
 					btn_Copy.setEnabled(true);
 					btn_Disable.setEnabled(true);
-					// Disable irrelevant buttons
+				// Disable irrelevant buttons
 					btn_Add.setEnabled(false);
 					btn_AddSet.setEnabled(false);
 				}
 			}
 		};
 		eventList.addListSelectionListener(eventListener);
+
+		// Listener for double-click on Event in list
+		eventList.addMouseListener(new MouseAdapter() {
+		    public void mouseClicked(MouseEvent me) {
+		    	// double-click?
+		        if (me.getClickCount() == 2) {
+		            int index = eventList.locationToIndex(me.getPoint());
+		            if (index >= 0) btn_Edit.doClick();
+		        }
+		    }
+		});
 
 		// Listener to action selection of row in Roles list
 	    ListSelectionListener roleListener = new ListSelectionListener() {
@@ -875,13 +894,13 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 							System.out.println(" HG0552ManageEvent - eventlist select: " + hbe.getMessage());	//$NON-NLS-1$
 							hbe.printStackTrace();
 						}
-	    				// Otherwise, save the roleList index and selected value for use
+	    			// Otherwise, save the roleList index and selected value for use
 	    				indexSelectedRole = roleList.getSelectedIndex();
-	    				int[] eventRoleTypes = pointHBWhereWhenHandler.getEventRoleTypes();
+	    				int[] eventRoleTypes = pointEventRoleManager.getEventRoleNumbers();
 	    				selectedRoleType = eventRoleTypes[indexSelectedRole];
-	    				// Enable the Select action
+	    			// Enable the Select action
 	    				btn_Select.setEnabled(true);
-	    				// Disable all action buttons (no longer needed)
+	    			// Disable all action buttons (no longer needed)
 	    				btn_Edit.setEnabled(false);
 	    				btn_Delete.setEnabled(false);
 	    				btn_Copy.setEnabled(false);
@@ -897,17 +916,19 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 			// load HG0551DefineEvent screen (no Event Name/role) to create new Event type
-				HBEventRoleManager pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
-				String selectedLangCode = HGlobal.dataLanguage;
-				pointEventRoleManager.setSelectedLanguage(selectedLangCode);
-				HG0551DefineEvent newEventType = pointEventRoleManager.activateDefineNewEventType();
+				pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+				HG0551DefineEvent newEventType = pointEventRoleManager.activateAddEventType();
 				newEventType.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
 				newEventType.setLocation(xymainPane.x-100, xymainPane.y);
 				if (reminderDisplay != null) reminderDisplay.dispose();
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to define new Event"); //$NON-NLS-1$
-				dispose();
 				newEventType.setVisible(true);
+				try {
+					resetEventList(eventGroup);
+				} catch (HBException hbe) {
+					System.out.println("HG0552ManageEvent - add event type: " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -926,17 +947,20 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 			// load HG0551DefineEvent screen (passing Event Name/role) to edit Event type
-				HBEventRoleManager pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
-				String selectedLangCode = HGlobal.dataLanguage;
-				pointEventRoleManager.setSelectedLanguage(selectedLangCode);
+				pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 				HG0551DefineEvent editEventType = pointEventRoleManager.activateEditEventType(selectedEventType);
 				editEventType.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
 				editEventType.setLocation(xymainPane.x-100, xymainPane.y);
 				if (reminderDisplay != null) reminderDisplay.dispose();
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to edit Event"); //$NON-NLS-1$
-				dispose();
 				editEventType.setVisible(true);
+				try {
+					resetEventList(eventGroup);
+				} catch (HBException hbe) {
+					System.out.println("HG0552ManageEvent - edit event type: " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -944,9 +968,21 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		btn_Copy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-
-				// NOTE05 need code here to get new name, copy, then load HG0551DefineEvent to Edit it (passing new name)
-
+		   // load HG0551DefineEvent screen (passing Event Name/role) to copy Event type
+				pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+				HG0551DefineEvent editEventType = pointEventRoleManager.activateCopyEventType(selectedEventType);
+				editEventType.setModalityType(ModalityType.APPLICATION_MODAL);
+				Point xymainPane = lbl_EventGrps.getLocationOnScreen();
+				editEventType.setLocation(xymainPane.x-100, xymainPane.y);
+				if (reminderDisplay != null) reminderDisplay.dispose();
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to edit Event"); //$NON-NLS-1$
+				editEventType.setVisible(true);
+				try {
+					resetEventList(eventGroup);
+				} catch (HBException hbe) {
+					System.out.println("HG0552ManageEvent - copy event type: " + hbe.getMessage());
+					hbe.printStackTrace();
+				}
 			}
 		});
 
@@ -954,21 +990,20 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		btn_Delete.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				HBEventRoleManager pointRoleManager = new HBEventRoleManager(pointOpenProject);
+				String eventTypeName = pointEventRoleManager.getEventName(selectedEventType);
 				try {
-					int errorCode = pointRoleManager.deleteEventType(selectedEventType);
+					int errorCode = pointEventRoleManager.deleteEventType(selectedEventType);
 					if (errorCode == 0)
-						JOptionPane.showMessageDialog(btn_Delete, "Event type deleted",
+						JOptionPane.showMessageDialog(btn_Delete, "Event type /" + eventTypeName + "/ deleted",
 														"Delete Event", JOptionPane.INFORMATION_MESSAGE);
 					if (errorCode == 1)
-						JOptionPane.showMessageDialog(btn_Delete, "Event type in use - cannot be deleted",
+						JOptionPane.showMessageDialog(btn_Delete, "Event type '" + eventTypeName + "' in use - cannot be deleted",
 														"Delete Event", JOptionPane.ERROR_MESSAGE);
-				} catch (HBException e) {
-					e.printStackTrace();
+					resetEventList(eventGroup);
+				} catch (HBException hbe) {
+					System.out.println("HG0552ManageEvent - delete event type: " + hbe.getMessage());
+					hbe.printStackTrace();
 				}
-				if (reminderDisplay != null) reminderDisplay.dispose();
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent after Delete"); //$NON-NLS-1$
-				dispose();
 			}
 		});
 
@@ -1050,8 +1085,9 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
     	clearBothLists();
     // then reload event list
     	eventListmodel = (DefaultListModel<String>) eventList.getModel();
-    	String[] newEventList = pointHBWhereWhenHandler.getEventTypeList(eventGroup);
+    	String[] newEventList = pointEventRoleManager.getEventTypeList(eventGroup);
     	for (int i = 0; i < newEventList.length; i++)  eventListmodel.addElement(newEventList[i]);
+    	pack();
     }
 
 /**
@@ -1061,7 +1097,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  */
     public void resetRoleList(int selectedEvent) throws HBException {
     	roleListmodel = (DefaultListModel<String>) roleList.getModel();
-    	String[] newRoleList = pointHBWhereWhenHandler.getEventRoleList(selectedEvent, "");
+    	String[] newRoleList = pointEventRoleManager.getRolesForEvent(selectedEvent, "");
 
     // Turn off RoleListener and clear role list
     	roleListenOn = false;
@@ -1098,7 +1134,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
             eventListmodel.removeAllElements();
             eventListmodel.clear();
             eventList.removeAll();
-            // and enable/disable controls
+        // and enable/disable controls
             btn_Add.setEnabled(true);
             btn_AddSet.setEnabled(true);
             btn_Edit.setEnabled(false);

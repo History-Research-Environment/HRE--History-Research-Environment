@@ -18,6 +18,7 @@ package hre.gui;
  *			  2025-12-29 NLS all code to this point (D Ferguson)
  *			  2025-12-30 Remove Select button (redundant) (D Ferguson)
  *			  2025-12-31 Updated language setting for add source definition (N. Tolleshaug)
+ *			  2026-01-06 Log catch block msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -143,8 +144,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( "Error loading Source Element list: " + hbe.getMessage());  //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0567 loading Source Elements: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	    // Then construct a lookup for "12345" → "[element text]" conversion
         Map<String, String> codeToTextMap = new HashMap<>();
@@ -316,8 +319,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 		try {
 			tableSourceTypeData = pointCitationSourceHandler.getSourceDefnList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println("Error loading Source Defn list: " + hbe.getMessage());  //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0567 loading Source Defns: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		if (tableSourceTypeData.length == 0 ) {
 			JOptionPane.showMessageDialog(scrollTable,
@@ -394,8 +399,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 						sorcDefnTemplates = pointCitationSourceHandler
 											.getSourceDefnTemplates(selectedSourceDefnPID);
 					} catch (HBException hbe) {
-						System.out.println("Error loading source templates: " + hbe.getMessage());  //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0567 loading source templates: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				// Get the source template from the Source Defn templates, then convert
 				// the Element [nnnnn] entries into Element Names via the hashmap codeToTextMap
@@ -437,8 +444,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 					try {
 						resetSorceDefinTable();
 					} catch (HBException hbe) {
-						System.out.println("Reset SourceType table error: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0567 resetting language: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -505,8 +514,10 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 				                HG0567Msgs.Text_17,		// Source Definition delete error
 				                JOptionPane.ERROR_MESSAGE);
 					} else {
-						System.out.println("Delete Source Definition error: " + hbe.getMessage());  //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0567 on Source Defn delete: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}

@@ -15,7 +15,8 @@ package hre.gui;
  *     					 Make double-click on Repo go to Edit (D Ferguson)
  *     		  2025-12-05 Code for copy repositories (N.Tolleshaug)
  *			  2025-12-15 NLS all code into HG0570Msgs (D Ferguson)
- *
+ *			  2026-01-04 Log catch block errors (D Ferguson)
+ *			  2026-01-27 Updated for more than one project open/close (N.Tolleshaug)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -189,8 +190,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		try {
 			tableRepoData = pointRepositoryHandler.getRepoList(true);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Repository list: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0569 loading Repository list " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		if (tableRepoData.length == 0 ) {
 			JOptionPane.showMessageDialog(scrollTable, HG0570Msgs.Text_39	// No data found in HRE database\n
@@ -303,8 +306,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					addScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 					addScreen.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println(" Activate repository add Error " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0569 adding a Repository " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -325,8 +330,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					editScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 					editScreen.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println(" Activate repository edit Error " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0569 editing a Repository " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -346,8 +353,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					copyScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 					copyScreen.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println(" Activate repository copy Error " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0569 copying a Repository " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -361,12 +370,14 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					resetRepositoryTable();
 					tableRepo.getSelectionModel().clearSelection(); // clear selectedRow setting
 				} catch (HBException hbe) {
-					if (HGlobal.DEBUG) System.out.println(" HG0569ManageRepos - deleteRepository error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0569 deleting a Repository " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					JOptionPane.showMessageDialog(pointManageRepos, HG0570Msgs.Text_43	// Cannot delete Repository\n
 							 + hbe.getMessage(),
 							   HG0570Msgs.Text_44, 			// Repository Delete
 							   JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG) hbe.printStackTrace();
 				}
 			}
 		});
@@ -384,8 +395,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 					try {
 						pointRepositoryHandler.addNewRespositoryLink((long)tableRepoData[selectedRowInTable][2]);
 					} catch (HBException hbe) {
-						System.out.println(" HG0569ManageRepos - Select button: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0569 selecting a Repository " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 				if (reminderDisplay != null) reminderDisplay.dispose();
@@ -461,8 +474,10 @@ public class HG0569ManageRepos extends HG0450SuperDialog {
 		    tableRepo.setRowSorter(sorter);
 
 		} catch (HBException hbe) {
-			System.out.println(" HG0569ManageRepos - resetRepositoryTable() error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0569 at Repository list reload " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	}
 

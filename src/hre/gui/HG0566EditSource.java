@@ -37,7 +37,7 @@ package hre.gui;
  *			  2025-12-20 NLS all code to this point (D Ferguson)
  *			  2025-12-22 Updated foot note template error handling (N. Tolleshaug)
  *			  2025-12-29 NLS update (D Ferguson)
- *
+ *			  2026-01-07 Log catch block msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -766,8 +766,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			editorsName = pointCitationSourceHandler.getPersonName(sourceEditorPID);
 			compilersName = pointCitationSourceHandler.getPersonName(sourceCompilerPID);
 		} catch (HBException hbe) {
-			System.out.println( "HG0566EditSource - Name author, editor or compiler error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Edit loading Author/Editor/Compiler: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		if (authorsName.isEmpty()) authorName.setText(HG0566Msgs.Text_32);	//  Not recorded
 		else authorName.setText(authorsName);
@@ -1028,8 +1030,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
                 		try {
 							activatePersonSelect(1);
 						} catch (HBException hbe) {
-							System.out.println("Author name edit error: " + hbe.getMessage()); //$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0566Edit adding Author: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
                     	btn_Save.setEnabled(true);
                 	}
@@ -1037,8 +1041,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
                 	else try {
                     	selectOption(HG0566Msgs.Text_35, 1);		// Author
 					} catch (HBException hbe) {
-						System.out.println("Author name edit error: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0566Edit editing Author: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
                 }
             }
@@ -1054,8 +1060,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
                 		try {
 							activatePersonSelect(2);
 						} catch (HBException hbe) {
-							System.out.println("Editor name edit error: " + hbe.getMessage()); //$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0566Edit adding Editor: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
                     	btn_Save.setEnabled(true);
                 	}
@@ -1063,8 +1071,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
                 	else try {
                     	selectOption(HG0566Msgs.Text_36, 2);		// Editor
 					} catch (HBException hbe) {
-						System.out.println("Editor name edit error: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0566Edit editing Editor: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
                 }
             }
@@ -1080,8 +1090,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
                 		try {
 							activatePersonSelect(3);
 						} catch (HBException hbe) {
-							System.out.println("Compiler name edit error: " + hbe.getMessage()); //$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0566Edit adding Compiler: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
                     	btn_Save.setEnabled(true);
                 	}
@@ -1089,8 +1101,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
                 	else try {
                     	selectOption(HG0566Msgs.Text_37, 3);		// Compiler
 					} catch (HBException hbe) {
-						System.out.println("Compiler name edit error: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0566Edit editing Compiler: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
                 }
             }
@@ -1108,8 +1122,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				try {
 					sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sourceDefnPID);
 				} catch (HBException hbe) {
-					System.out.println( "Error loading source defn templates: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Edit loading Source Defn templates: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			// Reset the Source templates and use new Source Defn templates to rebuild the displayed templates;
 			// BUT if user has re-selected the ORIGINAL sourceDefn re-use this Source's templates
@@ -1300,8 +1316,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					pointCitationSourceHandler.deleteCitationRecord((long)citnSrcSrcData[clickedRow][3]);
 					resetCitationTable();
 				} catch (HBException hbe) {
-					System.out.println("HG0566EditSource delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Edit deleting Source of Source: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1329,8 +1347,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					pointRepositoryHandler.deleteRespositoryLink(sourceTablePID, selectedRepositoryTablePID);
 					resetRepositoryTable();
 				} catch (HBException hbe) {
-					System.out.println("Delete repository table error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Edit deleting Repository: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1546,8 +1566,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		try {
 			repoLinkData = pointRepositoryHandler.getRepoLinkData(sourceTablePID);
 		} catch (HBException hbe) {
-			System.out.println("Error loading repository PIDs: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Edit loading Repository PIDs: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		// Then get the data for each of the Repos found in repoPIDs
 		if (repoLinkData.length > 0) {
@@ -1557,8 +1579,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				try {
 					repoEditData = pointRepositoryHandler.getRepositoryData((long) repoLinkData[i][0]);
 				} catch (HBException hbe) {
-					System.out.println( "Error loading repository data: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Edit loading Repository data: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				if (repoEditData != null) {
 					// Save the data we need for the Repository table
@@ -1607,8 +1631,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			editorsName = pointCitationSourceHandler.getPersonName(sourceEditorPID);
 			compilersName = pointCitationSourceHandler.getPersonName(sourceCompilerPID);
 		} catch (HBException hbe) {
-			System.out.println( "HG0566EditSource - Name auth, edit or compiler error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Edit Author/Editor/Compiler reset: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		if (authorsName.isEmpty()) authorName.setText(HG0566Msgs.Text_32);	// Not recorded
 		else authorName.setText(authorsName);

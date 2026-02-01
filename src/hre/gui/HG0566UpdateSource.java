@@ -11,7 +11,7 @@ package hre.gui;
  *			  2025-12-20 NLS all code to this point (D Ferguson)
  *			  2025-12-22 Updated foot note error handling (N. Tolleshaug)
  *			  2025-12-29 NLS update (D Ferguson)
- *
+ *			  2026-01-07 Log catch block msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -61,8 +61,10 @@ public class HG0566UpdateSource extends HG0566EditSource {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source Elements: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	    // Then construct a lookup for "12345" → "[element text]" conversion
 		codeToTextMap = new HashMap<>();
@@ -83,16 +85,20 @@ public class HG0566UpdateSource extends HG0566EditSource {
  		try {
  			sourceEditData = pointCitationSourceHandler.getSourceEditData(sourcePID);
  		} catch (HBException hbe) {
- 			System.out.println( " Error loading Source data: " + hbe.getMessage());	//$NON-NLS-1$
- 			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source data: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
  		}
 
  		// Get the Source Defn list (to be able to get the type's name by matching the PID)
 		try {
 			sorcDefnTable = pointCitationSourceHandler.getSourceDefnList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source defn list: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source Defns: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		// and sort it as we need it in sorted order for its combobox
@@ -103,24 +109,30 @@ public class HG0566UpdateSource extends HG0566EditSource {
 		try {
 			sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sourceDefnPID);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source defn templates: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source Defn templates: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		// Get the Source Element data values belonging to this Source
 		try {
 			tableSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source element values: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source Element data: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		// Get any Source of Source citation data for this Source
 		try {
 			citnSrcSrcData = pointCitationSourceHandler.getCitationSourceData(sourcePID, "T736"); //$NON-NLS-1$
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source of source data: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source of Source data: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		// Get any Repository data for this Source
@@ -128,8 +140,10 @@ public class HG0566UpdateSource extends HG0566EditSource {
 		try {
 			repoLinkData = pointRepositoryHandler.getRepoLinkData(sourcePID);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading repository link data: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Repository links: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		// Then get the data for each of the Repos found in repoPIDs
 		if (repoLinkData.length > 0) {
@@ -139,8 +153,10 @@ public class HG0566UpdateSource extends HG0566EditSource {
 				try {
 					repoEditData = pointRepositoryHandler.getRepositoryData((long) repoLinkData[i][0]);
 				} catch (HBException hbe) {
-					System.out.println( " Error loading repository link data: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Upd loading Repository link data: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				if (repoEditData != null) {
 					// Save the data we need for the Repository table
@@ -190,8 +206,10 @@ public class HG0566UpdateSource extends HG0566EditSource {
 				// Reset displayed source table
 					pointManageSource.resetSourceTable(true);
 				} catch (HBException hbe) {
-					System.out.println(" Update Source Error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Upd saving Source: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("Action: Data saved in HG0566UpdateSource");	//$NON-NLS-1$

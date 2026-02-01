@@ -21,6 +21,8 @@ package hre.gui;
  * 			  2023-09-08 Changed to DEBUG flag for console output (N.Tolleshaug)
  * 		 	  2023-09-28 Implement NLS of new debug area (D Ferguson)
  * v0.03.0031 2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-03 Logged catch block actions (D Ferguson)
+ * 			  2026-01-22 Adjust debug ConsoleLog filename; set file checkbox on with DEBUG (D Ferguson)
  ***************************************************************************************************/
 
 import java.awt.Color;
@@ -64,7 +66,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * TMGProject Import
  * @author R Thompson originally
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2019-07-21
  */
 
@@ -160,7 +162,7 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 				new Color(255, 255, 255), new Color(160, 160, 160)), HG0417Msgs.Text_70,	// Controls for monitoring TMG Import
 				TitledBorder.LEFT, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		contents.add(switchPanel, "cell 0 4 2, growx, hidemode 3"); 	//$NON-NLS-1$
-		switchPanel.setLayout(new MigLayout("insets 10", "[]20[]20[]", "[]10[]10[]10[]"));		//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		switchPanel.setLayout(new MigLayout("insets 10", "[]20[]20[]", "[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		trace = new JCheckBox(HG0417Msgs.Text_71);		// Console to file
 		trace.setToolTipText(HG0417Msgs.Text_72);		// To write Java stack trace to an external file
@@ -187,15 +189,18 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 		// If Windows OS, set a filepath for the console log
 		String currentUsersHomeDir = System.getProperty("user.home");					//$NON-NLS-1$
 		if (HGlobal.osType.contains("win")) consoleLog.setText(currentUsersHomeDir		//$NON-NLS-1$
-					+ "\\HRE\\ConsoleB30Log.txt"); 										//$NON-NLS-1$
+					+ "\\HRE\\ConsoleLog.txt"); 										//$NON-NLS-1$
 			else consoleLog.setText(HG0417Msgs.Text_83);		// Enter name of file to receive console log
 
 		JButton btn_Cancel = new JButton(HG0417Msgs.Text_39);	// Cancel
 		btn_Cancel.setToolTipText(HG0417Msgs.Text_40);			// Cancel the import process and return to the main menu
 		contents.add(btn_Cancel, "cell 1 5, alignx right"); 	//$NON-NLS-1$
 
-		// Make switchPanel visible if we're in DEBUG mode
-		if (HGlobal.DEBUG) switchPanel.setVisible(true);
+		// Make switchPanel visible if we're in DEBUG mode and set TRACE as default
+		if (HGlobal.DEBUG) {
+			switchPanel.setVisible(true);
+			trace.setSelected(true);
+		}
 
 		pack();
 
@@ -265,8 +270,8 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 						// Modify file name to match database engine specification
 						HGlobal.chosenFilename = pointToolHand.pointLibraryBusiness.
 							modifyFileNameChosen(HGlobal.chosenFilename, HGlobal.defDatabaseEngine);
-						if (HGlobal.DEBUG)
-							System.out.println("HG0417TMGProjectImport chosen Filename: " +  HGlobal.chosenFilename); //$NON-NLS-1$
+						if (HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: in HG0417 chosen Filename is " +  HGlobal.chosenFilename); //$NON-NLS-1$
 						HGlobal.pathProjectFolder = HGlobal.chosenFolder;
 						btn_Browse.setText(HGlobal.chosenFolder+File.separator+HGlobal.chosenFilename);  // show results
 						newFilenameSet = true;								 // flag as setup correctly
@@ -300,16 +305,15 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 					errorCode = pointToolHand.importTmgToHreAction(newProjectArray,
 							collectMonitorFlags(), consoleLog.getText());
 				} catch (HBException hbe) {
-					if (HGlobal.DEBUG)System.out.println("ERROR: importing TMG to HRE " + hbe.getMessage());	//$NON-NLS-1$
 					if (HGlobal.writeLogs) {
-						HB0711Logging.logWrite("ERROR: importing TMG to HRE " + hbe.getMessage());	//$NON-NLS-1$
+						HB0711Logging.logWrite("ERROR: in HG0417 importing TMG to HRE " + hbe.getMessage());	//$NON-NLS-1$
 						HB0711Logging.printStackTraceToFile(hbe);
 					}
 					errorCode = 3;
 				}
                 if (errorCode == 0) {
                 	userInfoImportTMGProject(errorCode, newProjectName);
-                	if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: HRE Project "+newProjectName+" created by HG0417TMG import to HRE"); //$NON-NLS-1$ //$NON-NLS-2$
+                	if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: in HG0417 created HRE Project "+ newProjectName); //$NON-NLS-1$
                 	dispose();
                 } else if (errorCode == 1) {
                 	userInfoImportTMGProject(errorCode, newProjectName);
@@ -368,15 +372,14 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 			if (HGlobal.DEBUG)
 				JOptionPane.showMessageDialog(contents, errorMess  + projectName, errorTitle,
 											 JOptionPane.INFORMATION_MESSAGE);
-			else System.out.println(" INFORMATION: " + errorTitle + " - " + errorMess);		//$NON-NLS-1$ //$NON-NLS-2$
-			if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: " + errorTitle + " - " + errorMess);   //$NON-NLS-1$ //$NON-NLS-2$
+			if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: in HG0417 " + errorTitle + " - " + errorMess);   //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		if (errorCode > 0) {
 			if (errorCode == 1)  errorMess = HG0417Msgs.Text_64 + projectName;	// Project name in use
 			if (errorCode == 2)  errorMess = HG0417Msgs.Text_65 + projectName;	// Failed, not able to set new project name:
 			if (errorCode == 3)  errorMess = HG0417Msgs.Text_66 + projectName;	// New project creation failed:
 			JOptionPane.showMessageDialog(contents, errorMess, errorTitle, JOptionPane.ERROR_MESSAGE);
-			if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: " + errorMess); //$NON-NLS-1$
+			if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: in HG0417 " + errorMess); //$NON-NLS-1$
 		}
 	}	// End userInfoOpenProject
 

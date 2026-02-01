@@ -84,7 +84,9 @@ package hre.bila;
   *			   2025-06-15 - Changed from string sep with "/" to String[] (N. Tolleshaug)
   *			   2025-07-02 - Added set language to HBEventRoleManager (N. Tolleshaug)
   *			   2025-07-13 - Handle passing of sexCode through to all HG0547s (D Ferguson)
-  *			   2015-11-01 - Modified and splitted code for createLacation record (N. Tolleshaug)
+  *			   2015-11-01 - Modified and splitted code for createLocation record (N. Tolleshaug)
+  *			   2026-01-01 - Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+  *			   2026-01-27 - Updated code for constructor (N. Tolleshaug)
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -129,7 +131,6 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public HBNameStyleManager pointNameStyleManager;
 	public HG0507LocationSelect locationScreen = null;
 	private HBPersonHandler pointPersonMannager;
-	public HBEventRoleManager pointEventRoleManager;
 	public EditEventRecord pointEditEventRecord = null;
 	public CreateEventRecord pointCreateEventRecord;
 	HG0552ManageEvent pointManageEvent = null;
@@ -146,7 +147,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	long null_RPID  = 1999999999999999L;
 	long proOffset = 1000000000000000L;
 	int dateFormatIndex = 0;
-	int dataBaseIndex;
+	int dataBaseIndex = -1;
 	String langCode;
 
 /**
@@ -176,12 +177,10 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		super();
 		this.pointOpenProject = pointOpenProject;
 		if (pointOpenProject != null) {
-			pointEventRoleManager = new HBEventRoleManager(pointOpenProject);
 			dataBaseIndex =  pointOpenProject.getOpenDatabaseIndex();
-		} else {
-			System.out.println(" HBWhereWhenHandler() - pointOpenProject == null!");
-		}
-
+			pointDBlayer = pointOpenProject.getPointDBlayer();
+		} else 
+			System.out.println(" HBWhereWhenHandler() - pointOpenProject == null!");	
 		if (HGlobal.DEBUG) {
 			System.out.println("HBWhereWhenHandler() - initiated");
 		}
@@ -249,32 +248,8 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public long createLocationRecord() throws HBException {
 		return pointCreateEventRecord.createLocationRecord();
 	}
-
-/**
- * API methods fir Event and Role manager
- */
-	public String[] getEventTypeList(int eventGroup) throws HBException {
-		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
-		return pointEventRoleManager.getEventTypeList(eventGroup);
-	}
-
-	public int[] getEventTypes() {
-		return pointEventRoleManager.getEventTypes();
-	}
-
-	public String[] getEventRoleList(int eventType, String selectRoles) throws HBException {
-		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
-		return pointEventRoleManager.getRolesForEvent(eventType, selectRoles);
-	}
-
-	public Object[][] getEventRoleData(int eventType, String selectRoles) throws HBException {
-		return pointEventRoleManager.getRolesDataForEvent(eventType, selectRoles);
-	}
-
-	public int[] getEventRoleTypes() {
-		return pointEventRoleManager.getEventRoleNumbers();
-	}
-
+ 
+	
 /**
  * API Methods for Edit Event Manager
  * @throws HBException
@@ -2549,7 +2524,7 @@ class ManageLocationNameData extends HBBusinessLayer {
 					nameElementRSet.updateLong("CL_COMMIT_RPID", null_RPID);
 					nameElementRSet.updateLong("OWNER_RPID", ownerRPID);
 					nameElementRSet.updateString("ELEMNT_CODE", styleElementCode);
-					nameElementRSet.updateString("LANG_CODE", " -?-"); // To be removed - only marking
+					nameElementRSet.updateString("LANG_CODE", ""); // To be removed - only marking
 					nameElementRSet.updateString("NAME_DATA", locationNameData );
 					nameElementRSet.insertRow();
 				}

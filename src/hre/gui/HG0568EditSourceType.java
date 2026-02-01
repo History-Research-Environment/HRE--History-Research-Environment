@@ -13,6 +13,7 @@ package hre.gui;
  *						 Added Unsaved chnages warning to Cancel button (D Ferguson)
  *			  2025-12-29 NLS all code to this point (D Ferguson)
  *			  2025-12-31 Updated language setting for add source definition (N. Tolleshaug)
+ *			  2026-01-06 Log catch block msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -223,8 +224,10 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( "Error loading Source Element list: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0568 loading Source Elements: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	    // Then construct a lookup for "12345" → "[element text]" conversion
         codeToTextMap = new HashMap<>();
@@ -258,8 +261,10 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 				sourceDefnData[6] = "";		//$NON-NLS-1$
 			}
 		} catch (HBException hbe) {
-			System.out.println( "Error loading Source Defn data: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0568 loading Source Defns: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		if (copySourceType)
 			sourceDefnName.setText(HG0567Msgs.Text_26 + (String)sourceDefnData[0]);		//  COPY -
@@ -408,8 +413,10 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 					if (!copySourceType && !editSourceType)
 						pointCitationSourceHandler.createSourceDefRecord(storeSourceDefData());
 				} catch (HBException hbe) {
-					System.out.println("HG0568EditSourceType - save error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0568 saving Source Defn: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 
 				if (reminderDisplay != null) reminderDisplay.dispose();

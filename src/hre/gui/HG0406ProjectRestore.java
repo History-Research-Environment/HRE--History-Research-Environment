@@ -25,6 +25,7 @@ package hre.gui;
  * 			  2021-09-17 Apply tag codes to screen control buttons (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
  * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-02 Logged catch block and DEBUG actions (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -68,7 +69,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Restore
  * @author R Thompson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-03-05
  */
 
@@ -295,9 +296,11 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 							zipName = zipName.trim();
 							txt_FileNameToData.setText(zipName);
 							HGlobal.copytoFilename = zipName;
-						} catch (IOException e) {
-							System.out.printf("Restore new project error - zip file: " + zipName); //$NON-NLS-1$
-							e.printStackTrace();
+						} catch (IOException ioe) {
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0406 restoring zip file " + zipName + ioe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(ioe);
+							}
 						}
 					}
 			}
@@ -342,7 +345,8 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 
 				String [] nameElements = HGlobal.zipFromFilename.split("_"); //$NON-NLS-1$
 
-				if (HGlobal.DEBUG) System.out.println("Backup project name: " + nameElements[0] + //$NON-NLS-1$
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: in HG0406 Backup project name: " + nameElements[0] + //$NON-NLS-1$
 						" / Selected project: " + selectedProject); //$NON-NLS-1$
 
 				// Now check if we are trying to restore over same file location, name and project name
@@ -359,7 +363,8 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
         						btn_Restore.setEnabled(false);
 								}
 					else {
-   					 	if (HGlobal.DEBUG) System.out.println(HG0406Msgs.Text_106 + selectedProject);
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: in HG0406 " + HG0406Msgs.Text_106 + selectedProject); //$NON-NLS-1$
    					 	// Restore over existing project
    						int errorCode = pointProHand.restoreProjectActionSelect(selectedProject,fromRestoreFilePath);
 	   					 if (errorCode == 0) {
@@ -395,7 +400,8 @@ public class HG0406ProjectRestore extends HG0450SuperDialog {
 										btn_Restore.setEnabled(false);
 								}
 								else {
-									if (HGlobal.DEBUG) System.out.println("Restore to new folder: " + newProjectName); //$NON-NLS-1$
+									if (HGlobal.DEBUG && HGlobal.writeLogs)
+										HB0711Logging.logWrite("Action: in HG0406 Restore to new folder: " + newProjectName); //$NON-NLS-1$
 									// Finally we're good to do the restore...
 									String[] newProjectArray = {
 											newProjectName,

@@ -32,6 +32,7 @@ package hre.bila;
  * 			  2025-03-20 - Added userTable name (N. Tolleshaug)
  * 			  2025-07-02 - Added sentence set Table name (N. Tolleshaug)
  * 			  2025-09-01 - Added remaining source/evidence tables (D Ferguson)
+ * 			  2026-01-27 - Rearranged code (N. Tolleshaug)
  ******************************************************************************************/
 
 import java.sql.ResultSet;
@@ -59,12 +60,20 @@ import hre.tmgjava.HCException;
  */
 public class HBBusinessLayer  {
 
-	String dBversion = HGlobal.databaseVersion;
     long proOffset = 1000000000000000L;
     long null_RPID  = 1999999999999999L;
+    
+	public HDDatabaseLayer pointDBlayer;
+	public JDesktopPane mainPanel;
+	public HG0401HREMain mainFrame;
+	public HBLibraryResultSet pointLibraryResultSet;
+	public HBLibraryBusiness pointLibraryBusiness;
+	public HREmemo pointHREmemo;
+	
+	String dBversion = HGlobal.databaseVersion;
 
 	public String languageUses, translatedLang, schemaDefined, projectTable, userTable, translatedData, translatedFlag,
-				  dateTable, memoSet, sentenceTable;
+				  dateTable, memoSet, sentenceSet;
 
 	public String nameStyles, nameStylesOutput, nameElementsDefined, locationNameStyles,
 				  locationNameElements, entityTypeDefinition;
@@ -108,12 +117,7 @@ public class HBBusinessLayer  {
 	// Integer array with table indexes showing first table group name
 	int[] tableGroupIndex = new int[10];
 
-	public HDDatabaseLayer pointDBlayer;
-	public JDesktopPane mainPanel;
-	public HG0401HREMain mainFrame;
-	public HBLibraryResultSet pointLibraryResultSet;
-	public HBLibraryBusiness pointLibraryBusiness;
-	public hre.tmgjava.HREmemo pointHREmemo;
+
 
     int dateFormatIndex = 0;
     boolean changedDateFormat = true;
@@ -148,7 +152,6 @@ public class HBBusinessLayer  {
 			schemaDefined = "T104_SCHEMA_DEFN";
 			projectTable = "T126_PROJECTS";
 			userTable = "T131_USER";
-			sentenceTable = "T168_SENTENCE_SET";
 
 		// Style tables
 			nameStyles = "T160_NAME_STYLE";
@@ -157,6 +160,7 @@ public class HBBusinessLayer  {
 
 		// Memo/entity
 			memoSet = "T167_MEMO_SET";
+			sentenceSet = "T168_SENTENCE_SET";
 			entityTypeDefinition = "T169_ENTY_TYPE_DEFN";
 
 		// Date tables

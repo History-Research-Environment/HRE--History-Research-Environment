@@ -20,19 +20,21 @@ package hre.tmgjava;
  * v0.03.0031 2023-10-20 - Updated for v22b database
  * 			  2024-11-23 - Changed to multi table processing for E.dbf (N. Tolleshaug)
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
- * v0.03.0032 2025-07-21 - Added tables for import of source A,M,S,R,U,W tables (N. Tolleshaug)
+ * v0.04.0032 2025-07-21 - Added tables for import of source A,M,S,R,U,W tables (N. Tolleshaug)
+ *			  2026-01-14 - Log catch block msgs (D Ferguson)
  *****************************************************************************************/
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Vector;
 
 import com.linuxense.javadbf.DBFException;
 import com.linuxense.javadbf.DBFReader;
 import com.linuxense.javadbf.DBFRow;
+
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 
 /**
  * class TMGloader
@@ -180,7 +182,6 @@ public class TMGloader {
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME_PART_VALUE, TMGglobal.tmg_NPV_table);
 		resetProgress();
 
-
 	//NAME PART TYPE
 		loadFileTMG(TMGtypes.NAME_PART_TYPE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.NAME_PART_TYPE + ".dbf");
@@ -188,7 +189,6 @@ public class TMGloader {
 		TMGglobal.tmg_NPT_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME_PART_TYPE, TMGglobal.tmg_NPT_table);
 		resetProgress();
-
 
 	//NAME PART DICTIONARY
 		loadFileTMG(TMGtypes.NAME_DICTIONARY);
@@ -208,7 +208,6 @@ public class TMGloader {
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.TAG_TYPE , TMGglobal.tmg_T_table);
 		resetProgress();
 	} // Name loading
-
 
 	public void loadTmgPlaceTables() throws HCException {
 		resetProgress();
@@ -260,7 +259,6 @@ public class TMGloader {
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".dbf");
 		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".fpt");
 		TMGglobal.tmg_E_table = new TMGtableData(tmgReader,"GNUM", pointConvert);
-		//TMGglobal.tmg_E_table.TMGtableSingleData(tmgReader);
 		TMGglobal.tmg_E_table.TMGtableMultiData(tmgReader); // New 22.11.2024
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.EVENT_WITNESS, TMGglobal.tmg_E_table);
 		resetProgress();
@@ -287,7 +285,6 @@ public class TMGloader {
 	}
 
 	public void loadTmgSourceTables() throws HCException {
-
 	// Source type
 		loadFileTMG(TMGtypes.SOURCE_TYPE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".dbf");
@@ -327,7 +324,6 @@ public class TMGloader {
 	// Source Element file
 		loadFileTMG(TMGtypes.SOURCE_ELEMENT);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_ELEMENT + ".dbf");
-		//setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.SOURCE_ELEMENT + ".fpt");
 		TMGglobal.tmg_U_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_U_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_ELEMENT, TMGglobal.tmg_U_table);
@@ -336,7 +332,6 @@ public class TMGloader {
 		// Source Citations file
 		loadFileTMG(TMGtypes.REPOSITORY_LINK);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.REPOSITORY_LINK + ".dbf");
-		//setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.REPOSITORY_LINK + ".fpt");
 		TMGglobal.tmg_W_table = new TMGtableData(tmgReader,"RNUMBER", pointConvert);
 		TMGglobal.tmg_W_table.TMGtableSingleData(tmgReader);
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.REPOSITORY_LINK, TMGglobal.tmg_W_table);
@@ -349,7 +344,9 @@ public class TMGloader {
  */
 	public void loadTmgExhibitTables() throws HCException {
 	//DBFReader tmgReader;
-		if (TMGglobal.DUMP) System.out.println(" Exhibit Tables!");
+		if (TMGglobal.DUMP) System.out.println(" Loading Exhibit Tables");
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in TMGloader loading Exhibit tables");
 		resetProgress();
 	//EXHIBIT FILE
 		loadFileTMG(TMGtypes.EXHIBIT);
@@ -375,62 +372,51 @@ public class TMGloader {
 		if (TMGglobal.DEBUG) testTMGaccess();
 		try {
 	    	 switch (reportDump) {
-
 		    	 case TMGtypes.PERSON : {
 		    		 String [] dataSets = {"PER_NO","FATHER","MOTHER","SPOULAST"};
 		    		 dumpTMGsingleTable("DATASET FILE",TMGglobal.tmg_$_table,10,dataSets);
 		    	 	}
 		    	 	break;
-
 		    	 case TMGtypes.DATA_SET  : {
 		    		 String [] dataSets = {"DSID","DSNAME","DSLOCATION","DSTYPE"};
 		    		 dumpTMGsingleTable("DATASET FILE",TMGglobal.tmg_D_table,2,dataSets);
 		    	 	}
 		    	 	break;
-
 		    	 case TMGtypes.EVENT : {
 		    		 	String [] events = {"RECNO","ETYPE","PER1","PER2","EFOOT"};
 						dumpTMGsingleTable("EVENT FILE",TMGglobal.tmg_G_table,20,events);
 		    	 	}
 		    	 	break;
-
 		    	 case TMGtypes.EXHIBIT : {
 		    		 	String [] exhibits = {"IDEXHIBIT","XNAME","TEXT","IMAGE","DESCRIPT","THUMB"};
 						dumpTMGsingleTable("EXHIBIT FILE",TMGglobal.tmg_I_table,100,exhibits);
 		    	 	}
 		    	 	break;
-
 		    	 case TMGtypes.NAME  : {
 		    		 	String [] names = {"RECNO","NPER","ALTYPE","SRNAMESORT","NNOTE"};
 						dumpTMGsingleTable("NAME FILE",TMGglobal.tmg_N_table,20,names);
 		    	 	}
 		    	 	break;
-
 		    	 case TMGtypes.PLACE : {
 		    		 	String [] eventsPlaceFile = {"RECNO","STYLEID","STARTYEAR","COMMENT","SHORTPLACE"};
 						dumpTMGsingleTable("PLACE FILE",TMGglobal.tmg_P_table,10,eventsPlaceFile);
 		    	 	}
 		    	 	break;
-
 		    	 case TMGtypes.PLACE_DICTIONARY : {
 		    		 	String [] eventsPlaceDic = {"UID","VALUE","SDX","TT"};
 						dumpTMGsingleTable("PLACE DICTIONARY",TMGglobal.tmg_PD_table,110,eventsPlaceDic);
 		    	 	}
 		    	 	break;
-
 				case TMGtypes.PLACE_PART_TYPE : {
 						String [] eventsPlacePartType = {"ID","TYPE","VALUE","SHORTVALUE","DSID"};
 						dumpTMGsingleTable("PLACE PART TYPE",TMGglobal.tmg_PPT_table,20,eventsPlacePartType);
 					}
 					break;
-
 				case TMGtypes.PLACE_PART_VALUE : {
 						String [] styleNameValue = {"RECNO","UID","TYPE","ID","DSID"};
-						//dumpTMGsingleTable("PLACE PART VALUE",TMGglobal.tmg_PPV_table,20,eventsPlacePartValue);
 						dumpTMGmultiTable("PLACE PART VALUE",TMGglobal.tmg_PPV_table,20,styleNameValue);
 					}
 					break;
-
 				case TMGtypes.STYLE : {
 						loadTmgSupportTables(); // Load TMG table
 						String [] eventType = {"STYLEID","ST_DISPLAY","ST_OUTPUT","GROUP","STYLENAME"};
@@ -439,14 +425,15 @@ public class TMGloader {
 						TMGglobal.tmg_ST_table = null;
 					}
 					break;
-
 				case TMGtypes.TAG_TYPE : {
 						String [] eventType = {"ETYPENUM","ETYPENAME","ABBREV","PASTTENSE","PROPERTIES"};
 						dumpTMGsingleTable("TAG TYPE FILE",TMGglobal.tmg_T_table,20,eventType);
 					}
-				default: if (TMGglobal.DUMP) System.out.println("TMG table not selected ");
+				default:  if (TMGglobal.DUMP) System.out.println("TMG table not selected ");
 			}
 		} catch (HCException hde) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in TMGloader "); //$NON-NLS-1$
 			throw new HCException("TMGloader error: "+ hde.getMessage());
 		}
 	}
@@ -459,21 +446,24 @@ public class TMGloader {
  */
 	private DBFReader tableLoader(String fileName) throws HCException  {
 		String dbfFile = tmgBaseFolder + File.separator + fileName;
-
 		DBFReader tmgTable = null;
+
 		try {
 			tmgTable = new DBFReader(new FileInputStream(dbfFile));
 		} catch (FileNotFoundException fnfe) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in TMGloader " + fnfe.getMessage()); //$NON-NLS-1$
 			throw new HCException("TMGloader error: "+ fnfe.getMessage());
 
 		}
 		int numberOfFields = tmgTable.getFieldCount();
-		if (TMGglobal.DEBUG) System.out.println("Number of Fields in: " + fileName + " - NrFields: " + numberOfFields);
+		if (TMGglobal.DEBUG)
+			System.out.println("Number of Fields in: " + fileName + " - NrFields: " + numberOfFields);
 		return tmgTable;
 	}
 
 /**
- * Open fpt file form read memory fields
+ * Open fpt file from read memory fields
  * @param tmgPDreader
  * @param fileName
  */
@@ -481,9 +471,13 @@ public class TMGloader {
 		try {
 		String fptFile = tmgBaseFolder + File.separator + fileName;
 		tmgPDreader.setMemoFile(new File(fptFile),true);
-		if (TMGglobal.DEBUG) System.out.println("Memory FTP file opened: " + fptFile);
+		if (TMGglobal.DEBUG)
+			System.out.println("Memory FTP file opened: " + fptFile);
 		} catch (DBFException dbfe) {
-			System.out.println("DBFException - setmemoFils: " + dbfe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGloader open FTP file " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
 		}
 	}
 
@@ -502,8 +496,26 @@ public class TMGloader {
  * @param tmgTable
  * @param maxNoDump
  * @param fields
- * @throws HCException
  */
+	private void dumpTMGsingleTable(String tableName, TMGtableData tmgTable, int maxNoDump, String [] fields) throws HCException {
+		// Must be in DEBUG mode to have entered this code
+		int nrOftmgRows = tmgTable.getNrOfRows();
+		if (maxNoDump > nrOftmgRows) maxNoDump = nrOftmgRows;
+		System.out.println("\nTMGloader: " + tableName +  " rows: " + nrOftmgRows);
+		for (int i = 0; i < maxNoDump; i++ ) {
+			System.out.println("Row - " + (i+1) + ": ");
+			for (String field : fields) {
+				if (field.equals("IMAGE") || field.equals("THUMB") ) {
+					System.out.print(field + " = " + tmgTable.getByteContent(i,field).length + " & ");
+				} else
+					System.out.print("## Text: ");
+					System.out.print(field + " = " + tmgTable.getValueString(i,field) + "\n");
+			}
+		}
+	}
+
+// NB: original code for above was as follows - edited as it uses filenames unique to NTo!
+/*
 	private void dumpTMGsingleTable(String tableName, TMGtableData tmgTable, int maxNoDump, String [] fields) throws HCException {
 		int nrOftmgRows = tmgTable.getNrOfRows();
 		if (maxNoDump > nrOftmgRows) maxNoDump = nrOftmgRows;
@@ -512,34 +524,28 @@ public class TMGloader {
 			System.out.println("Row - " + (i+1) + ": ");
 			for (String field : fields) {
 				if (field.equals("IMAGE") || field.equals("THUMB") ) {
-					//System.out.print("\n## Bytes: ");
 					System.out.print(field + " = " + tmgTable.getByteContent(i,field).length + " & ");
 					byte[] image = tmgTable.getByteContent(i,field);
 					String fileName = "";
 					if (field.equals("IMAGE")) fileName = "exhibit_image" + i + ".jpg";
 					if (field.equals("THUMB")) fileName = "thumb_image" + i + ".jpg";
 					File outputFile = new File("C:\\Users\\Nils\\HRE\\Exhibits\\" + fileName);
-
 					try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
 					    outputStream.write(image);
-					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
+					} catch (FileNotFoundException | IOException e) {
 						e.printStackTrace();
 					}
-
 				} else
 					System.out.print("## Text: ");
-					//System.out.print(fields[j] + " = " + tmgTable.getValueString(i,fields[j]).length() + " & ");
 					System.out.print(field + " = " + tmgTable.getValueString(i,field) + "\n");
 			}
 			System.out.println();
 		}
 	}
+ */
 
 	private void dumpTMGmultiTable(String tableName, TMGtableData tmgMultiTable, int maxNoDump, String [] fields) throws HCException {
+		// Must be in DEBUG mode to have entered this code
 		int nrOfMultitmgRows = tmgMultiTable.getMultiRowNr();
 		if (maxNoDump > nrOfMultitmgRows) maxNoDump = nrOfMultitmgRows;
 		System.out.println("\nTMGloader: " + tableName +  " Multi rows: " + nrOfMultitmgRows);
@@ -549,7 +555,6 @@ public class TMGloader {
 			if (placeVector == null) System.out.println("Nr: " + i + " - Vector = null");
 			else {
 				System.out.println("Nr: " + i + " - Vector - sice: " + placeVector.size());
-
 				for (int j = 0; j < placeVector.size();j++ ) {
 					System.out.print("Element:  " + j + " - ");
 					DBFRow rowObj = placeVector.get(j);

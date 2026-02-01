@@ -10,6 +10,7 @@ package hre.gui;
  * 			  2024-10-05 Updated save partner (N Tolleshaug)
  * 			  2024-10-06 Removed reset PS for partner event (N Tolleshaug)
  * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
+ * v0.04.0032 2026-01-20 Log all catch blocks and other msgs (D Ferguson)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -28,7 +29,7 @@ import hre.nls.HG0547Msgs;
 /**
  * Partner Event
  * @author N.Tolleshaug
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2024-05-26
  */
 public class HG0547PartnerEvent extends HG0547EditEvent {
@@ -42,7 +43,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 	static long eventPID = null_RPID;
 	long  partnerTablePID = null_RPID;
 	int selectedEventNum = 1004, selectedRoleNum = 1;
-	static String sexCode = "U";
+	static String sexCode = "U";		//$NON-NLS-1$
 
 	public HG0547PartnerEvent(HBProjectOpenData pointOpenProject, int selectedRowInTable, int eventNumber,
 								int roleNumber , long createdPartnerTablePID) throws HBException {
@@ -61,8 +62,10 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 					partnerTablePID = createdPartnerTablePID;
 				}
 			} catch (HBException hbe) {
-				System.out.println(" HG0547PartnerEvent event name error : " + eventName);	//$NON-NLS-1$
-				hbe.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0547Partner event name: " + hbe.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(hbe);
+				}
 			}
 		}
 
@@ -83,13 +86,13 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 				try {
 				// Check if data updated
 					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited) {
-				//if update memo text
+					//if update memo text
 						if (memoEdited)
 							pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
 
-				// Create new event
+					// Create new event
 						newEventRecordPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
-				// Create a new set of HDATE records
+					// Create a new set of HDATE records
 						if (startDateOK)
 							pointWhereWhenHandler.createEventDates(true, newEventRecordPID,
 									"START_HDATE_RPID", startHREDate);	//$NON-NLS-1$
@@ -97,22 +100,22 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 							pointWhereWhenHandler.createEventDates(true, newEventRecordPID,
 									"SORT_HDATE_RPID", sortHREDate);	//$NON-NLS-1$
 
-				// Update partner table
+					// Update partner table
 						pointWhereWhenHandler.updateEventPartnerTable(partnerTablePID, newEventRecordPID);
 
-				// Update location name style
+					// Update location name style
 						if (changedLocationNameStyle && locationElementUpdate) {
 							selectedStyleIndex = locationNameStyles.getSelectedIndex();
 							locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
-							System.out.println(" Partner event - location name PID: " + locationNamePID); //$NON-NLS-1$
 							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 						}
 
-					} else System.out.println(" HG0547PartnerEvent - No edited data for event!");	//$NON-NLS-1$
+					} else if (HGlobal.DEBUG && HGlobal.writeLogs)
+									HB0711Logging.logWrite("Action: in HG0547Partner no edited data to save");	//$NON-NLS-1$
 
 
 				// Reload GUI Managers
-					// Reload Person windows
+				// Reload Person windows
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
 					pointOpenProject.getPersonHandler().resetPersonManager();
@@ -120,12 +123,12 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 					dispose();
 
 				} catch (HBException hbe) {
-					System.out.println("HG0547PartnerEvent - Failed to add partner event: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0547Partner failed partner event add: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					JOptionPane.showMessageDialog(btn_Save, HG0547Msgs.Text_52 + hbe.getMessage(),	// Failed to add Partner event \n
 							HG0547Msgs.Text_40, JOptionPane.ERROR_MESSAGE);							// Event Save Error
-					if (HGlobal.DEBUG) {
-						hbe.printStackTrace();
-					}
 				}
 			}
 		});

@@ -50,6 +50,8 @@ package hre.gui;
   * 		  2025-07-06 Pass roleName to HG0548EditSentence (D Ferguson)
   * 		  2025-07-13 Pass sexCode to HG0548EditSentence (D Ferguson
   * 		  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
+  * 		  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+  * 		  2026-01-20 Log all catch blocks and other msgs (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -114,6 +116,7 @@ import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
+import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -133,11 +136,12 @@ import net.miginfocom.swing.MigLayout;
 public class HG0547EditEvent extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	long null_RPID  = 1999999999999999L;
-	String citeOwnerType = "T450";
+	String citeOwnerType = "T450";		//$NON-NLS-1$
 
 	public HBWhereWhenHandler pointWhereWhenHandler;
 	public HBPersonHandler pointPersonHandler;
 	public HBCitationSourceHandler pointCitationSourceHandler;
+	HBEventRoleManager pointEventRoleManager;
 	HG0547EditEvent pointEditEvent = this;
 
 	public String screenID = "54700";	//$NON-NLS-1$
@@ -249,8 +253,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  */
 	public HG0547EditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
 							long eventpointPID, String sexCode) throws HBException {
-		if (HGlobal.DEBUG)
-			System.out.println(" EditEvent: " + eventNumber + "/" + roleNumber + "-" + eventPID);	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: entering HG0547EditEvent");	//$NON-NLS-1$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite(" Editing Event: " + eventNumber + " role: " + roleNumber + " PID: " + eventPID);	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
@@ -258,6 +264,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		this.eventNum = eventNumber;
 		this.eventPID = eventpointPID;
 		this.sexCode = sexCode;
+		pointEventRoleManager = pointOpenProject.getEventRoleManager();
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 	// Setup references
 		windowID = screenID;
 		helpName = "editevent";	//$NON-NLS-1$
@@ -266,8 +274,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     	selectedRoleNum = roleNumber;
     	this.setResizable(true);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: entering HG0547EditEvent");	//$NON-NLS-1$
 
 	    pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 	    pointPersonHandler = pointOpenProject.getPersonHandler();
@@ -291,8 +297,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				startHDatePID = eventTable.getLong("START_HDATE_RPID");		//$NON-NLS-1$
 				sortHDatePID = eventTable.getLong("SORT_HDATE_RPID");		//$NON-NLS-1$
 			} catch (SQLException sqle) {
-				System.out.println(" SQL error personNameTable: " + sqle.getMessage());		//$NON-NLS-1$
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0547Edit getting personTable: " + sqle.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 				throw new HBException(" SQL error personNameTable: " + sqle.getMessage());	//$NON-NLS-1$
 			}
 
@@ -328,7 +336,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 	// Set People name(s), role data
 		eventPersonName = pointPersonHandler.getManagedPersonName();
-		roleData = pointWhereWhenHandler.getEventRoleData(eventNumber, "");		//$NON-NLS-1$
+		roleData = pointEventRoleManager.getRolesDataForEvent(eventNumber, "");	//$NON-NLS-1$
 
     	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
     // Get and extract the partner names and roles - separated by a / marker
@@ -341,8 +349,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			eventPersonNamePri = eventPersonName;
 			roleNamePri = pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber);
 		}
-	    if (HGlobal.DEBUG)
-	    	System.out.println(" Event " + eventName + " partners " + eventPersonNamePri + ", " + eventPersonNameSec); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0547Edit Event " + eventName + " partners " + eventPersonNamePri + ", " + eventPersonNameSec); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	 // Load ALL current Assocs and their current roles
 		tableAssocsData = pointWhereWhenHandler.getAssociateTable();
@@ -946,8 +954,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 					personSelectScreen.setVisible(true);
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0547EditEvent - associate: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0547Edit associate change: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 			}
@@ -970,8 +980,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 					pointWhereWhenHandler.deleteAssocPerson(rowInTable);
 					resetAssociateTable(null_RPID);
 				} catch (HBException hbe) {
-					System.out.println(" Delete assoc error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0547Edit associate delete: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -990,8 +1002,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 					personSelectScreen.setVisible(true);
 					btn_Save.setEnabled(true);
 				} catch (HBException hbe) {
-					System.out.println(" HG0547EditEvent - Add Assoc popup: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0547Edit associate add: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 	        }
@@ -1033,11 +1047,11 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_EventType.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// pointEditEvent does not allow action if eventGroup=6 (marriage type)
+			// pointEditEvent does not allow action if eventGroup=6 (marriage type)
 	        	HG0547TypeEvent eventTypeScreen = new HG0547TypeEvent(pointOpenProject, eventGroup, eventNum,
 	        															eventRoleNum, pointEditEvent);
 	        	eventTypeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-	        	// Anchor new screen at actualEvent JLabel
+	        // Anchor new screen at actualEvent JLabel
 				Point xyShow = lbl_actualEvent.getLocationOnScreen();
 				eventTypeScreen.setLocation(xyShow.x, xyShow.y);
 				eventTypeScreen.setVisible(true);
@@ -1076,7 +1090,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	           		objCiteDataToEdit = objEventCiteData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
 					HG0555EditCitation citeScreen
-								= new HG0555EditCitation(false, pointOpenProject, citeOwnerType, keyAssocMin, (long) objCiteDataToEdit[3]); //$NON-NLS-1$
+								= new HG0555EditCitation(false, pointOpenProject, citeOwnerType, keyAssocMin, (long) objCiteDataToEdit[3]);
 					citeScreen.pointEditEvent = pointEditEvent;
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyCite = lbl_Date.getLocationOnScreen();
@@ -1090,8 +1104,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				pointCitationSourceHandler.setCitedTableData(citeOwnerType, eventPID);		//$NON-NLS-1$
-				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeOwnerType, keyAssocMin); //$NON-NLS-1$
+				pointCitationSourceHandler.setCitedTableData(citeOwnerType, eventPID);
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeOwnerType, keyAssocMin);
 				citeScreen.pointEditEvent = pointEditEvent;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Date.getLocationOnScreen();
@@ -1113,8 +1127,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 					resetCitationTable(null_RPID);
 					pack();
 				} catch (HBException hbe) {
-					System.out.println("HG0547EditEvent delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0547Edit delete citation: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1202,9 +1218,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
                     int row = tme.getFirstRow();
                     if (row > -1) {
 	                    String nameElementData = (String) tableLocation.getValueAt(row, 1);
-						if (HGlobal.DEBUG) {
+	            		if (HGlobal.DEBUG && HGlobal.writeLogs)	{
 								String element = (String) tableLocation.getValueAt(row, 0);
-								System.out.println(" HG0547EditEvent - location table changed: " + row //$NON-NLS-1$
+	            				HB0711Logging.logWrite("Action: in HG0547Edit location table changed: " + row //$NON-NLS-1$
 										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
 						}
 						if (nameElementData != null) {
@@ -1253,8 +1269,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						// YES option
 						if (HGlobal.writeLogs)
 							HB0711Logging.logWrite("Action: cancelling out of HG0547EditEvent (no Save)"); //$NON-NLS-1$
-						if (HGlobal.DEBUG)
-							System.out.println(" Yes, Leave window and close!"); //$NON-NLS-1$
 
 						// Clear Reminder if present
 						if (reminderDisplay != null) reminderDisplay.dispose();
@@ -1267,14 +1281,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						dispose();
 
 					} else {	// NO option - do nothing
-						if (HGlobal.DEBUG)
-							System.out.println(" No, leave window open for save");	//$NON-NLS-1$
 					}
 				} else {	// Close, with Save not enabled
 					if (HGlobal.writeLogs)
 						HB0711Logging.logWrite("Action: exiting HG0547EditEvent (no updates done)"); //$NON-NLS-1$
-					if (HGlobal.DEBUG)
-						System.out.println(" Save not enabled!");	//$NON-NLS-1$
 
 					// Clear Reminder if present
 					if (reminderDisplay != null) reminderDisplay.dispose();
@@ -1295,13 +1305,15 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  * @param eventPID
  */
 	private void deleteAddedRecords(long eventPID) {
-		if (HGlobal.DEBUG)
-			System.out.println(" Delete added event and other records EventPID: " + eventPID); //$NON-NLS-1$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0547Edit deleting added event and other records EventPID: " + eventPID); //$NON-NLS-1$
 		try {
 			pointWhereWhenHandler.deleteSingleEvent(eventPID);
 		} catch (HBException hbe) {
-			System.out.println(" ERROR - Delete events, associates and citation records EventPID: " + eventPID); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0547Edit delete added: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	}
 
@@ -1310,15 +1322,17 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  * @param eventPID
 */
 	private void deleteAddedAssociateCitation(long eventTablePID,
-			Vector<Long> associatesAddedList,
+		Vector<Long> associatesAddedList,
 			Vector<Long> citationAddedList) {
-		if (HGlobal.DEBUG)
-			System.out.println(" DeleteAddedAssociateCitation for EventPID: " + eventPID); //$NON-NLS-1$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0547Edit at deleteAddedAssociateCitation for EventPID: " + eventPID); //$NON-NLS-1$
 		try {
 			pointWhereWhenHandler.deleteAssociateCitation(eventPID, associatesAddedList, citationAddedList);
 		} catch (HBException hbe) {
-			System.out.println(" ERROR - deleteAddedAssociateCitation for EventPID: " + eventPID); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0547Edit delete added associate: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	}
 

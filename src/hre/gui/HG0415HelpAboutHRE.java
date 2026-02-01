@@ -8,6 +8,7 @@ package hre.gui;
  * v0.03.0031 2023-11-10 Adjust HRE wording
  * 			  2024-10-01 Organize imports (D Ferguson)
  * v0.04.0032 2024-10-17 Correct list of 3rd-party products (D Ferguson)
+ * 			  2026-01-03 Logged catch block actions (D Ferguson)
  *******************************************************************/
 
 import java.awt.Color;
@@ -45,7 +46,7 @@ import hre.bila.HB0711Logging;
 /**
  * HRE Help About
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-03-16
  */
 
@@ -216,10 +217,11 @@ public class HG0415HelpAboutHRE extends JDialog {
 				{
 					try {
 					Desktop.getDesktop().browse(new URI("https://www.historyresearchenvironment.org"));
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				} catch (URISyntaxException e1) {
-					e1.printStackTrace();
+				} catch (IOException | URISyntaxException e1) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0415 error opening website " + e1.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(e1);
+					}
 				}
 			}
 			}
@@ -232,7 +234,10 @@ public class HG0415HelpAboutHRE extends JDialog {
 	          try {
 	            desktop.browse(e.getURL().toURI());
 	          } catch (Exception ex) {
-	            ex.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0415 HTML access error " + ex.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(ex);
+					}
 	          }
 	        }
 	      });

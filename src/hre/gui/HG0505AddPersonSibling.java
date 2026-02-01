@@ -8,7 +8,8 @@ package hre.gui;
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
-* 			  2025-03-24 Modify panelNameRelate layout (D Ferguson)
+ * 			  2025-03-24 Modify panelNameRelate layout (D Ferguson)
+ * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  ******************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -82,16 +83,14 @@ public class HG0505AddPersonSibling extends HG0505AddPerson {
 							if (eventIndex == 3 && updatedEvent[eventIndex]) setLivingToN();	// Burial
 						}
 					}
-					if (HGlobal.DEBUG)
+					if (HGlobal.DEBUG && HGlobal.writeLogs)
 						for (int i = 0; i < objReqFlagData.length; i++)
-							System.out.println(" Flagid: " + objReqFlagData[i][3] + " / " + objReqFlagData[i][2]); //$NON-NLS-1$ //$NON-NLS-2$
+							HB0711Logging.logWrite("Status: in HG0530AddSibling Flagid: " + objReqFlagData[i][3] + " / " + objReqFlagData[i][2]); //$NON-NLS-1$ //$NON-NLS-2$
 				// Do updates
 					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
 					pointPersonHandler.addNewPerson(refText.getText());
 					createAllEvents(pointPersonHandler);
 					pointPersonHandler.addNewSibling(siblingType.getSelectedIndex());
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPersonSibling");		//$NON-NLS-1$
-
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
@@ -99,9 +98,13 @@ public class HG0505AddPersonSibling extends HG0505AddPerson {
 					pointPersonHandler.resetPersonManager();
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0505AddPersonSibling - Add sibling error: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.DEBUG) hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddSibling Save error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: attempted Save and leaving HG0505AddPersonSibling");		//$NON-NLS-1$
 				dispose();
 			}
 		});

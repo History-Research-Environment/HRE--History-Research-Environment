@@ -50,7 +50,7 @@ package hre.gui;
  *			  2024-11-15 Add 'prompt for Married Name' User option (D Ferguson)
  * v0.04.0032 2025-09-21 Do pack() after font change as size may require it (D Ferguson)
  * 			  2025-12-31 Remove data2language display (but leave code) (D Ferguson)
- *
+ * 			  2026-01-03 Logged catch block actions (D Ferguson)
  ***********************************************************************************/
 
 import java.awt.Color;
@@ -121,7 +121,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Application Settings
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-05-17
  */
 
@@ -1483,7 +1483,8 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		        if (tcpModeChanged) {
 			        if (HGlobal.tcpServerOn) {
 			        	serverStatus = pointToolHand.startTCPserver();
-			        	if (HGlobal.DEBUG) System.out.println(serverStatus);
+				        if (HGlobal.writeLogs)
+				        	HB0711Logging.logWrite("Action: in HG0501 server status = " + serverStatus); //$NON-NLS-1$
 			        	// show start status via JOptionPane msg and in main Status Bar
 						HGlobalCode.logTCPIPMessage(1, serverStatus);
 			        	HG0401HREMain.mainFrame.setStatusAction(7);
@@ -1493,7 +1494,6 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 							HGlobalCode.logTCPIPMessage(2, "");		//$NON-NLS-1$
 							HG0401HREMain.mainFrame.setStatusAction(8);
 						} else {
-							if (HGlobal.DEBUG) System.out.println(" Cannot stop TCP server - need to close projects first"); //$NON-NLS-1$
 					    	JOptionPane.showMessageDialog(contents, HG0501Msgs.Text_139,
 									HG0501Msgs.Text_140,JOptionPane.ERROR_MESSAGE);
 					    	HGlobal.tcpServerOn = true;
@@ -1695,7 +1695,10 @@ public class HG0501AppSettings extends HG0450SuperDialog {
           theme = "Default";		//$NON-NLS-1$
       }
       catch (Exception ex) {
-          ex.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0501 loading LAF themes " + ex.getMessage());	//$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(ex);
+			}
       }
   } // End setLookAndFeel
 

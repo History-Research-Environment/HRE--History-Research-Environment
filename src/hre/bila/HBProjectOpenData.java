@@ -66,6 +66,9 @@ package hre.bila;
  * v0.04.0032 2025-02-12 - Added code for HBCitationSourceHandler (N. Tolleshaug)
  * 			  2025-10-26 - Added code for HBRepositoryHandler (D Ferguson)
  * 			  2025-11-03 - Added code for HBReportHandler (D Ferguson)
+ * 			  2026-01-01 - Added code for create HBEventRoleManager (N. Tolleshaug)
+ * 			  2026-01-18 - Added code to support extract of HRE table to CSV file (D Ferguson)
+ * 			  2026-01-27 - Updated code for database index setting for handlers(N.Tolleshaug)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -87,6 +90,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JTree;
 
+import hre.dbla.HDDatabaseLayer;
 import hre.dbla.HDException;
 import hre.gui.HG0401HREMain;
 import hre.gui.HG0450SuperDialog;
@@ -112,10 +116,12 @@ public class HBProjectOpenData {
 	private HBViewPointHandler pointViewPointHandler;
 	private HBPersonHandler pointPersonHandler;
 	private HBCitationSourceHandler pointCitationSourceHandler;
+	private HBEventRoleManager pointEventRoleManager;
 	private HBRepositoryHandler pointRepositoryHandler;
 	private HBWhereWhenHandler pointWhereWhenHandler;
 	private HBMediaHandler pointMediaHandler;
 	private HBReportHandler pointReportHandler;
+	private HREmemo pointHREmemo;
 
     long proOffset = 1000000000000000L;
     long null_RPID  = 1999999999999999L;
@@ -129,8 +135,7 @@ public class HBProjectOpenData {
     private String guiLanguage = "en-US";
 
     // Keeps track of the open projects and databases
-    private int openProjectIndex;
-    private int dataBaseIndex;
+    private int dataBaseIndex = -1;
 	private String selectSQL;
 
     private String dataBaseFilePath;
@@ -351,6 +356,7 @@ public class HBProjectOpenData {
 			hbe.printStackTrace();
 		}
 	}
+
 /**
  * ResultSet getT402LifeFormNames()
  * @return
@@ -576,6 +582,13 @@ public class HBProjectOpenData {
 		return eventVPnr;
 	}
 
+	public ArrayList<String> getTableList() {
+		if (HGlobal.DEBUG) 
+			System.out.println("HBProjectOpenData - getTableList");
+		
+		return databaseTables;
+	}
+
 /**
  * Constructor establish connection to database
  * @param pointProjectHandler
@@ -583,13 +596,23 @@ public class HBProjectOpenData {
  */
 	public HBProjectOpenData(HBProjectHandler pointProjectHandler) throws HBException {
 		this.pointProjectHandler = pointProjectHandler;
-	// Set up HBPersonHandler
-		pointPersonHandler = new HBPersonHandler(this);
-		pointPersonHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+		if (HGlobal.DEBUG) System.out.println(" New - HBProjectOpenData!");
+	}
+	
+/**
+ * private void initiateManagersOpenProject()	
+ * @throws HBException
+ */
+	public void initiateManagersOpenProject() throws HBException {
+		//System.out.println(" initiateManagersOpenProject() called!");
 
 	// Set up citation - source handler
 		pointCitationSourceHandler  = new HBCitationSourceHandler(this);
 		pointCitationSourceHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+
+	// Set up event Role manager
+		pointEventRoleManager  = new HBEventRoleManager(this);
+		pointEventRoleManager.pointDBlayer = pointProjectHandler.pointDBlayer;
 
 	// Set up repository handler
 		pointRepositoryHandler  = new HBRepositoryHandler(this);
@@ -610,6 +633,13 @@ public class HBProjectOpenData {
 	// Set up Report handler
 		pointReportHandler  = new HBReportHandler(this);
 		pointReportHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
+		
+	// Set up memo handler	
+		pointHREmemo = new HREmemo(pointProjectHandler.pointDBlayer, dataBaseIndex);
+		
+	// Set up HBPersonHandler
+		pointPersonHandler = new HBPersonHandler(this);
+		pointPersonHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
 	}
 
 /**
@@ -628,6 +658,13 @@ public class HBProjectOpenData {
 		return pointPersonHandler;
 	}
 
+/**
+ * getEventRoleManager() get pointer to EventRoleManager
+ * @return
+ */
+	public HBEventRoleManager getEventRoleManager() {
+		return pointEventRoleManager;
+	}
 /**
  * getCitationSourceHandler()
  * @return
@@ -667,6 +704,22 @@ public class HBProjectOpenData {
 	public HBReportHandler getReportHandler() {
 		return pointReportHandler;
 	}
+	
+/**
+ * public HREmemo getHREmemo()	
+ * @return
+ */
+	public HREmemo getHREmemo() {
+		return pointHREmemo;
+	}
+	
+/**
+ * public HDDatabaseLayer getPointDBlayer()	
+ * @return
+ */
+	public HDDatabaseLayer getPointDBlayer() {
+		return pointProjectHandler.pointDBlayer;
+	}
 
 /**
  * openProject(boolean remote, int proIndex, String[] logonData)
@@ -679,7 +732,7 @@ public class HBProjectOpenData {
 	public int openProject(boolean remote, int proIndex, String[] logonData) throws HBException   {
 
 		// Reset pointers to VP data - only one project at a time
-			getViewPointHandler().resetVPdata();
+			//getViewPointHandler().resetVPdata();
 
 		try {
 			this.projectData = pointProjectHandler.getUserProjectByIndex(proIndex);
@@ -691,14 +744,20 @@ public class HBProjectOpenData {
 
 	    // Connect to database and return database open index
 	        dataBaseIndex = pointProjectHandler.pointDBlayer.connectSQLdatabase(remote, dataBaseFilePath, logonData);
-
-	    // If remote set status for tcp connection
+	   
+	      // If remote set status for tcp connection
 	        if (remote) {
 	        	String connectStatus = pointProjectHandler.pointDBlayer.getConnectStatus();
 
 	    // Set status in main window
 	        	HG0401HREMain.mainFrame.setStatusAction(connectStatus);
 	        }
+	        
+	  // Set up managers after project is open woth new dataBaseIndex     
+	        initiateManagersOpenProject();
+	        
+	  // Reset pointers to VP data - only one project at a time
+			getViewPointHandler().resetVPdata();
 
 	        if (HGlobal.DEBUG) {
 				listOpenprojects();
@@ -711,7 +770,7 @@ public class HBProjectOpenData {
 		    fileName = projectData[1];
 
 		    if (HGlobal.DEBUG) {
-				System.out.println("HBOpenProjectData nr: " + openProjectIndex
+				System.out.println("HBOpenProjectData nr: " + dataBaseIndex
 						+ " Name: " + projectName
 						+ " File: " + fileName
 						+ " Database Index: " + dataBaseIndex);
@@ -722,28 +781,28 @@ public class HBProjectOpenData {
 		    	System.out.println("Table T104_SCHEMA_DEFN not found!");
 		    	return 1;
 		    }
-			// Set up ResultSet T101_SCHEMA_DEFNS
-					selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.schemaDefined,"");
-					pointSchemaDefTable = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+	// Set up ResultSet T101_SCHEMA_DEFNS
+			selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.schemaDefined,"");
+			pointSchemaDefTable = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
 
-			//  Get database version
-					databaseDDLversion = pointProjectHandler.pointLibraryResultSet.
-							getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
+	//  Get database version
+			databaseDDLversion = pointProjectHandler.pointLibraryResultSet.
+					getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
 
-				// Set up ResultSet T126_PROJECTS
-					selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
-					projectTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
-					try {
-						projectTableRS.first();
-						projectDatabaseName = projectTableRS.getString("PROJECT_NAME");
-						importedProject = projectTableRS.getBoolean("IS_IMPORTED");
-						projectTableRS.close();
-					} catch (SQLException sqle) {
-						if (HGlobal.DEBUG) {
-							System.out.println(" table T126_PROJECTS - IS_IMPORTED not found!");
-						}
-						importedProject = true;
-					}
+		// Set up ResultSet T126_PROJECTS
+			selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
+			projectTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+			try {
+				projectTableRS.first();
+				projectDatabaseName = projectTableRS.getString("PROJECT_NAME");
+				importedProject = projectTableRS.getBoolean("IS_IMPORTED");
+				projectTableRS.close();
+			} catch (SQLException sqle) {
+				if (HGlobal.DEBUG) {
+					System.out.println(" table T126_PROJECTS - IS_IMPORTED not found!");
+				}
+				importedProject = true;
+			}
 
 		    if (HGlobal.DEBUG) {
 				System.out.println(" Opened DB created from: "
@@ -1361,6 +1420,24 @@ public class HBProjectOpenData {
 			pointProjectHandler.removeInternalFrameFromWindow(intFrame);
 		}
 	}
+
+/**
+ * ResultSet getTableToExtract()
+ * @param tableName
+ * @return
+ */
+	public ResultSet getTableToExtract(String tableName) {
+		ResultSet extractTableRS = null;
+		selectSQL = pointProjectHandler.setSelectSQL("*",tableName,"");
+		try {
+			extractTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+		} catch (HBException hbe) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HBProjectOpenData: getTableToExtract: " + hbe.getMessage());
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
+		}
+		return extractTableRS;
+	}
+
 } // End HBProjectOpenData
-
-

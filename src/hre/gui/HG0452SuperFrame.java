@@ -9,6 +9,7 @@ package hre.gui;
  * 			  2020-09-17 Make reminder always onTop and only 1 visible (D Ferguson)
  * v0.01.0025 2020-10-21 Place Output, Reminder icon actions inside frame (D Ferguson)
  * v0.03.0031 2024-08-15 NLS conversion (D Ferguson)
+ * v0.04.0032 2026-01-03 Logged Reminder stare msgs (D Ferguson)
  *******************************************************************************************/
 
 import java.awt.Dialog.ModalExclusionType;
@@ -32,6 +33,7 @@ import javax.swing.JTable;
 import javax.swing.KeyStroke;
 
 import hre.bila.HB0614Help;
+import hre.bila.HB0711Logging;
 import hre.bila.HBBusinessLayer;
 import hre.bila.HBProjectOpenData;
 import hre.nls.HG0450Msgs;
@@ -39,7 +41,7 @@ import hre.nls.HG0450Msgs;
 /**
  * HG0452SuperFrame
  * @author D Ferguson
- * @version v0.01.0025
+ * @version v0.01.0032
  * @since 2020-09-01
  */
 
@@ -70,7 +72,7 @@ public class HG0452SuperFrame extends JFrame {
 		System.out.println("Output table error: No table available");	//$NON-NLS-1$
 		return null;
 	}
-	public HG0452SuperFrame(HBBusinessLayer pointBusinessLayer, String name, Object [][] tableControl, 
+	public HG0452SuperFrame(HBBusinessLayer pointBusinessLayer, String name, Object [][] tableControl,
 																HBProjectOpenData pointOpenProject) {
 		super(name);	// Constructor JFrame has only one parameter
 		this.pointBusinessLayer = pointBusinessLayer;
@@ -78,14 +80,14 @@ public class HG0452SuperFrame extends JFrame {
 		this.pointOpenProject = pointOpenProject;
 		initiateSuper();
 	}
-	
+
 	public HG0452SuperFrame(HBBusinessLayer pointBusinessLayer, String name) {
 		super(name);	// Constructor JFrame has only one parameter
 		this.pointBusinessLayer = pointBusinessLayer;
 		this.pointOpenProject = getOpenProject();
 		initiateSuper();
 	}
-	
+
 	public HG0452SuperFrame(String name) {
         super(name);	// Constructor JFrame has only one parameter
         this.pointOpenProject = getOpenProject();
@@ -201,8 +203,9 @@ public class HG0452SuperFrame extends JFrame {
  * @param text
  */
 	public void storeReminderText(String text) {
-		if (HGlobal.DEBUG) System.out.println("HG0452 Store Reminder txt:\nWindow ID: "	//$NON-NLS-1$
-				+ windowID + "\n" + text);	//$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0452 Storing Reminder text for \nWindow ID: "	//$NON-NLS-1$
+											+ windowID + "\n" + text);	//$NON-NLS-1$
 		pointOpenProject.pointGuiData.setDispRemindText(windowID,text) ;
 	}	// End storeReminderTetxt
 
@@ -212,8 +215,9 @@ public class HG0452SuperFrame extends JFrame {
  */
 	public String readReminderText() {
 		String reminder = pointOpenProject.pointGuiData.getDispRemindText(windowID);
-		if (HGlobal.DEBUG) System.out.println("HG0452 Read Reminder txt: \nWindow ID: "	//$NON-NLS-1$
-				+ windowID + "\n" + reminder);	//$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0452 Reading Reminder text for \nWindow ID: "	//$NON-NLS-1$
+											+ windowID + "\n" + reminder);	//$NON-NLS-1$
 		return reminder;
 	}	// End readReminderTetxt
 

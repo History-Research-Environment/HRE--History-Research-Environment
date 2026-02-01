@@ -12,6 +12,7 @@ package hre.gui;
  * 			  2024-08-24 NLS conversion (D Ferguson)-
  * v0.04.0032 2025-04-27 Add handling of citations (D Ferguson)
  * 			  2025-06-05 Address minor layout errors (D Ferguson)
+ * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  *************************************************************************************/
 
 import java.awt.Point;
@@ -23,6 +24,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -70,7 +72,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 										 int selectedRowInTable, boolean addPartner) throws HBException {
 		super(pointPersonHandler, pointOpenProject, addPartner);
 		this.addRelation = addPartner;
-		citeTableName = "T404";
+		citeTableName = "T404";		//$NON-NLS-1$
 
 	// Set titles for Partner Select
 		selectTitle = HG05070Msgs.Text_170;	// Select New Partner
@@ -88,10 +90,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	// Update event memo
 	// Disable memoText listener first
 		memoText.getDocument().removeDocumentListener(memoTextChange);
-		if (partnerRelationData != null) {
+		if (partnerRelationData != null)
 			memoString = pointPersonHandler.readSelectGUIMemo((long)partnerRelationData[0],
 															pointPersonHandler.personPartnerTable);
-		}
 		else memoString = HG05070Msgs.Text_155;		//  No memo found
 		memoText.append(memoString);
 	// and enable listener again
@@ -122,11 +123,11 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		partnerRoleList = pointPersonHandler.getRolesForEvent(partnerEventNumber, selectPartnerRoles);
 		partnerRoleType = pointPersonHandler.getEventRoleTypes();
 
-		if (partnerRelationData != null) {
+		if (partnerRelationData != null)
 			lbl_nRole1 = new JLabel("" + partnerRelationData[4]);	//$NON-NLS-1$
-		} else {
+		else
 			lbl_nRole1 = new JLabel("");	//$NON-NLS-1$
-		}
+
 		lbl_nRole1.setText("" + pointPersonHandler.getManagedPersonName());	//$NON-NLS-1$
 
 	// Tailor the persRolePanel for partners
@@ -152,10 +153,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	        @Override
 	        public void actionPerformed(ActionEvent e) {
 	        	priRole = comboPartRole1.getSelectedIndex();
-	        	if (HGlobal.DEBUG)
-				 {
-					System.out.println("Pri partner role nr: " + partnerRoleType[priRole] + " Role: " + comboPartRole1.getSelectedItem().toString()); //$NON-NLS-1$ //$NON-NLS-2$
-				}
+	    		if (HGlobal.DEBUG && HGlobal.writeLogs)
+	    			HB0711Logging.logWrite("Status: in HG0507SelPartner Pri partner role nr: " + partnerRoleType[priRole] //$NON-NLS-1$
+	    					+ " Role: " + comboPartRole1.getSelectedItem().toString()); //$NON-NLS-1$
 	        }
 	    };
 		comboPartRole1.addActionListener(comboRole1Change);
@@ -165,10 +165,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	        @Override
 	        public void actionPerformed(ActionEvent e) {
 	        	secRole = comboPartRole2.getSelectedIndex();
-	        	if (HGlobal.DEBUG)
-				 {
-					System.out.println("Sec partner role nr: " + partnerRoleType[secRole] + " Role: " + comboPartRole2.getSelectedItem().toString()); //$NON-NLS-1$ //$NON-NLS-2$
-				}
+	    		if (HGlobal.DEBUG && HGlobal.writeLogs)
+	    			HB0711Logging.logWrite("Status: in HG0507SelPartner Sec partner role nr: " + partnerRoleType[secRole] //$NON-NLS-1$
+	    					+ " Role: " + comboPartRole2.getSelectedItem().toString()); //$NON-NLS-1$
 	        }
 	    };
 		comboPartRole2.addActionListener(comboRole2Change);
@@ -179,10 +178,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 			public void actionPerformed(ActionEvent event) {
 				selectedPartTypeIndex = comboBox_Relationships.getSelectedIndex();
 				selectedPartnerType = partnerTypeNumbers[selectedPartTypeIndex];
-				if (HGlobal.DEBUG)
-				 {
-					System.out.println("Partner event index/type: " + selectedPartTypeIndex + "/" + selectedPartnerType + " - /");  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				}
+	    		if (HGlobal.DEBUG && HGlobal.writeLogs)
+	    			HB0711Logging.logWrite("Status: in HG0507SelPartner event index/type: "  //$NON-NLS-1$
+	    					+ selectedPartTypeIndex + "/" + selectedPartnerType + " - /");  //$NON-NLS-1$ //$NON-NLS-2$
 				try {
 					partnerRoleList = pointPersonHandler.getRolesForEvent(selectedPartnerType, selectPartnerRoles);
 					partnerRoleType = pointPersonHandler.getEventRoleTypes();
@@ -204,8 +202,10 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 					comboPartRole2.setSelectedIndex(0);
 
 				} catch (HBException hbe) {
-					hbe.printStackTrace();
-					System.out.println(" Add Person Partner role reset error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507SelPartner role reset: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -230,12 +230,11 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 						Point xyShow = pointSelectPartner.getLocationOnScreen();
 						editPartnerEventScreen.setLocation(xyShow.x, xyShow.y);
 						editPartnerEventScreen.setVisible(true);
-
 					} else {
-						if (memoEdited) {
+						if (memoEdited)
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 									(long)partnerRelationData[0], pointPersonHandler.personPartnerTable);
-						}
+
 						// update partner table memo
 						pointPersonHandler.updatePartner((long)partnerRelationData[0],
 												selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
@@ -254,8 +253,10 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 					dispose();
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0507SelectPartner error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507SelPartner event save: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -268,31 +269,28 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 					pointPersonHandler.setNewPartnerPID(personPID);
 					if (addRelation) {
 						createdPartnerTablePID = pointPersonHandler.addNewPartner(selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
-						if (memoEdited) {
+						if (memoEdited)
 							pointPersonHandler.createSelectGUIMemo(memoText.getText(),pointPersonHandler.personPartnerTable);
-						}
-
 					} else {
-						if (memoEdited) {
+						if (memoEdited)
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 									(long)partnerRelationData[0], pointPersonHandler.personPartnerTable);
-						}
 						// update partner table
 						pointPersonHandler.updatePartner((long)partnerRelationData[0],
 												selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
 					}
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0507SelectPartner error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507SelPartner save: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
-
 				pointOpenProject.reloadT401Persons();
 				pointOpenProject.reloadT402Names();
 				pointOpenProject.getPersonHandler().resetPersonSelect();
 				pointOpenProject.getPersonHandler().resetPersonManager();
 				dispose();
-
 			}
 		});
 	}		// End HG0507SelectPartner constructor
@@ -339,16 +337,14 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
     	comboBox_Relationships.setSelectedIndex(partnerRoleindex);
 
     	for (int i = 0; i < partnerRoleType.length; i++) {
-    		if (partnerRoleType[i] == priPartnerRole) {
+    		if (partnerRoleType[i] == priPartnerRole)
 				priPartnerRoleIndex = i;
-			}
     	}
     	comboPartRole1.setSelectedIndex(priPartnerRoleIndex);
 
     	for (int i = 0; i < partnerRoleType.length; i++) {
-    		if (partnerRoleType[i] == secPartnerRole) {
+    		if (partnerRoleType[i] == secPartnerRole)
 				secPartnerRoleIndex = i;
-			}
     	}
     	comboPartRole2.setSelectedIndex(secPartnerRoleIndex);
 	}

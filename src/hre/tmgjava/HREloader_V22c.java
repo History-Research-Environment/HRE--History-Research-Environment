@@ -35,10 +35,14 @@ package hre.tmgjava;
  *			  2025-09-18 - Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
  *			  2025-10-21 - Delete T737 content when importing user project (N. Tolleshaug)
  *			  2025-12-15 - Indexed T735 and T736 for persormance get source list (N. Tolleshaug)
+ * 			  2026-01-15 - Log catch block msgs (D Ferguson)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 /**
  * class HREloader_V22c
  * Initiate the HRE tables
@@ -77,13 +81,13 @@ public class HREloader_V22c {
 
 	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");
-			
-	//Delete all copied rows in T737_SORC_DEFN but keep table
-			updateTableInBase("T737_SORC_DEFN", "DELETE FROM");		
 
-/**
- * Create new user - remove when moved to HRE
- */
+	//Delete all copied rows in T737_SORC_DEFN but keep table
+			updateTableInBase("T737_SORC_DEFN", "DELETE FROM");
+
+	/**
+	 * Create new user - remove when moved to HRE
+	 */
 			createNewUser("NTo","Hre-2021");
 			tmgHreConverter.setStatusMessage(" Created user " + "NTo" + " with all rights ");
 
@@ -251,9 +255,10 @@ public class HREloader_V22c {
 				System.out.println();
 
 		} catch(HCException hde) {
-			if (TMGglobal.DEBUG)
-				System.out.println("HREloader - H2 Database error: " + hde.getMessage());
-			hde.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREloader H2 database: " + hde.getMessage());
+				HB0711Logging.printStackTraceToFile(hde);
+			}
 			throw new HCException ("HREloader - H2 Database error: " + hde.getMessage());
 		}
 	}
@@ -292,8 +297,10 @@ public class HREloader_V22c {
 			return TMGglobal.T104.getNString("VERSION_NAME");
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("HREloader - getDatabaseVersion - SQLException: "
-													+ sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREloader SQL exception get DB version: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException ("HREloader - getDatabaseVersion - SQLException: " + sqle.getMessage());
 		}
 	}
@@ -366,9 +373,13 @@ public class HREloader_V22c {
 			for (int i = 1; i < nrCols + 1; i++) {
 				System.out.print(i + " - " + metaData.getColumnName(i));
 				System.out.print(" Type: " + 	metaData.getColumnTypeName(i));
-				System.out.println("  Presision: " + 	metaData.getPrecision(i));
+				System.out.println("  Precision: " + 	metaData.getPrecision(i));
 			}
 		} catch (SQLException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREloader metadata: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("HREloader - Metadata error: " + sqle.getMessage());
 		}
 	}
@@ -407,6 +418,10 @@ public class HREloader_V22c {
 			TMGglobal.T553.close();
 
 		} catch (SQLException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREloader closing tables: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("HREloader - closeHREtables() - SQL exception" + sqle.getMessage());
 		}
 	}
@@ -552,7 +567,7 @@ public class HREloader_V22c {
 		String locationNameElements = "T553_LOCN_ELEMNTS";
 		String citationTable = "T735_CITN";
 		String sourceTable = "T736_SORC";
-		
+
 		createIndexTable("T170_PID", hdateTable,"PID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + hdateTable);
 
@@ -578,10 +593,10 @@ public class HREloader_V22c {
 
 		createIndexTable("T553_OWNRPID", locationNameElements, "OWNER_RPID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + locationNameElements);
-		
+
 		createIndexTable("T735_SORC_RPID", citationTable, "SORC_RPID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + citationTable);
-		
+
 		createIndexTable("T736_PID", sourceTable, "PID");
 		tmgHreConverter.setStatusMessage(" Indexed - " + sourceTable);
 
@@ -590,144 +605,145 @@ public class HREloader_V22c {
  */
 		tmgHreConverter.setStatusMessage(" Start print HRE table size");
 		if (TMGglobal.HRETRACE)
+			try {
+				TMGglobal.T167.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T167_MEMO_SET size: " + TMGglobal.T167.getRow());
+				tmgHreConverter.setStatusMessage(" T167_MEMO_SET  size: " + TMGglobal.T167.getRow());
 
-		try {
+				TMGglobal.T168.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T168_SENTENCE_SET size: " + TMGglobal.T168.getRow());
+				tmgHreConverter.setStatusMessage(" T168_SENTENCE_SET  size: " + TMGglobal.T168.getRow());
 
-			TMGglobal.T167.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T167_MEMO_SET size: " + TMGglobal.T167.getRow());
-			tmgHreConverter.setStatusMessage(" T167_MEMO_SET  size: " + TMGglobal.T167.getRow());
+				TMGglobal.T170.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T170_HDATES size: " + TMGglobal.T170.getRow());
+				tmgHreConverter.setStatusMessage(" T170_HDATES  size: " + TMGglobal.T170.getRow());
 
-			TMGglobal.T168.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T168_SENTENCE_SET size: " + TMGglobal.T168.getRow());
-			tmgHreConverter.setStatusMessage(" T168_SENTENCE_SET  size: " + TMGglobal.T168.getRow());
+				TMGglobal.T251.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T251_FLAG_DEFN size: " + TMGglobal.T251.getRow());
+				tmgHreConverter.setStatusMessage(" T251_FLAG_DEFN  size: " + TMGglobal.T251.getRow());
 
-			TMGglobal.T170.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T170_HDATES size: " + TMGglobal.T170.getRow());
-			tmgHreConverter.setStatusMessage(" T170_HDATES  size: " + TMGglobal.T170.getRow());
+				TMGglobal.T252.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T252_FLAG_VALU size: " + TMGglobal.T252.getRow());
+				tmgHreConverter.setStatusMessage(" T252_FLAG_VALU  size: " + TMGglobal.T252.getRow());
 
-			TMGglobal.T251.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T251_FLAG_DEFN size: " + TMGglobal.T251.getRow());
-			tmgHreConverter.setStatusMessage(" T251_FLAG_DEFN  size: " + TMGglobal.T251.getRow());
+				TMGglobal.T401.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T401_PERS size: " + TMGglobal.T401.getRow());
+				tmgHreConverter.setStatusMessage(" T401_PERS size: " + TMGglobal.T401.getRow());
 
-			TMGglobal.T252.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T252_FLAG_VALU size: " + TMGglobal.T252.getRow());
-			tmgHreConverter.setStatusMessage(" T252_FLAG_VALU  size: " + TMGglobal.T252.getRow());
+				TMGglobal.T402.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T402_PERS_NAME size: " + TMGglobal.T402.getRow());
+				tmgHreConverter.setStatusMessage(" T402_PERS_NAME size: " + TMGglobal.T402.getRow());
 
-			TMGglobal.T401.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T401_PERS size: " + TMGglobal.T401.getRow());
-			tmgHreConverter.setStatusMessage(" T401_PERS size: " + TMGglobal.T401.getRow());
+				TMGglobal.T403.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T403_PERS_NAME_ELEMNTS size: " + TMGglobal.T403.getRow());
+				tmgHreConverter.setStatusMessage(" T403_PERS_NAME_ELEMNTS size: " + TMGglobal.T403.getRow());
 
-			TMGglobal.T402.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T402_PERS_NAME size: " + TMGglobal.T402.getRow());
-			tmgHreConverter.setStatusMessage(" T402_PERS_NAME size: " + TMGglobal.T402.getRow());
+				TMGglobal.T404.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T404_PARTNER size: " + TMGglobal.T404.getRow());
+				tmgHreConverter.setStatusMessage(" T404_PARTNER size: " + TMGglobal.T404.getRow());
 
-			TMGglobal.T403.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T403_PERS_NAME_ELEMNTS size: " + TMGglobal.T403.getRow());
-			tmgHreConverter.setStatusMessage(" T403_PERS_NAME_ELEMNTS size: " + TMGglobal.T403.getRow());
+				TMGglobal.T405.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T405_PARENT_RELATION size: " + TMGglobal.T405.getRow());
+				tmgHreConverter.setStatusMessage(" T405_PARENT_RELATION size: " + TMGglobal.T405.getRow());
 
-			TMGglobal.T404.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T404_PARTNER size: " + TMGglobal.T404.getRow());
-			tmgHreConverter.setStatusMessage(" T404_PARTNER size: " + TMGglobal.T404.getRow());
+				TMGglobal.T450.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T450_EVNT size: " + TMGglobal.T450.getRow());
+				tmgHreConverter.setStatusMessage(" T450_EVNT size: " + TMGglobal.T450.getRow());
 
-			TMGglobal.T405.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T405_PARENT_RELATION size: " + TMGglobal.T405.getRow());
-			tmgHreConverter.setStatusMessage(" T405_PARENT_RELATION size: " + TMGglobal.T405.getRow());
+				TMGglobal.T451.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T451_EVNT_ASSOC size: " + TMGglobal.T451.getRow());
+				tmgHreConverter.setStatusMessage(" T451_EVNT_ASSOC size: " + TMGglobal.T451.getRow());
 
-			TMGglobal.T450.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T450_EVNT size: " + TMGglobal.T450.getRow());
-			tmgHreConverter.setStatusMessage(" T450_EVNT size: " + TMGglobal.T450.getRow());
+				TMGglobal.T460.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T460_EVNT_DEFS size: " + TMGglobal.T460.getRow());
+				tmgHreConverter.setStatusMessage(" T460_EVNT_DEFS size: " + TMGglobal.T460.getRow());
 
-			TMGglobal.T451.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T451_EVNT_ASSOC size: " + TMGglobal.T451.getRow());
-			tmgHreConverter.setStatusMessage(" T451_EVNT_ASSOC size: " + TMGglobal.T451.getRow());
+				TMGglobal.T461.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T461_EVENT_ROLE size: " + TMGglobal.T461.getRow());
+				tmgHreConverter.setStatusMessage(" T461_EVENT_ROLE size: " + TMGglobal.T461.getRow());
 
-			TMGglobal.T460.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T460_EVNT_DEFS size: " + TMGglobal.T460.getRow());
-			tmgHreConverter.setStatusMessage(" T460_EVNT_DEFS size: " + TMGglobal.T460.getRow());
+				TMGglobal.T551.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T551_LOCN size: " + TMGglobal.T551.getRow());
+				tmgHreConverter.setStatusMessage(" T551_LOCN size: " + TMGglobal.T551.getRow());
 
-			TMGglobal.T461.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T461_EVENT_ROLE size: " + TMGglobal.T461.getRow());
-			tmgHreConverter.setStatusMessage(" T461_EVENT_ROLE size: " + TMGglobal.T461.getRow());
+				TMGglobal.T552.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T552_LOCN_NAME size: " + TMGglobal.T552.getRow());
+				tmgHreConverter.setStatusMessage(" T552_LOCN_NAME size: " + TMGglobal.T552.getRow());
 
-			TMGglobal.T551.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T551_LOCN size: " + TMGglobal.T551.getRow());
-			tmgHreConverter.setStatusMessage(" T551_LOCN size: " + TMGglobal.T551.getRow());
+				TMGglobal.T553.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T553_LOCN_NAME_ELEMNTS size: " + TMGglobal.T553.getRow());
+				tmgHreConverter.setStatusMessage(" T553_LOCN_NAME_ELEMNTS  size: " + TMGglobal.T553.getRow());
 
-			TMGglobal.T552.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T552_LOCN_NAME size: " + TMGglobal.T552.getRow());
-			tmgHreConverter.setStatusMessage(" T552_LOCN_NAME size: " + TMGglobal.T552.getRow());
+				TMGglobal.T676.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T676_DIGT size: " + TMGglobal.T676.getRow());
+				tmgHreConverter.setStatusMessage(" T676_DIGT  size: " + TMGglobal.T676.getRow());
 
-			TMGglobal.T553.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T553_LOCN_NAME_ELEMNTS size: " + TMGglobal.T553.getRow());
-			tmgHreConverter.setStatusMessage(" T553_LOCN_NAME_ELEMNTS  size: " + TMGglobal.T553.getRow());
+				TMGglobal.T677.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
+				tmgHreConverter.setStatusMessage(" T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
 
-			TMGglobal.T676.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T676_DIGT size: " + TMGglobal.T676.getRow());
-			tmgHreConverter.setStatusMessage(" T676_DIGT  size: " + TMGglobal.T676.getRow());
+				TMGglobal.T734.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T734_SORC_DATA size: " + TMGglobal.T734.getRow());
+				tmgHreConverter.setStatusMessage(" T734_SORC_DATA size: " + TMGglobal.T734.getRow());
 
-			TMGglobal.T677.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
-			tmgHreConverter.setStatusMessage(" T677_DIGT_NAME size: " + TMGglobal.T677.getRow());
+				TMGglobal.T735.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T735_CITN size: " + TMGglobal.T735.getRow());
+				tmgHreConverter.setStatusMessage(" T735_CITN size: " + TMGglobal.T735.getRow());
 
-			TMGglobal.T734.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T734_SORC_DATA size: " + TMGglobal.T734.getRow());
-			tmgHreConverter.setStatusMessage(" T734_SORC_DATA size: " + TMGglobal.T734.getRow());
+				TMGglobal.T736.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T736_SORC size: " + TMGglobal.T736.getRow());
+				tmgHreConverter.setStatusMessage(" T736_SORC size: " + TMGglobal.T736.getRow());
 
-			TMGglobal.T735.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T735_CITN size: " + TMGglobal.T735.getRow());
-			tmgHreConverter.setStatusMessage(" T735_CITN size: " + TMGglobal.T735.getRow());
+				TMGglobal.T737.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T737_SORC_DEF size: " + TMGglobal.T737.getRow());
+				tmgHreConverter.setStatusMessage(" T737_SORC_DEF size: " + TMGglobal.T737.getRow());
 
-			TMGglobal.T736.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T736_SORC size: " + TMGglobal.T736.getRow());
-			tmgHreConverter.setStatusMessage(" T736_SORC size: " + TMGglobal.T736.getRow());
+				TMGglobal.T738.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T738_SORC_ELMNT size: " + TMGglobal.T738.getRow());
+				tmgHreConverter.setStatusMessage(" T738_SORC_ELMNT size: " + TMGglobal.T738.getRow());
 
-			TMGglobal.T737.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T737_SORC_DEF size: " + TMGglobal.T737.getRow());
-			tmgHreConverter.setStatusMessage(" T737_SORC_DEF size: " + TMGglobal.T737.getRow());
+				TMGglobal.T739.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T739_REPO size: " + TMGglobal.T739.getRow());
+				tmgHreConverter.setStatusMessage(" T739_REPO size: " + TMGglobal.T739.getRow());
 
-			TMGglobal.T738.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T738_SORC_ELMNT size: " + TMGglobal.T738.getRow());
-			tmgHreConverter.setStatusMessage(" T738_SORC_ELMNT size: " + TMGglobal.T738.getRow());
+				TMGglobal.T740.last();
+				if (TMGglobal.DEBUG)
+					System.out.println("New HRE - T740_SORC_LINK size: " + TMGglobal.T740.getRow());
+				tmgHreConverter.setStatusMessage(" T740_SORC_LINK size: " + TMGglobal.T740.getRow());
 
-			TMGglobal.T739.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T739_REPO size: " + TMGglobal.T739.getRow());
-			tmgHreConverter.setStatusMessage(" T739_REPO size: " + TMGglobal.T739.getRow());
-
-			TMGglobal.T740.last();
-			if (TMGglobal.DEBUG)
-				System.out.println("New HRE - T740_SORC_LINK size: " + TMGglobal.T740.getRow());
-			tmgHreConverter.setStatusMessage(" T740_SORC_LINK size: " + TMGglobal.T740.getRow());
-
-
-		} catch (SQLException sqle) {
-			throw new HCException("HREloader - reloadHreTables() - SQL exception" + sqle.getMessage());
+			} catch (SQLException sqle) {
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HREloader table size display: " + sqle.getMessage());
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
+				throw new HCException("HREloader - reloadHreTables() - SQL exception" + sqle.getMessage());
+			}
 		}
-	}
 /**
  * reportProgress(int completed, int nrOfTables )
  * @param completed
@@ -737,7 +753,7 @@ public class HREloader_V22c {
 	private void reportProgress(int completed, int nrOfTables ) throws HCException {
 		// Report progress in %
 		int progress = (int)Math.round(((double)completed / (double)nrOfTables) * 100);
-		if (progress > 100) throw new HCException("Complete percentage error!");
+		if (progress > 100) throw new HCException("Completed percentage error");
 		tmgHreConverter.setStatusProgress(progress);
 	}
 }

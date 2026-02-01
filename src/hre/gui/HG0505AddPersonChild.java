@@ -8,6 +8,7 @@ package hre.gui;
  * 			  2024-10-12 Modify for HG0505AddPerson layout changes (D Ferguson)
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
+ * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  ******************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -59,8 +60,8 @@ public class HG0505AddPersonChild extends HG0505AddPerson {
 		else if (parentSex == 2) childRelationType = pointPersonHandler.getRolesForParent(fatherEventGroup);
 		else {
 			pointPersonHandler.errorJOptionMessage(HG0505Msgs.Text_43, HG0505Msgs.Text_44);	// Add Child	//   Set selected parent sex first
-			if (HGlobal.DEBUG)
-				System.out.println(" Sex for parent not known - sexindex: " + parentSex);	//$NON-NLS-1$
+   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+   	    		HB0711Logging.logWrite("Status: in HG0505AddChild parent sex not known. Sexindex=" + parentSex);	//$NON-NLS-1$
 			dispose();
 			return;
 		}
@@ -98,17 +99,15 @@ public class HG0505AddPersonChild extends HG0505AddPerson {
 							if (eventIndex == 3 && updatedEvent[eventIndex]) setLivingToN();	// Burial
 						}
 					}
-					if (HGlobal.DEBUG)
+		   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
 						for (Object[] element : objReqFlagData)
-							System.out.println(" Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddChild Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
 				// Do updates
 					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
 					pointPersonHandler.addNewPerson(refText.getText());
 					pointPersonHandler.setParentRole(childType.getSelectedIndex());
 					createAllEvents(pointPersonHandler);
 					pointPersonHandler.addNewChild();
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPersonChild");	//$NON-NLS-1$
-
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
@@ -116,9 +115,13 @@ public class HG0505AddPersonChild extends HG0505AddPerson {
 					pointPersonHandler.resetPersonManager();
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0505AddPerson - Add child error: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.DEBUG) hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddChild Save error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: attempted Save and leaving HG0505AddPersonChild");	//$NON-NLS-1$
 				dispose();
 			}
 		});

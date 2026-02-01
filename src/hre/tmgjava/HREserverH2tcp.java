@@ -1,4 +1,5 @@
 package hre.tmgjava;
+
 import java.io.File;
 import java.sql.Connection;
 /*************************************************************************
@@ -9,10 +10,11 @@ import java.sql.Connection;
 * for multiple users to open HRE databases. This is not foreseen in this
 * Database Layer design. Need further design work in project.
 ***************************************************************************
-* v0.00.0026 2021-05-22 - First version (N. Tolleshaug)
+* v0.01.0026 2021-05-22 - First version (N. Tolleshaug)
 *            2021-05-22 - connect to fixed IP and port (N. Tolleshaug)
 * 			 2021-05-27 - Implemented server in app config  (N. Tolleshaug)
 * 			 2021-09-09 - Implemented SSL for TCP server   (N. Tolleshaug)
+* v0.04.0032 2026-01-14 - Log catch block and other msgs (D Ferguson)
 ****************************************************************************/
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -22,7 +24,9 @@ import javax.swing.JOptionPane;
 
 import org.h2.tools.Server; //imports the server utility
 
+import hre.bila.HB0711Logging;
 import hre.dbla.HDException;
+import hre.gui.HGlobal;
 
 /**
  * class HREserverH2tcp
@@ -62,22 +66,22 @@ public class HREserverH2tcp {
     public void tcpServer() throws HCException {
     	//catches any server related errors, if the connection is broken etc.
         try {
- /**
-  * server uses the IP and port defined earlier,
-  * allows other computers in the LAN to connect and
-  * implements the secure socket layer (SSL) feature
-  */
+	 /**
+	  * server uses the IP and port defined earlier,
+	  * allows other computers in the LAN to connect and
+	  * implements the secure socket layer (SSL) feature
+	  */
         	String[] paraString = new String[] {"-tcpPort" , SERVER_PORT , "-tcpAllowOthers" , "-tcpSSL" };
 
         	server = Server.createTcpServer(paraString).start();
-            System.out.println(" " + server.getStatus()); //prints out the server's status
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("Status: in HREserverH2tcp: " + server.getStatus()); // log server status
 
-            JOptionPane.showMessageDialog(null,server.getStatus()); //prints out the server's status on the option pane as well
+            JOptionPane.showMessageDialog(null,server.getStatus()); //prints out server status
 
-        } catch(Exception ex){
-            System.out.println(" HREtcpH2Server - Error with Server: \n " + ex.getMessage());
-            if (TMGglobal.DEBUG) ex.printStackTrace();
-            throw new HCException(" HDSeverH2tcp\nSQL error: " + ex.getMessage());
+        } catch(Exception ex) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREserverH2tcp: " + ex.getMessage()); //$NON-NLS-1$
         }
     }
 
@@ -86,7 +90,8 @@ public class HREserverH2tcp {
  */
     public void stopTCPserver() {
     	server.stop();
-    	System.out.println(" HREtcpH2Server stopped!");
+        if (HGlobal.writeLogs)
+        	HB0711Logging.logWrite("Action: HREserverH2tcp stopped!");
     }
 
 /**
@@ -101,11 +106,11 @@ public class HREserverH2tcp {
 	// String which will hold important messages
         String outputConn = null;
 
-/** Metadata variable which include methods such as the following:
- * 1) Database Product Name
- * 2) Database Product Version
- * 3) URL where the database files are located (in TCP mode)
- */
+	/** Metadata variable which include methods such as the following:
+	 * 1) Database Product Name
+	 * 2) Database Product Version
+	 * 3) URL where the database files are located (in TCP mode)
+	 */
         DatabaseMetaData dbmd;
 
         try {
@@ -114,20 +119,22 @@ public class HREserverH2tcp {
 
       // SSL does work,  CERT stores implemented
 
-/** The String URL is pertained of the following:
- *  1) jdbc which java implements so that it can take advantage of the SQL features
- *  2) Which Database Engine will be used
- *  3) URL where the files will be stored (as this is a TCP connection)
- *  4) Schema: businessApp
- *  5) Auto server is true means that other computers can connect with the same database at any time
- *  6) DB_CLOSE_DELAY=1 for update of database before close
- *  7) Port number of the server is also defined
- */
+	/** The String URL is pertained of the following:
+	 *  1) jdbc which java implements so that it can take advantage of the SQL features
+	 *  2) Which Database Engine will be used
+	 *  3) URL where the files will be stored (as this is a TCP connection)
+	 *  4) Schema: businessApp
+	 *  5) Auto server is true means that other computers can connect with the same database at any time
+	 *  6) DB_CLOSE_DELAY=1 for update of database before close
+	 *  7) Port number of the server is also defined
+	 */
             String url = "jdbc:h2:ssl://"  + iPA_port + "/" + urlH2loc
             		+ ";IFEXISTS=TRUE;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=1";
 
-	        if (TMGglobal.DEBUG) System.out.println(" H2 connect to URL: " + url); //prints out the url the database files are located as well as the h2 features used (SSL)
-	        connt = DriverManager.getConnection(url, "sa", ""); //Driver Manager defines the username & password of the database
+	        if (TMGglobal.DEBUG && HGlobal.writeLogs) // logs the url the database files are located as well as the h2 features used (SSL)
+	        	HB0711Logging.logWrite("Status: in HREserverH2tcp H2 connect to URL: " + url);
+	     // Driver Manager defines the username & password of the database
+	        connt = DriverManager.getConnection(url, "sa", "");
 
 	    //set AutoCommit to false to control commit actions manually
 	        connt.setAutoCommit(false);
@@ -139,19 +146,24 @@ public class HREserverH2tcp {
 	                   dbmd.getDatabaseProductVersion() + "  Catalog: " + connt.getCatalog()
 	                   + "\n URL: " + dbmd.getURL();
 
-	     //outputs the message on the system (NetBeans compiler)
-	        System.out.println(" " + outputConn);
+	     // logs the status
+	        if (HGlobal.writeLogs)
+	        	HB0711Logging.logWrite("Status: in HREserverH2tcp " + outputConn);
 
 	     //In case there is an error for creating the class for the Driver to be used
-	    } catch (ClassNotFoundException clnf){
-	        System.out.println(" Error creating class: " + clnf.getMessage());
-	        clnf.printStackTrace();
-	        throw new HDException("HDSeverH2tcp - Error creating class: " + clnf.getMessage());
-	      //Any error associated with the Database Engine
-	    } catch(SQLException sqle){
-	        System.out.println(" HDSeverH2tcp\n SQL error: " + sqle.getMessage());
-	        JOptionPane.showMessageDialog(null," HDSeverH2tcp\n SQL error: " + sqle.getMessage());
-	        sqle.printStackTrace();
+	    } catch (ClassNotFoundException clnf) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREserverH2tcp creating driver class: " + clnf.getMessage());
+				HB0711Logging.printStackTraceToFile(clnf);
+			}
+	        throw new HDException("HREServerH2tcp - Error creating class: " + clnf.getMessage());
+	      // Any error associated with the Database Engine
+	    } catch(SQLException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREserverH2tcp SQL: " + sqle.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+	        JOptionPane.showMessageDialog(null," HRESeverH2tcp\n SQL error: " + sqle.getMessage());
 	        throw new HDException("HDSeverH2tcp\nSQL error: " + sqle.getMessage());
 	    }
 	    return connt;

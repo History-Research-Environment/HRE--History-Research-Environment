@@ -17,6 +17,7 @@ package hre.gui;
  * 			  2024-10-22 only allow Save to proceed if Person has a Name (D Ferguson)
  * v0.04.0032 2024-12-26 Only turn Living flag to N if Death/Burial saved ( D Ferguson)
  * 			  2025-03-24 Modify panelNameRelate layout (D Ferguson)
+ * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  ******************************************************************************/
 
 import java.awt.Font;
@@ -141,8 +142,8 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 			public void actionPerformed(ActionEvent event) {
 				selectedPartTypeIndex = comboPartnerType.getSelectedIndex();
 				selectedPartnerType = partnerEventType[selectedPartTypeIndex];
-				if (HGlobal.DEBUG)
-					System.out.print(" Partner event index/type: " + selectedPartTypeIndex + "/" + selectedPartnerType + " - /");  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+					HB0711Logging.logWrite("Status: in HG0530AddPartner event index/type: " + selectedPartTypeIndex + "/" + selectedPartnerType + " - /");  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				try {
 					partnerRoleList = pointPersonHandler.getRolesForEvent(selectedPartnerType, selectPartnerRoles);
 					partnerRoleType = pointPersonHandler.getEventRoleTypes();
@@ -159,14 +160,15 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 				// re-instate the combobox listeners
 					comboPartRole1.addActionListener(comboRole1Change);
 					comboPartRole2.addActionListener(comboRole2Change);
-
 					comboPartRole1.setSelectedIndex(0);
 					comboPartRole2.setSelectedIndex(0);
 					lbl_ChosenPartnerEvent.setText(comboPartnerType.getSelectedItem().toString());
 
 				} catch (HBException hbe) {
-					hbe.printStackTrace();
-					System.out.println(" Add Person Partner role reset error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPartner role reset error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -227,7 +229,6 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 					partRole2 = partnerRoleType[comboPartRole2.getSelectedIndex()];
 					newPartnerPID = pointPersonHandler.addNewPartner(selectedPartnerType, partRole1, partRole2);
 					createAllEvents(pointPersonHandler);
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPersonPartner");	//$NON-NLS-1$
 
 				// reload preloaded result set for T401 and Person Select
 					pointOpenProject.reloadT401Persons();
@@ -236,9 +237,13 @@ public class HG0505AddPersonPartner extends HG0505AddPerson {
 					pointPersonHandler.resetPersonManager();
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0505AddPersonPartner - Add partner error: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.DEBUG) hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPartner Save error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: attempted Save and leaving HG0505AddPersonPartner");	//$NON-NLS-1$
 				dispose();
 			}
 		});

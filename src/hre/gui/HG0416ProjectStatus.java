@@ -7,6 +7,7 @@ package hre.gui;
  * 			  2021-01-28 removed use of HGlobal.selectedProject (N. Tolleshaug)
  * v0.01.0027 2022-05-21 clean out Person Recents list if project chnages (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
+ * v0.04.0032 2026-01-03 Logged catch block actions (D Ferguson)
  **********************************************************************************/
 
 import java.awt.Toolkit;
@@ -23,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.WindowConstants;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.nls.HG0416Msgs;
 import net.miginfocom.swing.MigLayout;
@@ -30,7 +32,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Status display/change
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2020-04-20
  */
 
@@ -94,8 +96,10 @@ public class HG0416ProjectStatus extends JDialog {
 	            try {
 	            	HG0401HREMain.mainFrame.setSelectedOpenProject(HGlobalCode.pointOpenProjectByName(selectedProject));
 				} catch (HBException hbe) {
-					System.out.println("HG0416ProjectStatus setSelectedOpenProject: " +  selectedProject); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0416 error resetting project " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 		};
 

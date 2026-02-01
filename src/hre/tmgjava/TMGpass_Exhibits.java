@@ -24,15 +24,17 @@ package hre.tmgjava;
  * 			  2023-03-01 - Implemented TEXT for exhibit types  (N. Tolleshaug)
  * 			  2023-03-02 - New text for exhibits like .pdf .odt  (N. Tolleshaug)
  * 		      2023-03-10 - Import Caption from I.dbf  (N. Tolleshaug)
- * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-08-26 - Line 610 - Exception replace IOException (N. Tolleshaug)
- * 			  2023-08-28 - Added HB0711Logging.logWrite("ERROR Creating Thumb Image (D.Ferguson)
+ * v0.02.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
+ * v0.03.0030 2023-08-26 - Line 610 - Exception replace IOException (N. Tolleshaug)
+ * 			  2023-08-28 - Added HB0711Logging.logWrite("ERROR Creating Thumb Image) (D.Ferguson)
  * 			  2023-08-28 - Removed if (EXHCHECK) control error (D.Ferguson)
  *  		  2023-08-31 - Improved (EXHCHECK) control error (D.Ferguson)
  *  		  2023-09-05 - Attempt to handle PNG files in create thumb (N. Tolleshaug)
  *  		  2023-09-05 - Eliminated debug error line 47X in console out (N. Tolleshaug)
  *  		  2023-09-06 - Modified image exception handling (N. Tolleshaug)
+ * v0.04.0032 2026-01-17 - Log all catch blocks (D Ferguson)
  **********************************************************************************/
+
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
@@ -40,7 +42,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -52,9 +53,10 @@ import javax.sql.rowset.serial.SerialBlob;
 import com.linuxense.javadbf.DBFRow;
 
 import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 
 /**
- * class TMGpass_V22a_Exhibits extends TMGpass_Exhibits
+ * class TMGpass_Exhibits
  * @author NTo
  * @since 2022.1.20
  */
@@ -93,7 +95,6 @@ class TMGpass_Exhibits {
 	int personNr = 0;
 
 	// Linked record to dump from Exhibit
-	//int exhibitLinkedRecord = 143;
 	int exhibitLinkedRecord = 0;
 
 	String rlType;
@@ -121,7 +122,7 @@ class TMGpass_Exhibits {
 		tableT677 = TMGglobal.T677;
 		EXHCHECK = TMGglobal.EXHCHECK;
 		this.newExhibitFolderPath = TMGglobal.newExhibitFolderPath;
-		if (EXHCHECK) System.out.println(" TMGpass_V22a_Exhibits release: " + TMGglobal.releaseDate);
+		if (EXHCHECK) System.out.println(" TMGpass_Exhibits release: " + TMGglobal.releaseDate);
 		findBaseSubTypePID(4);
 	}
 
@@ -156,9 +157,7 @@ class TMGpass_Exhibits {
  * @return
  */
 	private void findBaseSubTypePID(int select) {
-		//boolean dumpExhibitTypes = true;
 		boolean dumpExhibitTypes = false;
-		//boolean dump = true;
 		int subType, baseType;
 		try {
 			ResultSet researchTypeRPID = pointHREbase.requestSQLdata("T169_ENTY_TYPE_DEFN");
@@ -187,8 +186,10 @@ class TMGpass_Exhibits {
 			}
 
 		} catch (HCException | SQLException ex) {
-			System.out.println(" TMGpass_V22a_Exhibits - " + ex.getMessage());
-			ex.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits find baseSubTypes: " + ex.getMessage());
+				HB0711Logging.printStackTraceToFile(ex);
+			}
 		}
 	}
 
@@ -197,7 +198,6 @@ class TMGpass_Exhibits {
  * @param tmgHreConverter
  */
 	public void addExhibitsToHRE(TMGHREconverter tmgHreConverter) throws HCException {
-
 		int progress;
 		int idExhibit;
 		int processedRow = 0;
@@ -219,8 +219,7 @@ class TMGpass_Exhibits {
 
 		// Read next
 			tmgIrow = TMGglobal.tmg_I_table.TMGreadTableRow();
-			//if (tmgIrow == null) return; // Nils Tolleshaug Original
-			//if (tmgIrow == null) break; // Helmut Leininger 6.8.2022
+
 			if (tmgIrow == null) {
 				if (EXHCHECK) System.out.println(" WARNING - addExhibitsToHRE - row: " + index_I_table + " no content - tmgIrow == null!");
 				continue; // Nils Tolleshaug 8.8.2022
@@ -281,10 +280,10 @@ class TMGpass_Exhibits {
 				if (exhibitLinkedRecord > 0)
 					if (rlNum == exhibitLinkedRecord)
 						dumpExhibitRecordFromTMG(tmgIrow);
-				
+
 				idExhibit = tmgIrow.getInt("IDEXHIBIT");
 				long ownerRPID = idExhibit + proOffset;
-				
+
 			// Adding to T676 and T677
 					addToT676_DIGT(index_I_table, idExhibit, tableT676);
 					addToT677_DIGT_NAME(index_I_table, ownerRPID, idExhibit, tableT677);
@@ -292,7 +291,7 @@ class TMGpass_Exhibits {
 			// Count processed records
 				hreRecordsT676++;
 
-			} else if (TMGglobal.DEBUG) System.out.println(" Dataset DSID in ...I.dbf " 
+			} else if (TMGglobal.DEBUG) System.out.println(" Dataset DSID in ...I.dbf "
 					+ " DSID: " + tmgIrow.getInt("DSID") + " not processed!");
 		}
 
@@ -306,7 +305,7 @@ class TMGpass_Exhibits {
 			System.out.println(" Sources  PID's: " + tmgSourceExh);
 			System.out.println(" Citation PID's: " + tmgCitationExh);
 			System.out.println(" Reposit  PID's: " + tmgReposExh);
-			System.out.println(" T676 PID's nr: " + hreRecordsT676);	
+			System.out.println(" T676 PID's nr: " + hreRecordsT676);
 			System.out.println(" Created exhibits:  " + createdExhibits);
 			System.out.println(" TextEx   PID's: " + tmgTextExhibits);
 			System.out.println(" ImageEx   PID's: " + tmgImageExhibits);
@@ -354,22 +353,19 @@ class TMGpass_Exhibits {
 		byte[] textCont = returnByteContent(tmgIrow.getString("TEXT").getBytes());
 		int rlnum = tmgIrow.getInt("RLNUM");
 		long ownerRPID = rlnum + proOffset;
-		
+
 		filePath = checkExhibitContent(idExhibit, rlnum, textCont, thumbCont);
 		if (filePath.length() > 10) fileType = filePath.substring(filePath.length()-4);
 		else fileType = ".xxx";
 
-		if (EXHCHECK) 
-			System.out.println(" Exhibit nr: " + idExhibit + " Filetype: " + fileType);	
-		
+		if (EXHCHECK)
+			System.out.println(" Exhibit nr: " + idExhibit + " Filetype: " + fileType);
+
 	// Create text exhibit
-		//if (textCont == null && thumbCont != null) textCont = createTextCont(idExhibit);
-		
-		if (textCont == null || textCont.length < 5) 
+		if (textCont == null || textCont.length < 5)
 				if (fileType.equals(".txt")) textCont = createTextCont(idExhibit);
 
 	// Try to recreate thumb
-		//if (thumbCont == null && textCont == null) thumbCont = createImageThumb(idExhibit);
 		if (thumbCont == null || thumbCont.length < 5) thumbCont = createImageThumb(idExhibit);
 
 		try {
@@ -386,7 +382,7 @@ class TMGpass_Exhibits {
 			hreTable.updateString("SURETY", "3");
 			hreTable.updateLong("BEST_NAME_RPID", null_RPID);
 /**
- * Need update of IS_INTERNAL and IS_BINARY			
+ * Need update of IS_INTERNAL and IS_BINARY
  */
 			if (thumbCont != null)
 				hreTable.updateBoolean("IS_INTERNAL", true);
@@ -404,7 +400,7 @@ class TMGpass_Exhibits {
 				hreTable.updateObject("CHAR_CONTENT", textCont); //  byte[]
 			else hreTable.updateObject("CHAR_CONTENT", new byte[0]);
 
-			hreTable.updateString("FILE_PATH", filePath);		
+			hreTable.updateString("FILE_PATH", filePath);
 			hreTable.updateString("FILE_EXTN", fileType);
 			hreTable.updateString("AUDIO_ENCODING","MP2");
 			hreTable.updateString("VIDEO_ENCODING","MP4");
@@ -416,14 +412,16 @@ class TMGpass_Exhibits {
 		//Insert row
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("Not able to update table - T676_DIGT");
-			sqle.printStackTrace();
-			throw new HCException("TMGpass_V22a_Exhibits - addToT676_DIGT - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits adding to T676: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGpass_Exhibits - addToT676_DIGT - error: " + sqle.getMessage());
 		}
 	}
-	
+
 /**
- * addToT677_DIGT_NAME(int rowIdbfTable, ResultSet hreTable)	
+ * addToT677_DIGT_NAME(int rowIdbfTable, ResultSet hreTable)
  * @param rowIdbfTable
  * @param hreTable
  * @throws HCException
@@ -432,14 +430,14 @@ class TMGpass_Exhibits {
 
 		String reference = tmgIrow.getString("PROPERTY");
 	// reference too long:
-		if (reference.length() > 30) {	
-			if (TMGglobal.DEBUG) System.out.println(" Long T677_DIGT_NAME - REFERENCE - Length: " 
+		if (reference.length() > 30) {
+			if (TMGglobal.DEBUG) System.out.println(" Long T677_DIGT_NAME - REFERENCE - Length: "
 					+ reference.length() + "/30");
-			reference = reference.substring(0,30);	
-		} 
+			reference = reference.substring(0,30);
+		}
 	// no caption in TMG
 		if (captionText == null) captionText = "";
-		
+
 		String description = tmgIrow.getString("XNAME");
 		try {
 		// moves cursor to the insert row
@@ -450,12 +448,12 @@ class TMGpass_Exhibits {
 			hreTable.updateBoolean("HAS_CITATIONS", false);
 			hreTable.updateLong("OWNER_RPID", ownerRPID);
 			hreTable.updateLong("START_HDATE_RPID", null_RPID);
-			hreTable.updateLong("END_HDATE_RPID", null_RPID);	
+			hreTable.updateLong("END_HDATE_RPID", null_RPID);
 			hreTable.updateLong("THEME_RPID", null_RPID);
 			hreTable.updateLong("MEMO_RPID", null_RPID);
 			hreTable.updateString("SURETY", "3");
 			hreTable.updateString("LANG_CODE", "");
-			hreTable.updateString("REFERENCE", reference);	
+			hreTable.updateString("REFERENCE", reference);
 			hreTable.updateString("DESCRIPTION", description); // Temp - substituted by DESCRIP_RPID
 			hreTable.updateString("CAPTION", captionText); // Temp - substituted by CAPTION_RPID
 			hreTable.updateLong("DESCRIP_RPID", null_RPID);
@@ -463,10 +461,11 @@ class TMGpass_Exhibits {
 		//Insert row
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) 
-				System.out.println("TMGpass_V22a_Exhibits - addToT677_DIGT_NAME - error: " + sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HCException("TMGpass_V22a_Exhibits - addToT677_DIGT_NAME - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits adding to T677: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGpass_Exhibits - addToT677_DIGT_NAME - error: " + sqle.getMessage());
 		}
 	}
 
@@ -504,7 +503,7 @@ class TMGpass_Exhibits {
 			if (TMGglobal.CONVERT_EXH_PATH) filePath = "" + convertFilePath(filePath);
 			thumbCont = createNewImageThumb(idExhibit, filePath);
 			if (thumbCont != null) {
-				createdExhibits++;	
+				createdExhibits++;
 				if (TMGglobal.DEBUG)
 					System.out.println(" Created Thumb nr:  " + idExhibit + " size: " + thumbCont.length
 						+ " path: " + filePath + " length: " + filePath.length());
@@ -552,7 +551,10 @@ class TMGpass_Exhibits {
 			}
 			hreTable.close();
 		} catch (SQLException sqle) {
-			System.out.println("updateBestImageRPID - error:" + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits updating bestImage: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("updateBestImageRPID - error:" + sqle.getMessage() + "\n");
 		}
 	}
@@ -573,9 +575,6 @@ class TMGpass_Exhibits {
 				subTypeExhibitRPID = subTypePID[2];
 				filePath = returnStringContent(tmgIrow.getString("TFILENAME"));
 				captionText = returnStringContent(tmgIrow.getString("CAPTION"));
-/*				if (EXHCHECK) System.out.println(" Exhibit Text nr: " + exhibit + " - "
-						+ " RLNUM: " + rlnum + " length: "
-							+ textData.length + " / " + new String(textData)); */
 			}
 			if (imageData != null) {
 				tmgImageExhibits++;
@@ -583,18 +582,19 @@ class TMGpass_Exhibits {
 				filePath = returnStringContent(tmgIrow.getString("IFILENAME"));
 				captionText = returnStringContent(tmgIrow.getString("CAPTION"));
 			}
-			//else if (EXHCHECK) 
-			//	if (textData == null) System.out.println(" checkExhibitContent - Exhibit Image/Text nr: " + exhibit + " = null");
-			
+
 			if (captionText.length() > 150) {
-				if (EXHCHECK) System.out.println(" checkExhibitContent - Long caption Text nr: " 
+				if (EXHCHECK) System.out.println(" checkExhibitContent - Long caption Text nr: "
 						+ exhibit + " length: " + captionText.length() + " / " + captionText);
 				captionText = captionText.substring(0,150);
 			}
-			//if (EXHCHECK) System.out.println(" Caption Text nr: " + exhibit + " / " + captionText);
+
 		} catch (NullPointerException ime) {
-			System.out.println(" NullPointerException - checkExhibitContent - exhibit nr: " + exhibit 
-					+ " Path: " + filePath);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits checkExhibitContent. Exhibit no. "
+									+ exhibit + " Path: " + filePath + ime.getMessage());
+				HB0711Logging.printStackTraceToFile(ime);
+			}
 		}
 		return filePath;
 	}
@@ -635,18 +635,13 @@ class TMGpass_Exhibits {
 			return byteOutStream.toByteArray();
 		} catch (Exception all) {
 			errorExhibits++;
-			if (EXHCHECK) {
-				if (all instanceof IOException)
-					System.out.println(" IOExcption - createNewImageThumb exhibit nr: " 
-							+ exhibitIndex + " Message: " + all.getMessage() + "\n Path: " + filePath);
-				else if (all instanceof IllegalArgumentException)
-					System.out.println(" IllegalArgumentException - createNewImageThumb exhibit nr: " 
-							+ exhibitIndex + " Message: " + all.getMessage() + "\n Path: " + filePath);
-				else  all.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits creating thumbnail. Exhibit no. "
+									+ exhibitIndex + " Path: " + filePath + all.getMessage());
+				HB0711Logging.printStackTraceToFile(all);
 			}
-			HB0711Logging.logWrite("ERROR Creating Thumb Image at I.dbf index: " + exhibitIndex + " Path: " +filePath + ": " + all.getMessage());
 			return null;
-		} 
+		}
 	}
 
 /**
@@ -669,22 +664,24 @@ class TMGpass_Exhibits {
 				textData = "Filepath: " + filePath;
 			}
 			return textData.getBytes();
-	     } catch (FileNotFoundException fnfe) {
-				errorExhibits++;
-				if (EXHCHECK) System.out.println(" TMGpass_V22a_Exhibits - newText - IOE error: "
-						+ exhibitIndex + " - " + filePath);
-				return null;
-	     }
+		} catch (FileNotFoundException fnfe) {
+			errorExhibits++;
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassExhibits creating Exhibit text. Exhibit no. "
+						+ exhibitIndex + " Path: " + filePath + fnfe.getMessage());
+				HB0711Logging.printStackTraceToFile(fnfe);
+			}
+			return null;
+		}
 	}
 
 /**
- * This is a method to 
+ * This is a method to
  * convertFilePath(String filePath)
  * @param filePath
  * @return new filepath
  */
 	private String convertFilePath(String filePath) {
-		//if (filePath.startsWith("E:\\Genealogy") || filePath.startsWith("e:\\Genealogy")) {
 	    if (filePath.startsWith("c:\\Users\\don")) {
 			String path = filePath.replace('\\', '|');
 			String[] filePathElements = path.split("\\|");
@@ -692,8 +689,6 @@ class TMGpass_Exhibits {
 					+ filePathElements[filePathElements.length-2].trim() + "\\"
 					+ filePathElements[filePathElements.length-1].trim();
 		}
-		//System.out.println(" Convert path nr:  " + idExhibit 
-		//		+ " path: " + filePath + " length: " + filePath.length());
 		return filePath;
 	}
 

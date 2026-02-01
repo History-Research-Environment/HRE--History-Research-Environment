@@ -68,6 +68,7 @@ package hre.gui;
  * 			  2025-04-26 Setup NLS of null parent table data (D Ferguson)
  * 			  2025-06-30 Make all double-click actions consistent (D Ferguson)
  *			  2025-07-13 Handle passing of sexCode through to HG0547 (D Ferguson)
+ * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
@@ -913,8 +914,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	// Define a media JPanel
     	JPanel mediaPanel = new JPanel();
 	// Add Person Images to mediaPanel
-		if (HGlobal.DEBUG)
-			System.out.println(" number of Images: " + pointMediaHandler.getNumberOfImages());	//$NON-NLS-1$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Status: in HG0506 number of Images: " + pointMediaHandler.getNumberOfImages());	//$NON-NLS-1$
 
         if (listImages.size() > 0) {
             for (int i = 0; i < listImages.size(); i++) {
@@ -1172,12 +1173,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					dispose();
 
 				} catch (HBException hbe) {
-					if (HGlobal.DEBUG)
-						System.out.println(" ERROR in PersonHandler deletePersonInTable: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in delete person: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_60 + persName.getText()		// ERROR: failed to delete
 					 			+ hbe.getMessage(),
 								HG0506Msgs.Text_49, JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG) hbe.printStackTrace();
 				}
 			}
 		});
@@ -1199,13 +1201,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				int enteredNum = ((Integer) persNum.getValue()).intValue();
 	        	if (enteredNum > 0) {
 	        		long personPID = pointOpenProject.getPersonPIDfromVisID(enteredNum);
-	        		if (HGlobal.DEBUG)
-						System.out.println("Entered:" + enteredNum + "  PID: "+ personPID); //$NON-NLS-1$ //$NON-NLS-2$
+	        		if (HGlobal.DEBUG && HGlobal.writeLogs)
+	        			HB0711Logging.logWrite("Status: in HG0506 Entered:" + enteredNum + "  PID: "+ personPID); //$NON-NLS-1$ //$NON-NLS-2$
 
 	        		if (personPID != null_RPID) {
-	    				if (HGlobal.writeLogs)
-							HB0711Logging.logWrite("Action: reset HG0506ManagePerson"); //$NON-NLS-1$
-
     				// close reminder display
     					if (reminderDisplay != null) reminderDisplay.dispose();
 
@@ -1417,8 +1416,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					} else pointOpenProject.getWhereWhenHandler().deleteSingleEvent(eventPID);
 					pointOpenProject.getPersonHandler().resetPersonManager();
 				} catch (HBException | SQLException hbe) {
-					System.out.println("HG0506ManagePerson delete event error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in delete event: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        	JOptionPane.showMessageDialog(tableEvents,
 	        			HG0506Msgs.Text_64 + eventName.trim() + HG0506Msgs.Text_65); // Deleted '    // ' event
@@ -1517,8 +1518,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        					pointSelectPersonName.setLocation(xyShow.x, xyShow.y);
 	        					pointSelectPersonName.setVisible(true);
 	        				} catch (HBException hbe) {
-	        					System.out.println("HG0506ManagePerson - Edit Name error: " + hbe.getMessage());	//$NON-NLS-1$
-	        					hbe.printStackTrace();
+	        					if (HGlobal.writeLogs) {
+	        						HB0711Logging.logWrite("ERROR: in HG0506 in edit name: " + hbe.getMessage()); //$NON-NLS-1$
+	        						HB0711Logging.printStackTraceToFile(hbe);
+	        					}
 	        				}
                 		}
 					// Otherwise, just use the popMenu for event edits
@@ -1538,8 +1541,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
         					pointSelectPersonName.setLocation(xyShow.x, xyShow.y);
         					pointSelectPersonName.setVisible(true);
         				} catch (HBException hbe) {
-        					System.out.println("HG0506ManagePerson - Edit Name error: " + hbe.getMessage());	//$NON-NLS-1$
-        					hbe.printStackTrace();
+        					if (HGlobal.writeLogs) {
+        						HB0711Logging.logWrite("ERROR: in HG0506 in edit name: " + hbe.getMessage()); //$NON-NLS-1$
+        						HB0711Logging.printStackTraceToFile(hbe);
+        					}
         				}
             		}
 	           		// Othewise, just do edit of the event
@@ -1574,8 +1579,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 								HG0506Msgs.Text_85,	// Edit Parent
 								JOptionPane.ERROR_MESSAGE);
 					} else {
-						System.out.println("HG0506ManagePerson - Edit parent error: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0506 in edit parent: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 	        }
@@ -1597,8 +1604,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        	try {
 					pointPersonHandler.deleteParent(pointOpenProject, rowInTable);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Delete parent error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in delete parent: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1618,8 +1627,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					personSelectScreen.setVisible(true);
 					setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Add parent error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in add parent: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1675,8 +1686,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					partnerEditScreen.setLocation(xyShow.x, xyShow.y);
 					partnerEditScreen.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Edit partner error: " + hbe.getMessage());  //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in edit partner: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1696,8 +1709,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        	try {
 					pointPersonHandler.deletePartner(pointOpenProject, rowInTable);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Delete partner error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in delete partner: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1717,8 +1732,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					personSelectScreen.setVisible(true);
 					setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Add partner error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in add partner: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1774,8 +1791,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					pointSelectPersonName.setLocation(xyShow.x, xyShow.y);
 					pointSelectPersonName.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Edit Name error: " + hbe.getMessage());  //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in edit name: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1792,8 +1811,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					pointSelectPersonName.setLocation(xyShow.x, xyShow.y);
 					pointSelectPersonName.setVisible(true);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Add Name error: " + hbe.getMessage());  //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in add name: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1806,8 +1827,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        	try {
 					pointPersonHandler.deleteNameForPerson(rowInTable);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - Delete Name error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in delete name: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	      };
@@ -1873,8 +1896,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        // Get the FlagIDent that matches this table row
 	            int flagID = (int) objReqFlagData[clickedRow][3];
 	        // Just check it all looks good ->
-	            if (HGlobal.DEBUG)
-					System.out.println(" New Flag setting Row = "+ clickedRow + " newValue = " + newValue +		//$NON-NLS-1$//$NON-NLS-2$
+	    		if (HGlobal.DEBUG && HGlobal.writeLogs)
+	    			HB0711Logging.logWrite("Status: in HG0506 New Flag setting Row = "+ clickedRow + " newValue = " + newValue +		//$NON-NLS-1$//$NON-NLS-2$
 	            						" Flag = " + objReqFlagData[clickedRow][0] + " FlagID = " + flagID);	//$NON-NLS-1$//$NON-NLS-2$
 
 	         // Update the Flag in DB
@@ -1883,8 +1906,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					// Reset the Birth Sex label in case it was the Flag that changed
 					if ((int) objReqFlagData[clickedRow][3] == 1) birthSex.setText(newValue);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson flag update error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in flag update: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        }
 	    });
@@ -1949,8 +1974,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					tableEvents.getColumnModel().getColumn(4).setMinWidth(40);
 					tableEvents.getColumnModel().getColumn(4).setPreferredWidth(40);
 				} catch (HBException hbe) {
-					System.out.println(" pointPersonHandler.setWitnessState error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 set Witness state: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 		      }
 		});
@@ -1982,8 +2009,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					tableEvents.getColumnModel().getColumn(4).setMinWidth(40);
 					tableEvents.getColumnModel().getColumn(4).setPreferredWidth(40);
 				} catch (HBException hbe) {
-					System.out.println("HG0506ManagePerson - setChildrenState " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 set Child state: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 		      }
 		 });

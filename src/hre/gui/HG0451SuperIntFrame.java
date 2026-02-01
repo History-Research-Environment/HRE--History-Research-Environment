@@ -10,6 +10,7 @@ package hre.gui;
  * v0.01.0025 2020-10-21 Place Output, Reminder icon actions inside frame (D Ferguson)
  * 			  2020-11-03 Corrected output table print error (N. Tolleshaug)
  * v0.03.0031 2024-08-15 NLS conversion (D Ferguson)
+ * v0.04.0032 2026-01-03 Logged Reminder stare msgs (D Ferguson)
  *******************************************************************************************/
 
 import java.awt.Dialog.ModalExclusionType;
@@ -31,6 +32,7 @@ import javax.swing.JTable;
 import javax.swing.KeyStroke;
 
 import hre.bila.HB0614Help;
+import hre.bila.HB0711Logging;
 import hre.bila.HBBusinessLayer;
 import hre.bila.HBProjectOpenData;
 import hre.nls.HG0450Msgs;
@@ -38,7 +40,7 @@ import hre.nls.HG0450Msgs;
 /**
  * HG0451SuperIntFrame
  * @author D Ferguson
- * @version v0.01.0025
+ * @version v0.01.0032
  * @since 2020-08-05
  */
 
@@ -192,7 +194,7 @@ public class HG0451SuperIntFrame extends JInternalFrame {
 	    });
 
 	}	// End HG0451SuperIntFrame Initiator
-	
+
 /**
  * HBProjectOpenData getOpenProject()
  * @return
@@ -207,8 +209,9 @@ public class HG0451SuperIntFrame extends JInternalFrame {
  * @param text
  */
 	public void storeReminderText(String text) {
-		if (HGlobal.DEBUG) System.out.println("HG0451 Store Reminder txt:\nWindow ID: "	//$NON-NLS-1$
-				+ windowID + "\n" + text);	//$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0451 Storing Reminder text for \nWindow ID: "	//$NON-NLS-1$
+											+ windowID + "\n" + text);	//$NON-NLS-1$
 		getOpenProject().pointGuiData.setDispRemindText(windowID,text) ;
 	}	// End storeReminderTetxt
 
@@ -218,8 +221,9 @@ public class HG0451SuperIntFrame extends JInternalFrame {
  */
 	public String readReminderText() {
 		String reminder = getOpenProject().pointGuiData.getDispRemindText(windowID);
-		if (HGlobal.DEBUG) System.out.println("HG0451 Read Reminder txt: \nWindow ID: "	//$NON-NLS-1$
-				+ windowID + "\n" + reminder);	//$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0451 Reading Reminder text for \nWindow ID: "	//$NON-NLS-1$
+											+ windowID + "\n" + reminder);	//$NON-NLS-1$
 		return reminder;
 	}	// End readReminderTetxt
 

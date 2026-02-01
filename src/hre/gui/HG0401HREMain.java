@@ -89,6 +89,7 @@ package hre.gui;
  * 			  2025-02-08 Add new Evidence Source Elements menu item (D Ferguson)
  * 			  2025-06-29 Set calls to Evidence screens with pointOpenProject (D Ferguson)
  * 			  2025-09-25 Add greyed-out logo to contentsPane to improve look (D Ferguson)
+ * 			  2026-01-02 Logged catch block and DEBUG actions (D Ferguson)
  *****************************************************************************************/
 
 import java.awt.AlphaComposite;
@@ -265,7 +266,8 @@ public class HG0401HREMain extends JFrame {
 						errorCode = ((HBProjectHandler) pointBusinessLayer[0]).openProjectLocal(HGlobal.lastProjectClosed);
 		        	} else {
 		        // Remote Login
-		        		if (HGlobal.DEBUG) System.out.println("Remote server name: " + projectData[3]);	//$NON-NLS-1$
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: in HG0401M Remote server name: " + projectData[3]);	//$NON-NLS-1$
 						HG0575DBLogon poinLogonScreen = new HG0575DBLogon((HBProjectHandler) pointBusinessLayer[0], projectData);
 						poinLogonScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 						Point xymainPane = HG0401HREMain.mainPane.getLocationOnScreen();
@@ -279,8 +281,6 @@ public class HG0401HREMain extends JFrame {
 					mainMenuSetup();			// redraw the main menu for long menu
 			        revalidate();				// revalidate it
 	            } else {
-	            	if (HGlobal.DEBUG)
-	            		System.out.println("HG0401HREMain Failed to open last closed project: " + HGlobal.lastProjectClosed);   //$NON-NLS-1$
 	                JOptionPane msgFail = new JOptionPane(HG0401Msgs.Text_0	+ HGlobal.lastProjectClosed,	// Open last closed project failed:
 	        	            JOptionPane.ERROR_MESSAGE);
 	        	    JDialog dialogFail = msgFail.createDialog(HG0401Msgs.Text_5);	// Open Last Project
@@ -290,9 +290,8 @@ public class HG0401HREMain extends JFrame {
 	            }
 
 	        } catch (HBException hbe) {
-	        	System.out.println("HG0401HREMain setSelectedOpenProject Error: " +  HGlobal.lastProjectClosed); //$NON-NLS-1$
 				if (HGlobal.writeLogs) {
-					HB0711Logging.logWrite("ERROR opening last project: " + HGlobal.lastProjectClosed + hbe.getMessage()); //$NON-NLS-1$
+					HB0711Logging.logWrite("ERROR: in HG0401M opening last closed project " + HGlobal.lastProjectClosed + hbe.getMessage()); //$NON-NLS-1$
 					HB0711Logging.printStackTraceToFile(hbe);
 				}
 				userInfoOpenProject(errorCode, HGlobal.lastProjectClosed);
@@ -315,8 +314,11 @@ public class HG0401HREMain extends JFrame {
 		// Create a bufferedimage from the current HRE logo
 		try {
 			logo = ImageIO.read(HG0401HREMain.class.getResourceAsStream("/hre/images/HRE-logo.png"));
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException ioe) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0401M loading HRE logo " + ioe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(ioe);
+			}
 		}
 
 		// Setup screen mainPane as a JDesktopPane for Viewpoint JInternalFrames
@@ -1046,7 +1048,10 @@ public class HG0401HREMain extends JFrame {
 			  		if(pointIntFrame.isIcon())  {
 				  		try {pointIntFrame.setIcon(false);
 				  			} catch (PropertyVetoException pve) {
-				  				pve.printStackTrace();
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0401M propertyVetoException " + pve.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(pve);
+								}
 				  			}
 			  		}
 					if (pointIntFrame.isShowing())
@@ -1072,7 +1077,10 @@ public class HG0401HREMain extends JFrame {
 				  		if (pointIntFrame.isIcon())  {
 					  		try {pointIntFrame.setIcon(false);
 					  			} catch (PropertyVetoException pve) {
-					  				pve.printStackTrace();
+									if (HGlobal.writeLogs) {
+										HB0711Logging.logWrite("ERROR: in HG0401M propertyVetoException " + pve.getMessage()); //$NON-NLS-1$
+										HB0711Logging.printStackTraceToFile(pve);
+									}
 					  			}
 				  		}
 				  		else if (pointIntFrame.isShowing())
@@ -1248,8 +1256,10 @@ public class HG0401HREMain extends JFrame {
 					flagScreen = pointOpenProject.getPersonHandler().
 							intitiateFlagManager(pointOpenProject);
 				} catch (HBException hbe) {
-					System.out.println(" Activate Flag Manager: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0401M activating Flag Manager " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				flagScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyFlag = menuPerson.getLocationOnScreen();
@@ -1446,7 +1456,10 @@ public class HG0401HREMain extends JFrame {
 			  		if(pointIntFrame.isIcon())  { 			//
 				  		try {pointIntFrame.setIcon(false);
 				  			} catch (PropertyVetoException pve) {
-				  				pve.printStackTrace();
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0401M propertyVetoException " + pve.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(pve);
+								}
 				  			}
 			  		}
 					if (pointIntFrame.isShowing())
@@ -1545,7 +1558,10 @@ public class HG0401HREMain extends JFrame {
 					srcElmntScreen.setLocation(xySourceE.x, xySourceE.y + 30);
 					srcElmntScreen.setVisible(true);
 				} catch (HBException e1) {
-					e1.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0401M activating Manage Src Elmnt " + e1.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(e1);
+					}
 				}
 			}
 		});
@@ -1599,10 +1615,12 @@ public class HG0401HREMain extends JFrame {
 				ancdesScreen.setVisible(true);
 				}
 				catch (HBException mpe) {
-					if (HGlobal.DEBUG) System.out.println("Menu Report error: " + mpe.getMessage()); //$NON-NLS-1$
-						mpe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0401M activating AncDesc Report " + mpe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(mpe);
 					}
-			 	}
+				}
+			 }
 		});
 
 		// Reports -> Logging
@@ -1712,14 +1730,14 @@ public class HG0401HREMain extends JFrame {
 		menuHREweb.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if(Desktop.isDesktopSupported())
-				{
+				if(Desktop.isDesktopSupported()) {
 				  try {
 					Desktop.getDesktop().browse(new URI("https://www.historyresearchenvironment.org")); //$NON-NLS-1$
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				} catch (URISyntaxException e1) {
-					e1.printStackTrace();
+				} catch (IOException | URISyntaxException e1) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0401M loading website " + e1.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(e1);
+					}
 				}
 			} }
 		});
@@ -1799,7 +1817,8 @@ public class HG0401HREMain extends JFrame {
 	        mainMenuSetup();							// redraw the main menu
 	        revalidate();								// revalidate the screen
 	        HB0614Help.setupHelp();						// set the Help system to new language
-	        if (HGlobal.DEBUG) System.out.println("Native language reset"); //$NON-NLS-1$
+			if (HGlobal.DEBUG && HGlobal.writeLogs)
+				HB0711Logging.logWrite("Action: in HG0401M Native language reset"); //$NON-NLS-1$
 	    }	// End resetGUILanguage
 
 /*****************************************************
@@ -1893,7 +1912,8 @@ public class HG0401HREMain extends JFrame {
 		        		errorCode = ((HBProjectHandler) pointBusinessLayer[0]).openProjectLocal(clickedProject);
 		        	} else {
 		        // else Remote Login
-		        		if (HGlobal.DEBUG) System.out.println("Remote server name: " + projectData[3]);	//$NON-NLS-1$
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: in HG0401M Remote server name: " + projectData[3]);	//$NON-NLS-1$
 						HG0575DBLogon poinLogonScreen = new HG0575DBLogon((HBProjectHandler) pointBusinessLayer[0], projectData);
 						poinLogonScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 						Point xymainPane = HG0401HREMain.mainPane.getLocationOnScreen();
@@ -1910,18 +1930,16 @@ public class HG0401HREMain extends JFrame {
 		            		longMenu = true;
 		            		mainMenuSetup(); 	// redraw the main menu for longmenu
 		            		revalidate();		// revalidate it
-
-		            		// Set the selectedProject and update pointer
+		            	// Set the selectedProject and update pointer
 			            	setSelectedOpenProject(HGlobalCode.pointOpenProjectByName(clickedProject));
-			            	// Write message if selected
+			            // Write message if selected
 			            	if (HGlobal.DEBUG) userInfoOpenProject(errorCode, clickedProject);
 		            	} else if (errorCode > 0)
 		            			userInfoOpenProject(errorCode, clickedProject);
 
 		        } catch (HBException hbe) {
-		        	System.out.println("HG0401HREMain setSelectedOpenProject Error: " +  clickedProject); //$NON-NLS-1$
 					if (HGlobal.writeLogs) {
-						HB0711Logging.logWrite("Error opening project from menu list: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.logWrite("ERROR: in HG0401M opening project from menu list " + hbe.getMessage()); //$NON-NLS-1$
 						HB0711Logging.printStackTraceToFile(hbe);
 					}
 					userInfoOpenProject(errorCode, clickedProject);
@@ -2123,7 +2141,6 @@ public class HG0401HREMain extends JFrame {
 	        List<ReportMenuExtensionPoint> reportExtensions = pluginManager.getExtensions(ReportMenuExtensionPoint.class);
 	        for (ReportMenuExtensionPoint extension : reportExtensions) {
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: starting Report extension: " + extension.className());  //$NON-NLS-1$
-				extension.setDEBUG(HGlobal.DEBUG);
 				extension.setDDLversion(HGlobal.databaseVersion);
 				extension.setNationalLanguage(HGlobal.nativeLanguage);
 	            extension.setMainPane(mainPane);

@@ -48,6 +48,7 @@ package hre.gui;
  * 			  2025-02-16 Fixed error in birt event list - adding language (N Tolleshaug)
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  * 			  2025-03-24 Remove all Citation tables (D Ferguson)
+ * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
@@ -104,6 +105,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
+import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -131,6 +133,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	long newPartnerPID = null_RPID;
 	int selectedPartnerType = 1;
 	HBPersonHandler pointPersonHandler;
+	HBEventRoleManager pointEventRoleManager;
 
 	boolean createEvent = false;
 	boolean resetPS = false;
@@ -723,7 +726,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelBirthDetail.add(lbl_EventTypeBi, "cell 0 0,alignx left");		//$NON-NLS-1$
 
 	// Set datalanguage for event  role manager
-		pointPersonHandler.pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+		pointEventRoleManager = pointOpenProject.getEventRoleManager();
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+		
+		//pointPersonHandler.pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 	// Collect event types/roles for Birth, etc
 		birthEventList = pointPersonHandler.getEventTypeList(birthEventGroup);
 		//System.out.println(" birthEventList: " + birthEventList.length);
@@ -1844,8 +1850,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int selectedBirthIndex = comboBirthType.getSelectedIndex();
 				int selectedEventType = birthEventType[selectedBirthIndex];
-				if (HGlobal.DEBUG)
-					System.out.println("Birth event index/type: " + selectedBirthIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+	   	    		HB0711Logging.logWrite("Status: in HG0505AddPer birth event index/type: " + selectedBirthIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				try {
 					birthRoleList = pointPersonHandler.getRolesForEvent(selectedEventType, selectBirthRoles);
 					birthRoleType = pointPersonHandler.getEventRoleTypes();
@@ -1855,8 +1861,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 					birthRoles.setSelectedIndex(0);
 				} catch (HBException hbe) {
-					hbe.printStackTrace();
-					System.out.println("Add Person role combobox reset error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPer birth role combobox reset error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1877,8 +1885,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 					baptRoles.setSelectedIndex(0);
 				} catch (HBException hbe) {
-					hbe.printStackTrace();
-					System.out.println("Add Person bapt. role combobox listener error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPer bapt role combobox reset error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					pointPersonHandler.errorJOptionMessage(addPersonText, HG0505Msgs.Text_30 	// Add Person bapt. role combobox listener error:
 													+ hbe.getMessage());
 				}
@@ -1890,8 +1900,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int selectedDeathIndex = comboDeathType.getSelectedIndex();
 				int selectedEventType = deathEventType[selectedDeathIndex];
-				if (HGlobal.DEBUG)
-					System.out.println("Death event index/type: " + selectedDeathIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+	   	    		HB0711Logging.logWrite("Status: in HG0505AddPer death event index/type: " + selectedDeathIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				try {
 					deathRoleList = pointPersonHandler.getRolesForEvent(selectedEventType, selectDeathRoles);
 					deathRoleType = pointPersonHandler.getEventRoleTypes();
@@ -1901,8 +1911,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 					deathRoles.setSelectedIndex(0);
 				} catch (HBException hbe) {
-					hbe.printStackTrace();
-					System.out.println("Add Person death role combobox listener error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPer death role combobox reset error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					pointPersonHandler.errorJOptionMessage(addPersonText, HG0505Msgs.Text_31 	// Add Person death role combobox listener error:
 													+ hbe.getMessage());
 				}
@@ -1925,8 +1937,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 					burialRoles.setSelectedIndex(0);
 				} catch (HBException hbe) {
-					hbe.printStackTrace();
-					System.out.println("Add Person burial role combobox listener error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPer death role combobox reset error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					pointPersonHandler.errorJOptionMessage(addPersonText,
 							HG0505Msgs.Text_32 	+ hbe.getMessage());		// Add Person burial role combobox listener error:
 				}
@@ -2198,10 +2212,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 	                    String nameElementData = (String) tableName.getValueAt(row, 1);
 						String element = (String) tableName.getValueAt(row, 0);
-						if (HGlobal.DEBUG) {
-							System.out.println("HG0505AddPerson - name table changed: " + row 	//$NON-NLS-1$
-												+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$	//$NON-NLS-2$
-						}
+			   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddPer name table changed: " + row 	//$NON-NLS-1$
+												+ " Element: " + element + " / " + nameElementData);	//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointPersonHandler.addToPersonNameChangeList(row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2221,9 +2234,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableBirthLocn.getValueAt(row, 1);
 						String element = (String) tableBirthLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG)
-							System.out.println("HG0505AddPerson - birth locn table changed: " + row 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$
+			   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddPer birth locn table changed: " + row 	//$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData);	//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList( 1, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2243,9 +2256,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableBaptLocn.getValueAt(row, 1);
 						String element = (String) tableBaptLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG)
-							System.out.println("HG0505AddPerson - bapt locn table changed: " + row 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$/$NON-NLS-2$
+			   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddPer bapt locn table changed: " + row 	//$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData);	//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList(2, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2265,9 +2278,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableDeathLocn.getValueAt(row, 1);
 						String element = (String) tableDeathLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG)
-							System.out.println("HG0505AddPerson - death locn table changed: " + row 	//$NON-NLS-1$
-											+ " Element: " + element + " / " + nameElementData);			//$NON-NLS-1$/$NON-NLS-2$
+			   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddPer death locn table changed: " + row 	//$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData);	//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList(3, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2287,9 +2300,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tableBurialLocn.getValueAt(row, 1);
 						String element = (String) tableBurialLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG)
-							System.out.println("HG0505AddPerson - burial locn table changed: " + row
-											+ " Element: " + element + " / " + nameElementData);
+			   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddPer burial locn table changed: " + row //$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData); //$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList(4, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2309,9 +2322,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
                     if (row > -1) {
 						String nameElementData =  (String) tablePartnerLocn.getValueAt(row, 1);
 						String element = (String) tablePartnerLocn.getValueAt(row, 0);
-						if (HGlobal.DEBUG)
-							System.out.println("HG0505AddPerson - partner locn table changed: " + row
-											+ " Element: " + element + " / " + nameElementData);
+			   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+			   	    		HB0711Logging.logWrite("Status: in HG0505AddPer partner locn table changed: " + row //$NON-NLS-1$
+											+ " Element: " + element + " / " + nameElementData); //$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointPersonHandler.addToLocationChangeList(5, row, nameElementData);
 							btn_Save.setEnabled(true);
@@ -2371,24 +2384,27 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 							if (eventIndex == 3 && updatedEvent[eventIndex]) setLivingToN();	// Burial
 						}
 					}
-					if (HGlobal.DEBUG)
+					if (HGlobal.DEBUG && HGlobal.writeLogs)
 						for (Object[] element : objReqFlagData)
-							System.out.println(" Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
+							HB0711Logging.logWrite("Status: in HG0530AddPer Flagid: " + element[3] + " / " + element[2]);	//$NON-NLS-1$ //$NON-NLS-2$
 					pointPersonHandler.createAddPersonGUIMemo(memoNameText.getText());
 					pointPersonHandler.addNewPerson(refText.getText());
 				// Create the edited events
 					createAllEvents(pointPersonHandler); // If events created
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPerson-New");	//$NON-NLS-1$
+					if (HGlobal.writeLogs)
+						HB0711Logging.logWrite("Action: saved updates and leaving HG0505AddPerson-New");	//$NON-NLS-1$
 				// Reload Result Set for person and names
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
 					pointOpenProject.getPersonHandler().resetPersonSelect();
 
 				} catch (HBException hbe) {
-					System.out.println("HG0505AddPerson - Failed to add person: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530AddPer add person error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					JOptionPane.showMessageDialog(btn_Save, HG0505Msgs.Text_34 + hbe.getMessage(),	// ERROR: failed to add person: \n
 							addPersonText, JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG) hbe.printStackTrace();
 				}
 				dispose();
 			}
@@ -2433,8 +2449,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		if (createEvent) {
 			for ( int eventIndex = 0; eventIndex < updatedEvent.length; eventIndex++) {
 				if (eventIndex == 0 && updatedEvent[eventIndex]) {
-					if (HGlobal.DEBUG)
-						System.out.println(" Create birth event");		//$NON-NLS-1$
+           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+           	    		HB0711Logging.logWrite("Status: in HG0505AddPer create birth event");		//$NON-NLS-1$
 					pointPersonHandler.setEventRole(birthRoleType[birthRoles.getSelectedIndex()]);
 					int selectedEventIndex = comboBirthType.getSelectedIndex();
 					if (birthDateOK || birthSortDateOK ||eventLocationUpdates[eventIndex] > 0 || birthMemoEdited) {
@@ -2445,8 +2461,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 
 				} else if (eventIndex == 1 && updatedEvent[eventIndex]) {
-					if (HGlobal.DEBUG)
-						System.out.println(" Create baptism event");		//$NON-NLS-1$
+           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+           	    		HB0711Logging.logWrite("Status: in HG0505AddPer create baptism event");		//$NON-NLS-1$
 					pointPersonHandler.setEventRole(baptRoleType[baptRoles.getSelectedIndex()]);
 					int selectedEventIndex = comboBaptType.getSelectedIndex();
 					if (baptDateOK || baptSortDateOK || eventLocationUpdates[eventIndex] > 0 || baptMemoEdited) {
@@ -2457,8 +2473,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 
 				} else if (eventIndex == 2 && updatedEvent[eventIndex]) {
-					if (HGlobal.DEBUG)
-						System.out.println(" Create death event");		//$NON-NLS-1$
+           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+           	    		HB0711Logging.logWrite("Status: in HG0505AddPer create death event");		//$NON-NLS-1$
 					pointPersonHandler.setEventRole(deathRoleType[deathRoles.getSelectedIndex()]);
 					int selectedEventIndex = comboDeathType.getSelectedIndex();
 					if (deathDateOK || deathSortDateOK || eventLocationUpdates[eventIndex] > 0 || deathMemoEdited) {
@@ -2469,8 +2485,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 
 				} else if (eventIndex == 3 && updatedEvent[eventIndex]) {
-					if (HGlobal.DEBUG)
-						System.out.println(" Create burial event");		//$NON-NLS-1$
+           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+           	    		HB0711Logging.logWrite("Status: in HG0505AddPer create burial event");		//$NON-NLS-1$
 					pointPersonHandler.setEventRole(burialRoleType[burialRoles.getSelectedIndex()]);
 					int selectedEventIndex = comboBurialType.getSelectedIndex();
 					if (burialDateOK || burialSortDateOK || eventLocationUpdates[eventIndex] > 0 || burialMemoEdited) {
@@ -2481,25 +2497,26 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					}
 
 				} else if (eventIndex == 4 && updatedEvent[eventIndex]) {
-					if (HGlobal.DEBUG)
-						System.out.println(" Create partner event");		//$NON-NLS-1$
+           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+           	    		HB0711Logging.logWrite("Status: in HG0505AddPer create partner event");		//$NON-NLS-1$
 					// For partner event role is not applicable since roles are recorded in partner table
 					pointPersonHandler.setEventRole(0);
 					if (partnerDateOK || partnerSortDateOK || eventLocationUpdates[eventIndex] > 0 || partnerMemoEdited) {
 						if (partnerMemoEdited) pointPersonHandler.createAddPersonGUIMemo(memoPartnerText.getText());
 						newEventPID = pointPersonHandler.addPersonEvent(eventIndex,
 									selectedPartnerType);
-						if (HGlobal.DEBUG)
-							System.out.println(" Create partner event index/type: " + eventIndex + "/" + selectedPartnerType); //$NON-NLS-1$ //$NON-NLS-2$
+	           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+	           	    		HB0711Logging.logWrite("Status: in HG0505AddPer create partner event index/type: " + eventIndex + "/" + selectedPartnerType); //$NON-NLS-1$ //$NON-NLS-2$
 						if (partnerDateOK) pointPersonHandler.createPersonEventDates(false, newEventPID, "START_HDATE_RPID", partnerHREDate); //$NON-NLS-1$
 						if (partnerSortDateOK) pointPersonHandler.createPersonEventDates(false, newEventPID, "SORT_HDATE_RPID", partnerSortHREDate); //$NON-NLS-1$
 						pointPersonHandler.updatePartnerEventLink(newPartnerPID, newEventPID);
 					}
 				}
 			}
-			if (HGlobal.DEBUG)
-				System.out.println(" HBPersonHandler - createAllEvents - Reset Person Select!");		 //$NON-NLS-1$
-		} else if (HGlobal.DEBUG) System.out.println(" No events edited and created.");	//$NON-NLS-1$
+   	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+   	    		HB0711Logging.logWrite("Status: in HG0505AddPer reset Person Select");		 //$NON-NLS-1$
+		} else if (HGlobal.DEBUG && HGlobal.writeLogs)
+	    				HB0711Logging.logWrite("Status: in HG0505AddPer no events created");	//$NON-NLS-1$
 		return newEventPID;
 	}
 

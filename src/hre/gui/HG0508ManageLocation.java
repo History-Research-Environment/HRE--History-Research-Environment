@@ -17,7 +17,7 @@ package hre.gui;
  * 			  2024-11-17 Updated location style hendling (N. Tolleshaug)
  * 			  2024-12-09 Updated location name TAB handling (D Ferguson)
  * 			  2024-12-09 Location name change list update line 680 (N. Tolleshaug)
- * 			  
+ * v0.04.0032 2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
  ********************************************************************************
  * NB: cannot execute 'externalize strings' check without temporarily commenting
  *     out the statement: txt_Text = new JTextArea("\""+listText+" ...\"");
@@ -176,9 +176,10 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			startHDatePID = personNameTable.getLong("START_HDATE_RPID");	//$NON-NLS-1$
 			endHDatePID = personNameTable.getLong("END_HDATE_RPID");		//$NON-NLS-1$
 		} catch (SQLException sqle) {
-			System.out.println(" SQL error personNameTable: " + sqle.getMessage());		//$NON-NLS-1$
-			sqle.printStackTrace();
-			throw new HBException(" SQL error personNameTable: " + sqle.getMessage());	//$NON-NLS-1$
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0508 loading personName table " + sqle.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 		}
 
 	// Collect start date Hdate
@@ -444,8 +445,8 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	// Add Location Images to the mediaPanel
 		listImages = pointMediaHandler.getImageList();
 		listImagesCaptions = pointMediaHandler.getImageCaptionList();
-		if (HGlobal.DEBUG)
-			System.out.println(" number of Images: " + pointMediaHandler.getNumberOfImages());	//$NON-NLS-1$
+	    if (HGlobal.DEBUG && HGlobal.writeLogs)
+	    		HB0711Logging.logWrite("Status: in HG0508 number of Images=" + pointMediaHandler.getNumberOfImages());	//$NON-NLS-1$
         if (listImages.size() > 0) {
             for (int i = 0; i < listImages.size(); i++) {
 	    		JPanel imagePanel = new JPanel();
@@ -625,9 +626,10 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				try {
 					pointWhereWhenHandler.updateStoredNameStyle(selectIndex, locationTablePID);
 				} catch (HBException hbe) {
-					System.out.println("HG0508ManageLocation Save stored name style error: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR Stored Name Style : " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0508 saving nameStyle " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			// Save new name style on screen
 				lbl_Style.setText(HG0508Msgs.Text_22);		// Saved Name Style:
@@ -652,12 +654,12 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 					if (endDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "END_HDATE_RPID", endHREDate);		 //$NON-NLS-1$
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0508ManageLocation: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0508 saving date " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					JOptionPane.showMessageDialog(btn_SaveNameDate, HG0508Msgs.Text_23 +  hbe.getMessage(), 	// Date format error: \n
 											HG0508Msgs.Text_24, JOptionPane.ERROR_MESSAGE);			// Date input checker
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR Date format: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
 				}
 			// Set reset location data
 				pointWhereWhenHandler.resetLocationSelect(pointOpenProject);
@@ -673,9 +675,9 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
                     int row = tme.getFirstRow();
                     if (row > -1) {
 						String nameElementData =  (String) tableLocation.getValueAt(row, 1);
-						if (HGlobal.DEBUG) {
+						if (HGlobal.DEBUG && HGlobal.writeLogs) {
 								String element = (String) tableLocation.getValueAt(row, 0);
-								System.out.println("HG0508ManageLocation - table changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
+								HB0711Logging.logWrite("Status: in HG0508 locn table changed: "+ tableLocation.getSelectedRow() //$NON-NLS-1$
 										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
 						}
 						if (nameElementData != null) {
@@ -753,15 +755,15 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 					else {
 							showHiddenClicked = false;
 							pointWhereWhenHandler.updateManageLocationNameTable(locationTablePID, false);
-
 						}
 					locnHeaderData = pointWhereWhenHandler.getLocationTableHeader();
 					tableLocnData = pointWhereWhenHandler.getLocationNameTable();
 					locnModel.setDataVector(tableLocnData, locnHeaderData);
 				} catch (HBException hbe) {
-					System.out.println("HG0508ManageLocation style error: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR Location Style: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0508 showing hidden " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				// re-enable tableLocation listener
 				locnModel.addTableModelListener(locnListener);
@@ -790,9 +792,10 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			  		} else btn_Hidden.setVisible(false);
 					btn_SaveStyle.setEnabled(true);
 				} catch (HBException hbe) {
-					System.out.println(" HG0508ManageLocation style error: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR Location Style: " + hbe.getMessage());	//$NON-NLS-1$
-					if (HGlobal.writeLogs) HB0711Logging.printStackTraceToFile(hbe);
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0508 loading Location styles " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				locnModel.setRowCount(tableLocnData.length);	// reset # table rows
 				pack();	// reset screen size

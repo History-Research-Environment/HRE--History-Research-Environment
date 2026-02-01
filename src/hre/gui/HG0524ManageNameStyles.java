@@ -24,9 +24,8 @@ package hre.gui;
 * v0.03.0030 2023-10-06 Remove Source radio-button (D Ferguson) (Text_58 now unused)
 * v0.03.0031 2024-10-01 Clean whitespace (D Ferguson)
 * v0.04.0032 2025-02-23 Fix crash when invoking Reminder (D Ferguson)
-*
-**********************************************************************************
-*/
+* 			 2026-01-08 Log catch block and DEBUG msgs (D Ferguson)
+***********************************************************************************/
 
 import java.awt.Color;
 import java.awt.Component;
@@ -445,15 +444,16 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 
 		// Listener for default JCheckBox. Sets default and removes old default
 		ItemListener dft_Listener = new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent arg0) {
-            	if (arg0.getStateChange() == ItemEvent.SELECTED) {
-          		if (HGlobal.DEBUG) System.out.println(styleIndex + " Default Selected!"); //$NON-NLS-1$
-            		pointStyleHandler.setNameStyleIsDefault(styleIndex);
-            		btn_Delete.setEnabled(false);
-            		btn_Save.setEnabled(true);
-            	}
-            }
+			@Override
+			public void itemStateChanged(ItemEvent arg0) {
+				if (arg0.getStateChange() == ItemEvent.SELECTED) {
+					if (HGlobal.DEBUG && HGlobal.writeLogs)
+						HB0711Logging.logWrite("Status: in HG0524 default Selected"); //$NON-NLS-1$
+					pointStyleHandler.setNameStyleIsDefault(styleIndex);
+					btn_Delete.setEnabled(false);
+					btn_Save.setEnabled(true);
+				}
+			}
         };
 		chk_Default.addItemListener(dft_Listener);
 
@@ -511,7 +511,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 	            		try {
 							pointStyleHandler.setOutputStyleTable(nameType);
 						} catch (HBException hbe) {
-							System.out.println("Selection Listener error: " + hbe.getMessage()); //$NON-NLS-1$
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0524 nameStyle selection: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 							errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
 						}
 	            		nameOutstyleModel.clear();
@@ -528,8 +531,8 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 	                	txtpnOutDesc.addCaretListener(outDescChange);
 
 		            // Test Name Styles
-			            if (HGlobal.DEBUG)
-			            	System.out.println(" Name Style type -"    //$NON-NLS-1$
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Status: in HG0524 Name Style type -"    //$NON-NLS-1$
 			            		+ " System: " + pointStyleHandler.getNameStyleIsSystem(styleIndex)   //$NON-NLS-1$
 			            		+ ", Default: "+ pointStyleHandler.getNameStyleIsDefault(styleIndex)   //$NON-NLS-1$
 			            		+ ", TMG: "+ pointStyleHandler.getNameStyleIsTMG(styleIndex)); //$NON-NLS-1$
@@ -598,8 +601,8 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 	                	if (outType == 'D') buttonD.setSelected(true);
 
 		            // Test Output Styles
-	                	if (HGlobal.DEBUG)
-	                		System.out.println("Output Style -"   //$NON-NLS-1$
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Status: in HG0524 Output Style -"   //$NON-NLS-1$
 	                			    +  " System: " + pointStyleHandler.getOutputStyleIsSystem(styleOutIndex)  //$NON-NLS-1$
 	            					+ ", TMG: " + pointStyleHandler.getOutputStyleIsTMG(styleOutIndex) //$NON-NLS-1$
 	                				+ ", OutType: " + pointStyleHandler.getOutputStyleType(styleOutIndex) //$NON-NLS-1$
@@ -740,7 +743,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					pointStyleHandler.addNewTableRow(indexS, true , nameType, null);
 					pointStyleHandler.setNameStyleTable(nameType);
 				} catch (HBException hbe) {
-					System.out.println("Listener for copy style button error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0524 copy nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
 				}
 				namestyleModel.clear();
@@ -773,7 +779,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					pointStyleHandler.updateStyleName(indexS, newName, newDescription);
 					pointStyleHandler.setNameStyleTable(nameType);
 				} catch (HBException hbe) {
-					System.out.println("Listener for Rename style button error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0524 rename nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
 				}
 				namestyleModel.clear();
@@ -804,7 +813,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 				// If only 1 entry left, disable delete button
 				    if (namestyleModel.getSize() == 1) btn_Delete.setEnabled(false);
 				} catch (HBException hbe) {
-					if (HGlobal.DEBUG) System.out.println("Listener for Delete NS button error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0524 delete nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
 				}
 			}
@@ -947,9 +959,8 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 			            	else numAfter = Integer.valueOf(codeAfter);
 			        }
 			        catch (NumberFormatException ex){
-			        	if (HGlobal.DEBUG) System.out.println(" NameStyles number error: " + ex.getMessage() ); //$NON-NLS-1$
 						if (HGlobal.writeLogs) {
-							HB0711Logging.logWrite("Error: HG0524ManageNameStyles: " + ex.getMessage()); //$NON-NLS-1$
+							HB0711Logging.logWrite("ERROR: HG0524 saving new nameStyle: " + ex.getMessage()); //$NON-NLS-1$
 							HB0711Logging.printStackTraceToFile(ex);
 						}
 			        }
@@ -980,9 +991,11 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					pointStyleHandler.addNewOutTableRow(indexOS, nameType);
 					pointStyleHandler.setOutputStyleTable(nameType);
 				} catch (HBException hbe) {
-					System.out.println("Change output style Listener error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0524 copy nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
-					hbe.printStackTrace();
 				}
 				nameOutstyleModel.clear();
 				pointStyleHandler.getOutputStyles(nameOutstyleModel);
@@ -1012,7 +1025,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 					pointStyleHandler.updateOutputStyleName(indexOS, newName, txtpnDesc.getText());
 					pointStyleHandler.setOutputStyleTable(nameType);
 				} catch (HBException hbe) {
-					System.out.println("Out rename Listener error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0524 rename nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
 				}
 				nameOutstyleModel.clear();
@@ -1041,7 +1057,10 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 				// If only 1 entry left, disable delete button
 				    if (nameOutstyleModel.getSize() == 1) btn_OutDelete.setEnabled(false);
 				} catch (HBException hbe) {
-					if (HGlobal.DEBUG) System.out.println("Listener for delete out button error: " + hbe.getMessage()); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0524 delete nameStyle: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					errorMessage(hbe.getErrorCode(), hbe.getMessage(), hbe.getValue(), nameType);
 				}
 			}
@@ -1233,7 +1252,8 @@ public class HG0524ManageNameStyles extends HG0450SuperDialog {
 		String codeString = ""; //$NON-NLS-1$
 		for (int i = 0; i < elements.getSize(); i++)
 			codeString = codeString + elements.get(i) + "|"; //$NON-NLS-1$
-		System.out.println(" Codes: " + codeString); //$NON-NLS-1$
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Status: HG052x Codes: " + codeString); //$NON-NLS-1$
 	}
 
 /**

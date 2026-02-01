@@ -1,15 +1,14 @@
 package hre.gui;
 /****************************************************************************************
  * Configure Table - Specification 05.81 Configure Columns 2018-09-22
- * v0.01.0025 2020-11-27 first draft (D Ferguson)
+ * v0.02.0025 2020-11-27 first draft (D Ferguson)
  * 			  2021-02-07 Implemented column control HG0581ConfigureTable (N. Tolleshaug)
  * 			  2021-02-09 HG0581ConfigureTable edit and class problem fixed (N. Tolleshaug)
- * v0.01.0026 2021-09-15 Apply tag codes to screen control buttons (D Ferguson)
- * v0.01.0027 2022-02-28 Converted to NLS (D Ferguson)
- * 			  2022-03-07 Modified to use HGloDataMsgs (D Ferguson) (now removed)
- * v0.01.0028 2023-01-08 Translated table headers collected from T204 (N. Tolleshaug) 
- * 			  2023-01-15 Translated texts collected from T204 (N. Tolleshaug) 
+ * v0.03.0026 2021-09-15 Apply tag codes to screen control buttons (D Ferguson)
+ * v0.03.0027 2022-02-28 Converted to NLS (D Ferguson)
+ * v0.03.0028 2023-01-15 Translated texts collected from T204 (N. Tolleshaug)
  * 			  2023-01-28 Remove ability to edit column names (D Ferguson)
+ * v0.04.0032 2026-01-04 Log debug msgs (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Dimension;
@@ -36,13 +35,12 @@ import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.nls.HG0581Msgs;
-
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Configure Table
  * @author D Ferguson
- * @version v0.01.0028
+ * @version v0.01.0032
  * @since 2020-11-27
  */
 
@@ -67,15 +65,14 @@ public class HG0581ConfigureTable extends HG0450SuperDialog {
 		windowID = screenID;
 		helpName = "configuretable";	 //$NON-NLS-1$
 		callerScreenID = tablecallerID;
-		
-		//HBPersonHandler pointPersonHandler = (HBPersonHandler)HG0401HREMain.pointBusinessLayer[1];
+
 		HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
-		
-		if (HGlobal.DEBUG) 
-			System.out.println("Table control: 0-" 														//$NON-NLS-1$
+
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Status: in HG0581 Table control: 0-" 								//$NON-NLS-1$
 					+ Arrays.toString(pointPersonHandler.setTranslatedData(screenID, "0", false)));		//$NON-NLS-1$
-			
-		// Collect static text from T204 	
+
+		// Collect static text from T204
 		staticText = pointPersonHandler.setTranslatedData(screenID, "0", false)[0];		//$NON-NLS-1$
 
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -88,7 +85,7 @@ public class HG0581ConfigureTable extends HG0450SuperDialog {
 
 		JLabel lbl_Guide = new JLabel(HG0581Msgs.Text_7);		// Select the columns in the displayed table
 //		JLabel lbl_Guide2 = new JLabel(HG0581Msgs.Text_8);		// You may also edit the column names
-				
+
 		contents.add(lbl_Guide, "cell 0 0"); //$NON-NLS-1$
 //		contents.add(lbl_Guide2, "cell 0 1"); //$NON-NLS-1$
 
@@ -122,19 +119,19 @@ public class HG0581ConfigureTable extends HG0450SuperDialog {
 			@Override
 			public Class<?> getColumnClass(int column) {
 		        if (column == 1) return Boolean.class;
-		        else return String.class;
+				return String.class;
 			}
 			@Override
 			public TableCellRenderer getCellRenderer(int row, int column) {
 		        if ((row == 0 || row == 1) && column == 1) return stringRenderer;
-		        	else return super.getCellRenderer(row, column);
+				return super.getCellRenderer(row, column);
 		    }
 		};
-		
-		if (HGlobal.DEBUG) 
-			System.out.println("Table control: 1-" 													//$NON-NLS-1$
+
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Status: in HG0581 Table control: 1-" 							//$NON-NLS-1$
 					+ Arrays.toString(pointPersonHandler.setTranslatedData(screenID, "1", false))); //$NON-NLS-1$
-		
+
 		tableControl[0][1]= staticText;			// staticText from T204
 		tableControl[1][1]= staticText;			// staticText from T204
 		tableColumns.setModel(new DefaultTableModel(

@@ -33,9 +33,11 @@ package hre.gui;
  * 			  2025-04-21 Observe GUI Seq when loading citation data (D Ferguson)
  * 			  2025-05-25 Adjust structure of call to HG0555 (D Ferguson)
  * 			  2025-10-18 Corrected table content if add name ore edit name (N. Tolleshaug)
+ * 			  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+ * 			  2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
- * NOTE04 Sentence edit function missing
+ * NOTE04 Sentence edit function
  *****************************************************************************/
 
 import java.awt.Color;
@@ -86,6 +88,7 @@ import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
+import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -104,10 +107,12 @@ import net.miginfocom.swing.MigLayout;
 
 public class HG0509ManagePersonName extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	private static final int nameRelatedEventGroup = 1;
 
 	HBWhereWhenHandler pointWhereWhenHandler;
 	HBPersonHandler pointPersonHandler;
 	public HBCitationSourceHandler pointCitationSourceHandler;
+	HBEventRoleManager pointEventRoleManager;
 	HG0509ManagePersonName pointManagePersonName = this;
 	private JPanel contents;
 
@@ -178,10 +183,13 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
 		this.personNameTablePID = personNameTablePID;
+		pointEventRoleManager = pointOpenProject.getEventRoleManager();
+		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 
 	// Setup references for HG0509ManagePersonName
-		if (HGlobal.DEBUG)
-			System.out.println("HG0509ManagePersonName initated");	//$NON-NLS-1$
+		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0509ManagePersonName");}	//$NON-NLS-1$
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
     	this.setResizable(true);
     // Setup screenID and helpName for 50600 as Help for this dialog is part of
@@ -190,8 +198,6 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
     	windowID = screenID;
 		helpName = "manageperson";	//$NON-NLS-1$
 
-		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0509ManagePersonName");}	//$NON-NLS-1$
 	    pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 	    pointPersonHandler = pointOpenProject.getPersonHandler();
 	    pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
@@ -211,9 +217,10 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				endHDatePID = personNameTable.getLong("END_HDATE_RPID");		//$NON-NLS-1$
 
 			} catch (SQLException sqle) {
-				System.out.println(" SQL error personNameTable: " + sqle.getMessage());		//$NON-NLS-1$
-				sqle.printStackTrace();
-				throw new HBException(" SQL error personNameTable: " + sqle.getMessage());	//$NON-NLS-1$
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0509ManagePerName loading personName table " + sqle.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 			}
 		// Collect start date Hdate
 	    	startHREDate = pointPersonHandler.pointLibraryResultSet.
@@ -239,8 +246,9 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 
 	// Get Name Event types list & Name Events for combo box (Event Group 1 (Name))
 	    comboEvents = new JComboBox<String>();
-	    nameEvents = pointWhereWhenHandler.getEventTypeList(1);
-    	nameTypes = pointWhereWhenHandler.getEventTypes();
+	    nameEvents = pointEventRoleManager.getEventTypeList(nameRelatedEventGroup);
+    	nameTypes = pointEventRoleManager.getEventTypes();
+
 	    comboEvents.setModel(new DefaultComboBoxModel<String>(nameEvents));
 
 		// Now lookup the Event type list and set the combobox to the current Name event type
@@ -421,11 +429,11 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		if (pointManagePersonName instanceof HG0509EditPersonName)
 			objNameCiteData = pointCitationSourceHandler.getCitationSourceData(personNameTablePID, "T402");	//$NON-NLS-1$
 		else objNameCiteData = new Object[1][3];
-		
+
 	// and sort it on GUI sequence
 		Arrays.sort(objNameCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
-		
-	// Create scrollpane and table for the Name Citations		
+
+	// Create scrollpane and table for the Name Citations
 		citeModel = new DefaultTableModel(objNameCiteData, citeHeaderData);
 		JTable tableNameCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
@@ -589,8 +597,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
                     if (row > -1) {
 		                    String nameElementData = (String) tablePerson.getValueAt(row, 1);
 							String element = (String) tablePerson.getValueAt(row, 0);
-							if (HGlobal.DEBUG)
-								System.out.println(" HG0509ManagePersonName - person table changed: " + row //$NON-NLS-1$
+							if (HGlobal.DEBUG && HGlobal.writeLogs)
+								HB0711Logging.logWrite("Status: in HG0509ManagePerName person table changed: " + row //$NON-NLS-1$
 										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							btn_Save.setEnabled(true);
@@ -629,7 +637,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	           		objCiteDataToEdit = objNameCiteData[atRow]; // select whole row
 	        	// Display HG0555EditCitation with this data
 	           	// NB: keyAssocMin value defaulted to 1
-					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, "T402", 1, (long)objCiteDataToEdit[3]);
+					HG0555EditCitation citeScreen = new HG0555EditCitation(false, pointOpenProject, "T402", 1, (long)objCiteDataToEdit[3]); //$NON-NLS-1$
 					citeScreen.pointManagePersonName = pointManagePersonName;
 					citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyCite = lbl_Style.getLocationOnScreen();
@@ -646,7 +654,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 				pointCitationSourceHandler.setCitedTableData("T402", personNameTablePID);	//$NON-NLS-1$
 				// NB: keyAssocMin value defaulted to 1 in following line
-				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, "T402", 1);
+				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, "T402", 1);	//$NON-NLS-1$
 				citeScreen.pointManagePersonName = pointManagePersonName;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyCite = lbl_Style.getLocationOnScreen();
@@ -668,8 +676,10 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 					citeModel.removeRow(atRow);
 					pack();
 				} catch (HBException hbe) {
-					System.out.println("HG0509ManagePersonName delete citation error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0509ManagePerName deleting citation " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -758,8 +768,10 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 					tablePersData = pointPersonHandler.getPersonNameTable();
 					persModel.setDataVector(tablePersData, persHeaderData);
 				} catch (HBException hbe) {
-					System.out.println("HG0509ManagePersonName style error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0509ManagePerName show hidden " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				// re-enable tablePerson listener
 				persModel.addTableModelListener(persListener);
@@ -803,8 +815,10 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				// Only clear table if add new name - keep table if edit name
 					if (pointManagePersonName instanceof HG0509AddPersonName) clearPersonTableData();
 				} catch (HBException hbe) {
-					System.out.println("HG0509ManagePersonName style error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0509ManagePerName loading nameStyles " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				persModel.setRowCount(tablePersData.length);	// reset # table rows
 				pack();	// reset screen size

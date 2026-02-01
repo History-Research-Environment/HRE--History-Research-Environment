@@ -51,6 +51,7 @@ package hre.bila;
  *            2025-12-14 - Modify getSourceDefnList to load by language (D Ferguson)
  *			  2025-12-14 - Implemented edit source element name (N Tolleshaug)
  *		      2025-12-22 - Add, edit and copy source type implemented (N. Tolleshaug)
+ *			  2026-01-27 - Updated constructor for multiple projects (N. Tolleshaug)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -95,7 +96,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	HG0568EditSourceType pointEditSourceType;
 	public HG0567ManageSourceType pointManageSourceType;
 
-	int dataBaseIndex;
+	int dataBaseIndex = -1;
 
 	String selectString;
 
@@ -207,8 +208,10 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	HBCitationSourceHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		this.pointOpenProject = pointOpenProject;
+		pointDBlayer = pointOpenProject.getPointDBlayer();
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
+		//pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
+		pointHREmemo = pointOpenProject.getHREmemo();
 	}
 
 

@@ -57,7 +57,7 @@ public class HBMediaHandler extends HBBusinessLayer {
 	long proOffset = 1000000000000000L;
 	long null_RPID  = 1999999999999999L;
 	String personName = " Person name";
-	int dataBaseIndex = 0;
+	int dataBaseIndex = -1;
 	int nrRows = 0, childRow = 0, row = 0, grandRow = 0, nameRows = 0, eventRows = 0, asciateRows = 0;
 
 	ArrayList<String> listOfTexts;

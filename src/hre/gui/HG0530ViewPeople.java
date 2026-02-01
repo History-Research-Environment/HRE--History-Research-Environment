@@ -37,6 +37,7 @@ package hre.gui;
  * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * 			  2024-12-12 Make Names Alt.Type column biggger (D Ferguson)
  * v0.04.0032 2024-12-23 Fix initial over-packing of GUI losing the Names section (D Ferguson)
+ * 			  2026-01-05 Log catch block and DEBUG actions (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Color;
@@ -170,13 +171,13 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 		windowID = screenID;
 		helpName = "personvp"; //$NON-NLS-1$
 
-		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0530 ViewPeople"); //$NON-NLS-1$
+		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0530ViewPeople"); //$NON-NLS-1$
 		if (HGlobal.TIME) HGlobalCode.timeReport("start of HG0530ViewPers on thread "+Thread.currentThread().getName());  //$NON-NLS-1$
 
 		// Save the selected Project in a local variable (as may change)
 		vpProject = pointOpenProject.getProjectName();
-		if (HGlobal.DEBUG)
-			System.out.println("Translated texts:  0-" 		//$NON-NLS-1$
+       	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VP Translated texts:  0-" 		//$NON-NLS-1$
 					+ Arrays.toString(pointPersonHandler.setTranslatedData(screenID, "0", false)));	//$NON-NLS-1$
 
 		// Collect static text from T204
@@ -245,7 +246,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 					if (pointOpenProject.getPersonVP() > 0)
 									pointOpenProject.countDownPersonVP();
 			// Close window
-				    if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: closing People Viewpoint in HG0530 ViewPeople");	 //$NON-NLS-1$
+				    if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: closing People Viewpoint in HG0530ViewPeople");	 //$NON-NLS-1$
 				    dispose();
             }
            });
@@ -367,8 +368,8 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         text03.setColumns(25);
         p0.add(text03, "cell 1 1, gapx 10");    //$NON-NLS-1$
 
-		if (HGlobal.DEBUG)
-			System.out.println("Person VP Initial Person:  1-"		//$NON-NLS-1$
+       	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VP Initial Person:  1-"		//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "1", false)));	//$NON-NLS-1$
 
 		JTable table01 = new JTable() { private static final long serialVersionUID = 1L;
@@ -421,8 +422,8 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 		button12.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button12.setFont(new Font("Arial", Font.BOLD, 15));	//$NON-NLS-1$
 
-		if (HGlobal.DEBUG)
-			System.out.println("Person VP Event Table:  2- " 		//$NON-NLS-1$
+      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VP Event Table:  2- " 		//$NON-NLS-1$
 				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "2", false)));		//$NON-NLS-1$
 
 		JTable table11 = new JTable() { private static final long serialVersionUID = 1L;
@@ -505,8 +506,10 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 					table11.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
 
 				} catch (Exception hbe) {
-					System.out.println(" HBViewPointHandler - setWitnessState error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530VP setWitnessState error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 		      }
 		});
@@ -530,13 +533,15 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 							pointOpenProject.pointGuiData.setTableViewPointPID(eventVPident, eventPID);
 						else {
 							userInfoInitVP(1);
-							if (HGlobal.DEBUG)
-								System.out.println(" HG0530ViewPeople valueChanged - eventVPindex: "	//$NON-NLS-1$
+					      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+					    		HB0711Logging.logWrite("Status: in HG0530VP valueChanged - eventVPindex: "	//$NON-NLS-1$
 										+ eventVPindex);
 						}
 					} catch (HBException hbe) {
-						System.out.println(" HG0530ViewPeople mark event: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0530VP Event selectiont error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -555,8 +560,8 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 	           		eventTablePID = pointViewpointHandler.getPersonEventPID(personVPindex, selectedRowInTable);
 	           		// Double-click, open EventVP
 	           		if (colClicked == 2) {
-	           			if (HGlobal.DEBUG)
-	           				System.out.println(" HG0530ViewLocation DClick Vpindex: " + personVPindex + " Selected Row: " //$NON-NLS-1$ //$NON-NLS-2$
+	           	      	if (HGlobal.DEBUG && HGlobal.writeLogs)
+	           	    		HB0711Logging.logWrite("Status: in HG0530VP RClick Vpindex: " + personVPindex + " Selected Row: " //$NON-NLS-1$ //$NON-NLS-2$
 	           					+ selectedRowInTable + " EventPID: " + eventTablePID);	//$NON-NLS-1$
 	           			errorCode = pointViewpointHandler.initiateEventVP(pointOpenProject, eventTablePID);
 	           			if (errorCode > 0) userInfoInitVP(errorCode);
@@ -634,17 +639,18 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         JPanel genm2 = new JPanel(new MigLayout("insets 0, gap 5", "[grow]", "[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         //Define label and table
         JLabel labelm2 = new JLabel("(-2)");	//$NON-NLS-1$
- 		JTable tablem2 = new JTable() { private static final long serialVersionUID = 1L;
- 		 								@Override
- 		 								public boolean isCellEditable(int row, int column) {return false;}};
- 		if (HGlobal.DEBUG)
- 		 	System.out.println("Person VP relatives -2 Table:  4- "	//$NON-NLS-1$
-				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)));	//$NON-NLS-1$
+        JTable tablem2 = new JTable() {
+        	private static final long serialVersionUID = 1L;
+        	@Override
+        	public boolean isCellEditable(int row, int column) {return false;}};
+        	if (HGlobal.DEBUG && HGlobal.writeLogs)
+        		HB0711Logging.logWrite("Status: in HG0530VP relatives -2 Table:  4- "	//$NON-NLS-1$
+        				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)));	//$NON-NLS-1$
 
- 		tablem2.setModel(new DefaultTableModel(
- 				pointViewpointHandler.getRelativesGP2Data(personVPindex),
- 				pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$ 	// get Name, Relationship, Sex, Lifespan
- 			));
+        	tablem2.setModel(new DefaultTableModel(
+        			pointViewpointHandler.getRelativesGP2Data(personVPindex),
+        			pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$ 	// get Name, Relationship, Sex, Lifespan
+        			));
  		// Set a centered cell renderer for the Sex/Lifespan columns
  		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
@@ -676,18 +682,19 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         JPanel genm1 = new JPanel(new MigLayout("insets 0, gap 5", "[grow]", "[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         // Define label and table
         JLabel labelm1 = new JLabel("(-1)");	//$NON-NLS-1$
- 		JTable tablem1 = new JTable() { private static final long serialVersionUID = 1L;
- 		 								@Override
- 		 								public boolean isCellEditable(int row, int column) {return false;}};
+        JTable tablem1 = new JTable() {
+        	private static final long serialVersionUID = 1L;
+        	@Override
+        	public boolean isCellEditable(int row, int column) {return false;}};
 
- 		if (HGlobal.DEBUG)
- 			System.out.println("Person VP relatives -1 Table:  4- " 		//$NON-NLS-1$
- 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false))); 	//$NON-NLS-1$
+        	if (HGlobal.DEBUG && HGlobal.writeLogs)
+        		HB0711Logging.logWrite("Status: in HG0530VP relatives -1 Table:  4- " 		//$NON-NLS-1$
+        				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false))); 	//$NON-NLS-1$
 
- 		tablem1.setModel(new DefaultTableModel(
-    			pointViewpointHandler.getRelativesGP1Data(personVPindex),
-    			pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan
- 			));
+        	tablem1.setModel(new DefaultTableModel(
+        			pointViewpointHandler.getRelativesGP1Data(personVPindex),
+        			pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan
+        			));
 		tablem1.getColumnModel().getColumn(0).setPreferredWidth(220);
 		tablem1.getColumnModel().getColumn(0).setMinWidth(170);
 		tablem1.getColumnModel().getColumn(1).setPreferredWidth(90);
@@ -715,18 +722,19 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         JPanel gen0 = new JPanel(new MigLayout("insets 0, gap 5", "[grow]", "[grow]"));	 //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         //Define label and table
         JLabel label00 = new JLabel("(0) "); //$NON-NLS-1$
-        JTable table00 = new JTable() { private static final long serialVersionUID = 1L;
-		 								@Override
-		 								public boolean isCellEditable(int row, int column) {return false;}};
+        JTable table00 = new JTable() {
+        	private static final long serialVersionUID = 1L;
+        	@Override
+        	public boolean isCellEditable(int row, int column) {return false;}};
 
- 		if (HGlobal.DEBUG)
- 			System.out.println("Person VP relatives 0 Table:  3- " 	//$NON-NLS-1$
- 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "3", false))); 	//$NON-NLS-1$
+        	if (HGlobal.DEBUG && HGlobal.writeLogs)
+        		HB0711Logging.logWrite("Status: in HG0530VP relatives 0 Table:  3- " 	//$NON-NLS-1$
+        				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "3", false))); 	//$NON-NLS-1$
 
-		table00.setModel(new DefaultTableModel(
-				pointViewpointHandler.getRelativesGS0Data(personVPindex),
-				pointViewpointHandler.setTranslatedData(tableScreenID, "3", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan
-			));
+        	table00.setModel(new DefaultTableModel(
+        			pointViewpointHandler.getRelativesGS0Data(personVPindex),
+        			pointViewpointHandler.setTranslatedData(tableScreenID, "3", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan
+        			));
 		table00.getColumnModel().getColumn(0).setPreferredWidth(220);
 		table00.getColumnModel().getColumn(0).setMinWidth(170);
 		table00.getColumnModel().getColumn(1).setPreferredWidth(90);
@@ -756,17 +764,18 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         JPanel genp1 = new JPanel(new MigLayout("insets 0, gap 5", "[grow]", "[grow]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         //Define label and table
         JLabel labelp1 = new JLabel("(+1)");	//$NON-NLS-1$
- 		JTable tablep1 = new JTable() { private static final long serialVersionUID = 1L;
- 		 								@Override
- 		 								public boolean isCellEditable(int row, int column) {return false;}};
- 		if (HGlobal.DEBUG)
- 		 	System.out.println("Person VP relatives +1 Table:  4- " 		//$NON-NLS-1$
- 		 			+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)));	//$NON-NLS-1$
+        JTable tablep1 = new JTable() {
+        	private static final long serialVersionUID = 1L;
+        	@Override
+        	public boolean isCellEditable(int row, int column) {return false;}};
+        	if (HGlobal.DEBUG && HGlobal.writeLogs)
+        		HB0711Logging.logWrite("Status: in HG0530VP relatives +1 Table:  4- " 		//$NON-NLS-1$
+        				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)));	//$NON-NLS-1$
 
- 		tablep1.setModel(new DefaultTableModel(
- 				pointViewpointHandler.getRelativesGC1Data(personVPindex),
- 				pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan, Partner
- 			));
+        	tablep1.setModel(new DefaultTableModel(
+        			pointViewpointHandler.getRelativesGC1Data(personVPindex),
+        			pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan, Partner
+        			));
 		tablep1.getColumnModel().getColumn(0).setPreferredWidth(160);
 		tablep1.getColumnModel().getColumn(0).setMinWidth(120);
 		tablep1.getColumnModel().getColumn(1).setPreferredWidth(70);
@@ -797,18 +806,19 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         JPanel genp2 = new JPanel(new MigLayout("insets 0, gap 5", "[grow]", "[grow]"));   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         //Define label and table
         JLabel labelp2 = new JLabel("(+2)"); //$NON-NLS-1$
- 		JTable tablep2 = new JTable() { private static final long serialVersionUID = 1L;
- 		 								@Override
- 		 								public boolean isCellEditable(int row, int column) {return false;}};
+        JTable tablep2 = new JTable() {
+        	private static final long serialVersionUID = 1L;
+        	@Override
+        	public boolean isCellEditable(int row, int column) {return false;}};
 
- 		if (HGlobal.DEBUG)
- 			System.out.println("Person VP relatives  +2 Table:  4- " 		//$NON-NLS-1$
- 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)));		//$NON-NLS-1$
+        	if (HGlobal.DEBUG && HGlobal.writeLogs)
+        		HB0711Logging.logWrite("Status: in HG0530VP relatives  +2 Table:  4- " 		//$NON-NLS-1$
+        				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)));		//$NON-NLS-1$
 
- 		tablep2.setModel(new DefaultTableModel(
- 				pointViewpointHandler.getRelativesGC2Data(personVPindex),
- 				pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan, Partner
- 			));
+        	tablep2.setModel(new DefaultTableModel(
+        			pointViewpointHandler.getRelativesGC2Data(personVPindex),
+        			pointViewpointHandler.setTranslatedData(tableScreenID, "4", false)	//$NON-NLS-1$	// get Name, Relationship, Sex, Lifespan, Partner
+        			));
 		tablep2.getColumnModel().getColumn(0).setPreferredWidth(160);
 		tablep2.getColumnModel().getColumn(0).setMinWidth(120);
 		tablep2.getColumnModel().getColumn(1).setPreferredWidth(70);
@@ -946,18 +956,19 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 		button32.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button32.setFont(new Font("Arial", Font.BOLD, 15));	//$NON-NLS-1$
 
-		JTable table31 = new JTable() { private static final long serialVersionUID = 1L;
-		 								@Override
-		 								public boolean isCellEditable(int row, int column) {return false;}};
+		JTable table31 = new JTable() {
+			private static final long serialVersionUID = 1L;
+			@Override
+			public boolean isCellEditable(int row, int column) {return false;}};
 
- 		if (HGlobal.DEBUG)
- 			System.out.println("Person VP Asociate Table:  5- " 		//$NON-NLS-1$
- 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "5", false)));	//$NON-NLS-1$
+			if (HGlobal.DEBUG && HGlobal.writeLogs)
+				HB0711Logging.logWrite("Status: in HG0530VP Asociate Table:  5- " 		//$NON-NLS-1$
+						+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "5", false)));	//$NON-NLS-1$
 
-		table31.setModel(new DefaultTableModel(
-				pointViewpointHandler.getAssociateData(personVPindex),
-				pointViewpointHandler.setTranslatedData(tableScreenID, "5", false)	//$NON-NLS-1$		// get Person, Role, Event, Date
-			));
+			table31.setModel(new DefaultTableModel(
+					pointViewpointHandler.getAssociateData(personVPindex),
+					pointViewpointHandler.setTranslatedData(tableScreenID, "5", false)	//$NON-NLS-1$		// get Person, Role, Event, Date
+					));
 		table31.getColumnModel().getColumn(0).setPreferredWidth(250);
 		table31.getColumnModel().getColumn(0).setMinWidth(250);
 		table31.getColumnModel().getColumn(1).setPreferredWidth(70);
@@ -1028,13 +1039,15 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 							pointOpenProject.pointGuiData.setTableViewPointPID(personVPident, personPID);
 						else {
 							userInfoInitVP(4);
-							if (HGlobal.DEBUG)
-								System.out.println(" HG0530ViewPerson valueChanged - personVPindex: "	//$NON-NLS-1$
+							if (HGlobal.DEBUG && HGlobal.writeLogs)
+								HB0711Logging.logWrite("Status: in HG0530VP valueChanged - personVPindex: "	//$NON-NLS-1$
 										+ personVPindex);
 						}
 					} catch (HBException hbe) {
-						System.out.println(" HG0530ViewPerson mark person: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0530VP select Associate error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -1080,18 +1093,19 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 // Define panel P4 for Other Names
     private JPanel peopleNames() {
         JPanel p4 = new JPanel(new MigLayout("insets 5", "[grow]", "[grow]"));     //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		JTable table41 = new JTable() { private static final long serialVersionUID = 1L;
-		 								@Override
-		 								public boolean isCellEditable(int row, int column) {return false;}};
+        JTable table41 = new JTable() {
+        	private static final long serialVersionUID = 1L;
+        	@Override
+        	public boolean isCellEditable(int row, int column) {return false;}};
 
- 		if (HGlobal.DEBUG)
- 			System.out.println("Person VP Navn Table:  6- "		//$NON-NLS-1$
- 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "6", false))); 	//$NON-NLS-1$
+        	if (HGlobal.DEBUG && HGlobal.writeLogs)
+        		HB0711Logging.logWrite("Status: in HG0530VP Person VP Navn Table:  6- "		//$NON-NLS-1$
+        				+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "6", false))); 	//$NON-NLS-1$
 
-		table41.setModel(new DefaultTableModel(
-				 pointViewpointHandler.getNameData(personVPindex),
-				 pointViewpointHandler.setTranslatedData(tableScreenID, "6", false)		//$NON-NLS-1$	// get Alt.Type, Alternate Name, Date
-				));
+        	table41.setModel(new DefaultTableModel(
+        			pointViewpointHandler.getNameData(personVPindex),
+        			pointViewpointHandler.setTranslatedData(tableScreenID, "6", false)		//$NON-NLS-1$	// get Alt.Type, Alternate Name, Date
+        			));
 		table41.getColumnModel().getColumn(0).setMinWidth(80);
 		table41.getColumnModel().getColumn(0).setPreferredWidth(120);
 		table41.getColumnModel().getColumn(1).setMinWidth(200);

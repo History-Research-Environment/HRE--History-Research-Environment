@@ -9,10 +9,14 @@ package hre.tmgjava;
  * 			  2023-08-13 - Test for numeric value for Integer.parseInt (N. Tolleshaug)
  * 			  2023-08-15 - If TMG data length is 20 add one "0" (N. Tolleshaug)
  * 			  2024-07-16 - Updated TMG to Hdate according to HRE (N. Tolleshaug)
+ * v0.04.0032 2026-01-14 - Log catch block and other msgs (D Ferguson)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Vector;
+
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 
 /**
  * Converter from TMG date to HRE HDate
@@ -43,6 +47,8 @@ public class HREhdate {
  */
 	public HREhdate() {
 		System.out.println("Start HDATE");
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Starting HREhdate processing");
 	}
 
 /**
@@ -54,7 +60,7 @@ public class HREhdate {
 	public static long addToT170_22a_HDATES(ResultSet hreTable, String hdate) throws HCException {
 		return addToT170_21c_HDATES(hreTable, hdate);
 	}
-	
+
 /**
  * addToT170_HDATES(ResultSet hreTable, String hdate)
  * @param hreTable
@@ -75,9 +81,14 @@ public class HREhdate {
 		if (hdate.length() != 21 && !hdate.startsWith("0")) {
 			System.out.println(" WARNING - HREhdate - addToT170_22a TMG date/sort: "
 					+ hdate.length() + " hdatePID: " + hdatePID + " TMGdate: " + hdate);
-			if (hdate.length() == 20) hdate = hdate + "0";
-	 		else throw new HCException("Illegal number of chars in TMG date/sort size: " + hdate.length() +
-					" TMGdate: " + hdate); 
+			if (hdate.length() != 20) {
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in HREhdate Illegal number of chars in TMG date. Size="
+								+ hdate.length() + " TMGdate: " + hdate);
+	 			throw new HCException("Illegal number of chars in TMG date.Size=" + hdate.length() +
+					" TMGdate: " + hdate);
+	 		}
+			hdate = hdate + "0";
 		}
 
 	// Convert from TMG to HDate variables
@@ -116,9 +127,11 @@ public class HREhdate {
 			return recordPID;
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("Not able to update table - T170_DATES");
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names V21a - addTo table T170_DATES" + " - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HREhdate adding to T170 " + sqle.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("HREhdate add to table T170_DATES" + " - error: " + sqle.getMessage());
 		}
 	}
 
@@ -180,7 +193,7 @@ public class HREhdate {
 		String extra_days = "", extra_months = "", extra_hours = "", extra_minutes = "", extra_seconds = "",
 			extra_milliseconds = "",extra_offset_units = "", extra_offset_value = "";
 
-		// DEFAULT SETTINGS
+	// DEFAULT SETTINGS
 		String sort_date_start = "11";
 		String year_header = "550000";
 		String start_details = "";
@@ -211,7 +224,7 @@ public class HREhdate {
 				main_years = 0;
 				main_details =	"I";
 				extra_years =	0;
-		
+
 			// Irregular date can be up o 29 chars
 				if (irregular_text.length() > 24) {
 					System.out.println(" @@ Long Irregular date (max 24) , text = " + irregular_text + " / length: "
@@ -221,12 +234,10 @@ public class HREhdate {
 			// Temp solution - Irregular text in extra_details
 				extra_details =	irregular_text;
 				sort_date_code = "3";
-	
 				if (TMGglobal.DEBUG) System.out.println("@@ Irregular date value = " + irregular_text);
 			}
 		} else {
 	// output regular date and return
-
 			char old_style = tmg_date.charAt(9);
 	// has old style
 			if (old_style == '1') {
@@ -246,7 +257,8 @@ public class HREhdate {
 				nrQestionMarks++;
 				if (!qestionMarks.contains(tmg_date)) {
 					qestionMarks.add(tmg_date);
-					if(TMGglobal.TRHDATE) System.out.println("Qm nr: " + nrQestionMarks + " New questionm: " + tmg_date);
+					if(TMGglobal.TRHDATE)
+						System.out.println("Qm nr: " + nrQestionMarks + " New question mark: " + tmg_date);
 				}
 				if (TMGglobal.DEBUG) System.out.println("@@ TMG question mark date  = " + tmg_date);
 				question_mark_detail = 'Y';
@@ -255,7 +267,6 @@ public class HREhdate {
 
 		// Main Date Data
 			main_years = Long. parseLong(tmg_date.substring( 1, 5));
-			//if (main_years == 0) main_years = years_not_set;
 			main_months = tmg_date.substring( 5, 7);
 			if (main_months.equals("00")) main_months = "%%";
 			main_days = tmg_date.substring( 7, 9);
@@ -273,45 +284,36 @@ public class HREhdate {
 		// TMG qualifier settings
 			char qualifier = tmg_date.charAt(10);
 			switch(qualifier) {
-
 				case '0':
 					qualifier_code = 'B';	// ELEMENT_CODE "Before"
 					sort_qualifier_code = '1';
 					break;
-
 				case '1':
 					qualifier_code = 'S';	// ELEMENT_CODE "Say"
 					sort_qualifier_code = '2';
 					break;
-
 				case '2':
 					qualifier_code = 'C';	// ELEMENT_CODE "Circa"
 					sort_qualifier_code = '3';
 					break;
-
 				case '3':
 					qualifier_code = 'X';	// ELEMENT_CODE "Exact"
 					sort_qualifier_code = '4';
 					break;
-
 				case '4':
 					qualifier_code = 'A';	// ELEMENT_CODE "After"
 					sort_qualifier_code = '5';
 					break;
-
 				case '5':
 					qualifier_code = 'W';	// ELEMENT_CODE "Between / And"
 					sort_qualifier_code = '6';
 					dates_required = 2;
-
 					break;
-
 				case '6':
 					qualifier_code = 'O';	//  ELEMENT_CODE "Either / Or"
 					sort_qualifier_code = '7';
 					dates_required = 2;
 					break;
-
 				case '7':
 					qualifier_code = 'F';	// ELEMENT_CODE "From / To"
 					sort_qualifier_code = '8';
@@ -381,7 +383,7 @@ public class HREhdate {
 		}
 	}
 /**
- * isInteger(String numericValue) 	
+ * isInteger(String numericValue)
  * @param numericValue
  * @return
  */
@@ -394,15 +396,15 @@ public class HREhdate {
             return false;
         }
     }
-    
+
     public static String prepare4digit(int value) {
     	String tmgDate = "";
     	if (value < 9999)
-	        if (value > 1000) 
+	        if (value > 1000)
 	        	tmgDate = "" + value;
-	        else if (value > 100) 
+	        else if (value > 100)
 	        	tmgDate = tmgDate + "0" + value;
-	        else if (value > 10) 
+	        else if (value > 10)
 	        	tmgDate = tmgDate + "00" + value;
 	        else tmgDate = tmgDate + "000" + value;
         return tmgDate;
@@ -420,6 +422,7 @@ public class HREhdate {
 				+ " / " + extra_details.length());
 		System.out.println("@@ SORT_DATE_CODE = " + getSortDateCode() +
 				" / " + sort_date_code.length());
+
 	}
 
 }

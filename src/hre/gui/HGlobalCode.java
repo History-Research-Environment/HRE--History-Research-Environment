@@ -3,11 +3,13 @@ package hre.gui;
  * COMMON CODE MODULE
  * Split off from HGlobal 2023-05-02
  *****************************************************************************************
- * v0.00.0029 2023-05-01 - Common static methods for HRE (D. Ferguson)
- * v0.04.0032 2025-09-26 - Add Source Element convertNumsToNames/NamesToNums (D Ferguson)
- * 			  2025-10-07 - Add bracket validation routines (NLS'd) (D Ferguson)
- * 			  2025-11-17 Removed SourceElement handling routines (D Ferguson)
+ * v0.00.0029 2023-05-01 Common static methods for HRE (D. Ferguson)
+ * v0.04.0032 2025-09-26 Add Source Element convertNumsToNames/NamesToNums (D Ferguson)
+ * 			  2025-10-07 Add bracket validation routines (NLS'd) (D Ferguson)
+ * 			  2025-11-17 Removed SourceElement routines to HBReportHandler (D Ferguson)
+ * 			  2026-01-04 Log debug msgs (D Ferguson)
  ****************************************************************************************/
+
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.FocusTraversalPolicy;
@@ -27,14 +29,16 @@ import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.KeyStroke;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.nls.HGlobalMsgs;
+
 /**
  * Common methods for HRE (hre.bila and hre.gui)
  * @author Don Ferguson
  * @since 2023-05-02
- * @version build 0.04.3225.1006
+ * @version build 0.04.3226.0104
  */
 public class HGlobalCode {
 
@@ -136,11 +140,13 @@ public class HGlobalCode {
 	public static HBProjectOpenData pointOpenProjectByName(String projectName) throws HBException {
 		for (HBProjectOpenData element : HGlobal.openProjects) {
 			if (element.getProjectData()[0].trim().equals(projectName.trim())) {
-				if (HGlobal.DEBUG) System.out.println("Found open project: " + element.getProjectData()[0]); //$NON-NLS-1$
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+					HB0711Logging.logWrite("Status: in HGlobalCode found open project: " + element.getProjectData()[0]); //$NON-NLS-1$
 				return element;
 			}
 		}
-		if (HGlobal.DEBUG) System.out.println("Not found: " + projectName); //$NON-NLS-1$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("ERROR: in HGlobalCode did not find: " + projectName); //$NON-NLS-1$
 		throw new HBException("Open project not in list of open projects: " + projectName); //$NON-NLS-1$
 	}
 

@@ -10,6 +10,7 @@ package hre.gui;
  * v0.03.0030 2023-08-05 Enable update status bar - on/off (N. Tolleshaug)
  * v0.03.0031 2024-11-11 Fix enable/disable of header/footer and sizing (D Ferguson)
  * v0.04.0032 2025-06-24 Change output to write PDF file or print the tree (D Ferguson)
+ * 			  2026-01-04 Log catch block error msgs (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Container;
@@ -262,6 +263,10 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		    	} catch (Exception hbe) {
 					  JOptionPane.showMessageDialog(btn_Print, "Printer error: " + hbe.getMessage(),  //$NON-NLS-1$
 							  						"Print Error", JOptionPane.ERROR_MESSAGE);  //$NON-NLS-1$
+	        			if (HGlobal.writeLogs) {
+	        				HB0711Logging.logWrite("ERROR: in HG0660 print error " + hbe.getMessage());	//$NON-NLS-1$
+	        				HB0711Logging.printStackTraceToFile(hbe);
+	        			}
 		    	}
 		    }
 		});
@@ -306,7 +311,11 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 				       								  HG0660Msgs.Text_65,							// PDF File Output
 				       								  JOptionPane.INFORMATION_MESSAGE);
 					} catch (Exception hbe) {
-						// do nothing here as HG0631Output will have trapped it first anyway
+						// HG0631Output should have trapped this first, but log it anyway
+	        			if (HGlobal.writeLogs) {
+	        				HB0711Logging.logWrite("ERROR: in HG0660 writing output file " + hbe.getMessage());	//$NON-NLS-1$
+	        				HB0711Logging.printStackTraceToFile(hbe);
+	        			}
 					}
 				}
 				// If chosenFileName was empty, do nothing....
@@ -328,8 +337,10 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 		     		pointPersonHandler.initiatePersonData(5, pointOpenProject);
 					pointTree = new HBTreeCreator(openProject, focusPerson, nameDisplayIndex, null);
 				} catch (HBException hbe) {
-					System.out.println("HBTreeCreator call error");  //$NON-NLS-1$
-					hbe.printStackTrace();
+        			if (HGlobal.writeLogs) {
+        				HB0711Logging.logWrite("ERROR: in HG0660 HBTreeCreator call error " + hbe.getMessage());	//$NON-NLS-1$
+        				HB0711Logging.printStackTraceToFile(hbe);
+        			}
 				}
 				setCursor(Cursor.getDefaultCursor());
 				int errorCode = pointTree.initateTree();

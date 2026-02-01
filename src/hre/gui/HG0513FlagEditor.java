@@ -8,6 +8,7 @@ package hre.gui;
  *			  2023-10-11 Convert to NLS (D Ferguson)
  * v0.03.0031 2024-10-01 Clean whitespaces (D Ferguson)
  *			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-05 Log catch block errors (D Ferguson)
  *******************************************************************************/
 
 import java.awt.Font;
@@ -39,7 +40,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit or Add Flag
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2023-06-07
  */
 
@@ -210,7 +211,10 @@ public class HG0513FlagEditor extends HG0450SuperDialog {
 					dispose();
 				} catch (HBException hbe) {
 					btn_Save.setEnabled(false);
-					if(HGlobal.DEBUG) System.out.println("Reset Flag Error: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0513 saving flag data " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
        				JOptionPane.showMessageDialog(contents, HG0513Msgs.Text_15 + hbe.getMessage(),	// Error:
        											HG0513Msgs.Text_14, JOptionPane.ERROR_MESSAGE);		// Flag Editor
 				}
@@ -235,6 +239,10 @@ public class HG0513FlagEditor extends HG0450SuperDialog {
 						if (checkFlagValueChanges(textFlagValues.getText()))
 							btn_Save.setEnabled(true);
 					} catch (HBException hbe) {
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0513 editing flag data " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 	       				JOptionPane.showMessageDialog(btn_Save,	HG0513Msgs.Text_15 + hbe.getMessage(),	// Error:
    													HG0513Msgs.Text_14, JOptionPane.ERROR_MESSAGE);	// Flag Editor
 					}
@@ -259,6 +267,10 @@ public class HG0513FlagEditor extends HG0450SuperDialog {
 						if (checkFlagValueChanges(textFlagValues.getText()))
 							btn_Save.setEnabled(true);
 					} catch (HBException hbe) {
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0513 saving flag active setting " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 	       				JOptionPane.showMessageDialog(btn_Save,	HG0513Msgs.Text_15 + hbe.getMessage(),	// Error:
    													HG0513Msgs.Text_14, JOptionPane.ERROR_MESSAGE);	// Flag Editor
 					}

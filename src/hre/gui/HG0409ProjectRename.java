@@ -23,6 +23,7 @@ package hre.gui;
  * v0.01.0027 2022-02-26 Modified to use the NLS version of HGlobal (D Ferguson)
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
  * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -75,7 +76,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Rename
  * @author R Thompson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-02-10
  */
 
@@ -225,6 +226,10 @@ public class HG0409ProjectRename extends HG0450SuperDialog {
 					} catch (HBException hbe) {
 						JOptionPane.showMessageDialog(contents, HG0409Msgs.Text_36
 								+  hbe.getMessage(), HG0409Msgs.Text_37,JOptionPane.ERROR_MESSAGE);
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0409 project summary error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 				if (summaryData != null) {
@@ -233,7 +238,7 @@ public class HG0409ProjectRename extends HG0450SuperDialog {
 					Point xy = btn_Summary.getLocationOnScreen();          	  // Gets Summary button location on screen
 					summscreen.setLocation(xy.x + 50, xy.y);     			  // Sets screen top-left corner relative to that
 					summscreen.setVisible(true);
-				} else if (HGlobal.DEBUG) System.out.println("Summary data is null"); //$NON-NLS-1$
+				} else if (HGlobal.writeLogs) HB0711Logging.logWrite("Result: in HG0409 Summary data is null"); //$NON-NLS-1$
 			}
 		});
 

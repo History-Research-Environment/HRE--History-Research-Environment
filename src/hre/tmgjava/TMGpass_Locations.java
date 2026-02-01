@@ -13,15 +13,20 @@ package hre.tmgjava;
  * v0.00.0028 2023-02-26 - Separate pass for Location processing(N. Tolleshaug)
  * 			  2023-02-27 - Location processing in pass 2 - event in pass 3(N. Tolleshaug)
  * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-08-16 - Test for length in line 303 and 309 changed to != (N. Tolleshaug)
+ * v0.03.0030 2023-08-16 - Test for length in line 303 and 309 changed to != (N. Tolleshaug)
  *			  2023-08-29 - Import year < 1000 in start/end year (N. Tolleshaug)
- * v0.01.0031 2023-08-16 - Corrected class name in printout (N. Tolleshaug)
+ * v0.03.0031 2023-08-16 - Corrected class name in printout (N. Tolleshaug)
+ * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
  *********************************************************************************************/
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 /**
- * class TMGpass_V22a_Locations extends TMGpass_Location
- * Convert location data from TMG to HRE for database v22a
+ * class TMGpass_Locations
+ * Convert location data from TMG to HRE
  * @author NTo - Nils Tolleshaug
  * @since 2020-03-05
  * @see document
@@ -55,7 +60,6 @@ class TMGpass_Locations {
 	private long locationTablePID = proOffset + 1;
 
 	// Set the number of lines printed
-	//int maxNrPrint = 500;
 	int maxNrPrint = 20;
 
 
@@ -82,7 +86,6 @@ class TMGpass_Locations {
 		int currentRow = 0;
 		int placeNr;
 		String[] placeData;
-		//String placeString = null;
 		long locationNameElementPID = proOffset;
 		int nrOftmgPRows = tmgPtable.getNrOfRows();
 
@@ -105,7 +108,6 @@ class TMGpass_Locations {
 /**
  * Start convert Event
  */
-
 		for (int indexP_PID = 0; indexP_PID < nrOftmgPRows; indexP_PID++) {
 			currentRow = indexP_PID + 1;
 
@@ -167,7 +169,7 @@ class TMGpass_Locations {
 				System.out.println(" Not found PID - TMG name_G.dbf - indexPID: "
 						+ indexP_PID + " / " + tmgPtable.getValueInt(indexP_PID,"PER_NO"));
 			}
-		} // end EVENT
+		}
 
 		if (TMGglobal.DUMP) System.out.println("Test Event processing ended!\n");
 
@@ -199,7 +201,7 @@ class TMGpass_Locations {
  */
 		if (placeNr > 1) {
 			vectorSize = tmgPPVtable.getVectorSize(placeNr);
-			if (vectorSize < 1) 
+			if (vectorSize < 1)
 				System.out.println(" TMGpass_Location - PPV Place vectorSize < 1 : " + placeNr + "/" + vectorSize);
 			printReport =  "" + (indexP_PID+1) + " Pers: " + personNr + " - " + eventName + " at ";
 			for (int i = 0; i < vectorSize; i++ ) {
@@ -237,7 +239,7 @@ class TMGpass_Locations {
  * @throws HCException
  */
 	public void addToT551_LOCATIONS(int indexP_PID, long locationTablePID, int tmgPlaceNr, ResultSet hreTable) throws HCException {
-	
+
 		if (TMGglobal.DEBUG)
 			System.out.println("** addTo T552_T551_LOCATIONS PID: " + locationTablePID);
 
@@ -255,14 +257,15 @@ class TMGpass_Locations {
 			hreTable.updateLong("BEST_NAME_RPID", locationTablePID);
 			hreTable.updateLong("BEST_IMAGE_RPID", null_RPID);
 
-
 			//Insert row
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("Not able to update table - T551_LOCATIONS");
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addToT551_LOCATIONS - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassLocations SQL exception updating T551_LOCATIONS: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_LOCATIONS - addToT551_LOCATIONS - error: " + sqle.getMessage());
 		}
 	}
 
@@ -292,52 +295,53 @@ class TMGpass_Locations {
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateBoolean("HAS_CITATIONS", false);
 			hreTable.updateLong("OWNER_RPID", locationNamePID);
-			// Set name style RPID
+		// Set name style RPID
 			hreTable.updateLong("NAME_STYLE_RPID",
 					pointSupportPass.getNameStylePID(styleId));
-			
-		// Processing HDATE	
+
+		// Processing HDATE
 			String startYear = tmgPtable.getValueString(indexP_PID,"STARTYEAR");
-			
-			if (TMGglobal.DEBUG) 
+
+			if (TMGglobal.DEBUG)
 				System.out.println(" Start Year: /" + startYear + "/" + startYear.length());
-			
+
 			if (HREhdate.isInteger(startYear)) {
-				//if (startYear.length() != 4 || startYear.length() == 1 || startYear.length() == 0) 
-				if (startYear.length() == 0) 
+				if (startYear.length() == 0)
 					tmgDate = "1" + "0000" + "0000030000000000";
 				else tmgDate = "1" + HREhdate.prepare4digit(Integer.parseInt(startYear)) + "0000030000000000";
 			} else tmgDate = "1" + "0000" + "0000030000000000";
-			
+
 			hreTable.updateLong("START_HDATE_RPID", HREhdate.addToT170_22a_HDATES(tableT170, tmgDate));
 
 			String endYear = tmgPtable.getValueString(indexP_PID,"ENDYEAR");
 			if (HREhdate.isInteger(endYear)) {
-				//if (endYear.length() != 4 || endYear.length() == 1 || endYear.length() == 0) 
-				if (endYear.length() == 0) 
+				//if (endYear.length() != 4 || endYear.length() == 1 || endYear.length() == 0)
+				if (endYear.length() == 0)
 					tmgDate = "1" + "0000" + "0000030000000000";
 				else tmgDate = "1" + HREhdate.prepare4digit(Integer.parseInt(endYear)) + "0000030000000000";
 			} else tmgDate = "1" + "0000" + "0000030000000000";
-			
+
 			hreTable.updateLong("END_HDATE_RPID", HREhdate.addToT170_22a_HDATES(tableT170, tmgDate));
 
 			hreTable.updateLong("THEME_RPID", null_RPID);
 			hreTable.updateLong("MEMO_RPID", null_RPID);
-			
-		// Processing memo to T167_MEMO_SET	
-			//String comment = tmgHreConverter.pointHREmemo.returnStringContent(tmgPtable.getValueString(indexP_PID,"COMMENT"));
+
+		// Processing memo to T167_MEMO_SET
 			String comment = HREmemo.returnStringContent(tmgPtable.getValueString(indexP_PID,"COMMENT"));
 			if (comment.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
-			else hreTable.updateLong("MEMO_RPID", 
+			else hreTable.updateLong("MEMO_RPID",
 					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(comment));
 			hreTable.updateString("SURETY", "3"); // Need update 12.12.2024 ******************
 		//Insert row
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("Not able to update table - T552_LOCATION_NAMES");
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T552_LOCATION_NAMES - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassLocations SQL exception updating T552_LOCATION_NAMES: "
+										+ sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_LOCATIONS - addTo table T552_LOCATION_NAMES - error: " + sqle.getMessage());
 		}
 	}
 
@@ -372,17 +376,19 @@ class TMGpass_Locations {
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateLong("OWNER_RPID", ownerPID);
 			hreTable.updateString("LANG_CODE", "");
-			hreTable.updateString("ELEMNT_CODE", pointSupportPass.getPlaceStyleCodes(encodingType));		
+			hreTable.updateString("ELEMNT_CODE", pointSupportPass.getPlaceStyleCodes(encodingType));
 			hreTable.updateString("NAME_DATA", nameElement);
 
 		//Insert row
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println("Not able to update table - T403_PERSON_NAME_ELEMENT");
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T403_PERSON_NAME_ELEMENT - error: "
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassLocations SQL exception updating T553_LOCATION_NAME_ELEMENTS: "
+									+ sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_LOCATIONS - addTo table T553_LOCATION_NAME_ELEMENTS - error: "
 					+ sqle.getMessage());
 		}
 	}

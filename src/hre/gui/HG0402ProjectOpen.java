@@ -30,6 +30,7 @@ package hre.gui;
  * v0.03.0030 2022-09-22 If attempt to open already open project, exit after 1st msg (D Ferguson)
  * v0.03.0031 2024-02-18 Clear Person Recents list when opening project (D Ferguson)
  * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
  ********************************************************************************************/
 
 import java.awt.Component;
@@ -79,7 +80,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Open
  * @author R Thompson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-02-22
  */
 
@@ -269,7 +270,7 @@ public class HG0402ProjectOpen extends HG0450SuperDialog {
 		});
 
 		btn_Summary.addActionListener(new ActionListener() {
-			//Displays properties of the Selected Project
+			// Displays properties of the Selected Project
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
                 int[] selectedRow = table_Projects.getSelectedRows();
@@ -279,7 +280,7 @@ public class HG0402ProjectOpen extends HG0450SuperDialog {
 					try {
 						summaryData = pointProHand.getSummaryUserProjectAction(selectedProjectName);
 					} catch (HBException hbe) {
-						JOptionPane.showMessageDialog(contents, HG0402Msgs.Text_51 							// Open project summar error
+						JOptionPane.showMessageDialog(contents, HG0402Msgs.Text_51 						// Open project summar error
 								+  hbe.getMessage(), HG0402Msgs.Text_52,JOptionPane.ERROR_MESSAGE);		// Project Open
 					}
 				}
@@ -289,7 +290,7 @@ public class HG0402ProjectOpen extends HG0450SuperDialog {
 					Point xy = btn_Summary.getLocationOnScreen();          	  // Gets Summary button location on screen
 					summscreen.setLocation(xy.x + 50, xy.y);     			  // Sets screen top-left corner relative to that
 					summscreen.setVisible(true);
-				} else if (HGlobal.DEBUG) System.out.println("Summary data is null"); //$NON-NLS-1$
+				} else if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: in HG042 null Summary data"); //$NON-NLS-1$
 			}
 		});
 
@@ -299,10 +300,10 @@ public class HG0402ProjectOpen extends HG0450SuperDialog {
 				if (HGlobal.showCancelmsg)
 					{if (JOptionPane.showConfirmDialog(btn_Cancel, HG0402Msgs.Text_54, HG0402Msgs.Text_55,	// Cancel project open process?  // Project Open
 						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-							if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: cancelling HG0402ProjectOpen");} //$NON-NLS-1$
+							if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling HG0402ProjectOpen"); //$NON-NLS-1$
 							dispose();	}		// yes option - return to main menu
 					}
-				else {if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: cancelling HG0402ProjectOpen");} //$NON-NLS-1$
+				else {if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling HG0402ProjectOpen"); //$NON-NLS-1$
 					  dispose();
 				     }
 			}
@@ -365,8 +366,10 @@ public class HG0402ProjectOpen extends HG0450SuperDialog {
 							projectsData = pointProHand.getUserProjectByIndex(index);
 							serverName = projectsData[3];
 						} catch (HBException hbe) {
-							if (HGlobal.DEBUG) System.out.println("HG0402ProjectOpen error : " + projectsData[1]);	 //$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0402 opening project " + projectsData[1] + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
 
 						if (HGlobal.thisComputer.equals(serverName)) {		// For Local project
@@ -387,7 +390,8 @@ public class HG0402ProjectOpen extends HG0450SuperDialog {
 			                	userInfoOpenProject(errorCode, selectedProjectName);
 			                }
 						} else {			// For project on remote server
-							if (HGlobal.DEBUG) System.out.println("Remote server name: " + serverName);	 //$NON-NLS-1$
+							if (HGlobal.writeLogs)
+								HB0711Logging.logWrite("Action: using remote server " + serverName); //$NON-NLS-1$
 							HG0575DBLogon poinLogonScreen = new HG0575DBLogon(pointProHand, projectsData);
 							poinLogonScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 							Point xymainPane = HG0401HREMain.mainPane.getLocationOnScreen();

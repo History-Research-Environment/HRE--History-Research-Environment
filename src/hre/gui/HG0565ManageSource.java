@@ -24,7 +24,7 @@ package hre.gui;
  *			  2025-12-02 Fix for show inactive sources empty (N. Tolleshaug)
  *			  2025-12-03 Improved handlig of header for inactive sources empty (N. Tolleshaug)
  *			  2025-12-17 NLS all code (D Ferguson)
- *
+ *			  2026-01-07 Log catch block msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -142,8 +142,10 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0565 loading Source Elements: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 	    // Then construct a lookup fo: "12345" → "[element text]" conversion
@@ -215,8 +217,10 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		try {
 			tableSourceData = pointCitationSourceHandler.getSourceList(true, true);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source list: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0565 loading Source list: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 		if (tableSourceData == null ) {
@@ -404,8 +408,10 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 						sorcDefnTemplates = pointCitationSourceHandler
 											.getSourceDefnTemplates(selectedSorcDefnPID);
 					} catch (HBException hbe) {
-						System.out.println( " Error loading source templates: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0565 loading Source templates: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				// Try the Source's template; if empty, get the template from the Source Defn templates,
 				// then convert the Element [nnnnn] entries into Element Names using the Hashmap codeToTextMap
@@ -502,8 +508,10 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 								JOptionPane.INFORMATION_MESSAGE);
 					}
 				} catch (HBException hbe) {
-					System.out.println(" Delete Source error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0565 Source delete: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -523,8 +531,10 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 						btn_Inactive.setText(HG0565Msgs.Text_27);		// Show Inactive
 					}
 				} catch (HBException hbe) {
-					System.out.println(" HG0565ManageSource - resetSourceTable error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0565 setting Inactive: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});

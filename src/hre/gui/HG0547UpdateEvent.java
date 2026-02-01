@@ -18,6 +18,7 @@ package hre.gui;
  * 			  2024-04-21 Handle saving of changed citation sequence (D Ferguson)
  * 			  2025-05-24 Changes to show key people and roles in screen top panel (D Ferguson)
  * 			  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
+ * v0.04.0032 2026-01-20 Log all catch blocks and other msgs (D Ferguson)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -64,8 +65,8 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 		btn_Save.setText(HG0547Msgs.Text_70);	// Update
 		setTitle(HG0547Msgs.Text_71 + eventName + HG0547Msgs.Text_51 + eventPersonNamePri);	// Update ...... Event for ...
 
-		if (HGlobal.DEBUG)
-			System.out.println(" UpdateEvent: " + eventNumber + "/" + roleNumber); //$NON-NLS-1$ //$NON-NLS-2$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in HG0547AdUpdate Event: " + eventNumber + " role: " + roleNumber); //$NON-NLS-1$ //$NON-NLS-2$
 
 	// Get Name data 17.11.2024
 		nameData = pointWhereWhenHandler.getNameData();
@@ -135,8 +136,8 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("Action: accepting updates and leaving HG0547UpdateEvent");	//$NON-NLS-1$
 
-				if (HGlobal.DEBUG)
-					System.out.println(" Update event save button: " + eventNumber + "/" + roleNumber); //$NON-NLS-1$ //$NON-NLS-2$
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: in HG0547Update saving Event: " + eventNumber + " role: " + roleNumber); //$NON-NLS-1$ //$NON-NLS-2$
 
 				try {
 				// Check if changes in GUI
@@ -146,7 +147,6 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 						if (startDateOK)
 							pointWhereWhenHandler.
 									createEventDates(true, eventPID, "START_HDATE_RPID", startHREDate);	//$NON-NLS-1$
-
 						if (sortDateOK)
 							pointWhereWhenHandler.
 									createEventDates(true, eventPID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
@@ -179,8 +179,8 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 								pointCitationSourceHandler.updateCiteGUIseq(eventPID, "T450", objEventCiteData);	//$NON-NLS-1$
 
 					} else
-						if (HGlobal.DEBUG)
-							System.out.println(" HG0547UpdateEvent - No updated data for event!");	//$NON-NLS-1$
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: in HG0547Update  no updated data to save");	//$NON-NLS-1$
 
 
 				// Reload Person windows
@@ -194,12 +194,12 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 					dispose();
 
 				} catch (HBException hbe) {
-					System.out.println("HG0547UpdateEvent - failed to update event: " + hbe.getMessage());	//$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0547Update event update failed: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 					JOptionPane.showMessageDialog(btn_Save, HG0547Msgs.Text_72 + hbe.getMessage(),
 							HG0547Msgs.Text_40, JOptionPane.ERROR_MESSAGE);
-					if (HGlobal.DEBUG)
-						hbe.printStackTrace();
-
 				}
 			}
 		});
@@ -228,8 +228,10 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 					// reset screen size
 						pack();
 					} catch (HBException hbe) {
-						hbe.printStackTrace();
-						System.out.println(" HG0547UpdateEvent - Action loc style selection: " + hbe.getMessage());	//$NON-NLS-1$
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0547Update locn style selection: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 					// Re-enable tableLocation listener
 					locationTableModel.addTableModelListener(eventLocationListener);
@@ -247,8 +249,8 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
                     if (row > -1) {
 	                    String nameElementData = (String) tableLocation.getValueAt(row, 1);
 						String element = (String) tableLocation.getValueAt(row, 0);
-						if (HGlobal.DEBUG)
-								System.out.println(" HG0547UpdateEvent - location table changed: " + row //$NON-NLS-1$
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: in HG0547Update location table changed: " + row //$NON-NLS-1$
 										 + " Element: " + element + "/" + nameElementData); 	//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							pointWhereWhenHandler.addToNameChangeList(row, nameElementData);

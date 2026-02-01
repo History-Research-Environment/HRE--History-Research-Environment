@@ -438,8 +438,10 @@ public class HBProjectHandler extends HBBusinessLayer {
 					if (HGlobal.DEBUG) {
 						System.out.println("Project name: " + getUserProjectByIndex(proIndex)[0]);
 					}
-
+			// Open project
 					HBProjectOpenData openProject = new HBProjectOpenData(this);
+					
+			// Set up all project manager for new project and initiate project
 					openProject.openProject(remote, proIndex, loginData);
 
 				// Add the open project to the list of open projects

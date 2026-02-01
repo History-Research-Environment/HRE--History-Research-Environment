@@ -20,6 +20,7 @@ package hre.bila;
  *  		  2023-02-01 - Added code for add new person (N. Tolleshaug)
  *  		  2023-02-04 - Added code for truncation of new style name (N. Tolleshaug)
  * v0.03.0030 2021-10-06 - Truncate Output name style copy if > 30 chars (D Ferguson)
+ * v0.03.0032 2026-01-27 - Updated (N. Tolleshaug)
  **********************************************************************************************
  */
 import java.sql.ResultSet;
@@ -38,7 +39,7 @@ import hre.gui.HGlobal;
  * @since 2022-09-25
  */
 public class HBNameStyleManager extends HBBusinessLayer {
-	int dataBaseIndex = 0;
+	int dataBaseIndex = -1;
 	String selectedStyle = "";
 	String dataLanguage;
 	String type;
@@ -99,9 +100,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
  * @param pointDBlayer
  * @param dataBaseIndex
  */
-	public HBNameStyleManager(HDDatabaseLayer pointDBlayer, int dataBaseIndex, String type) {
+	public HBNameStyleManager(HDDatabaseLayer refDBlayer, int dataBaseIndex, String type) {
 		super();
-		this.pointDBlayer = pointDBlayer;
+		this.pointDBlayer = refDBlayer;
 		this.dataBaseIndex = dataBaseIndex;
 		dataLanguage = HGlobal.dataLanguage;
 		this.type = type;
@@ -117,10 +118,9 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	public int updateStyleTable(String nameType, String nameStyleTable, String nameElementTable) throws HBException {
 		nameStyleTableName = nameStyleTable;
 		nameElementTableName = nameElementTable;
-		if (HGlobal.DEBUG) {
-			System.out.println(" Tables: " +  " Name Type: "  + nameType +  " data: "
-					+ nameStyleTableName + " / " + nameElementTableName);
-		}
+		if (HGlobal.DEBUG) 
+			System.out.println(" updateStyleTable: " +  " Name Type: "  + nameType +  " data: "
+					+ nameStyleTableName + " / " + nameElementTableName + " DBindex: " + dataBaseIndex);
 		setNameStyleTable(nameType);
 		getAllNameStyleElements(nameType);
 		setNameStyleData(0);
@@ -1067,7 +1067,7 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	}
 
 /**
- * createPersonNameTable(int selectedStyleIndex)
+ * createNameStyleTable(int selectedStyleIndex)
  * @param selectedStyleIndex
  * @throws HBException
  */

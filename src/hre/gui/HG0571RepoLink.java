@@ -5,7 +5,7 @@ package hre.gui;
  *			  2025-11-11 Accept repo data from caller (D Ferguson)
  *		      2025-11-16 Updated handling of data and save ref. for reposlink (N. Tolleshaug)
  *			  2025-11-28 NLS all code (uses HG0570 NLS tables (D Ferguson)
- *
+ *			  2026-01-04 Log catch block errors (D Ferguson)
  ********************************************************************************/
 
 import java.awt.Component;
@@ -193,10 +193,12 @@ public class HG0571RepoLink extends HG0450SuperDialog {
 							(long) repoData[4], reference.getText().trim(), primaryLink);
 					dispose();
 				} catch (HBException hbe) {
-					System.out.println("Update repository link error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0571 updating Repository link data " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved leaving HG0571RepoLink");	//$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved and leaving HG0571RepoLink");	//$NON-NLS-1$
 			}
 		});
 

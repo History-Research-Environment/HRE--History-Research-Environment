@@ -54,7 +54,9 @@ package hre.tmgjava;
  *			  2025-07-22 - Imported project ruleset from pjc file (N. Tolleshaug)
  *			  2025-09-01 - Add new source table process (updateT737Templates) (D Ferguson)
  *			  2025-09-19 - Change TMGLanguage code to find most common language (D Ferguson)
+ * 			  2026-01-15 - Log catch block msgs (D Ferguson)
  *******************************************************************************************/
+
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
 import java.io.File;
@@ -81,6 +83,7 @@ import javax.swing.SwingWorker;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
+import hre.gui.HGlobal;
 
 /**
  * class TMGconverter
@@ -174,19 +177,16 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	public TMGHREconverter(String databasePath) throws HCException {
 		tmghreDataBase = databasePath;
 		tmgStartFolder = TMGglobal.tmgStartFolder;
-
-		//seedBase = TMGglobal.seedBase22b;
 		seedBase = TMGglobal.seedBase22c;
-
 	// Copy seed database
 		try {
 			updateSeedDatabase(seedBase);
 		} catch (HCException hre) {
-			System.out.println("updateSeedDatabase error: " +  hre.getMessage());
-		// Log Stack Trace
-			HB0711Logging.logWrite("ERROR Update Seed database: " + hre.getMessage());
-			HB0711Logging.printStackTraceToFile(hre);
-			throw new HCException("\"updateSeedDatabase error: " + hre.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter copying Seed database: " + hre.getMessage());
+				HB0711Logging.printStackTraceToFile(hre);
+			}
+			throw new HCException("\"copySeedDatabase error: " + hre.getMessage());
 		}
 	}
 
@@ -229,7 +229,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			processMonitor.setContextOfAction(" Processing with build: " + TMGglobal.buildNo);
 			processMonitor.setContextOfAction(" Processing with rel: " + TMGglobal.releaseDate);
 			processMonitor.setContextOfAction(" Database version: " + TMGglobal.databaseVersion);
-			if (TMGglobal.DEBUG) System.out.println(" *** Choose TMG folder!");
+			if (TMGglobal.DEBUG) System.out.println(" *** Choose TMG folder");
 			chooseTMGfolder();
 			if (TMGglobal.DEBUG)
 				System.out.println(" *** TMG Tables - PJC file path: "
@@ -267,8 +267,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					+ tmgVersion);
 
 		// Check TMG database version
-			if (!tmgVersion.equals("10") && !tmgVersion.equals("11")) throw new HCException(" Old TMG database - not accepted!!");
-			processMonitor.setContextOfAction(" Database PJC version accepted! ");
+			if (!tmgVersion.equals("10") && !tmgVersion.equals("11")) throw new HCException(" Old TMG database version - not accepted");
+			processMonitor.setContextOfAction(" Database PJC version accepted ");
 
 
 	if (TMGglobal.TRACE)
@@ -368,19 +368,21 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					+ "\nError: " + hce.getMessage(),"TMG to HRE",JOptionPane.INFORMATION_MESSAGE);
 			if (TMGglobal.TRACE) hce.printStackTrace();
 		// Log Stack Trace
-			HB0711Logging.logWrite("ERROR TMG convert: " + hce.getMessage());
-			HB0711Logging.printStackTraceToFile(hce);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter conversion: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 		} catch (Exception exc) {
 			processMonitor.setContextOfAction(" PROGRAM EXCEPTION - HRE conversion terminated!");
-			System.out.println(" TMG-HRE ERROR TMG error\n Message: " + exc.getMessage());
-			exc.printStackTrace();
-			JOptionPane.showMessageDialog(null,	"TMG-HRE Converter error detected!\nSee stack trace for more info!"
+			JOptionPane.showMessageDialog(null,	"TMG-HRE Converter error detected.\nSee log for more info."
 					+ "\nException message: " + exc.getMessage(),"TMG to HRE",JOptionPane.INFORMATION_MESSAGE);
 			// Log Stack Trace
-			HB0711Logging.logWrite("ERROR TMG convert: " + exc.getMessage());
-			HB0711Logging.printStackTraceToFile(exc);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter conversion: " + exc.getMessage());
+				HB0711Logging.printStackTraceToFile(exc);
+			}
 		}  finally {
-			System.out.println(" TMG to HRE converter completed!");
+			System.out.println(" TMG to HRE conversion completed!");
 	    }
 	}
 
@@ -420,8 +422,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		TMGglobal.tmg_PPV_table = null;
 		TMGglobal.tmg_ST_table = null;
 		TMGglobal.tmg_T_table = null;
-		if (TMGglobal.DEBUG) System.out.println(" TMG " + message + " tables closed!");
-		processMonitor.setContextOfAction("TMG " + message + " tables closed!");
+		if (TMGglobal.DEBUG) System.out.println(" TMG " + message + " tables closed");
+		processMonitor.setContextOfAction("TMG " + message + " tables closed");
 	}
 
 /**
@@ -528,10 +530,14 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		  } catch (FileNotFoundException fnfe) {
 			  if (TMGglobal.DEBUG) System.out.println("File not found\n" + fnfe.getMessage());
 			  if (TMGglobal.TRACE) fnfe.printStackTrace();
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGHREconverter file not found: " + fnfe.getMessage());
 			  throw new HCException("File not found\n" + fnfe.getMessage());
 		  } catch (IOException ioe) {
 			  if (TMGglobal.DEBUG) System.out.println("File read error\n" + ioe.getMessage());
 			  if (TMGglobal.TRACE) ioe.printStackTrace();
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGHREconverter IO exception: " + ioe.getMessage());
 			  throw new HCException("File read error\n" + ioe.getMessage());
 		  }
 	}
@@ -565,8 +571,9 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			System.out.println(" Language found: " + mostCommon);
 			TMGglobal.tmg_E_table.closeTMGtable();
 		} catch (HCException hce) {
-			System.out.println(" ERROR - locate TMG native language: " + hce.getMessage());
 			if (TMGglobal.TRACE) hce.printStackTrace();
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter locating TMG language: " + hce.getMessage());
 		}
 		return language;
 	}
@@ -679,13 +686,13 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		} catch (HCException hce) {
 			System.out.println("passPersonData error: " + hce.getMessage());
 			statusMessage = "ERROR";
-			hce.printStackTrace();
 			JOptionPane.showMessageDialog(null, "PassPersonData error: \n"
 					+  hce.getMessage(), "Project HRE pass",JOptionPane.ERROR_MESSAGE);
-
 		// Log Stack trace
-			HB0711Logging.logWrite("ERROR Pass Person Data: " + hce.getMessage());
-			HB0711Logging.printStackTraceToFile(hce);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passPersonData: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 		}
 	}
 
@@ -717,8 +724,10 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			JOptionPane.showMessageDialog(null, "ERROR PassLocationtData: \n"
 					+  hce.getMessage(), "Place pass",JOptionPane.ERROR_MESSAGE);
 		// Log Stack Trace
-			HB0711Logging.logWrite("ERROR Pass Location Data: " + hce.getMessage());
-			HB0711Logging.printStackTraceToFile(hce);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passLocationData: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 		}
 
 	}
@@ -774,8 +783,10 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			JOptionPane.showMessageDialog(null, "ERROR PassEventData: \n"
 					+  hce.getMessage(), "Event pass",JOptionPane.ERROR_MESSAGE);
 			// Log Stack Trace
-			HB0711Logging.logWrite("ERROR Pass Event Data: " + hce.getMessage());
-			HB0711Logging.printStackTraceToFile(hce);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passEventData: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 		}
 	}
 
@@ -840,10 +851,11 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			statusMessage = "ERROR";
 			JOptionPane.showMessageDialog(null, "Pass Exhibit Data error: \n"
 					+  hce.getMessage(), "Event pass",JOptionPane.ERROR_MESSAGE);
-
 			// Log Stack Trace
-			HB0711Logging.logWrite("ERROR Pass Exhibit Data :  " + hce.getMessage());
-			HB0711Logging.printStackTraceToFile(hce);
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passExhibitData: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 		}
 }
 
@@ -882,13 +894,24 @@ public class TMGHREconverter extends SwingWorker<String, String> {
     				Paths.get(copyFilePath));
         } catch (NoSuchFileException nsfe) {
         	if (TMGglobal.DEBUG) System.out.println("No such file: \n" + nsfe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter no file exists: " + nsfe.getMessage());
+				HB0711Logging.printStackTraceToFile(nsfe);
+			}
 			throw new HCException("No such file: \n" + nsfe.getMessage());
         } catch (FileAlreadyExistsException fae) {
         	if (TMGglobal.DEBUG) System.out.println("File already exist: \n" + fae.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter file already exists: " + fae.getMessage());
+				HB0711Logging.printStackTraceToFile(fae);
+			}
 			throw new HCException("File already exist: \n" + fae.getMessage());
         } catch (IOException ioe) {
         	if (TMGglobal.DEBUG) System.out.println("Copy file IOException: \n" + ioe.getMessage());
-			//ioe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter IOexception on copy file: " + ioe.getMessage());
+				HB0711Logging.printStackTraceToFile(ioe);
+			}
 			throw new HCException("Copy file IOException: \n" + ioe.getMessage());
 		}
 	}
@@ -900,16 +923,23 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	public void deleteFile(String deleteFilePath) throws HCException {
         try {
-        // delete also trace file is exists
+        // also delete trace file if it exists
         	if (deleteFilePath.endsWith("trace.db")) Files.deleteIfExists(Paths.get(deleteFilePath));
         	else Files.deleteIfExists(Paths.get(deleteFilePath));
-        	//else Files.delete(Paths.get(sourceFilePath));
+
         } catch (NoSuchFileException nsfe) {
         	if (TMGglobal.DEBUG) System.out.println("No such file: \n" + nsfe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter no file exists: " + nsfe.getMessage());
+				HB0711Logging.printStackTraceToFile(nsfe);
+			}
 			throw new HCException("Cannot delete non existing file: \n" + nsfe.getMessage());
         } catch (IOException ioe) {
         	if (TMGglobal.DEBUG) System.out.println("Delete file IOException: \n" + ioe.getMessage());
-			ioe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter IOexception on delete file: " + ioe.getMessage());
+				HB0711Logging.printStackTraceToFile(ioe);
+			}
 			throw new HCException("Delete file IOException: \n" + ioe.getMessage());
 		}
 	}
@@ -937,11 +967,11 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		} catch (HCException | IOException hce) {
 			JOptionPane.showMessageDialog(null, "TMG converter Main error: \n"
 					+  hce.getMessage(), "TMG converter",JOptionPane.ERROR_MESSAGE);
-
 			// Log Stack Trace
-			HB0711Logging.logWrite("ERROR TMG converter Main: " + hce.getMessage());
-			HB0711Logging.printStackTraceToFile(hce);
-
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter Main: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 			if (TMGglobal.TRACE) hce.printStackTrace();
 		}
 	}

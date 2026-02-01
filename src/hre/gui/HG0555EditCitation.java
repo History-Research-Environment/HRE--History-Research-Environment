@@ -33,6 +33,7 @@ package hre.gui;
  *			  2025-10-28 Implement Source Memo properly (D Ferguson)
  *			  2025-10-29 Change parser to replace < > with {{ }} markers (D Ferguson)
  *			  2025-11-02 Fix source template scrollpane size/pack issues (D Ferguson)
+ * 			  2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -247,16 +248,20 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				assessorPID = (long) ownerAssessorData[1];
 			}
 		} catch (HBException hbe) {
-			System.out.println(" HG0555EditCitation data load error: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0555 loading citation data: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 	// Load the Source Element list (names/ID#s) - needed for Element number lookup
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0555 loading Source elements: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 	// Setup dialog
@@ -620,8 +625,10 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 							sorcDefnPID = (long) objSourceEditData[11];
 							haveSourceData = true;
 				 		} catch (HBException hbe) {
-				 			System.out.println( " Error loading Source data: " + hbe.getMessage());	//$NON-NLS-1$
-				 			hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0555 loading Source: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 				 		}
 					}
 
@@ -631,8 +638,10 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					try {
 						sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sorcDefnPID);
 					} catch (HBException hbe) {
-						System.out.println( " Error loading source defn templates: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0555 loading Source Defn templates: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 					if (sourceFullFoot.isEmpty()) templateFullFoot = sorcDefnTemplates[0];
 					else templateFullFoot = sourceFullFoot;
@@ -646,8 +655,10 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					try {
 						tableSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
 					} catch (HBException hbe) {
-						System.out.println( " Error loading source element values: " + hbe.getMessage()); //$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0555 loading Source element data: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 
 				// Parse the full Footnote text into its output area.
@@ -697,10 +708,12 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					if (pointSelectedSource != null) pointSelectedSource.resetCitationTable();
 
 				} catch (HBException hbe) {
-					System.out.println(" HG0555EditCitation save error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0555 saving citation: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit HG0555EditCitation");	//$NON-NLS-1$
+				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: attempted Save and exit HG0555EditCitation");	//$NON-NLS-1$
 				dispose();
 			}
 		});
@@ -818,7 +831,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		else if (fidelityData.equals("D")) fidText = HG0555Msgs.Text_43; 	//$NON-NLS-1$		// Extract
 		else if (fidelityData.equals("E")) fidText = HG0555Msgs.Text_45; 	//$NON-NLS-1$		// Other
 		else
-			if (HGlobal.DEBUG) System.out.println(" Soruce fidelity not defined for code: " + fidelityData); //$NON-NLS-1$
+			if (HGlobal.DEBUG && HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HG0555 Soruce fidelity not defined for code: " + fidelityData); //$NON-NLS-1$
 		return fidText;
 	}
 
@@ -847,9 +861,11 @@ public class HG0555EditCitation extends HG0450SuperDialog {
     		try {
     			// Get source number, title, cited, PID, fidelity, sorceDefnPID, templates
 				objSourceData = pointCitationSourceHandler.getSourceList(true, true);
-			} catch (HBException hse) {
-				System.out.println(" HG0555EditCitation get source data error: " + hse.getMessage()); //$NON-NLS-1$
-				hse.printStackTrace();
+			} catch (HBException hbe) {
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0555 loading Source data: " + hbe.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(hbe);
+				}
 			}
     		// Get the data for the entered source number
     		for (int i = 0; i < objSourceData.length; i++) {

@@ -9,7 +9,7 @@ package hre.tmgjava;
  * *******************************************************************************
  * Process Citation/Source tables in HRE
  * *******************************************************************************
- * v0.01.0032  2025-02-11 - Added code for citation/source import (N. Tolleshaug)
+ * v0.04.0032  2025-02-11 - Added code for citation/source import (N. Tolleshaug)
  * 			   2025-02-11 - Updated code for citation/source tables (N. Tolleshaug)
  * 			   2025-02-14 - Updated code name/location tables import (N. Tolleshaug)
  * 			   2025-03-19 - Numerical values for ACCURACY use TINYINT (N. Tolleshaug)
@@ -36,6 +36,7 @@ package hre.tmgjava;
  *			   2025-10-24 - Modify T738 creation to cater for TMG weird entries (D Ferguson)
  *			   2025-10-25 - Chesnay project adjustment - database input > 400
  *			   2025-12-13 - Get T738 table size correctly in addToSourceElementTable (D Ferguson)
+ *			   2026-01-17 - Log all catch blocks (D Ferguson)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -65,6 +66,9 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 
 /**
  * TMGpass_Source
@@ -243,8 +247,10 @@ public class TMGpass_Source {
 				System.out.println(" " + currentRow + " not found type: " + sourceRefTable);
 
 			} catch (HCException hce) {
-				System.out.println("addToCitationTable error: " + hce.getMessage());
-				hce.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToCitationTable: " + hce.getMessage());
+					HB0711Logging.printStackTraceToFile(hce);
+				}
 			}
 			if (sourceDump)  System.out.println( "PID: " + citationTablePID + " Event "
 						+ citedTableName + " Cited PID: " + citedRecordRPID);
@@ -279,7 +285,10 @@ public class TMGpass_Source {
 			hreTableT738all.last();
 			sourceElementTablePID = proOffset + hreTableT738all.getRow() + 1; // set next PID after existing preloads
 		} catch (SQLException sqle) {
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource addToSourceElementTable: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("addToSorceElementTable phase0 error: " + sqle.getMessage());
 		}
 
@@ -296,7 +305,10 @@ public class TMGpass_Source {
 				elmntNumberBaseList.add(hreTableT738US.getString("SORC_ELMNT_NUM"));
 			}
 		} catch (SQLException sqle) {
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource addToSourceElementTable: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("addToSorceElementTable phase1 error: " + sqle.getMessage());
 		}
 
@@ -349,8 +361,10 @@ public class TMGpass_Source {
 						sourceElementTablePID++;
 					}
 				} catch (HCException hce) {
-					System.out.println("addToSorceElementTable phase3 error: " + hce.getMessage());
-					hce.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in TMGpassSource addToSourceElementTable: " + hce.getMessage());
+						HB0711Logging.printStackTraceToFile(hce);
+					}
 				}
 			}
 			// Now add all the 'special case' T738 records using the ELement Names/Numbers from the Base list
@@ -392,7 +406,10 @@ public class TMGpass_Source {
 					}
 				}
 			} catch (SQLException sqle) {
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToSourceElementTable: " + sqle.getMessage());
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 				throw new HCException("addToSorceElementTable phase4 error: " + sqle.getMessage());
 			}
 
@@ -421,7 +438,10 @@ public class TMGpass_Source {
 					}
 				}
 			} catch (SQLException sqle) {
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToSourceElementTable: " + sqle.getMessage());
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 				throw new HCException("addToSorceElementTable phase5 error: " + sqle.getMessage());
 			}
 	}
@@ -479,11 +499,12 @@ public class TMGpass_Source {
 					insertRowT737_SORC_DEFN(index_A_Table, sourceDefTablePID, tableT737_SORC_DEFN);
 				}
 			} catch (HCException hce) {
-				System.out.println("addToSorceDefTable error: " + hce.getMessage());
-				hce.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToSourceDefnTable: " + hce.getMessage());
+					HB0711Logging.printStackTraceToFile(hce);
+				}
 			}
 		}
-		//System.out.println(" End  T737_SORC_DEFN table: *******");
 	}
 
 /**
@@ -620,8 +641,10 @@ public class TMGpass_Source {
 			// Finally, create new T736 SORC record for this M record
 			insertRowT736_SORC(index_M_Table, sourceTablePID, tableT736_SORC);
 			} catch (HCException hce) {
-				System.out.println("addToT736Source error: " + hce.getMessage());
-				hce.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToT736SourceTable: " + hce.getMessage());
+					HB0711Logging.printStackTraceToFile(hce);
+				}
 			}
 		}
 	}
@@ -680,6 +703,10 @@ public class TMGpass_Source {
 				hreTable.updateRow();
 			}
 		} catch (SQLException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource updateT737templates: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("updateT737Templates error: " + sqle.getMessage());
 		}
 	}
@@ -715,11 +742,12 @@ public class TMGpass_Source {
 				insertRowT739_REPO(index_R_Table, sourceReposTablePID, tableT739_REPO);
 				//System.out.println(" Repos: " + reposRecno + " - " + reposAbbrev + " /Name: " + reposName);
 			} catch (HCException hce) {
-				System.out.println("addToReposTable error: " + hce.getMessage());
-				hce.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToT739ReposTable: " + hce.getMessage());
+					HB0711Logging.printStackTraceToFile(hce);
+				}
 			}
 		}
-		//System.out.println(" *** End T739_REPO");
 	}
 
 /**
@@ -750,8 +778,10 @@ public class TMGpass_Source {
 		// Add new source link record
 				insertRowT740_SORC_LINK(index_W_Table, sourceLinkTablePID, tableT740_SORC_LINK);
 			} catch (HCException hce) {
-				System.out.println("addToSorceLinkTable error: " + hce.getMessage());
-				hce.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource addToT740LinkTable: " + hce.getMessage());
+					HB0711Logging.printStackTraceToFile(hce);
+				}
 			}
 		}
 	}
@@ -783,8 +813,10 @@ public class TMGpass_Source {
 			//Insert row
 				hreTable.insertRow();
 		} catch (SQLException sqle) {
-			System.out.println("insertRowT734_SORC_DATA - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT734 row: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			errorCount++;
 			throw new HCException("insertRowT734_SORC_DATA  - error: " + sqle.getMessage());
 		}
@@ -845,14 +877,14 @@ public class TMGpass_Source {
 				hreTable.updateInt("CITN_ACC_DATE", accConvert(tmgStable.getValueString(index_S_Table,"SDSURE")));
 				hreTable.updateInt("CITN_ACC_LOCN", accConvert(tmgStable.getValueString(index_S_Table,"SPSURE")));
 				hreTable.updateInt("CITN_ACC_MEMO", accConvert(tmgStable.getValueString(index_S_Table,"SFSURE")));
-			// Test
-				//hreTable.updateInt("CITN_ACC_P2NAME", -1);
 
 			//Insert row
 				hreTable.insertRow();
 		} catch (SQLException sqle) {
-			System.out.println("insertRowT735_CITN - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT735row: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			errorCount++;
 			throw new HCException("insertRowT735_CITN  - error: " + sqle.getMessage());
 		}
@@ -961,8 +993,10 @@ public class TMGpass_Source {
 			// Insert row
 				hreTable.insertRow();
 			} catch (SQLException sqle) {
-				System.out.println("insertRowT736_SORC - error: " + sqle.getMessage());
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource insertT736row: " + sqle.getMessage());
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 				throw new HCException("insertRowT736_SORC - error: " + sqle.getMessage());
 			}
 		}
@@ -1013,8 +1047,10 @@ public class TMGpass_Source {
 				hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("insertRowT737_SORC_DEFN - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT737row: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("insertRowT737_SORC_DEFN - error: " + sqle.getMessage());
 		}
 	}
@@ -1044,8 +1080,10 @@ public class TMGpass_Source {
 			//Insert row
 				hreTable.insertRow();
 		} catch (SQLException sqle) {
-			System.out.println("insertRowT738_SORC_ELMNT - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT738row: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("insertRowT738_SORC_ELMNT - error: " + sqle.getMessage());
 		}
 	}
@@ -1088,8 +1126,10 @@ public class TMGpass_Source {
 				hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			sqle.printStackTrace();
-			System.out.println("insertRowT739_REPO - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT739row: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("insertRowT739_REPO - error: " + sqle.getMessage());
 		}
 	}
@@ -1119,8 +1159,10 @@ public class TMGpass_Source {
 				hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			System.out.println("insertRowT740_SORC_LINK - error: " + sqle.getMessage());
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT740row: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("insertRowT740_SORC_LINK - error: " + sqle.getMessage());
 		}
 	}
@@ -1146,7 +1188,10 @@ public class TMGpass_Source {
 			}
 			return templates;
 		} catch (SQLException sqle) {
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource getT737templates: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("get T737 data error: " + sqle.getMessage());
 		}
 	}
@@ -1175,7 +1220,10 @@ public class TMGpass_Source {
 			return number;
 
 		} catch (SQLException sqle) {
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT738number: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("get T738 lookup error: " + sqle.getMessage());
 		}
 	}
@@ -1285,8 +1333,10 @@ public class TMGpass_Source {
 				String abbrev = tmgRtable.getValueString(index_R_Table,"ABBREV").trim();
 				if (sourceDump) System.out.println(" " + index_R_Table  + " Repos: " + name + " - " + abbrev);
 			} catch (HCException hce) {
-				System.out.println("Repos error: " + hce.getMessage());
-				hce.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassSource testReotables: " + hce.getMessage());
+					HB0711Logging.printStackTraceToFile(hce);
+				}
 			}
 		}
 	}

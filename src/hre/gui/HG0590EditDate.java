@@ -18,6 +18,7 @@ package hre.gui;
  * 			  2024-08-11 At startup, set mouse to first date entry field (D Ferguson)
  * 			  2024-10-01 Organize imports, clean dead code (D Ferguson)
  * 			  2024-10-28 Add test for date being cleared as a valid entry (D Ferguson)
+ * v0.04.0032 2026-01-04 Log debug msgs (D Ferguson)
  * *************************************************************************************
  * Notes on incomplete functionality:
  * Does not yet support different calendar types
@@ -46,13 +47,14 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 
+import hre.bila.HB0711Logging;
 import hre.nls.HG0590Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Edit Date
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2023-08-21
  */
 
@@ -526,13 +528,13 @@ public class HG0590EditDate extends JDialog {
 				convertToHDate();
 
 				// Following are just demo return values for testing
-				if (HGlobal.DEBUG) {
+				if (HGlobal.DEBUG && HGlobal.writeLogs) {
 					if (dateDetails.substring(0,1).equals("I")) 		//$NON-NLS-1$
 						 returnDate = " " + dateDetails + "  Irregular date: IR "+date2Details; 	//$NON-NLS-1$	//$NON-NLS-2$
 					else returnDate = " " + txt_Year.getText() + "  " + dateDetails;  	//$NON-NLS-1$	//$NON-NLS-2$
 					if (selectedQualifier >= 6) returnDate = returnDate + " / " + txt_Year2.getText() 	//$NON-NLS-1$
 					+ "  " + date2Details;	//$NON-NLS-1$
-					System.out.println(" ReturnDate: " + returnDate);	//$NON-NLS-1$
+					HB0711Logging.logWrite("Status: in HG0590 ReturnDate: " + returnDate);	//$NON-NLS-1$
 				}
 				if (dateType == 1) pointOpenDisplay.saveStartDate();
 				if (dateType == 2) pointOpenDisplay.saveEndDate();

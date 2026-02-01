@@ -26,37 +26,38 @@ package hre.tmgjava;
  *			  2020-12-04 - Fix for HDATE error T401_LIFE_FORMS (N. Tolleshaug)
  * v0.01.0026 2021-07-09 - Removed "T402_PERSON_NAMES","DISPLAY_SUR_FIRST","VARCHAR(100)"
  *         				 - Removed"T402_PERSON_NAMES","DISPLAY_GIV_FIRST","VARCHAR(100)");
- * v0.01.0028 2023-01-06 - Changed name date in T402 from PBIRTH to NDATE
- * v0.01.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
- * v0.01.0030 2023-07-08 - Implemented Reference in T401 (N. Tolleshaug)
+ * v0.02.0028 2023-01-06 - Changed name date in T402 from PBIRTH to NDATE
+ * v0.02.0029 2023-05-01 - Implemented v22a (N. Tolleshaug)
+ * v0.03.0030 2023-07-08 - Implemented Reference in T401 (N. Tolleshaug)
  * 			  2023-07-10 - Removed LAST_PARTNER / TMG SPOULAST (N. Tolleshaug)
  * 			  2023-08-12 - Updated for Sample UK processing with enum < 1000 (N. Tolleshaug)
  * 			  2023-08-13 - Test for flagOptions.length() processing flag values (N. Tolleshaug)
  * 			  2023-08-23 - Fix for processing TMG default flag values (N. Tolleshaug)
  * 			  2023-08-31 - Error report TMG flag error (N. Tolleshaug)
- * v0.01.0031 2023-10-20 - Updated for v22b database. (N. Tolleshaug)
+ * v0.03.0031 2023-10-20 - Updated for v22b database. (N. Tolleshaug)
  * 			  2023-11-24 - line 653 fix for Parent Role into T405. (N. Tolleshaug)
  * 			  2024-03-16 - line 654 Corrected for parent type import to T405. (N. Tolleshaug)
  * 			  2024-06-17 - Added import of NAME_EVNT_TYPE to T402_PERS_NAME
- * v0.01.0032 2024-12-22 - Updated for v22c database (N. Tolleshaug)
+ * v0.04.0032 2024-12-22 - Updated for v22c database (N. Tolleshaug)
  * 			  2025-05-18 - Changed for T405 to PID = offset + s.recno (N. Tolleshaug)
- ***************************************************************************************
- * NOTES
- *********************************************************************
- */
+ * 			  2026-01-17 - Log all catch blocks (D Ferguson)
+ * 			  2026-01-22 - Import TMG Relationship fields (D Ferguson)
+ ****************************************************************************************/
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-//import java.util.HashMap;
+
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
+
 
 /**
- * class TMGpass_V22a_Names extends TMGpass_Names
+ * class TMGpass_Persons
  * @author NTo
  * @since 2020-03-15
  */
 
 public class TMGpass_Persons {
-	//private HREdatabaseHandler pointHREbase;
 	private TMGpass_Support pointSupportPass;
 	private TMGHREconverter tmgHreConverter;
 
@@ -89,16 +90,14 @@ public class TMGpass_Persons {
 	int nrTotalFlag = 0;
 	int errorFlag = 0; // count number of flag errors
 	// Max number printed
-	//int maxNrPrint = 300;
 	int maxNrPrint = 20;
 
 /**
- * TMGPassBIO_Names(TMGDatabaseHREhandler pointHREbase)
+ * TMGPassBIO_NamePersons(TMGDatabaseHREhandler pointHREbase)
  * @param pointHREbase
  */
 	public TMGpass_Persons(HREdatabaseHandler pointHREbase) {
 
-		//this.pointHREbase = pointHREbase;
 		tmg$table = TMGglobal.tmg_$_table;
 		tmgCtable = TMGglobal.tmg_C_table;
 		tmgFtable = TMGglobal.tmg_F_table;
@@ -118,7 +117,7 @@ public class TMGpass_Persons {
 		T405 = TMGglobal.T405;
 		T170 = TMGglobal.T170;
 	}
-	
+
 /**
  * Constructor addPersonsToHRE()
  * @throws HCException
@@ -127,7 +126,7 @@ public class TMGpass_Persons {
 	public void addPersonsToHRE(TMGHREconverter tmgHreConverter) throws HCException {
 		this.pointSupportPass = tmgHreConverter.pointSupportPass;
 		int currentRow = 0;
-		int flagIndex = -1;		
+		int flagIndex = -1;
 		long flagDefsRPID;
 		try {
 		// Find last PID
@@ -141,9 +140,9 @@ public class TMGpass_Persons {
 			flagFields = tmgHreConverter.pointSupportPass.getFlagFields();
 
 			flagIndexValues = new int[flagFields.length];
-			
+
 			int nrOftmg$Rows = tmg$table.getNrOfRows();
-			if (TMGglobal.DEBUG) 
+			if (TMGglobal.DEBUG)
 				System.out.println(" tmg _$.dbf Table size: " + nrOftmg$Rows + " rows");
 
 			int missingNrOf$PID = 0;
@@ -161,8 +160,7 @@ public class TMGpass_Persons {
 				progress = (int)Math.round(((double)currentRow / (double)nrOftmg$Rows) * 100);
 				tmgHreConverter.setStatusProgress(progress);
 
-
-				if (TMGglobal.DEBUG) 
+				if (TMGglobal.DEBUG)
 					System.out.println("** TMG name_$.dbf - indexPID: " + index$PID
 						+ " / PER_NO: " + tmg$table.getValueInt(index$PID,"PER_NO"));
 
@@ -171,20 +169,20 @@ public class TMGpass_Persons {
 				// Process T401_PERSONS
 					if (tmg$table.getValueInt(index$PID,"DSID") == 0)
 						System.out.println(tmg$table.getValueInt(index$PID,"PER_NO") + " Dataset ID: " + tmg$table.getValueInt(index$PID,"DSID"));
-					
+
 					if (TMGglobal.dataSetID == tmg$table.getValueInt(index$PID,"DSID")) {
-						
+
 					// Processing flags
 						String flagSetting = "", flagOptions = "";
 						int ctableRow;
 						for (int i= 0; i < flagFields.length; i++) {
-							
+
 							int flagIdent251 = tmgHreConverter.pointSupportPass.getFlagIdentIndex().get(flagFields[i]);
-							
-							flagSetting = tmg$table.getValueString(index$PID, flagFields[i]).trim();					
+
+							flagSetting = tmg$table.getValueString(index$PID, flagFields[i]).trim();
 							ctableRow = tmgHreConverter.pointSupportPass.getTmgFlagFieldIndex().get(flagFields[i]);
-							
-					// Find the flag index for a flag	
+
+					// Find the flag index for a flag
 							flagIndex = -1;
 							flagOptions = tmgCtable.findValueString(ctableRow, "FLAGVALUE");
 							String[] optionArray = flagOptions.split(",");
@@ -194,43 +192,43 @@ public class TMGpass_Persons {
 									break;
 								}
 							}
-							
+
 						// Set the correct value into T401 flag fields
 							if (flagIdent251 < 8) flagIndexValues[flagIdent251-1] = flagIndex;
 							if (flagIndex == -1) {
 								errorFlag++;
-								if (TMGglobal.FLAGCHECK) 
-									System.out.println(" T401 flags processing error: " + flagFields[i] + " - " 
-											+ (flagIdent251) + " /Options: " + flagOptions 
-											+ " /Setting: " + flagSetting + " /Index: " + flagIndex); 
+								if (TMGglobal.FLAGCHECK)
+									System.out.println(" T401 flags processing error: " + flagFields[i] + " - "
+											+ (flagIdent251) + " /Options: " + flagOptions
+											+ " /Setting: " + flagSetting + " /Index: " + flagIndex);
 							}
-							
-						// Record user flag settings	
+
+						// Record user flag settings
 							int defaultFlagIndex = 0;
 							int tmgFlagIdent = tmgCtable.findValueInt(ctableRow, "FLAGID");
-							
+
 						// Only record Flag setting != default
 							if (flagFields[i].startsWith("FLAG")) {
 								nrTotalFlag++;
-								if (TMGglobal.DEBUG) System.out.println(" FlagField: "+ flagFields[i] 
+								if (TMGglobal.DEBUG) System.out.println(" FlagField: "+ flagFields[i]
 										+ " Value: " + flagSetting + " Options: " + flagOptions);
 								flagDefsRPID = tmgHreConverter.pointSupportPass.getFlagDefsT251PID().get(tmgFlagIdent);
-								
+
 						// Get the default index from T251
-								if (tmgHreConverter.pointSupportPass.getDefaultIndex().containsKey(tmgFlagIdent))		
+								if (tmgHreConverter.pointSupportPass.getDefaultIndex().containsKey(tmgFlagIdent))
 									defaultFlagIndex = tmgHreConverter.pointSupportPass.getDefaultIndex().get(tmgFlagIdent);
-								else System.out.println(" No default index in t251 for flagId: " + tmgFlagIdent );
-								
-						// Create flag value row in T252	
-								if (flagOptions.length() > 0) 
+								else System.out.println(" No default index in T251 for flagId: " + tmgFlagIdent );
+
+						// Create flag value row in T252
+								if (flagOptions.length() > 0)
 									if (flagSetting.equals(flagOptions.charAt(defaultFlagIndex) + "")) nrDefaultFlag++;
 									else addToT252_FLAG_VALU(index$PID, flagDefsRPID, flagIdent251, flagIndex, T252);
 							}
-						} 
-						
+						}
+
 					// Now its time to create person in T401 with flag values
-						addToT401_PERSONS(index$PID, flagIndexValues, T401);	
-						
+						addToT401_PERSONS(index$PID, flagIndexValues, T401);
+
 					} else System.out.println("Not processed dataset tmg$table: "
 							+ tmg$table.getValueInt(index$PID,"DSID"));
 
@@ -240,32 +238,28 @@ public class TMGpass_Persons {
 							+ index$PID + " / " + tmg$table.getValueInt(index$PID,"PER_NO"));
 				}
 			} // end loop insert T401
-			
+
 			if (TMGglobal.DEBUG) {
 				int percent = 100-(int)Math.round(((double)nrDefaultFlag / (double)nrTotalFlag) * 100);
 				System.out.print(" Number of persons: " + currentRow + ",");
-				System.out.println(" Flag stat T252 rows: " + (nrTotalFlag-nrDefaultFlag) + " - " + percent + "%," 
+				System.out.println(" Flag stat T252 rows: " + (nrTotalFlag-nrDefaultFlag) + " - " + percent + "%,"
 								+ " - Default/Total: " + nrDefaultFlag + "/" + nrTotalFlag);
 			}
-			
+
 			tmgHreConverter.setStatusMessage(" *** Total # Flag errors: " + errorFlag);
-			
+
 			if (TMGglobal.DEBUG)
 					System.out.println("Number of PER_NO's not used: "+ missingNrOf$PID);
 
 
-		} catch (SQLException sqle) {
-			System.out.println("SQLxception - addPerson: " + sqle.getMessage()
-				+ "\nTMG name_$.dbf - indexPID: " + currentRow);
+		} catch (SQLException | HCException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons addPerson TMG $.dbf - indexPID: "
+										+ currentRow + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("SQLxception - addPerson: " + sqle.getMessage()
 			+ "\nTMG name_$.dbf - indexPID: " + currentRow + "\n" + sqle.getMessage());
-			//sqle.printStackTrace();
-		} catch (HCException hre) {
-			System.out.println("HRException - addPerson: " + hre.getMessage()
-				+ "\nTMG name_$.dbf - indexPID: " + currentRow);
-			throw new HCException("HRException - addPerson: " + hre.getMessage()
-			+ "\nTMG name_$.dbf - indexPID: " + currentRow + "\n" + hre.getMessage());
-			//hre.printStackTrace();
 		}
 	}
 
@@ -278,7 +272,6 @@ public class TMGpass_Persons {
 		int currentRow = 0;
 		long nameElementPID = proOffset;
 		try {
-
 		// Find start PID
 			T402.last();
 			if (TMGglobal.DEBUG)
@@ -286,7 +279,6 @@ public class TMGpass_Persons {
 			if (TMGglobal.DEBUG) System.out.println("SQL NAME tmgNTable end PID: " + (proOffset + tmgNtable.getNrOfRows()));
 
 		// Insert new records - number starts from indexPID = 1
-
 			int nrOftmgNRows = tmgNtable.getNrOfRows();
 
 			if (TMGglobal.DEBUG)
@@ -351,18 +343,14 @@ public class TMGpass_Persons {
 			if (TMGglobal.DEBUG)
 				System.out.println("Number of NPER's not used: "+ missingNrOfNPID);
 
-		} catch (SQLException sqle) {
-			System.out.println("SQLxception - addPerson: " + sqle.getMessage()
-				+ "\nTMG name_N.dbf - indexPID: " + currentRow);
+		} catch (SQLException | HCException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons addNames TMG N.dbf - indexPID: "
+										+ currentRow + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("SQLxception - addPerson: " + sqle.getMessage()
 			+ "\nTMG name_N.dbf - indexPID: " + currentRow + "\n" + sqle.getMessage());
-			//sqle.printStackTrace();
-		} catch (HCException hce) {
-			System.out.println("HRException - addPerson: " + hce.getMessage()
-				+ "\nTMG name_N.dbf - indexPID: " + currentRow);
-			throw new HCException("HRException - addPerson: " + hce.getMessage()
-			+ "\nTMG name_N.dbf - indexPID: " + currentRow + "\n" + hce.getMessage());
-			//hce.printStackTrace();
 		}
 	}
 
@@ -378,14 +366,13 @@ public class TMGpass_Persons {
 			if (TMGglobal.DEBUG) System.out.println("SQL PERSON tmgFTable end PID: " + (proOffset + tmgFtable.getNrOfRows()));
 			if (TMGglobal.DEBUG) System.out.println("SQL NAME tmgFTable end PID: " + (proOffset + tmgFtable.getNrOfRows()));
 
-
 			int nrOftmgFRows = tmgFtable.getNrOfRows();
 			if (TMGglobal.DEBUG) System.out.println(" tmg _F.dbf Table size: " + nrOftmgFRows + " rows");
 
 			int progress;
 			tmgHreConverter.setStatusProgress(0);
 
-			// Insert new records - number starts from indexPID = 1
+		// Insert new records - number starts from indexPID = 1
 			for (int indexFPID = 0; indexFPID < nrOftmgFRows; indexFPID++) {
 				currentRow = indexFPID + 1;
 
@@ -395,24 +382,20 @@ public class TMGpass_Persons {
 				tmgHreConverter.setStatusProgress(progress);
 
 				addToT405_PARENT_RELATION(indexFPID, T405);
-				
+
 				} else System.out.println("Not processed dataset tmgFtable: "
 						+ tmgFtable.getValueInt(indexFPID,"DSID"));
 
 			}
 
-		} catch (SQLException sqle) {
-			System.out.println("SQLexception - addPersonBirthToHRE: " + sqle.getMessage()
-				+ "\nTMG name_F.dbf - indexPID: " + currentRow);
-			throw new HCException("SQLxception - addPersonBirthToHRE: " + sqle.getMessage()
+		} catch (SQLException | HCException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons addParent TMG F.dbf - indexPID: "
+										+ currentRow + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("SQLxception - addParentToHRE: " + sqle.getMessage()
 			+ "\nTMG name_F.dbf - indexPID: " + currentRow + "\n" + sqle.getMessage());
-			//sqle.printStackTrace();
-		} catch (HCException hre) {
-			System.out.println("HRException - addPersonBirthToHRE: " + hre.getMessage()
-				+ "\nTMG name_F.dbf - indexPID: " + currentRow);
-			throw new HCException("HRException -addPersonBirthToHRE: " + hre.getMessage()
-			+ "\nTMG name_F.dbf - indexPID: " + currentRow + "\n" + hre.getMessage());
-			//hre.printStackTrace();
 		}
 	}
 
@@ -436,7 +419,7 @@ public class TMGpass_Persons {
 			hreTable.updateBoolean("HAS_OTHER_PARENTS", false); // ************** to be updated
 			hreTable.updateLong("VISIBLE_ID", tmg$table.getValueInt(rowPID,"REF_ID"));
 			hreTable.updateLong("ENTITY_TYPE_RPID", null_RPID);
-		// ***************************************************	
+		// ***************************************************
 			int father = tmg$table.getValueInt(rowPID,"FATHER");
 			if (father != 0)
 				hreTable.updateLong("SPERM_PROVIDER_RPID", proOffset + father);
@@ -459,7 +442,7 @@ public class TMGpass_Persons {
 				hreTable.updateLong("DEATH_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
 			}
 			hreTable.updateLong("DEATH_PLACE_RPID", null_RPID); // **** To be updated
-		//***************************************************************'	
+		//***************************************************************'
 			int perNoID = tmg$table.getValueInt(rowPID,"PER_NO");
 			if (tmgNtable.existVector(perNoID)) {
 				for ( int i = 0; i < tmgNtable.getVectorSize(perNoID); i++)
@@ -473,40 +456,41 @@ public class TMGpass_Persons {
 				hreTable.updateLong("BEST_NAME_RPID", null_RPID);
 			}
 
-			hreTable.updateLong("BEST_IMAGE_RPID", null_RPID); // Updated in TMGpass_V22a_Exhibits
+			hreTable.updateLong("BEST_IMAGE_RPID", null_RPID); // Updated in TMGpass_Exhibits
 
-			//hreTable.updateInt("BIRTH_ORDER", 0); // **** To be updated
 			hreTable.updateInt("PARTNER_COUNT", 0); // **** To be updated
 			hreTable.updateLong("DNA_RPID", null_RPID); //PID to T407, not created
 			hreTable.updateLong("LAST_EDIT_HDATE_RPID", null_RPID);
-			hreTable.updateLong("MEMO_RPID", null_RPID);		
+			hreTable.updateLong("MEMO_RPID", null_RPID);
 			hreTable.updateString("SURETY", " Not set");
-			
+
 			hreTable.updateInt("BIRTH_SEX", flagIndexValues[0]);
 			hreTable.updateInt("LIVING", flagIndexValues[1]);
 			hreTable.updateInt("BIRTH_ORDER", flagIndexValues[2]);
 			hreTable.updateInt("MULTI_BIRTH", flagIndexValues[3]);
 			hreTable.updateInt("ADOPTED", flagIndexValues[4]);
 			hreTable.updateInt("ANCESTOR_INT", flagIndexValues[5]);
-			hreTable.updateInt("DESCENDANT_INT", flagIndexValues[6]);		
+			hreTable.updateInt("DESCENDANT_INT", flagIndexValues[6]);
 			hreTable.updateString("REFERENCE", tmg$table.getValueString(rowPID,"REFERENCE"));
-		// Fields added in v22c
-			hreTable.updateInt("RELATE1",0); //V22c
-			hreTable.updateInt("RELATE2",0); //V22c
-			hreTable.updateInt("RELATE3",0); //V22c
-			hreTable.updateInt("RELATE4",0); //V22c
+		// Relationship fields added in v22c
+			hreTable.updateInt("RELATE1", tmg$table.getValueInt(rowPID,"RELATE"));
+			hreTable.updateInt("RELATE2", tmg$table.getValueInt(rowPID,"RELATEFO"));
+			hreTable.updateInt("RELATE3",0);
+			hreTable.updateInt("RELATE4",0);
 
 		//Insert row in database
 			hreTable.insertRow();
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println("Error update table - T401_PERSONS row: " + rowPID);
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo T401_PERSON - error: " + sqle.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons add to T401 row: " + rowPID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Persons - addTo T401_PERSON - error: " + sqle.getMessage());
 		}
 	}
 
 /**
- * addToT404_BIO_NAMES(long rowPID,ResultSet hreTable)
+ * addToT402_PERS_NAME(long rowPID,ResultSet hreTable)
  * @param rowPID
  * @param hreTable
  * @throws HCException
@@ -520,14 +504,13 @@ public class TMGpass_Persons {
 
 		int styleId = tmgNtable.getValueInt(rowPID,"STYLEID");
 		try {
-	
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
-			
+
 			int etypeNumber = tmgNtable.getValueInt(rowPID,"ALTYPE");
 			int origtype = tmgTtable.findValueInt(etypeNumber,"ORIGETYPE");
-			
-		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types		
+
+		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types
 			if (origtype != 0) etypeNumber = origtype + 1000;
 			else etypeNumber = etypeNumber + 1000;
 
@@ -548,33 +531,29 @@ public class TMGpass_Persons {
 
 			if (tmgDate.length() == 0 || tmgDate.equals(nullDate)) hreTable.updateLong("START_HDATE_RPID", null_RPID);
 			else hreTable.updateLong("START_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
-			
+
 			tmgDate = tmgNtable.getValueString(rowPID,"PDEATH");
 			if (tmgDate.length() == 0 || tmgDate.equals(nullDate)) hreTable.updateLong("END_HDATE_RPID", null_RPID);
 			else hreTable.updateLong("END_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
-			
+
 			hreTable.updateLong("THEME_RPID", null_RPID);
 			hreTable.updateLong("MEMO_RPID", null_RPID);
 			hreTable.updateString("SURETY", "3");
 		//Insert row
 			hreTable.insertRow();
 
-		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println("Not able to update table - T402_PERSON_NAMES");
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T402_PERSON_NAMES - error: "
+		} catch (SQLException | HCException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons add to T402: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Persons - addTo table T402_PERSON_NAMES - error: "
 					+ sqle.getMessage());
-		} catch (HCException hce) {
-			if (TMGglobal.DEBUG)
-				System.out.println("Not able to update table - T402_PERSON_FORM_NAMES");
-			throw new HCException("TMGPass_Names - addTo table T404_PERSON_NAMES - error: "
-					+ hce.getMessage());
 		}
 	}
 
 /**
- * addToT403_PERS_NAME_ELEMNTS 
+ * addToT403_PERS_NAME_ELEMNTS
  * @param rowPID
  * @param primaryPID
  * @param encodingType
@@ -593,33 +572,32 @@ public class TMGpass_Persons {
 		try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
-		// -----------------
 			hreTable.updateLong("PID", primaryPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateLong("OWNER_RPID", proOffset + tmgNtable.getValueInt(rowPID,"RECNO"));
 			hreTable.updateString("LANG_CODE", ""); // Not needed ********************
-			hreTable.updateString("ELEMNT_CODE", pointSupportPass.getPersonStyleCodes(encodingType));		
+			hreTable.updateString("ELEMNT_CODE", pointSupportPass.getPersonStyleCodes(encodingType));
 			hreTable.updateString("NAME_DATA", nameElement);
 		//Insert row
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println("TMGPass_Names - addTo table T403_PERS_NAME_ELEMNTS - error: "
-						+ sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table T403_PERS_NAME_ELEMNTS - error: "
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons add to T403: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Persons - addTo table T403_PERS_NAME_ELEMNTS - error: "
 					+ sqle.getMessage());
 		}
 	}
-	
+
 /**
  * addToT252_FLAG_VALU(long tablePID, ResultSet hreTable)
  * @param tablePID
  * @param hreTable
  * @throws HCException
  */
-   private void addToT252_FLAG_VALU(int rowPID, long flagDefsRPID, int flagId, 
+   private void addToT252_FLAG_VALU(int rowPID, long flagDefsRPID, int flagId,
 		   			int flagIndex, ResultSet hreTable) throws HCException {
 	   	try {
 		// moves cursor to the insert row
@@ -627,23 +605,25 @@ public class TMGpass_Persons {
 		// Update new row in H2 database
 			hreTable.updateLong("PID", flagTablePID++);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
-			hreTable.updateLong("FLAG_DEFN_RPID", flagDefsRPID); 
-			hreTable.updateLong("ENTITY_RPID", proOffset + tmg$table.getValueInt(rowPID,"PER_NO")); 
-			hreTable.updateInt("FLAG_IDENT", flagId); 
+			hreTable.updateLong("FLAG_DEFN_RPID", flagDefsRPID);
+			hreTable.updateLong("ENTITY_RPID", proOffset + tmg$table.getValueInt(rowPID,"PER_NO"));
+			hreTable.updateInt("FLAG_IDENT", flagId);
 			hreTable.updateInt("FLAG_INDEX", flagIndex); // New name for falg value
 		//Insert row in database
 			hreTable.insertRow();
-			
+
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG) System.out.println(" TMGPass_Person - T252_FLAG_VALU row: " + flagTablePID);
-			sqle.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons add to T252 row: " + flagTablePID + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
 			throw new HCException("TMGPass_Person - addToT252_FLAG_VALU - : " + sqle.getMessage());
 		}
    }
 
 
 /**
- * addToT405_PARENT_RELATION(int rowPID, ResultSet hreTable)	
+ * addToT405_PARENT_RELATION(int rowPID, ResultSet hreTable)
  * @param rowPID
  * @param hreTable
  * @throws HCException
@@ -653,49 +633,50 @@ public class TMGpass_Persons {
 		try {
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
-			//hreTable.updateLong("PID", proOffset + rowPID);
-		// Modification 18.5.2025 to match S citation "F" records 
+
+		// Modification 18.5.2025 to match S citation "F" records
 			hreTable.updateLong("PID", proOffset + tmgFtable.getValueInt(rowPID,"RECNO"));
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateBoolean("HAS_CITATIONS", false);
-			hreTable.updateLong("PERSON_RPID", 
-					proOffset + tmgFtable.getValueInt(rowPID,"CHILD")); // Child PID); 
-			hreTable.updateLong("PARENT_RPID", 
-					proOffset + tmgFtable.getValueInt(rowPID,"PARENT")); // Parent PID); 	
-			hreTable.updateLong("START_HDATE_RPID", null_RPID); // No dates available for import from TMG		
-			hreTable.updateLong("END_HDATE_RPID", null_RPID); // No dates available for import from TMG	
-			
-		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types		
-			int parentType = tmgFtable.getValueInt(rowPID,"PTYPE");		
-			int origeType = tmgTtable.findValueInt(parentType,"ORIGETYPE");	
+			hreTable.updateLong("PERSON_RPID",
+					proOffset + tmgFtable.getValueInt(rowPID,"CHILD")); // Child PID);
+			hreTable.updateLong("PARENT_RPID",
+					proOffset + tmgFtable.getValueInt(rowPID,"PARENT")); // Parent PID);
+			hreTable.updateLong("START_HDATE_RPID", null_RPID); // No dates available for import from TMG
+			hreTable.updateLong("END_HDATE_RPID", null_RPID); // No dates available for import from TMG
+
+		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types
+			int parentType = tmgFtable.getValueInt(rowPID,"PTYPE");
+			int origeType = tmgTtable.findValueInt(parentType,"ORIGETYPE");
 			if (origeType != 0) parentType = origeType + 1000;
-			else parentType = parentType + 1000; // Only if user defined parent type	
+			else parentType = parentType + 1000; // Only if user defined parent type
 			hreTable.updateInt("PARENT_TYPE", parentType);
-			
-		// Collect PNOTE	
+
+		// Collect PNOTE
 			String pnote = HREmemo.
-					returnStringContent(tmgFtable.getValueString(rowPID,"PNOTE"));	
-			
-		// Processing memo to T167_MEMO_SET	
+					returnStringContent(tmgFtable.getValueString(rowPID,"PNOTE"));
+
+		// Processing memo to T167_MEMO_SET
 			if (pnote.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
-			else hreTable.updateLong("MEMO_RPID", 
+			else hreTable.updateLong("MEMO_RPID",
 					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(pnote));
 
-			hreTable.updateString("SURETY", tmgFtable.getValueString(rowPID,"FSURE")); 
+			hreTable.updateString("SURETY", tmgFtable.getValueString(rowPID,"FSURE"));
 			hreTable.updateLong("EVNT_RPID", null_RPID);
-			
+
 		//Insert row
 			hreTable.insertRow();
 
 		} catch (SQLException sqle) {
-			if (TMGglobal.DEBUG)
-				System.out.println("TMGPass_Names - addTo table addToT405_PARENT_RELATION - error: "
-						+ sqle.getMessage());
-			sqle.printStackTrace();
-			throw new HCException("TMGPass_Names - addTo table addToT405_PARENT_RELATION - error: "
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons add to T405: " + sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
+			}
+			throw new HCException("TMGPass_Persons - addTo table addToT405_PARENT_RELATION - error: "
 					+ sqle.getMessage());
 		}
 	}
+
 /**
  * displayNamesParts()
  * @throws HCException
@@ -789,7 +770,6 @@ public class TMGpass_Persons {
 				if (TMGglobal.LOWER_CASE)
 					if (namePartInx == 5 || namePartInx == 8) {
 						String nameLowerCase = "";
-						//nameString = tmgNDtable.findValueString(nameNrInx,"VALUE").trim();
 						if (TMGglobal.DEBUG) System.out.print(indexNPID + " - " + namePartInx + " name: " + nameString);
 						if (Character.isUpperCase(nameString.charAt(0))
 								&& Character.isUpperCase(nameString.charAt(nameString.length()-1))) {
@@ -807,7 +787,10 @@ public class TMGpass_Persons {
 						+ " : " + personNameValue[namePartInx-1] + " / ";
 			}
 		} catch (HCException hce) {
-			hce.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGpassPersons find Name value: " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
 			throw new HCException("findNameValue error: " + hce.getMessage());
 		}
 		if (TMGglobal.DUMP)
@@ -816,7 +799,7 @@ public class TMGpass_Persons {
 		return personNameValue;
 
 	}
-	
+
 /**
  * printResSet(ResultSet resultSet)
  * @param resultSet
@@ -829,16 +812,9 @@ public class TMGpass_Persons {
 	      while(resultSet.next()){
 	         //Retrieve by column name
 	         long id  = resultSet.getInt("PID");
-	         //int age = resultSet.getInt("age");
-	         //String first = resultSet.getString("first");
-	         //String last = resultSet.getString("last");
-
-	         //Display values
+	     //Display values
 	         System.out.print("PID: " + id);
-	         //System.out.print(", Age: " + age);
-	         //System.out.print(", First: " + first);
-	         //System.out.println(", Last: " + last);
 	     }
 	     System.out.println();
-	 }//end printResSet()
+	 } //end printResSet()
 }

@@ -11,9 +11,9 @@ package hre.tmgjava;
  * v0.00.0021 2020-04-03 changed to resizeable layouts, removed logging, Reminder (D Ferguson)
  * v0.00.0021 2020-04-04 added frame.pack() to set preferred frame size (N.Tolleshaug)
  * v0.00.0025 2021-01-04 removed static reference for createAndShowGUI() (N.Tolleshaug)
- *****************************************************************************************
- * NOTE01 - needs Help icon action re-instated
- */
+ * v0.04.0032 2026-01-15 Log catch block and other msgs (D Ferguson)
+ * 			  2026-01-15 Removed icon for non-existent Help (D Ferguson)
+ *****************************************************************************************/
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -29,11 +29,9 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 import javax.swing.Box;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -44,12 +42,14 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.DefaultCaret;
 
+import hre.bila.HB0711Logging;
+import hre.gui.HGlobal;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Action Progress
  * @author R Thompson
- * @version v0.00.0021
+ * @version v0.04.0032
  * @since 2019-02-10
  */
 
@@ -82,8 +82,8 @@ public class TMGHREprogressMonitor extends JFrame
 	}
 
     public void startMonitor() {
-        //Schedule a job for the event-dispatching thread:
-        //creating and showing this application's GUI.
+        // Schedule a job for the event-dispatching thread:
+        // creating and showing this application's GUI.
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             @Override
 			public void run() {
@@ -115,27 +115,15 @@ public class TMGHREprogressMonitor extends JFrame
 
 	public void progressClose() {
 		try {
-			System.out.println(" HRE Monitor Close action!!");
+			System.out.println(" HRE Monitor Closing");
 			task.hreLoader.closeDatabase();
 			task.stopTCPServer();
-			//dispose();
-		} catch (HCException hre) {
-			if (TMGglobal.DEBUG)
-			{
-				System.out.println(" ** HRE Database close error!!");
-				hre.printStackTrace();
-				dispose();
-			}
-		} catch (NullPointerException npe) {
-			if (TMGglobal.DEBUG)
-				{
-				System.out.println(" ** Null Pointer Exception!!");
-				npe.printStackTrace();
-				dispose();
-			}
+		} catch (HCException | NullPointerException ex) {
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in HREprogressMonitor: " + ex.getMessage());
+			dispose();
 		}
 		setVisible(false);
-		//dispose();
 		frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
 	}
 
@@ -143,7 +131,7 @@ public class TMGHREprogressMonitor extends JFrame
     	Toolkit.getDefaultToolkit().beep();
     	setCursor(null); //turn off the wait cursor
     	setContextOfAction(" TMG conversion: " + message + "\n");
-    	if (TMGglobal.DEBUG) System.out.println(" ** Conversion status - " + message);
+     	if (TMGglobal.DEBUG) System.out.println(" ** Conversion status - " + message);
     }
 
 /**
@@ -157,9 +145,7 @@ public class TMGHREprogressMonitor extends JFrame
 		frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/hre/images/HRE-32.png")));
     	frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.setContentPane(monitorPanel);
-
-	// Modification 2020-04-03 NTo
-    	frame.setLocation(20,50);
+    	frame.setLocation(50,50);
     	frame.pack();
         frame.setVisible(true);
     }
@@ -185,12 +171,6 @@ public TMGHREprogressMonitor() {
 		lblNewLabel.setFont(new Font(TMGglobal.dfltGUIfont, Font.PLAIN, 13));
 		toolBar.add(lblNewLabel);
 		toolBar.add(Box.createHorizontalGlue());
-
-		final JButton btn_Helpicon = new JButton("");
-		btn_Helpicon.setToolTipText("Opens the Help module");
-		btn_Helpicon.setMaximumSize(new Dimension(32, 32));
-		btn_Helpicon.setIcon(new ImageIcon(TMGHREprogressMonitor.class.getResource("/hre/images/help_BW_24.png")));
-		toolBar.add(btn_Helpicon);
 
 		getContentPane().add(toolBar, BorderLayout.NORTH);
 
@@ -252,18 +232,6 @@ public TMGHREprogressMonitor() {
 /**
 * CREATE ACTION BUTTON LISTENERS
 **/
-		//icons
-		btn_Helpicon.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				//HG0514Help.contextHelp(windowInstance, btn_Helpicon, "actionprogress");
-				if (TMGglobal.DEBUG)
-					System.out.println("HG0514Help help menu - to be implemented");
-				JOptionPane.showMessageDialog(btn_Helpicon,"HG0514Help help menu - to be implemented",
-						"TMG-HRE convert ",JOptionPane.INFORMATION_MESSAGE);
-			}
-		});
-
 		//buttons
 		btn_Close.addActionListener(new ActionListener() {
 			@Override

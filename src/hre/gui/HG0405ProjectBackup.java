@@ -26,6 +26,7 @@ package hre.gui;
  * 			  2022-06-16 Add progressbar (indeterminate) during backup action (D Ferguson)
  * v0.03.0031 2023-11-17 Adjust error action if file open b4 backup - allow Cancel (D Ferguson)
  * 			  2024-11-29 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
  *********************************************************************************************************/
 
 import java.awt.Component;
@@ -80,7 +81,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Backup
  * @author R Thompson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2019-02-10
  */
 
@@ -456,6 +457,10 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 				} catch (HBException hbe) {
 					JOptionPane.showMessageDialog(contents, "Backup project summary error\n"  //$NON-NLS-1$
 							+  hbe.getMessage(), "Project Backup",JOptionPane.ERROR_MESSAGE); //$NON-NLS-1$
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0405 project summary error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 				if (summaryData != null) {
 					HG0414ProjectSummary summscreen = new HG0414ProjectSummary(summaryData);
@@ -463,7 +468,7 @@ public class HG0405ProjectBackup extends HG0450SuperDialog {
 					Point xy = btn_Summary.getLocationOnScreen();    // Gets Summary button location on screen
 					summscreen.setLocation(xy.x + 50, xy.y);     	 // Sets screen top-left corner relative to that
 					summscreen.setVisible(true);
-				} else if (HGlobal.DEBUG) System.out.println("Summary data is null"); //$NON-NLS-1$
+				} else 	if (HGlobal.writeLogs) HB0711Logging.logWrite("Result: in HG0405 Summary data is null"); //$NON-NLS-1$
 			}
 		});
 

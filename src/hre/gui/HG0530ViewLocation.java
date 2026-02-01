@@ -26,6 +26,7 @@ package hre.gui;
  * v0.03.0031 2024-11-04 Ensure all data non-editable (D Ferguson)
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  *			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-05 Log catch block and DEBUG actions (D Ferguson)
  *************** ***********************************************************************************/
 
 import java.awt.Color;
@@ -89,7 +90,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for Location with collapsing panels for Location Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2020-05-10
  */
 
@@ -329,8 +330,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 		button12.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button12.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
 
-		if (HGlobal.DEBUG)
-			System.out.println("Location VP Initial Location:  1-" 	//$NON-NLS-1$
+    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VL Initial Location:  1-" 	//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "1", false)));	//$NON-NLS-1$
 
 		JTable table11 = new JTable() { private static final long serialVersionUID = 1L;
@@ -396,8 +397,10 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 					table11.getColumnModel().getColumn(2).setMinWidth(200);
 
 				} catch (Exception hbe) {
-					System.out.println(" HG0530ViewLocation - setWitnessState error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530VL setWitnessState error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 		      }
 		});
@@ -421,13 +424,15 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 							pointOpenProject.pointGuiData.setTableViewPointPID(eventVPident, eventPID);
 						else {
 							userInfoInitVP(1);
-							if (HGlobal.DEBUG)
-								System.out.println(" HG0530ViewLocation valueChanged - eventVPindex: "	//$NON-NLS-1$
+					    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+					    		HB0711Logging.logWrite("Status: in HG0530VL valueChanged - eventVPindex: "	//$NON-NLS-1$
 										+ eventVPindex);
 						}
 					} catch (HBException hbe) {
-						System.out.println(" HG0530ViewLocation mark event: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0530VL select Event error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -446,8 +451,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 	           		eventTablePID = pointViewpointHandler.getLocationEventPID(locationVPindex, selectedRowInTable);
 					// Double-click, open EventVP
 	           		if (colClicked == 2) {
-	           			if (HGlobal.DEBUG)
-	           				System.out.println(" HG0530ViewLocation DClick Vpindex: " + locationVPindex + " Selected Row: " //$NON-NLS-1$ //$NON-NLS-2$
+	           	    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+	           	    		HB0711Logging.logWrite("Status: in HG0530VL RClick Vpindex: " + locationVPindex + " Selected Row: " //$NON-NLS-1$ //$NON-NLS-2$
 	           					+ selectedRowInTable + " EventPID: " + eventTablePID);	//$NON-NLS-1$
 	           			errorCode = pointViewpointHandler.initiateEventVP(pointOpenProject, eventTablePID);
 	           			if (errorCode > 0) userInfoInitVP(errorCode);
@@ -520,8 +525,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 		button23.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button23.setFont(new Font("Arial", Font.BOLD, 15)); //$NON-NLS-1$
 
-		if (HGlobal.DEBUG)
-			System.out.println("Location VP Superior location:  2-" 		//$NON-NLS-1$
+    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VL Superior location:  2-" 		//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "2", false)));	//$NON-NLS-1$
 
 		JTable table21 = new JTable() { private static final long serialVersionUID = 1L;
@@ -600,8 +605,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 		button32.setMargin(new java.awt.Insets(1, 2, 1, 2));
 		button32.setFont(new Font("Arial", Font.BOLD, 15));		 //$NON-NLS-1$
 
-		if (HGlobal.DEBUG)
-			System.out.println("Location VP Associated People:  3-" 	//$NON-NLS-1$
+    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VL Associated People:  3-" 	//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "3", false)));	//$NON-NLS-1$
 
  		JTable table31 = new JTable() { private static final long serialVersionUID = 1L;
@@ -656,13 +661,15 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
 							pointOpenProject.pointGuiData.setTableViewPointPID(personVPident, personPID);
 						else {
 							userInfoInitVP(4);
-							if (HGlobal.DEBUG)
-								System.out.println(" HG0530ViewLocation valueChanged - personVPindex: "	//$NON-NLS-1$
+					    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+					    		HB0711Logging.logWrite("Status: in HG0530VL valueChanged - personVPindex: "	//$NON-NLS-1$
 										+ personVPindex);
 						}
 					} catch (HBException hbe) {
-						System.out.println(" HG0530ViewLocation mark person: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0530VL select Associate error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -699,8 +706,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
                		selectedRowInTable = table31.convertRowIndexToModel(selectedRow);
                		personTablePID = pointViewpointHandler.getLocationAssociatePID(locationVPindex, selectedRowInTable);
 
-               	    if (HGlobal.DEBUG)
-               			System.out.println(" HG0530ViewLocation RClick Vpindex: " + locationVPindex + " Selected Row: " //$NON-NLS-1$ //$NON-NLS-2$
+                	if (HGlobal.DEBUG && HGlobal.writeLogs)
+                		HB0711Logging.logWrite("Status: in HG0530VL RClick Vpindex: " + locationVPindex + " Selected Row: " //$NON-NLS-1$ //$NON-NLS-2$
          					+ selectedRowInTable + " PersonPID: " + personTablePID);									//$NON-NLS-1$
 
 	       			errorCode = pointViewpointHandler.initiatePersonVP(pointOpenProject, personTablePID);

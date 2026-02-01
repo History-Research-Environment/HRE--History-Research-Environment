@@ -17,6 +17,7 @@ import hre.nls.HGlobalMsgs;
  *			  2025-11-03 - Routine for parsing Source templates for Citations (D Ferguson)
  *			  2025-11-14 - Add ex-HGlobalcode Source Element name/number conversion (D Ferguson)
  *			  2025-12-22 - convertNamesToNums modified to return HBException(N. Tolleshaug)
+ *			  2026-01-27 - Line 43 - pointHREmemo = pointOpenProject.getHREmemo();(N. Tolleshaug)
  *********************************************************************************************/
 
 public class HBReportHandler extends HBBusinessLayer {
@@ -28,7 +29,7 @@ public class HBReportHandler extends HBBusinessLayer {
 	HBRepositoryHandler pointRepositoryHandler;
 	HBNameStyleManager pointLocationStyleData;
 	HREmemo pointHREmemo;
-	int dataBaseIndex;
+	int dataBaseIndex = -1;
 
 /**
  * Constructor HBReportHandler
@@ -36,10 +37,10 @@ public class HBReportHandler extends HBBusinessLayer {
 	HBReportHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		this.pointOpenProject = pointOpenProject;
-		pointDBlayer = pointOpenProject.pointProjectHandler.pointDBlayer;
+		pointDBlayer = pointOpenProject.getPointDBlayer();
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
-		pointRepositoryHandler = new HBRepositoryHandler(pointOpenProject);
+		pointHREmemo = pointOpenProject.getHREmemo();
+		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 	}
 
 /**

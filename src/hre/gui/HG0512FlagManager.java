@@ -12,7 +12,7 @@ package hre.gui;
  *			  2023-10-11 Convert to NLS (D Ferguson)
  * v0.03.0031 2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2025-02-23 Fix crash when invoking Reminder (D Ferguson)
- *
+ *			  2026-01-05 Log catch block errors correctly (D Ferguson)
  *******************************************************************************/
 
 import java.awt.Dimension;
@@ -333,11 +333,10 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saving updates and exiting HG0512FlagManager"); //$NON-NLS-1$
 						dispose();
 					} catch (HBException hbe) {
-						System.out.println("HBPersonHandler - updateFlagDescription(): " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
-					// Log Stack Trace
-						HB0711Logging.logWrite("ERROR Flag updating:  " + hbe.getMessage());	//$NON-NLS-1$
-						HB0711Logging.printStackTraceToFile(hbe);
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0512 saving flag data " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -419,11 +418,10 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 		            madeChanges = false;
 		            btn_Save.setEnabled(false);
 				} catch (HBException hbe) {
-					System.out.println("HBPersonHandler - add Flag: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
-				// Log Stack Trace
-					HB0711Logging.logWrite("ERROR Add Flag handling:  " + hbe.getMessage());	//$NON-NLS-1$
-					HB0711Logging.printStackTraceToFile(hbe);
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0512 adding a flag " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -452,11 +450,10 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 			           madeChanges = false;
 				       btn_Save.setEnabled(false);
 	               } catch (HBException hbe) {
-						System.out.println(" HBPersonHandler - delete Flag: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
-					// Log Stack Trace
-						HB0711Logging.logWrite("ERROR Delete Flag handling:  " + hbe.getMessage());	//$NON-NLS-1$
-						HB0711Logging.printStackTraceToFile(hbe);
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0512 deleting flag data " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 	               }
 				}
 			}

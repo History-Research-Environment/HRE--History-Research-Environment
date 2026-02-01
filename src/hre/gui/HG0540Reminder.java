@@ -14,6 +14,7 @@ package hre.gui;
  *   		  2020-09-07 Remove nl key; make CR save <br> HTML (D Ferguson)
  *   		  2020-09-15 Reminder implemented for all SuperXxx's (N. Tolleshaug)
  * v0.01.0027 2022-02-24 NLS converted (D Ferguson)
+ * v0.04.0032 2026-04-05 Log catch and debug actions (D Ferguson)
  ********************************************************************************/
 
 import java.awt.Component;
@@ -58,7 +59,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Reminder display and editor
  * @author R Thompson, D Ferguson from code by Charles Bell, May 27, 2002 (HTMLEditor)
- * @version v0.01.0027
+ * @version v0.01.0032
  * @since 2019-02-10
  */
 
@@ -251,8 +252,8 @@ public class HG0540Reminder extends JDialog {
 					pointDisplay.storeReminderText(textPane.getText());
 				else if (pointFrame != null)
 					pointFrame.storeReminderText(textPane.getText());
-				else if (HGlobal.DEBUG) System.out.println("storeReminderText - Reminder store not implemented"); //$NON-NLS-1$
-				if (HGlobal.DEBUG) System.out.println(textPane.getText());
+				else if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in HG0540 Reminder not saved " + textPane.getText()); //$NON-NLS-1$
 			}
 		});
 
@@ -279,7 +280,6 @@ public class HG0540Reminder extends JDialog {
 					pointDisplay.reminderDisplay = null;
 				else if (pointFrame != null)
 					pointFrame.reminderDisplay = null;
-
 				if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: exiting HG0540 Reminder");} //$NON-NLS-1$
 				//dispose();
 			}
@@ -303,7 +303,10 @@ public class HG0540Reminder extends JDialog {
 	                        "<br>", 0,0, HTML.Tag.BR); //$NON-NLS-1$
 	                textPane.setCaretPosition(textPane.getCaretPosition()); // This moves caret to next line
 	            } catch (BadLocationException | IOException ex) {
-	                ex.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0540 HTML editorkit error " + ex.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(ex);
+					}
 	            }
 	        }
 	    });
@@ -317,7 +320,8 @@ public class HG0540Reminder extends JDialog {
 			reminder = pointFrame.readReminderText();
 		else if (pointDisplay != null)
 			reminder = pointDisplay.readReminderText();
-		else if (HGlobal.DEBUG) System.out.println("readReminderText - Reminder store not implemented"); //$NON-NLS-1$
+		else if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("ERROR: in HG0540 default Reminder text not stored"); //$NON-NLS-1$
 		// If returned text is empty, use the Default string
 		if (reminder == null || reminder.isEmpty()) textPane.setText(reminderDefault);
 			else textPane.setText(reminder);

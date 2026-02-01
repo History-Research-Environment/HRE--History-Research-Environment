@@ -7,6 +7,7 @@ package hre.gui;
 * 			 2023-04-19 All NLS entries moved to HG0524Msgs (D Ferguson)
 * v0.03.0031 2024-10-01 Clean whitespace (D Ferguson)
 * 			 2024-12-05 Set JOptionPane dialog so is always inside this (D Ferguson)
+* v0.04.0032 2026-01-08 Log all catch block msgs (D Ferguson)
 ***********************************************************************************/
 
 import java.awt.Component;
@@ -46,7 +47,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Convert a TMG Name Style
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2023-04-14
  */
 
@@ -364,9 +365,8 @@ public class HG0527ConvertNameStyle extends HG0524ManageNameStyles {
 					            	else numAfter = Integer.valueOf(codeAfter);
 					        }
 					        catch (NumberFormatException ex){
-					        	if (HGlobal.DEBUG) System.out.println("HG0527 NameStyles number error: " + ex.getMessage() ); //$NON-NLS-1$
 								if (HGlobal.writeLogs) {
-									HB0711Logging.logWrite("Error: HG0527ConvertNameStyle: " + ex.getMessage()); //$NON-NLS-1$
+									HB0711Logging.logWrite("ERROR: in HG0527 listing elements: " + ex.getMessage()); //$NON-NLS-1$
 									HB0711Logging.printStackTraceToFile(ex);
 								}
 					        }
@@ -379,9 +379,11 @@ public class HG0527ConvertNameStyle extends HG0524ManageNameStyles {
 							try {
 								pointStyleHandler.updateAllElementTable(nameType, allElementsModel, allCodesModel);
 							} catch (HBException hbe) {
-								System.out.println("HG0527 Save all name style changes error: " + hbe.getMessage()); //$NON-NLS-1$
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0527 saving element list: " + hbe.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(hbe);
+								}
 								errorMessage("HBE00","Save all name style changes error: +\n" + hbe.getMessage(), 0, nameType); //$NON-NLS-1$ //$NON-NLS-2$
-								hbe.printStackTrace();
 							}
 						}
 
@@ -446,9 +448,11 @@ public class HG0527ConvertNameStyle extends HG0524ManageNameStyles {
 													HG0524Msgs.Text_188,		// Convert a Name Style
 													JOptionPane.INFORMATION_MESSAGE);
 					} catch (HBException hbe) {
-						System.out.println("HG0527 convert TMG Style error:" + hbe.getMessage()); //$NON-NLS-1$
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0527 converting style: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 						errorMessage("HBE00","Convert TMG style name to HRE error\n"+ hbe.getMessage(), 0, nameType); //$NON-NLS-1$ //$NON-NLS-2$
-						hbe.printStackTrace();
 					}
 
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0527ConvertNameStyle");	//$NON-NLS-1$

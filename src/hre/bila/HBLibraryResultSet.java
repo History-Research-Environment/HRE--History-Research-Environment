@@ -661,7 +661,7 @@ public class HBLibraryResultSet {
 		String langPrefix = "";
 		try {
 			selectString = pointBusinessLayer.
-				setSelectSQL("*", pointBusinessLayer.sentenceTable,
+				setSelectSQL("*", pointBusinessLayer.sentenceSet,
 							"EVNT_TYPE = " + eventType
 							+ " AND EVNT_ROLE_NUM = " + roleCode);
 			sentenceSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);

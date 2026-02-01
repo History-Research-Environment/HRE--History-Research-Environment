@@ -10,6 +10,7 @@ package hre.gui;
  * 			  2024-10-03 Added reset T401/402 and PS/PM reset (N. Tolleshaug)
  * 			  2025-04-25 Add Citation load and GUI seq reset code (D Ferguson)
  * v0.04.0032 2025-06-05 Address minor layout errors (D Ferguson)
+ * 			  2026-01-06 Log catch block msgs (D Ferguson)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
@@ -24,6 +25,7 @@ import java.util.Arrays;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
@@ -57,7 +59,7 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 		super(pointPersonHandler, pointOpenProject, addParent);
 		this.selectedRowInTable = selectedRowInTable;
 		this.addRelation = addParent;
-		citeTableName = "T405";
+		citeTableName = "T405";		//$NON-NLS-1$
 
 	// Set titles for Parent Select
 		selectTitle = HG05070Msgs.Text_160;	// Select New Parent
@@ -76,9 +78,8 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 		lbl_Relate.setText(HG05070Msgs.Text_164);	//  Set Parent type
 
 	// Set parent name in window
-		if (parentRelationData != null) {
+		if (parentRelationData != null)
 			lbl_ParentName.setText((String) parentRelationData[1]);	// Edit parent:
-		}
 		parentRoleList = pointPersonHandler.getRolesForParent(parentEventGroup);
 		parentRoleType = pointPersonHandler.getRolesTypeParent();
 	    updateComboPanel(comboBox_Relationships, parentRoleList);
@@ -111,14 +112,13 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 	    	int parentRoleNumber = (int) parentRelationData[2];
 	    	int parentRoleindex = 0;
 	    	for (int i = 0; i < parentRoleType.length; i++) {
-	    		if (parentRoleType[i] == parentRoleNumber) {
+	    		if (parentRoleType[i] == parentRoleNumber)
 					parentRoleindex = i;
-				}
 	    	}
 	    	comboBox_Relationships.setSelectedIndex(parentRoleindex);
-	    } else {
+	    } else
 			comboBox_Relationships.setSelectedIndex(1);
-		}
+
 		comboBox_Relationships.setVisible(true);
 
 	// Listener for Select Parent Save button
@@ -153,8 +153,10 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 					pointOpenProject.getPersonHandler().resetPersonManager();
 					dispose();
 				} catch (HBException hbe) {
-					System.out.println(" HG0507SelectParent error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507SelParent save: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -165,9 +167,8 @@ public class HG0507SelectParent extends HG0507SelectPerson {
  */
 	public void setEditParentRole()	{
     	int parentRoleNumber = 0;
-    	if (parentRelationData != null) {
+    	if (parentRelationData != null)
 			parentRoleNumber = (int) parentRelationData[2];
-		}
     	int parentRoleindex = 0;
 		btn_SaveEvent.setEnabled(false);
 		btn_SaveEvent.setVisible(false);
@@ -175,9 +176,8 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 		btn_Save.setVisible(true);
 		btn_Save.setText(HG05070Msgs.Text_166);	// Update Parent
     	for (int i = 0; i < parentRoleType.length; i++) {
-    		if (parentRoleType[i] == parentRoleNumber) {
-				parentRoleindex = i;
-			}
+    		if (parentRoleType[i] == parentRoleNumber)
+						parentRoleindex = i;
     	}
     	comboBox_Relationships.setSelectedIndex(parentRoleindex);
 	}

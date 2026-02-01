@@ -13,7 +13,7 @@ package hre.gui;
  *			  2025-12-20 NLS all code to this point (D Ferguson)
  *			  2025-12-22 Updated foot note error handling (N. Tolleshaug)
  *			  2025-12-29 NLS update (D Ferguson)
- *
+ *			  2026-01-07 Log catch block msgs (D Ferguson)
  ************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -59,8 +59,10 @@ public class HG0566AddSource extends HG0566EditSource {
 		try {
 			tableSrcElmntData = pointCitationSourceHandler.getSourceElmntList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading Source Element list: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Add loading Source Elements: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	    // Then construct a lookup for "12345" → "[element text]" conversion
 		codeToTextMap = new HashMap<>();
@@ -81,8 +83,10 @@ public class HG0566AddSource extends HG0566EditSource {
 		try {
 			sorcDefnTable = pointCitationSourceHandler.getSourceDefnList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source defn list: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Add loading Source Defns: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 		// and sort it as we need it in sorted order for its combobox
 		Arrays.sort(sorcDefnTable, (row1, row2) -> ((String) row1[0]).compareTo((String) row2[0]));
@@ -91,8 +95,10 @@ public class HG0566AddSource extends HG0566EditSource {
 		try {
 			sorcDefnTemplates = pointCitationSourceHandler.getSourceDefnTemplates(sourceDefnPID);
 		} catch (HBException hbe) {
-			System.out.println( " Error loading source defn templates: " + hbe.getMessage()); //$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0566Add loading Source Defn templates: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 	// Set up data and screen
@@ -143,8 +149,10 @@ public class HG0566AddSource extends HG0566EditSource {
 				// Reset displayed source table
 					pointManageSource.resetSourceTable(true);
 				} catch (HBException hbe) {
-					System.out.println(" Create Source Error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Add saving Source: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			// Exit this screen
 				pointEditSource.dispose();

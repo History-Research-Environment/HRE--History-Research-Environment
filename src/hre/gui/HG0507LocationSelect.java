@@ -40,6 +40,7 @@ package hre.gui;
  * 			  2023-02-28 Modified lookup of Location table (N. Tolleshaug)
  * 			  2024-11-17 Code sync (N. Tolleshaug)
  * v0.03.0031 2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
  ****************************************************************************************
  * NOTES for incomplete functionality
  * NOTE03 No code for importing saved filters
@@ -104,7 +105,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Location Select
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.04.0032
  * @since 2019-09-16
  */
 public class HG0507LocationSelect extends HG0451SuperIntFrame  {
@@ -113,7 +114,7 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 	final static int maxLocationVPIs = 5;
 
 	private HBViewPointHandler pointViewPointHandler = null;
-	//private HBWhereWhenHandler pointWhereWhenHandler;
+
 	private JPanel contents;
 	private String selectString = ""; //$NON-NLS-1$
 	private JCheckBox chkbox_Filter;
@@ -152,7 +153,6 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 								    Object [][] tableControl) throws HBException {
 		super(pointWhereWhenHandler,"Location Select",true,true,true,true, tableControl);	 //$NON-NLS-1$
 		this.pointOpenProject = pointOpenProject;
-		//this.pointWhereWhenHandler = pointWhereWhenHandler;
 		pointViewPointHandler = pointOpenProject.getViewPointHandler();
 
 		// Setup references for HG0451
@@ -165,8 +165,8 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		String projectName = pointOpenProject.getProjectName();
 
 		// test translated data from T204
-		if (HGlobal.DEBUG)
-			System.out.println("Translated texts:  0-" 			//$NON-NLS-1$
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Status: in HG0507LocnSelect Translated texts:  0-" 			//$NON-NLS-1$
 					+ Arrays.toString(pointWhereWhenHandler.setTranslatedData(screenID, "0", false)));		//$NON-NLS-1$
 
 		// Collect static gui texts from T204
@@ -327,10 +327,9 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 						private static final long serialVersionUID = 1L;
 						@Override
 						public Class<? extends Object> getColumnClass(int column) {
-							if (HGlobal.DEBUG)
-							 {
-								System.out.println("Column class: " + column + "/" + getValueAt(0, column).getClass());	//$NON-NLS-1$ //$NON-NLS-2$
-							}
+							if (HGlobal.DEBUG && HGlobal.writeLogs)
+								HB0711Logging.logWrite("Status: in HG0507LocnSelect Column class: " 	//$NON-NLS-1$
+											+ column + "/" + getValueAt(0, column).getClass());	//$NON-NLS-1$
 							return getValueAt(0, column).getClass();
 						}
 		        };
@@ -604,27 +603,27 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 								locationVPindex = pointViewPointHandler.findClosedVP("5303", pointOpenProject);	//$NON-NLS-1$
 								String locationVPident = pointViewPointHandler.getLocationScreenID(locationVPindex);
 
-								if (HGlobal.DEBUG)
-								 {
-									System.out.println(" HG0507LocationSelect row: " + selectedRowInTable 	//$NON-NLS-1$
+								if (HGlobal.DEBUG && HGlobal.writeLogs)
+									HB0711Logging.logWrite("Status: in HG0507LocnSelect row: " + selectedRowInTable 	//$NON-NLS-1$
 												+ " locationVPindex: "	+ locationVPindex	//$NON-NLS-1$
 												+ " locationVPident: " + locationVPident	//$NON-NLS-1$
 												+ " LocationPID: " + locationTablePID);		//$NON-NLS-1$
-								}
+
 						// Set PID for event from event list
 								if (locationVPindex >= 0) {
 									pointOpenProject.pointGuiData.setTableViewPointPID(locationVPident, locationTablePID);
 								} else {
 									userInfoInitVP(1);
-									if (HGlobal.DEBUG)
-										System.out.println(" HG0507LocationSelect valueChanged - personVPindex: "	//$NON-NLS-1$
+									if (HGlobal.DEBUG && HGlobal.writeLogs)
+										HB0711Logging.logWrite("Status: in HG0507LocnSelect valueChanged - personVPindex: "	//$NON-NLS-1$
 												+ locationVPindex + " VP ident: " +locationVPident);				//$NON-NLS-1$
 								}
 
 							} catch (HBException hbe) {
-								if (HGlobal.DEBUG)
-									System.out.println("HG0507LocationSelect - Not able to set location: " + hbe.getMessage());  //$NON-NLS-1$
-
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0507LocnSelect select location: " + hbe.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(hbe);
+								}
 								JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_59 + hbe.getMessage(),
 										HG05075Msgs.Text_63,JOptionPane.ERROR_MESSAGE);
 							}
@@ -640,24 +639,15 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 			        // Display Locn Viewpoint for the selected Location
 			        //	The right-clicked row is passed here in selectedRow
 			        	int errorCode = 0;
-			        	//selectedRow = table_Entity.getSelectedRow();
 	                	int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
-						//int visibleId = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
-						//System.out.println(" Selected row: " + selectedRow + "/" + selectedRowInTable + " - " + visibleId);
-	                	//int focusLocation = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
 	                	if (selectedRowInTable < 0)
-						 {
 							return;		// exit if listener call caused by emptying table_Entity
-						}
 
 	                // Collect location data and show VP
-	        			//long locationTablePID = pointPlaceHand.getLocationTablePID (focusLocation);
 	        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
-
 						errorCode = pointViewPointHandler.initiateLocationVP(pointOpenProject, locationTablePID);
-						if (errorCode > 0) {
+						if (errorCode > 0)
 							userInfoInitVP(errorCode);
-						}
 			        }
 			      };
 
@@ -676,7 +666,8 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
 							errorCode = pointWhereWhenHandler.initiateManageLocation(pointOpenProject, locationTablePID,"50800");	//$NON-NLS-1$
 							if (errorCode > 1)
-								System.out.println("HG0507LocationSelect - show Manage Location errorCode = "
+								if (HGlobal.DEBUG && HGlobal.writeLogs)
+									HB0711Logging.logWrite("Status: in HG0507LocnSelect show Manage Location errorCode = " //$NON-NLS-1$
 										+ errorCode);
 			        }
 			      };
@@ -698,7 +689,6 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		            	if (me.getClickCount() == 2 && table_Entity.getSelectedRow() != -1) {
 		            		selectedRow = table_Entity.getSelectedRow();
 		            		int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
-		            		//int focusLocation = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
 		            	// Collect location data
 		        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
 		        			errorCode = pointViewPointHandler.initiateLocationVP(pointOpenProject, locationTablePID);
@@ -711,9 +701,8 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		                	selectedRow = table_Entity.rowAtPoint(me.getPoint());
 		                	int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
 		                	if (selectedRowInTable < 0)
-							 {
 								return;		// exit if listener call was caused by emptying table_Entity
-							}
+
 		                // Show popup menu of all possible actions
 		                	popupMenu.show(me.getComponent(), me.getX(), me.getY());
 		                }
@@ -734,9 +723,7 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
  */
 	private void errorCloseAction() {
 		// close reminder display
-		if (reminderDisplay != null) {
-			reminderDisplay.dispose();
-		}
+		if (reminderDisplay != null) reminderDisplay.dispose();
 		// Set frame size in GUI data
 		Dimension frameSize = getSize();
 		pointOpenProject.setSizeScreen(screenID,frameSize);
@@ -826,14 +813,12 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 	}	// End userInfoConvertData
 
 	private void userInfoInitVP(int errorCode) {
-		if (errorCode == 1) {
+		if (errorCode == 1)
 			JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_62 + maxLocationVPIs,
 										HG05075Msgs.Text_63, JOptionPane.INFORMATION_MESSAGE);
-		}
-		if (errorCode == 2) {
+		if (errorCode == 2)
 			JOptionPane.showMessageDialog(contents, HG05075Msgs.Text_64,
 										HG05075Msgs.Text_65, JOptionPane.ERROR_MESSAGE);
-		}
 	}	// End userInfoInitVP
 
 }  // End of HG0507LocationSelect

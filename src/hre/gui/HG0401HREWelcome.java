@@ -12,6 +12,7 @@ package hre.gui;
  * v0.03.0030 2023-07-14 switch to generic logo name (D Ferguson)
  * 			  2023-09-18 resize logo to shrink screen depth (D Ferguson)
  * v0.03.0031 2024-10-01 organize imports (D Ferguson)
+ * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -49,6 +50,7 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import hre.bila.HB0711Logging;
 import hre.bila.HB0744UserAUX;
 import hre.nls.HG0401WMsgs;
 import net.miginfocom.swing.MigLayout;
@@ -56,7 +58,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * HRE Welcome screen
  * @author D Ferguson
- * @version v0.03.0030
+ * @version v0.03.0032
  * @since 2019-01-31
  */
 
@@ -166,6 +168,8 @@ public class HG0401HREWelcome extends JDialog {
 	      } catch (IOException e) {
 	    	  infoPane.setContentType("text/html"); //$NON-NLS-1$
 	    	  infoPane.setText("<html>Page Welcome.html not found.</html>"); //$NON-NLS-1$
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in HG0401W Welcome text not found " + e.getMessage()); //$NON-NLS-1$
 	      }
 		infoPane.setVisible(false);
 
@@ -311,11 +315,13 @@ public class HG0401HREWelcome extends JDialog {
 		                Files.copy(Paths.get(HGlobal.sampleProjectFile),
 		                		   Paths.get(HGlobal.pathHRElocation + "HRE Sample database.mv.db"), StandardCopyOption.REPLACE_EXISTING); //$NON-NLS-1$
 		                } catch (NoSuchFileException nsfe) {
-		    	        	if (HGlobal.DEBUG) System.out.println("Sample File setup - no such file: " + nsfe.getMessage());  //$NON-NLS-1$
+		    				if (HGlobal.writeLogs)
+		    					HB0711Logging.logWrite("ERROR: in HG0401W Sample database not found " + nsfe.getMessage()); //$NON-NLS-1$
 		    	        	JOptionPane.showMessageDialog(null, HG0401WMsgs.Text_29
 									+  nsfe.getMessage(), HG0401WMsgs.Text_30, JOptionPane.ERROR_MESSAGE);
 		    	        } catch (IOException ioe) {
-		    	        	if (HGlobal.DEBUG) System.out.println("Sample File setup - copy file IOException: " + ioe.getMessage());  //$NON-NLS-1$
+		    				if (HGlobal.writeLogs)
+		    					HB0711Logging.logWrite("ERROR: in HG0401W Sample database IO error " + ioe.getMessage()); //$NON-NLS-1$
 		    	        	JOptionPane.showMessageDialog(null, HG0401WMsgs.Text_31
 									+  ioe.getMessage(), HG0401WMsgs.Text_30, JOptionPane.ERROR_MESSAGE);
 		    			}
@@ -324,7 +330,7 @@ public class HG0401HREWelcome extends JDialog {
 			    							"HRE Sample database", 		// file			//$NON-NLS-1$
 			    							HGlobal.pathHRElocation,	// folder
 			    							HGlobal.thisComputer, 		// server
-			    							"2021-01-01 / 12:00:00",	// lastclosed	//$NON-NLS-1$
+			    							"2026-01-01 / 12:00:00",	// lastclosed	//$NON-NLS-1$
 			    							HGlobal.defDatabaseEngine,	// DB type
 			    							HG0401WMsgs.Text_32};		// last backup (unknown)
 			    		HGlobal.userProjects.add(sample);

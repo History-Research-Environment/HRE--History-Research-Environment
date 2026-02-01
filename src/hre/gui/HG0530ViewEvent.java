@@ -23,6 +23,7 @@ package hre.gui;
  * 			  2024-11-04 Ensure all data non-editable (D Ferguson)
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
+ * v0.04.0032 2026-01-05 Log catch block and DEBUG actions (D Ferguson)
  ***************************************************************************************************/
 
 import java.awt.Color;
@@ -83,7 +84,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for Events with collapsing panels for Event Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0031
+ * @version v0.03.0032
  * @since 2020-05-29
  */
 
@@ -335,8 +336,8 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 		button12.setFont(new Font("Arial", Font.BOLD, 15));	 //$NON-NLS-1$
 		p1.add(button12, "cell 4 0"); //$NON-NLS-1$
 
-		if (HGlobal.DEBUG)
-			System.out.println("Event VP Initial event:  1-" 	//$NON-NLS-1$
+    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+    		HB0711Logging.logWrite("Status: in HG0530VE Initial event:  1-" 	//$NON-NLS-1$
 					+ Arrays.toString(pointViewpointHandler.setTranslatedData(tableScreenID, "1", false)));		//$NON-NLS-1$
 
 		JTable table11 = new JTable() { private static final long serialVersionUID = 1L;
@@ -400,8 +401,10 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 					table11.getColumnModel().getColumn(3).setMinWidth(50);
 
 				} catch (Exception hbe) {
-					System.out.println(" HBViewEvent - setWitnessState error: " + hbe.getMessage()); //$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0530VE Event setWitnessState error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 		      }
 		});
@@ -451,13 +454,15 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
 							pointOpenProject.pointGuiData.setTableViewPointPID(personVPident, personPID);
 						else {
 							userInfoInitVP(4);
-							if (HGlobal.DEBUG)
-								System.out.println(" HG0530ViewPerson valueChanged - personVPindex: "	//$NON-NLS-1$
+					    	if (HGlobal.DEBUG && HGlobal.writeLogs)
+					    		HB0711Logging.logWrite("Status: in HG0530VE valueChanged - personVPindex: "	//$NON-NLS-1$
 										+ personVPindex);
 						}
 					} catch (HBException hbe) {
-						System.out.println(" HG0530ViewPerson mark event: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0530VE Event select Event error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
