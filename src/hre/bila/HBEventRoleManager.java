@@ -91,7 +91,7 @@ public class HBEventRoleManager extends HBBusinessLayer {
 
 	public void setSelectedLanguage(String selectedLanguage) {
 		lang_code = selectedLanguage;
-		System.out.println(" Selected lang code: " + lang_code);
+		//System.out.println(" Selected lang code: " + lang_code);
 	}
 	
 	public String getEventName(int eventTypeNumber) {
@@ -1147,6 +1147,7 @@ public class HBEventRoleManager extends HBBusinessLayer {
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", eventRoleTable, 
 				"EVNT_TYPE = " + eventTypeNumber );
+		System.out.println(" Deleted not used T461 records for event type nr: " + eventTypeNumber);
 		return deleteRoleAction();
 	}
 		

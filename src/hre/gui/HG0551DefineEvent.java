@@ -34,10 +34,14 @@ package hre.gui;
  *			  2026-01-21 Adding role listener control (N. Tolleshaug)
  *			  2026-01-22 Improved setting of role key (N. Tolleshaug)
  *			  2026-01-28 Updated for add and copy sentence handling (N. Tolleshaug)
- *			  2026-01-30 Test for suplicate names and delete role -test in use (N. Tolleshaug)
+ *			  2026-01-30 Test for duplicate names and delete role -test in use (N. Tolleshaug)
+ *			  2026-02-01 Return if duplicate names and test for minAssoc (N. Tolleshaug)
+ *			  2026-02-03 Added trim() when testing for duplicate element type name (N. Tolleshaug)
+ *			  2026-02-03 Fixed sentence edit when moving up/down (N. Tolleshaug)
+ *			  2026-02-03 Added test at save for duplicate event type name (N. Tolleshaug)
+ *			  2026-02-05 Logged all catch block msgs and updated NLS (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
- * NOTE05 code needed to action Copy, Delete control buttons
  *
  * Note also that the TMG Event tag fields for Past Tense, Abbreviation and type
  * are ignored for now and no place has been set on this screen yet.
@@ -132,28 +136,28 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  *   15 = Military related
  *   (plus 12 standard TMG events are allocated to more relevant groups),
  *   and numbers 16-20 are defined as usable for 5 more 'user-defined' groups
- */	
+ */
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
 	final static int initMinYear = 0;
 	final static int initMaxYear = 3000;
-	final static String initRoleSex = "U";
+	final static String initRoleSex = "U";	//$NON-NLS-1$
 	final static int initMinAssoc = 1;
 	final static int initRoleMinAge = 0;
 	final static int initRoleMaxAge = 110;
-	
-	
+
+
 	HBEventRoleManager pointEventRoleManager;
 	HBPersonHandler pointPersonHandler;
 	HG0547EditEvent pointEditEvent;
 	HG0551DefineEvent pointDefineEvent = this;
 	int dataBaseIndex;
 	int eventRoleNumber;
-	
+
 	public String screenID = "55100";	//$NON-NLS-1$
 	private String className;
 	private JPanel contents;
-	
+
 	boolean copyEventType = false;
 	boolean addEventType = false;
 	boolean initiate = false;
@@ -163,7 +167,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	JTable tableRole;
 
     private String selectedEventName, selectedRoleName, selectedLangCode, newEventName;
-    int selectedEventNumber, selectedRoleNumber, selectedRoleSeq, selectedRowInRoleTable, 
+    int selectedEventNumber, selectedRoleNumber, selectedRoleSeq, selectedRowInRoleTable,
     						 numberPrimaryFlags = 0, selectedGroup, languageIndexDefault;
     boolean selectedKeyRole;
     boolean startAtSentenceTab = false;
@@ -184,7 +188,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	ActionListener comboSexListener;
 
 	String textAbbrev, textPastSentense, textEventHint, gedComTag, roleSex, roleSentence;
-	int newEventNumber, roleNumber, minAssoc, maxYear, minYear, roleMinAge, roleMaxAge, 
+	int newEventNumber, roleNumber, minAssoc, maxYear, minYear, roleMinAge, roleMaxAge,
 						eventGroup, eventRoleSequence;
 
 	JRadioButton radio_Tag, radio_Even;
@@ -197,7 +201,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	// Lists for holding event/role data
     String[] tableRoleHeader;
-	Object[][] tableRoleData; 
+	Object[][] tableRoleData;
     String[] eventGroups;
     int[] eventGroupNumbers;
     HashMap<String, Integer> groupIndexMap = new  HashMap<String,Integer>();
@@ -237,7 +241,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  * @throws HBException
  * @wbp.parser.constructor
  */
-    public HG0551DefineEvent(HBEventRoleManager pointEventRoleManager, 
+    public HG0551DefineEvent(HBEventRoleManager pointEventRoleManager,
     									HBProjectOpenData pointOpenProject) throws HBException {
     	selectedEventName = "";		//$NON-NLS-1$
     	this.pointOpenProject = pointOpenProject;
@@ -249,7 +253,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		initiate = true;
 		notFirstFlag = false;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		//System.out.println(" ADD Event Type *********************");
     	constructDefineEvent(this.addEventType, copyEventType, initiate);
     }
 
@@ -271,7 +274,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		copyEventType = false;
 		initiate = true;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		//System.out.println(" EDIT Event Type *********************");
 		constructDefineEvent(addEventType, copyEventType, initiate);
 	}
 
@@ -294,7 +296,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		initiate = true;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		//System.out.println(" COPY Event Type **************************''");
 		constructDefineEvent(addEventType, copyEventType, initiate);
 	}
 
@@ -311,13 +312,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
     	this.setResizable(false);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0551DefineEvent");	//$NON-NLS-1$
-		System.out.println(" Reload DefineEvent - constructor!");
+
 	// Reset all general variables
 		textAbbrev = "abr.";		//$NON-NLS-1$
-		textPastSentense = "Past sentence!";		//$NON-NLS-1$
+		textPastSentense = "Past tense";		//$NON-NLS-1$
 		textEventHint = "Event hint"; 	//$NON-NLS-1$
 		gedComTag = "";		//$NON-NLS-1$
-		roleSex = initRoleSex ;		//$NON-NLS-1$
+		roleSex = initRoleSex ;
 		minAssoc = initMinAssoc;
 		minYear = initMinYear;
 		maxYear = initMaxYear;
@@ -333,17 +334,23 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	    format.setGroupingUsed(false); // no commas allowed
 	    formatter.setMinimum(0);
 	    formatter.setMaximum(9999);
-	    
+
 	// Set up data in HBEventRoleManager and collect selectedEventNumber
 		pointEventRoleManager.prepareResultSet(); // Initiate ResultSet's
-		
+
 	// Seup event number for add or copy else edit
-		if(addEventType || copyEventType) 
+		if(addEventType || copyEventType) {
 			newEventNumber = pointEventRoleManager.setNewEventNumber(addEventType, copyEventType);
-		else newEventNumber = selectedEventNumber;
-		
-		if (copyEventType) pointEventRoleManager.copyEventRolesTableRows();
-		
+		// If event roles in T461 have been created without T460 record, delete the T461 records
+			pointEventRoleManager.deleteEventRoles(newEventNumber);
+		} else
+			newEventNumber = selectedEventNumber;
+
+		if (copyEventType) {
+			pointEventRoleManager.copyEventRolesTableRows();
+			roleChanged = true;
+		}
+
 	// Set up event groups map
 		eventGroups = pointEventRoleManager.geteventGroupNames(); // like Birth, arriage, Death, Burial, etc
 		eventGroupNumbers = pointEventRoleManager.geteventGroupNumbers(); // their group numbers
@@ -353,21 +360,21 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		if(!addEventType || copyEventType) {
 			eventNamesInGroup = pointEventRoleManager.getEventTypeList(0); // List of Event Names in group
 			eventNumbersInGroup = pointEventRoleManager.getEventTypes();  // their event numbers
-			
+
 		// Get the roleNames, roleNumbers, roleSeq and whether role is Prim (Key)
-			if (copyEventType) 
-				eventRoleNames = pointEventRoleManager.getEventRoleNames(newEventNumber, "");
+			if (copyEventType)
+				eventRoleNames = pointEventRoleManager.getEventRoleNames(newEventNumber, "");		//$NON-NLS-1$
 			else eventRoleNames = pointEventRoleManager.getEventRoleNames(selectedEventNumber, "");	//$NON-NLS-1$
-			
+
 			eventRoleNumbers = pointEventRoleManager.getEventRoleNumbers();
 			eventRoleSeq = pointEventRoleManager.getEventRoleSeq();
 			eventRoleKey = pointEventRoleManager.getEventRoleKey();
 			eventRoleSentencePID = pointEventRoleManager.getEventRoleSentencePID();
-			
+
 		// Find event type name for selected event
 			for (int i = 0; i < eventNumbersInGroup.length; i++)
 				if (eventNumbersInGroup[i] == selectedEventNumber) selectedEventName = eventNamesInGroup[i];
-			
+
 		// Populate role table for selected event (although we only display 1st 2 values)
 			tableRoleData = new Object[eventRoleNames.length][5];
 			for (int i = 0; i < eventRoleNames.length; i++)  {
@@ -380,16 +387,16 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			}
 		// and sort on its seq#
 			Arrays.sort(tableRoleData, (o1, o2) -> Integer.compare((Integer) o1[3], (Integer) o2[3]));
-		} 
+		}
 
 		if (copyEventType) {
-				selectedEventName = " Copy of " + selectedEventName;
-				setTitle(" Copy event - " + selectedEventName); 
+				selectedEventName = HG0551Msgs.Text_66 + selectedEventName;		// Copy of
+				setTitle(HG0551Msgs.Text_67 + selectedEventName);				// Creating Event:
 		} else if (addEventType) {
 			selectedEventName = HG0551Msgs.Text_3;	// New
-			setTitle(HG0551Msgs.Text_4 + " " + selectedEventName + " " + HG0551Msgs.Text_5); // Define .... Event
+			setTitle(HG0551Msgs.Text_4 + selectedEventName + HG0551Msgs.Text_5); // Define .... Event
 		} else {
-			setTitle(HG0551Msgs.Text_6 + " " + selectedEventName + " " + HG0551Msgs.Text_7);  // Update ... Event
+			setTitle(HG0551Msgs.Text_6 + selectedEventName + HG0551Msgs.Text_7);  // Update ... Event
 		}
 
 /***********************************
@@ -522,20 +529,20 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		ButtonGroup radioGed = new ButtonGroup();
 		radioGed.add(radio_Tag);
 		radioGed.add(radio_Even);
-		
+
 		// Setup sub-panel for Abbrev, tense info
 		JPanel xtraPanel = new JPanel();
-		xtraPanel.setBorder(BorderFactory.createTitledBorder ("Abbreviation, Tense Settings"));		// Abbreviation, Tense Settings
+		xtraPanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_68));		// Abbreviation, Tense Settings
 		xtraPanel.setLayout(new MigLayout("insets 5", "[]10[]", "[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_abbrev = new JLabel("Abbreviation:");		// Abbreviation:
+		JLabel lbl_abbrev = new JLabel(HG0551Msgs.Text_69);		// Abbreviation:
 		xtraPanel.add(lbl_abbrev, "cell 0 0, alignx right");	//$NON-NLS-1$
 
 		text_abbrev = new JTextField();
 		text_abbrev.setPreferredSize(new Dimension(50, 20));
 		xtraPanel.add(text_abbrev, "cell 1 0");	//$NON-NLS-1$
 
-		JLabel lbl_tense = new JLabel("Past sentense:");		// Past tense:
+		JLabel lbl_tense = new JLabel(HG0551Msgs.Text_70);		// Past tense:
 		xtraPanel.add(lbl_tense, "cell 0 1, alignx right");	//$NON-NLS-1$
 
 		text_tense = new JTextField();
@@ -731,7 +738,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 /***************************************************
  * Load data if this is EXISTING event being edited
  ***************************************************/
-	// If Editing Existing Event, load Event data into GUI from database
+	// If Editing Existing Event or copy, load Event data into GUI from database
 		if (!addEventType) {
 			try {
 				loadEventTypeData(pointEventRoleManager.getEventTypeTransfer(selectedEventNumber), addEventType);
@@ -758,13 +765,12 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
     														eventRoleNumber), addEventType);
 		// Load sentences, convert roleNumbers to roleNames and load into the 2 text areas
 			convertSentenceRoleNumToNames(roleSentencePID);
-			
+
 		// Set 1st row of role table as selected
 			tableRole.setRowSelectionInterval(0, 0);
 			tableRole.scrollRectToVisible(tableRole.getCellRect(0, 0, true));
-			
+
 		} else {
-			//System.out.println(" Add event type and role data");
 			loadEventTypeData(null, addEventType); // Is addEventType = true initiate event type data
 			loadEventRoleData(null, addEventType); // Is addEventType = true initiate role data
 		// Load sentences, convert roleNumbers to roleNames and load into the 2 text areas
@@ -802,46 +808,45 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				//System.out.println(" Close action - role changed: " + roleChanged 
-				//						+ " Event change: " + eventChanged);
-				// Check for unsaved changes before exit
-				if (eventChanged || roleChanged) {	
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: in HG0551 entering close for change of Event " //$NON-NLS-1$
+											+ eventChanged	+ " Role " + roleChanged);	//$NON-NLS-1$
+
+			// remove all updates of role table
+					if (!eventChanged)
+						if(copyEventType || addEventType) {
+							try {
+								pointEventRoleManager.deleteEventRoles(newEventNumber);
+							} catch (HBException hbe) {
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0551 in close action deleting all roles: " + hbe.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(hbe);
+								}
+							}
+						}
+
+					// Check for unsaved changes before exit
+				if (eventChanged || roleChanged) {
 					if (JOptionPane.showConfirmDialog (btn_Save,
 							HG0551Msgs.Text_43		// There are unsaved changes. \n
 							+ HG0551Msgs.Text_44,	// Do you still wish to exit?
 							HG0551Msgs.Text_45,		// Define Event
 							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 						// YES option
-						System.out.println(" Close action - YES");
-						
-				// remove all updates of role table
-						if (roleChanged) 
-							if(copyEventType || addEventType) {
-								System.out.println(" Removed all temp added or copied rows!");
-								try {
-									pointEventRoleManager.deleteEventRoles(newEventNumber);
-								} catch (HBException hbe) {
-									hbe.printStackTrace();
-									System.out.println(" HG0551DefineEvent - Close action error! \n" + hbe.getMessage());
-								}
-							}
-						
 						if (HGlobal.writeLogs)
 							HB0711Logging.logWrite("Action: closing without saving from HG0551DefineEvent"); //$NON-NLS-1$
-						
-					// Clear Reminder if present
+
+				// Clear Reminder if present
 						if (reminderDisplay != null) reminderDisplay.dispose();
 						dispose();
-						
-					} else { 
-					// NO option - no exit
-						System.out.println(" Close action - NO");
+
+					} else {
+				// NO option - no exit
 						if (HGlobal.writeLogs)
-							HB0711Logging.logWrite("Action: not closing HG0551DefineEvent"); //$NON-NLS-1$			
+							HB0711Logging.logWrite("Action: not closing HG0551DefineEvent"); //$NON-NLS-1$
 					}
 				} else {
-					System.out.println(" Close action - NOTHING TO STORE");
-					// Clear Reminder if present
+				// Clear Reminder if present
 					if (reminderDisplay != null) reminderDisplay.dispose();
 					if (HGlobal.writeLogs)
 						HB0711Logging.logWrite("Action: closing nothing to store from HG0551DefineEvent"); //$NON-NLS-1$
@@ -857,7 +862,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			if (tabPane.getSelectedIndex() == 1) tableRole.requestFocusInWindow();
 		});
 
-	// Listner for switching of primary Role flag on/off
+	// Listener for switching of primary Role flag on/off
 		roleModel.addTableModelListener(new TableModelListener() {
 			@Override
 		    public void tableChanged(TableModelEvent tme) {
@@ -870,36 +875,20 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				           		selectedKeyRole = (boolean) tableRole.getModel().getValueAt(selectedRowInRoleTable, 0);
 				           		selectedRoleName = ((String) selectedRoleData[1]).trim();
 				           		selectedRoleNumber = (int) selectedRoleData[2];
-				           		selectedRoleSeq = (int) selectedRoleData[3];  
+				           		selectedRoleSeq = (int) selectedRoleData[3];
 				           		roleSentencePID = (long) selectedRoleData[4];
-				           		if (selectedKeyRole == true) {
-				           				System.out.println(" Add primary assoc: " + minAssoc
-				           						+ "/" + numberPrimaryFlags);
-				           				numberPrimaryFlags++;
-				           		} else 
-				           			if (numberPrimaryFlags > minAssoc) {
-				           				System.out.println(" Remove primary assoc: " + minAssoc
-				           						+ "/" + numberPrimaryFlags);
-				           				numberPrimaryFlags--;
-				           			} else {
-				           				tableRole.getModel().setValueAt(true, selectedRowInRoleTable, 0);
-				           				selectedKeyRole = true;
-				           			}
-				           			
 				           		if (copyEventType || addEventType)
 									pointEventRoleManager.editEventRole(newEventNumber, saveEventRoleData());
 								else
 									pointEventRoleManager.editEventRole(selectedEventNumber, saveEventRoleData());
 								resetRoleTable();
 								btn_Save.setEnabled(true);
-				    		//if (!eventChanged) btn_Save.setEnabled(false);
-							//System.out.println(" Primary Role Changed row: " + selectedRowInRoleTable + " name: " 
-							//									+ selectedRoleName + " value: "
-							//                                    + selectedKeyRole); 
-							}	
+							}
 						} catch (HBException hbe) {
-							System.out.println(" HG0551DefineEvent - primary Role flag error: " + hbe.getMessage());
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0551 in primary role change: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
 		            }
 		        }
@@ -935,13 +924,13 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 							prevSelectedLangIndex = newSelectedLangIndex;
 							selectedLangCode = 	HG0501AppSettings.dataReptLangCodes[newSelectedLangIndex];
 							pointEventRoleManager.setSelectedLanguage(selectedLangCode);
-							System.out.println(" HG0551DefineEvent - Newlanguage: " + selectedLangCode);
 						// Setting initiate = true;
 							constructDefineEvent(addEventType, copyEventType, false);
 						} catch (HBException hbe) {
-							hbe.printStackTrace();
-							System.out.println(" HG0551DefineEvent - Combolanguage error: " 
-												+ hbe.getMessage());
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0551 language change: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
 					}
 				}
@@ -962,15 +951,15 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				int eventNumber;				
+				int eventNumber;
 			// Prompt for new Role name
 				selectedRoleName = JOptionPane.showInputDialog(HG0551Msgs.Text_52); 	// Enter new Role name:
-					
+
 			// Add the new role entry into T461 table
-				try {		
+				try {
 					if (!addEventType || notFirstFlag) {
 						if (selectedRoleName == null) return;
-						else selectedRoleName = selectedRoleName.trim();
+						selectedRoleName = selectedRoleName.trim();
 					// Create new roleSeq, 1 > highest existing roleSeq
 						selectedRoleSeq = Arrays.stream(eventRoleSeq).max().getAsInt() + 1;
 						selectedRoleNumber = Arrays.stream(eventRoleNumbers).max().getAsInt() + 1;
@@ -978,39 +967,41 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 						roleSentencePID = null_RPID;
 						roleSex = initRoleSex;
 		        		roleMinAge = initRoleMinAge;
-		        		roleMaxAge = initRoleMaxAge; 
-		        		
-		       // Set new or existing event number 		
-						if (copyEventType || addEventType) 
+		        		roleMaxAge = initRoleMaxAge;
+
+		       // Set new or existing event number
+						if (copyEventType || addEventType)
 							eventNumber = newEventNumber;
-						else 
+						else
 							eventNumber = selectedEventNumber;
-						
-				// Check duplicate evet role names		
+
+				// Check duplicate event role names
 						if (pointEventRoleManager.testForDuplicateRoleName(selectedRoleName, eventNumber)) {
-							warningMessage("Duplicated new role name:","  " + selectedRoleName,"Add new role");
+							warningMessage(HG0551Msgs.Text_74 + selectedRoleName, 	// Role name:
+											HG0551Msgs.Text_75,  					// already exists
+											HG0551Msgs.Text_76);					// Add Role error
 							return;
 						}
-						pointEventRoleManager.addEventRole(eventNumber, saveEventRoleData());	
-						
+						pointEventRoleManager.addEventRole(eventNumber, saveEventRoleData());
+
 				// and rebuild the screen, showing role/sentence tab at start
 						startAtSentenceTab = true;
 				// Update role table
 						resetRoleTable();
-						
+
 				// Select last (new) role and auto-scroll to show it
 						selectedRowInRoleTable = tableRole.convertRowIndexToView(roleModel.getRowCount() - 1);
 						tableRole.setRowSelectionInterval(selectedRowInRoleTable, selectedRowInRoleTable);
 						tableRole.scrollRectToVisible(new Rectangle(tableRole.getCellRect(selectedRowInRoleTable, 0, true)));
-					
+
 				// Load this role's data
 			     		eventRoleNumber = (int) tableRoleData[selectedRowInRoleTable][2];
 						loadEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventNumber,
 																		eventRoleNumber), addEventType);
-		    	// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas	
+		    	// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas
 			    		convertSentenceRoleNumToNames(roleSentencePID);
 			    		roleChanged = true;
-					} else {		
+					} else {
 						notFirstFlag = true; // Next role added as other
 				// Add new role for new event type
 		           		selectedKeyRole = true;
@@ -1018,17 +1009,18 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		           		selectedRoleNumber = 1;
 		        		roleSex = initRoleSex;
 		        		roleMinAge = initRoleMinAge;
-		        		roleMaxAge = initRoleMaxAge; 		        		
+		        		roleMaxAge = initRoleMaxAge;
 		           		roleSentencePID = null_RPID;
 		           		pointEventRoleManager.addEventRole(newEventNumber, saveEventRoleData());
 		           		roleChanged = true; // Already added and updated
 		           		resetRoleTable();
 					}
 					btn_Save.setEnabled(true);
-		    		//if (!eventChanged) btn_Save.setEnabled(false);
 				} catch (HBException hbe) {
-					System.out.println(" HG0551DefineEvent - add new role: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0551 adding role: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1037,65 +1029,76 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		btn_Copy.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				int eventNumber, copiedRoleNumber;				
+				int eventNumber, copiedRoleNumber;
 			// Prompt for new Role name
 				selectedRoleName = JOptionPane.showInputDialog(HG0551Msgs.Text_52); 	// Enter new Role name:
-					
+
 			// Add the copied entry into T461 table
-				try {		
+				try {
+
 					if (!addEventType || notFirstFlag) {
 						if (selectedRoleName == null) return;
-						else selectedRoleName = selectedRoleName.trim();
+						selectedRoleName = selectedRoleName.trim();
 				// Find number of the copied role
 						if (selectedRowInRoleTable != -1) {
 			           		selectedRoleData = tableRoleData[selectedRowInRoleTable]; // select whole row
 			           		selectedRoleNumber = (int) selectedRoleData[2];
 						}
 						copiedRoleNumber = selectedRoleNumber;
-						//System.out.println(" Selected role: " + copiedRoleNumber);
-						
+
 					// Create new roleSeq, 1 > highest existing roleSeq
 						selectedRoleSeq = Arrays.stream(eventRoleSeq).max().getAsInt() + 1;
 						selectedRoleNumber = Arrays.stream(eventRoleNumbers).max().getAsInt() + 1;
 						selectedKeyRole = false;
-		        		
-		       // Set new or existing event number 		
-						if (copyEventType || addEventType) 
+
+		       // Set new or existing event number
+						if (copyEventType || addEventType)
 							eventNumber = newEventNumber;
-						else 
+						else
 							eventNumber = selectedEventNumber;
-						
-				// Check duplicate evet role names		
+
+				// Check duplicate evet role names
 						if (pointEventRoleManager.testForDuplicateRoleName(selectedRoleName, eventNumber)) {
-							warningMessage("Duplicated new role name:","  " + selectedRoleName,"Add new role");
+							warningMessage(HG0551Msgs.Text_74 + selectedRoleName, 	// Role name:
+											HG0551Msgs.Text_75,  					// already exists
+											HG0551Msgs.Text_76);					// Add Role error
 							return;
 						}
-				// Copy role data into T461 table	
+				// Copy role data into T461 table
 						pointEventRoleManager.copyOneRoleTableRow(selectedRoleName, copiedRoleNumber, selectedRoleNumber, selectedRoleSeq);
 						pointEventRoleManager.prepareResultSet();
-						
+
 				// and rebuild the screen, showing role/sentence tab at start
 						startAtSentenceTab = true;
 				// Update role table
 						resetRoleTable();
-						
+
+
 				// Select last (new) role and auto-scroll to show it
 						selectedRowInRoleTable = tableRole.convertRowIndexToView(roleModel.getRowCount() - 1);
 						tableRole.setRowSelectionInterval(selectedRowInRoleTable, selectedRowInRoleTable);
 						tableRole.scrollRectToVisible(new Rectangle(tableRole.getCellRect(selectedRowInRoleTable, 0, true)));
-					
+
 				// Load this role's data
+						selectedRoleName = (String) tableRoleData[selectedRowInRoleTable][1];
 			     		eventRoleNumber = (int) tableRoleData[selectedRowInRoleTable][2];
+			     // Test number of key roles
+						if (numberPrimaryFlags == 0)
+							warningMessage(HG0551Msgs.Text_71,		// No Primary roles defined
+									HG0551Msgs.Text_72 + selectedEventName ,		// for Event:
+									HG0551Msgs.Text_73);			// Primary Role Count
+
 						loadEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventNumber,
 																		eventRoleNumber), addEventType);
-		    	// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas	
+		    	// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas
 			    		convertSentenceRoleNumToNames(roleSentencePID);
 			    		roleChanged = true;
 					}
-					
 				} catch (HBException hbe) {
-					System.out.println(" HG0551DefineEvent - copy role: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0551 copying role: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1105,7 +1108,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				int eventTypeRole, errorCode;
-				String eventRoleName; 
+				String eventRoleName;
 				selectedRowInRoleTable = tableRole.getSelectedRow();
 				if (selectedRowInRoleTable < 0) return;
 				selectedRoleData = tableRoleData[selectedRowInRoleTable]; // select whole row
@@ -1114,25 +1117,33 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				try {
 					if (copyEventType || addEventType)
 						errorCode = pointEventRoleManager.deleteEventRole(newEventNumber, eventTypeRole);
-					else 
+					else
 						errorCode = pointEventRoleManager.deleteEventRole(selectedEventNumber, eventTypeRole);
-				// Restore role table	
+
+				// Set initiate selecte row
+					selectedRowInRoleTable = 0;
+				// Restore role table
 					resetRoleTable();
 					if (errorCode == 1) {
-						warningMessage("Role un use!", eventRoleName , "Delete role");
+						warningMessage(HG0551Msgs.Text_81, 			// Cannot delete, Role in use:
+								eventRoleName, HG0551Msgs.Text_84);	// Delete Role error
 						return;
 					}
 					if (errorCode == 2) {
-						warningMessage("Cannot delete last role", eventRoleName , "Delete role");
+						warningMessage(HG0551Msgs.Text_82,  	// Cannot delete last Role:
+								eventRoleName, HG0551Msgs.Text_84);	// Delete Role error
 						return;
 					}
 					if (errorCode == 3) {
-						warningMessage("Role delete error!", eventRoleName, "Delete role");
+						warningMessage(HG0551Msgs.Text_83, 			// Error when deleting Role:
+								eventRoleName, HG0551Msgs.Text_84);	// Delete Role error
 						return;
 					}
 				} catch (HBException hbe) {
-					System.out.println(" HG0551DefineEvent - Delete all roles error: " + selectedEventNumber);
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0551 deleting all roles: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1144,50 +1155,48 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				selectedRowInRoleTable = tableRole.getSelectedRow();
 				if (selectedRowInRoleTable < 0) return;
 				origGUISeq = (int) tableRoleData[selectedRowInRoleTable][3];
-				// only allow move up if not at top of table
+			// only allow move up if not at top of table
 				if (selectedRowInRoleTable >= 1) {
-				// Save GUI seq settings
+			// Save GUI seq settings
 					origGUISeq = (int) tableRoleData[selectedRowInRoleTable][3];
 					newGUISeq = (int) tableRoleData[selectedRowInRoleTable - 1][3];
-				// Switch rows in roleModel
+			// Switch rows in roleModel
 					roleModel.moveRow(selectedRowInRoleTable, selectedRowInRoleTable, selectedRowInRoleTable-1);
-				// Switch rows in underlying tableRoleData
+			// Switch rows in underlying tableRoleData
 					objTempRoleData = tableRoleData[selectedRowInRoleTable-1];
 					tableRoleData[selectedRowInRoleTable - 1] = tableRoleData[selectedRowInRoleTable];
 					tableRoleData[selectedRowInRoleTable] = objTempRoleData;
-				// Reset GUI Seq settings in the moved rows
+			// Reset GUI Seq settings in the moved rows
 					tableRoleData[selectedRowInRoleTable - 1][3] = newGUISeq;
 					tableRoleData[selectedRowInRoleTable][3] = origGUISeq;
-				//  Reset visible selected row and row pointers
+			//  Reset visible selected row and row pointers
 				    tableRole.setRowSelectionInterval(selectedRowInRoleTable - 1, selectedRowInRoleTable - 1);
 					prevSelectedRowInRoleTable = selectedRowInRoleTable + 1;
 					selectedRowInRoleTable = tableRole.getSelectedRow();
-				// Update both role record's Sequence numbers in T461 records -
-				// pass across the event# and each role#+seq# pair
+			// Update both role record's Sequence numbers in T461 records -
+			// pass across the event# and each role#+seq# pair
 					try {
-						//System.out.println( " Button UP action!");
 						pointEventRoleManager.updateEventRoleSequences(selectedEventNumber,
 								(int) tableRoleData[selectedRowInRoleTable][2],
 								(int) tableRoleData[selectedRowInRoleTable][3],
 								(int) tableRoleData[prevSelectedRowInRoleTable][2],
 								(int) tableRoleData[prevSelectedRowInRoleTable][3] );
-					
-				// Reload sex/age data for the new selection
+
+			// Reload sex/age data for the new selection
 						int eventRoleNum = (int) tableRoleData[selectedRowInRoleTable][2];
 						loadEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventNumber,
 																		eventRoleNum), addEventType);
 
-				// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas
+			// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas
 						convertSentenceRoleNumToNames(roleSentencePID);
 						roleChanged = false;	// as we've done the T461 save already
 
-			   	// and if there are no Event changes pending, we can turn off btn_Save
-						//roleChanged = true;
-						//btn_Save.setEnabled(true);
-			    		//if (!eventChanged) btn_Save.setEnabled(false);
+			 // and if there are no Event changes pending, we can turn off btn_Save
 					} catch (HBException hbe) {
-						System.out.println(" HG0551DefineEvent - Move role UP error: " + hbe.getMessage());
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0551 moving role up: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -1200,49 +1209,47 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				int tableSize = tableRole.getRowCount();
 				selectedRowInRoleTable = tableRole.getSelectedRow();
 				if (selectedRowInRoleTable < 0) return;
-				// only allow move down if not at end of table
+			// only allow move down if not at end of table
 				if (selectedRowInRoleTable < tableSize-1) {
-				// Save GUI seq settings
+			// Save GUI seq settings
 					origGUISeq = (int) tableRoleData[selectedRowInRoleTable][3];
 					newGUISeq = (int) tableRoleData[selectedRowInRoleTable + 1][3];
-				// Switch rows in roleModel
+			// Switch rows in roleModel
 					roleModel.moveRow(selectedRowInRoleTable, selectedRowInRoleTable, selectedRowInRoleTable+1);
-				// Switch rows in underlying objEventCiteData
+			// Switch rows in underlying objEventCiteData
 					objTempRoleData = tableRoleData[selectedRowInRoleTable];
 					tableRoleData[selectedRowInRoleTable] = tableRoleData[selectedRowInRoleTable + 1];
 					tableRoleData[selectedRowInRoleTable+1] = objTempRoleData;
-				// Reset GUI Seq settings in the moved rows
+			// Reset GUI Seq settings in the moved rows
 					tableRoleData[selectedRowInRoleTable + 1][3] = newGUISeq;
 					tableRoleData[selectedRowInRoleTable][3] = origGUISeq;
-				//  Reset visible selected row and row pointers
+			//  Reset visible selected row and row pointers
 					tableRole.setRowSelectionInterval(selectedRowInRoleTable + 1, selectedRowInRoleTable + 1);
 					prevSelectedRowInRoleTable = selectedRowInRoleTable - 1;
 					selectedRowInRoleTable = tableRole.getSelectedRow();
-				// Update both role record's Sequence numbers in T461 records -
-				// pass across the event# and each role#+seq# pair
+			// Update both role record's Sequence numbers in T461 records -
+			// pass across the event# and each role#+seq# pair
 					try {
-						//System.out.println( " Button DOWN action!");
 						pointEventRoleManager.updateEventRoleSequences(selectedEventNumber,
 								(int) tableRoleData[selectedRowInRoleTable][2],
 								(int) tableRoleData[selectedRowInRoleTable][3],
 								(int) tableRoleData[prevSelectedRowInRoleTable][2],
 								(int) tableRoleData[prevSelectedRowInRoleTable][3] );
-					
-				// Reload sex/age data for the new selection
+
+			// Reload sex/age data for the new selection
 						int eventRoleNum = (int) tableRoleData[selectedRowInRoleTable][2];
 						loadEventRoleData(pointEventRoleManager.getEventRoleTransfer(selectedEventNumber,
 																		eventRoleNum), addEventType);
 
-				// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas
+			// Reload sentences, convert roleNumbers to roleNames and load into the 2 text areas
 						convertSentenceRoleNumToNames(roleSentencePID);
-						//roleChanged = false;	// as we've done the T461 save already			
-						
-				// and if there are no Event changes pending, we can turn off btn_Save
-						//btn_Save.setEnabled(true);
-			    		//if (!eventChanged) btn_Save.setEnabled(false);
+						roleChanged = false;	// as we've done the T461 save already
+
 					} catch (HBException hbe) {
-						System.out.println(" HG0551DefineEvent - Move role DOWN error: " + hbe.getMessage());
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0551 moving role down: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				}
 			}
@@ -1252,75 +1259,80 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		tableRole.getSelectionModel().addListSelectionListener(e -> {
 		// Ignore extra events (e.g. while adjusting the selection)
 		    if (!e.getValueIsAdjusting() && tableRole.getSelectedRow() != -1) {
-		    	
 			    text_MaleSent.getDocument().removeDocumentListener(roleTextListen);
 			    text_FemaleSent.getDocument().removeDocumentListener(roleTextListen);
 			    text_minAge.getDocument().removeDocumentListener(roleTextListen);
 			    text_maxAge.getDocument().removeDocumentListener(roleTextListen);
 			    comboSex.removeActionListener(comboSexListener);
-		    	
+
 		// If notSavingRole flag is on, return immediately
 		    	if (notSavingRole) {
 		    		notSavingRole = false;
 		    		return;
-		    	} 
+		    	}
 		    	selectedRowInRoleTable = tableRole.getSelectedRow();
-		    	//System.out.println(" Role mouse selection: " + selectedRowInRoleTable);
+
 		// Check if roleChanged true - means unsaved changes
           		if (roleChanged) {
 	          		if (JOptionPane.showConfirmDialog (btn_Save,
 							HG0551Msgs.Text_43		// There are unsaved changes. \n
 							+ HG0551Msgs.Text_54,	// Do you still wish to change Role?
 							HG0551Msgs.Text_55,		// Role Change
-							JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) { 
+							JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 						// NO option - reset back to role we left
 		           			notSavingRole = true;
 						// Change the selected role back to what it was - this will
 		           		//  trigger this listener again, but notSavingRole flag setting
-		           		//  will mean listener is bypassed 
-		           			
+		           		//  will mean listener is bypassed
 							tableRole.setRowSelectionInterval(prevSelectedRowInRoleTable, prevSelectedRowInRoleTable);
 							return;
-	           		} 
-           		} 
-          		
+	           		}
+           		}
+
           		try {
     		// Reload ResultSet to include recent role changes
 					pointEventRoleManager.prepareResultSet();
-					
-          	// Update previous seleced role if changes made	
-          			if (roleChanged) updateRoleRecord(prevSelectedRowInRoleTable); 
+
+          	// Update previous seleced role if changes made
+          			if (roleChanged) updateRoleRecord(prevSelectedRowInRoleTable);
           			roleChanged = false;
-		
+
            	//  Record the previous role selecte role
           			prevSelectedRowInRoleTable = selectedRowInRoleTable;
-	
+
 			// Reload ResultSet after database update
 					pointEventRoleManager.prepareResultSet();
-           		
-           	//  roleChanged not true OR YES, we wish to change role, so make the change	
+
+           	//  roleChanged not true OR YES, we wish to change role, so make the change
+					selectedRoleName = (String) tableRoleData[selectedRowInRoleTable][1];
           			int eventRoleNum = (int) tableRoleData[selectedRowInRoleTable][2];
           			roleSentencePID = (long) tableRoleData[selectedRowInRoleTable][4];
-          			//System.out.println(" Selected row eventnumber: " + newEventNumber + "/" + eventRoleNum
-          			//		+ " Sent PID: " + roleSentencePID);
+
+					if (numberPrimaryFlags == 0)
+						warningMessage(HG0551Msgs.Text_71,		// No Primary roles defined
+								HG0551Msgs.Text_72 + selectedEventName ,		// for Event:
+								HG0551Msgs.Text_73);			// Primary Role Count
+
 					loadEventRoleData(pointEventRoleManager.getEventRoleTransfer(newEventNumber,
 																	//eventRoleNum), addEventType);
 																	eventRoleNum), false);
 
     		// and load sentence, convert roleNumbers to roleNames and load into the 2 text areas
 					convertSentenceRoleNumToNames(roleSentencePID);
-					
+
 				    text_MaleSent.getDocument().addDocumentListener(roleTextListen);
 				    text_FemaleSent.getDocument().addDocumentListener(roleTextListen);
 				    text_minAge.getDocument().addDocumentListener(roleTextListen);
 				    text_maxAge.getDocument().addDocumentListener(roleTextListen);
 				    comboSex.addActionListener(comboSexListener);
-					
+
 				} catch (HBException hbe) {
-					System.out.println(" HG0551DefineEvent - role table select: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0551 in role table select: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
- 
+
     		// and if there are no Event changes, we can turn off btn_Save
     			if (!eventChanged) btn_Save.setEnabled(false);
 		    }
@@ -1337,21 +1349,19 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	        protected void updateFieldState() {
 	        	roleChanged = true;
 				btn_Save.setEnabled(true);
-				//System.out.println(" Role text edited");
 	        }
 	    };
 	    text_MaleSent.getDocument().addDocumentListener(roleTextListen);
 	    text_FemaleSent.getDocument().addDocumentListener(roleTextListen);
 	    text_minAge.getDocument().addDocumentListener(roleTextListen);
 	    text_maxAge.getDocument().addDocumentListener(roleTextListen);
-	    
+
 	// Sex combobox listener
 		comboSexListener = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				roleChanged = true;
 				btn_Save.setEnabled(true);
-				//System.out.println(" Sex listenr trigged!");
 			}
 		};
 		comboSex.addActionListener(comboSexListener);
@@ -1366,13 +1376,19 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	        public void changedUpdate(DocumentEvent e) {updateFieldState();}
 	        protected void updateFieldState() {
 	        	try {
-					if(pointEventRoleManager.testForDuplicateEventTypeName(text_EventName.getText())) {
-						warningMessage("Duplicate event type name:", text_EventName.getText(),"Add new event type");
+					if(pointEventRoleManager.testForDuplicateEventTypeName(text_EventName.getText().trim())) {
+						warningMessage(HG0551Msgs.Text_77, 	// Duplicate Event name:
+								text_EventName.getText(),
+								HG0551Msgs.Text_78);		// Add Event error
+						btn_Save.setEnabled(false);
 						return;
 					}
+					selectedEventName = text_EventName.getText();
 				} catch (HBException hbe) {
-					System.out.println(" Duplicate test error event type name: " + text_EventName.getText());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0551 event name duplicate test: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 	        // Switch the gedcom setting if Event Name edited
 				radio_Even.setSelected(true);
@@ -1383,7 +1399,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				text_gedTag.setText("");	//$NON-NLS-1$
 	        	eventChanged = true;
 	        	btn_Save.setEnabled(true);
-	        	//System.out.println( " Event name edited!");
 	        }
 	    };
 	    text_EventName.getDocument().addDocumentListener(eventNameTextListen);
@@ -1399,13 +1414,15 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	        protected void updateFieldState() {
 	        	eventChanged = true;
 	        	btn_Save.setEnabled(true);
-	        	//System.out.println( " Event type txt edited!");
+	        	String minAssocText = text_minAssoc.getText();
+	        	if (minAssocText != null && minAssocText.length() > 0)
+	        	minAssoc = Integer.parseInt(text_minAssoc.getText());
 	        }
 	    };
 	    text_minYear.getDocument().addDocumentListener(eventTextListen);
 	    text_maxYear.getDocument().addDocumentListener(eventTextListen);
 	    text_minAssoc.getDocument().addDocumentListener(eventTextListen);
-	    text_abbrev.getDocument().addDocumentListener(eventTextListen); 
+	    text_abbrev.getDocument().addDocumentListener(eventTextListen);
 	    text_tense.getDocument().addDocumentListener(eventTextListen);
 	    text_Hint.getDocument().addDocumentListener(eventTextListen);
 
@@ -1415,7 +1432,6 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		    	 if (radio_Tag.isSelected()) {
 		    		 eventChanged = true;
 		    		 btn_Save.setEnabled(true);
-		    		 //System.out.println( " Event radio tag triggered!");
 		    	 }
 		     }
 		};
@@ -1437,36 +1453,44 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			btn_Save.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
-					System.out.println(" ADD save event type!");
-					newEventName = text_EventName.getText();
-					selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
+					if (numberPrimaryFlags == 0) {
+						warningMessage(HG0551Msgs.Text_71,		// No Primary roles defined
+								HG0551Msgs.Text_72 + selectedEventName ,		// for Event:
+								HG0551Msgs.Text_73);			// Primary Role Count
+						return;
+					}
 					try {
+						if(pointEventRoleManager.testForDuplicateEventTypeName(text_EventName.getText().trim())) {
+							warningMessage(HG0551Msgs.Text_77, 	// Duplicate Event name:
+									text_EventName.getText(),
+									HG0551Msgs.Text_78);		// Add Event error
+							btn_Save.setEnabled(false);
+							return;
+						}
+						newEventName = text_EventName.getText().trim();
+						selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
+
 					// Reload ResultSet to include recent role changes
 						pointEventRoleManager.prepareResultSet();
 						pointEventRoleManager.addEventType(newEventName, selectedGroup, saveEventTypeData());
-					
+
 					// Check if role data has changed - if so, save it
-						if (roleChanged) {
-								//int atRow = tableRole.getSelectedRow();
-								System.out.println(" Add - Roles updated row: " + selectedRowInRoleTable);
+						if (roleChanged)
 								updateRoleRecord(selectedRowInRoleTable);
-						}	
-						
-						//constructDefineEvent(addEventType, copyEventType, false);
-						
+
 					} catch (HBException hbe) {
-						System.out.println(" HG0551DefineEvent add event type - role changed: " + hbe.getMessage());
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: saved ADDED event type " + 
-								newEventName + " in HG0551DefineEvent");
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0551 adding event " + newEventName + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
-						
-			// If only role needed saving, turn off btn_Save	
+
+			// If only role needed saving, turn off btn_Save
 					if (!eventChanged) btn_Save.setEnabled(false);
 					if (reminderDisplay != null) reminderDisplay.dispose();
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved new event " + //$NON-NLS-1$
-											newEventName + " in HG0551DefineEvent"); //$NON-NLS-1$		
-					dispose();	
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: in HG0551 saved new event " + //$NON-NLS-1$
+											newEventName );
+					dispose();
 				}
 			});
 
@@ -1475,120 +1499,135 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			btn_Save.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
-					System.out.println(" Edit save event type!");
+					if (numberPrimaryFlags == 0) {
+						warningMessage(HG0551Msgs.Text_71,		// No Primary roles defined
+								HG0551Msgs.Text_72 + selectedEventName ,		// for Event:
+								HG0551Msgs.Text_73);			// Primary Role Count
+						return;
+					}
+
 					try {
+					// Test if event type name canged but not used in T460
+						if(!text_EventName.getText().trim().equals(selectedEventName))
+							if	(pointEventRoleManager.testForDuplicateEventTypeName(text_EventName.getText().trim())) {
+								warningMessage(HG0551Msgs.Text_77, 	// Duplicate Event name:
+										text_EventName.getText(),
+										HG0551Msgs.Text_78);		// Add Event error
+							btn_Save.setEnabled(false);
+							return;
+						}
 					// Now check if event changed and needs saving
 						if (eventChanged) {
-							newEventName = text_EventName.getText();
+							newEventName = text_EventName.getText().trim();
 							selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
 							pointEventRoleManager.editEventType(newEventName, selectedEventNumber,
 																selectedGroup, saveEventTypeData());
 						}
-					// Check if role data has changed - if so, save it	
-						if (roleChanged) {
-							System.out.println(" Edit - Roles updated ro: " + selectedRowInRoleTable);
-							updateRoleRecord(selectedRowInRoleTable);	
-						}
-						
-						//constructDefineEvent(addEventType, copyEventType, false);
-			
+					// Check if role data has changed - if so, save it
+						if (roleChanged)
+							updateRoleRecord(selectedRowInRoleTable);
+
 					} catch (HBException hbe) {
-						System.out.println(" HG0551DefineEvent edit event type - role changed:- role: " + hbe.getMessage());
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: saved EDITED event type " + 
-								newEventName + " in HG0551DefineEvent");
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0551 saving edited event " + newEventName + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
-					
+
 				// If only role needed saving, turn off btn_Save
 					if (!eventChanged) btn_Save.setEnabled(false);
 					if (reminderDisplay != null) reminderDisplay.dispose();
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved event " + //$NON-NLS-1$
-											newEventName + " in HG0551DefineEvent"); //$NON-NLS-1$
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: in HG0551 saved edited event " + //$NON-NLS-1$
+																newEventName);
 					dispose();
-				}	
+				}
 			});
-		
-	// Listener for Save button - copy event type -save role and/or event data and exit if event saved	
+
+	// Listener for Save button - copy event type -save role and/or event data and exit if event saved
 		if (copyEventType)
 			btn_Save.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent arg0) {
-					System.out.println(" COPY save event type!");
-					newEventName = text_EventName.getText();
-					selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());	
+					if (numberPrimaryFlags == 0) {
+						warningMessage(HG0551Msgs.Text_71,		// No Primary roles defined
+								HG0551Msgs.Text_72 + selectedEventName ,		// for Event:
+								HG0551Msgs.Text_73);			// Primary Role Count
+						return;
+					}
 					try {
+						if(pointEventRoleManager.testForDuplicateEventTypeName(text_EventName.getText().trim())) {
+							warningMessage(HG0551Msgs.Text_77, 	// Duplicate Event name:
+									text_EventName.getText(),
+									HG0551Msgs.Text_78);		// Add Event error
+							btn_Save.setEnabled(false);
+							return;
+						}
+						newEventName = text_EventName.getText().trim();
+						selectedGroup = groupIndexMap.get(comboGroups.getSelectedItem());
+
 				// Reload ResultSet to include recent role changes
 						pointEventRoleManager.prepareResultSet();
 						pointEventRoleManager.addEventType(newEventName, selectedGroup, saveEventTypeData());
-						
+
 				// Check if role data has changed - if so, save it
-						if (roleChanged) {
-							//int atRow = tableRole.getSelectedRow();
-							System.out.println(" Copy - Roles Updated rownr: " + selectedRowInRoleTable);
+						if (roleChanged)
 							updateRoleRecord(selectedRowInRoleTable);
-						}
-						
-						//constructDefineEvent(addEventType, copyEventType, false);
-						
+
 					} catch (HBException hbe) {
-						System.out.println(" HG0551DefineEvent copy event type - role changed: " + hbe.getMessage());
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("ERROR: saved COPY event type " + 
-								newEventName + " in HG0551DefineEvent");
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0551 saving copied event " + newEventName + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				// If only role needed saving, turn off btn_Save
 					if (!eventChanged) btn_Save.setEnabled(false);
 					if (reminderDisplay != null) reminderDisplay.dispose();
-					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: saved new event " + //$NON-NLS-1$
-											newEventName + " in HG0551DefineEvent"); //$NON-NLS-1$
+					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: in HG0551 saved copied event " + //$NON-NLS-1$
+																	newEventName );
 					dispose();
 				}
 			});
 
 	}	// End HG0551DefineEvent constructor
-	
+
 /**
- * protected String getRoleSentences()	
+ * protected String getRoleSentences()
  * @return
  */
 	protected String getRoleSentences() {
 		String tempSentence = "";	//$NON-NLS-1$
-		if (text_MaleSent.getText().trim().startsWith("***")) return tempSentence;
+		if (text_MaleSent.getText().trim().startsWith("***")) return tempSentence;	//$NON-NLS-1$
 		if (text_FemaleSent.getText().isEmpty()) tempSentence = text_MaleSent.getText();
 		else tempSentence = text_MaleSent.getText() + "$!&" + text_FemaleSent.getText(); //$NON-NLS-1$
 		return convertSentenceRoleNamesToNums(tempSentence);
 	}
-	
+
 /**
  * protected void updateRoleRecord(int updatedRoleRow)
  * @param updatedRoleRow
- * @throws HBException 
+ * @throws HBException
  */
 	protected void updateRoleRecord(int updatedRoleRow) throws HBException {
 		int eventTypeNumber;
-		System.out.println(" Roles updated for row: " + updatedRoleRow);
-		
-		if (updatedRoleRow != -1) {
-       		selectedRoleData = tableRoleData[updatedRoleRow]; // select whole row
-       		selectedRoleName = ((String) selectedRoleData[1]).trim();
-       		selectedRoleNumber = (int) selectedRoleData[2];
-       		selectedKeyRole = (boolean) roleModel.getValueAt(updatedRoleRow, 0);
-       		selectedRoleSeq = (int) selectedRoleData[3];
-       		roleSentencePID = (long) selectedRoleData[4];
-       	// Copy event or add event type
-			if (addEventType || copyEventType) eventTypeNumber = newEventNumber;
-			else eventTypeNumber = selectedEventNumber;
+		if (updatedRoleRow == -1) throw new HBException(" HG0551DefineEvent - role changed error row: " + updatedRoleRow); //$NON-NLS-1$
+		selectedRoleData = tableRoleData[updatedRoleRow]; // select whole row
+		selectedRoleName = ((String) selectedRoleData[1]).trim();
+		selectedRoleNumber = (int) selectedRoleData[2];
+		selectedKeyRole = (boolean) roleModel.getValueAt(updatedRoleRow, 0);
+		selectedRoleSeq = (int) selectedRoleData[3];
+		roleSentencePID = (long) selectedRoleData[4];
+     	// Copy event or add event type
+		if (addEventType || copyEventType) eventTypeNumber = newEventNumber;
+		else eventTypeNumber = selectedEventNumber;
 		// update sentences
-			if (getRoleSentences().length() > 0 || getRoleSentences() == null) // *** Fix 24.1.2026  NTo
-	       		if (roleSentencePID == null_RPID )
-					roleSentencePID = pointEventRoleManager.addEventRoleSentence(getRoleSentences(), eventTypeNumber, selectedRoleNumber);
-				else 
-					pointEventRoleManager.updateEventRoleSentence(roleSentencePID, getRoleSentences());
-			//System.out.println(" Update role sentence PID: " + roleSentencePID + "/" + getRoleSentences());
-			//System.out.println(" Update event nr: " + eventTypeNumber);
-			pointEventRoleManager.editEventRole(eventTypeNumber, saveEventRoleData());
-			roleChanged = false;
-		} else throw new HBException(" HG0551DefineEvent - role changed error row: " + updatedRoleRow);
+		if (getRoleSentences().length() > 0 || getRoleSentences() == null)
+			if (roleSentencePID == null_RPID )
+				roleSentencePID = pointEventRoleManager.addEventRoleSentence(getRoleSentences(), eventTypeNumber, selectedRoleNumber);
+			else
+				pointEventRoleManager.updateEventRoleSentence(roleSentencePID, getRoleSentences());
+
+		pointEventRoleManager.editEventRole(eventTypeNumber, saveEventRoleData());
+		roleChanged = false;
 	}
 
 /**
@@ -1597,28 +1636,27 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  */
 	protected void resetRoleTable() {
 		try {
+		//  Reset conter for primary flags
+			numberPrimaryFlags = 0;
 		// Reload ResultSet after database update
 			pointEventRoleManager.prepareResultSet();
-			
+
 			eventNamesInGroup = pointEventRoleManager.getEventTypeList(0); // List of Event Names in group
 			eventNumbersInGroup = pointEventRoleManager.getEventTypes();  // their event numbers
-			
+
 			if (copyEventType || addEventType)
-				eventRoleNames = pointEventRoleManager.getEventRoleNames(newEventNumber, "");
+				eventRoleNames = pointEventRoleManager.getEventRoleNames(newEventNumber, "");		//$NON-NLS-1$
 			else  eventRoleNames = pointEventRoleManager.getEventRoleNames(selectedEventNumber, ""); //$NON-NLS-1$
-			
+
 			eventRoleNumbers = pointEventRoleManager.getEventRoleNumbers();
 			eventRoleSeq = pointEventRoleManager.getEventRoleSeq();
 			eventRoleKey = pointEventRoleManager.getEventRoleKey();
 			eventRoleSentencePID = pointEventRoleManager.getEventRoleSentencePID();
 
-		// Find event type name for selected event
-			//for (int i = 0; i < eventNumbersInGroup.length; i++)
-			//	if (eventNumbersInGroup[i] == selectedEventNumber) selectedEventName = eventNamesInGroup[i];
-			
 		// Populate role table for selected event (although we only display 1st 2 values)
 			tableRoleData = new Object[eventRoleNames.length][5];
 			for (int i = 0; i < eventRoleNames.length; i++)  {
+				if (eventRoleKey[i] == true) numberPrimaryFlags++;
 				tableRoleData[i][0] = eventRoleKey[i];
 				tableRoleData[i][1] = eventRoleNames[i].trim();
 				tableRoleData[i][2] = eventRoleNumbers[i];
@@ -1627,7 +1665,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			}
 		// and sort on its seq#
 			Arrays.sort(tableRoleData, (o1, o2) -> Integer.compare((Integer) o1[3], (Integer) o2[3]));
-	
+
 		// Setup reposotory table, model and renderer
 			roleModel.setDataVector(tableRoleData, tableRoleHeader);
 			tableRole.setModel(roleModel);
@@ -1637,19 +1675,19 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			tableRole.getColumnModel().getColumn(1).setMinWidth(80);
 			tableRole.getColumnModel().getColumn(1).setPreferredWidth(180);
 			tableRole.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-	
+
 		// Set header and selection mode
 			JTableHeader roleHeader = tableRole.getTableHeader();
 			roleHeader.setOpaque(false);
 			ListSelectionModel roleSelectionModel = tableRole.getSelectionModel();
 			roleSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			
-			//System.out.println(" Reset - Selected role: " + selectedRowInRoleTable);
 			tableRole.setRowSelectionInterval(selectedRowInRoleTable, selectedRowInRoleTable);
-		
+
 		} catch (HBException hbe) {
-			System.out.println(" HG0551DefineEvent - resetRoleTable() error: " + hbe.getMessage());
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0551 resetting role table: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 	}
 
@@ -1673,9 +1711,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			else maxYear = Integer.parseInt(text_maxYear.getText());
 		eventTypeDataSend[5] = maxYear;
 		textAbbrev = text_abbrev.getText();
-		eventTypeDataSend[6] = textAbbrev; 
+		eventTypeDataSend[6] = textAbbrev;
 		textPastSentense = text_tense.getText();
-		eventTypeDataSend[7] = textPastSentense; 
+		eventTypeDataSend[7] = textPastSentense;
 		textEventHint = text_Hint.getText();
 		eventTypeDataSend[8] = textEventHint;
 		if (text_minAssoc.getText().isEmpty()) minAssoc = initMinAssoc;
@@ -1699,9 +1737,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		if (text_maxAge.getText().isEmpty()) roleMaxAge = 0;
 			else roleMaxAge = Integer.parseInt(text_maxAge.getText());
 		eventRoleDataSend[5] = roleMaxAge;
-		eventRoleDataSend[6] = roleSentencePID;	
+		eventRoleDataSend[6] = roleSentencePID;
 		eventRoleDataSend[7] = selectedKeyRole;
-		return eventRoleDataSend; 
+		return eventRoleDataSend;
 	}
 
 /**
@@ -1711,17 +1749,15 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  */
 	private void loadEventTypeData(Object[] eventTypeData, boolean addNewEventType) {
 		if (addNewEventType) {
-			//System.out.println(" loadEventTypeData - addEventType!" );
-			text_abbrev.setText("");
+			text_abbrev.setText("");	//$NON-NLS-1$
 			text_tense.setText("");		//$NON-NLS-1$
 			text_gedTag.setText("");	//$NON-NLS-1$
-			text_minAssoc.setText("" + initMinAssoc);		//$NON-NLS-1$
+			text_minAssoc.setText("" + initMinAssoc);	//$NON-NLS-1$
 			text_minYear.setText("" + initMinYear);		//$NON-NLS-1$
 			text_maxYear.setText("" + initMaxYear);	//$NON-NLS-1$
-			text_Hint.append("");
-			text_minAssoc.setText("" + initMinAssoc);
+			text_Hint.append("");		//$NON-NLS-1$
+			text_minAssoc.setText("" + initMinAssoc);	//$NON-NLS-1$
 		} else {
-			//System.out.println(" loadEventTypeData - edit or copy!" );
 			for (int i = 0; i <  eventGroupNumbers.length; i++)
 				if ((int)eventTypeData[2] == eventGroupNumbers[i])
 					comboGroups.setSelectedIndex(i);
@@ -1729,7 +1765,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 				radio_Even.setText("1 EVEN, 2 TYPE " + text_EventName.getText().toUpperCase());	//$NON-NLS-1$
 				radio_Even.setSelected(true);
 				text_gedTag.setText("");			//$NON-NLS-1$
-			} else text_gedTag.setText((String) eventTypeData[3]);	
+			} else text_gedTag.setText((String) eventTypeData[3]);
 			text_minYear.setText("" + eventTypeData[4]);	//$NON-NLS-1$
 			text_maxYear.setText("" + eventTypeData[5]);	//$NON-NLS-1$
 			text_abbrev.setText("" + eventTypeData[6]);	//$NON-NLS-1$
@@ -1747,16 +1783,14 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  */
 	private void loadEventRoleData(Object[] eventRoleData, boolean addEventType) {
 		if (addEventType) {
-			//System.out.println(" loadEventRoleData - addEventType!" );
-			text_MaleSent.setText("");
-			text_FemaleSent.setText("");
+			text_MaleSent.setText("");		//$NON-NLS-1$
+			text_FemaleSent.setText("");	//$NON-NLS-1$
 			roleSentencePID = null_RPID;
-			roleSex = initRoleSex;					//$NON-NLS-1$
+			roleSex = initRoleSex;
 			text_minAge.setText("" + initRoleMinAge);		//$NON-NLS-1$
 			text_maxAge.setText("" + initRoleMaxAge);		//$NON-NLS-1$
 			selectedKeyRole = false;
 		} else {
-			//System.out.println(" loadEventRoleData - edit or copy!" );
 			comboSex.setSelectedIndex(0);
 			roleSex = sexValues[0];
 			if (eventRoleData[3] != null)
@@ -1820,7 +1854,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
         text_FemaleSent.setText("");	//$NON-NLS-1$
 
 		// Load the sentence for this event#, role#, langcode
-		try {			
+		try {
 			roleSentence = pointEventRoleManager.getEventRoleSentence(eventRoleSentencePID);
 		} catch (HBException | NullPointerException ex) {
 				// Handle new HRE project which has no sentences
@@ -1830,7 +1864,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 		// If roleSentence has error flag, or is default en-US language, set sentence msg and return
 		if (roleSentence.equals("NOSENTENCE") || roleSentence.startsWith("(en-US)")) {		//$NON-NLS-1$ //$NON-NLS-2$
-			text_MaleSent.append("*** " + HG0551Msgs.Text_61);	// No sentences exist in this language for this Role
+			text_MaleSent.append("*** " + HG0551Msgs.Text_61);	//$NON-NLS-1$ // No sentences exist in this language for this Role
 			return;
 		}
 
@@ -1922,16 +1956,16 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
         // Return the reformatted sentence text
 		return result.toString();
 	}		// End convertSentRoleNamesToNums
-	
+
 /**
- * private void warningMessage(String messageOne, String messageTwo, String ationType)	
+ * private void warningMessage(String messageOne, String messageTwo, String actionType)
  * @param messageOne
  * @param messageTwo
  * @param ationType
  */
 	private void warningMessage(String messageOne, String messageTwo, String actionType) {
 		JOptionPane.showMessageDialog(pointDefineEvent,
-				messageOne + "\n" +	// Message main
+				messageOne + "\n" +	// Message main		//$NON-NLS-1$
 				messageTwo,		// Message option
 				actionType,		// Action Type
 				JOptionPane.WARNING_MESSAGE);

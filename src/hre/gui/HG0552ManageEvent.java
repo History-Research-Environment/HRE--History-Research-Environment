@@ -35,6 +35,7 @@ package hre.gui;
  * 			  2026-01-22 Implemented reset event list after DefineEvent action (N. Tolleshaug)
  * 			  2026-01-30 Make event double-click invoke Edit automatically (D Ferguson)
  * 			  2026-01-31 Reload Event List for correct event group after changes (D Ferguson)
+ * 			  2026-02-02 Log all catch block msgs and do NLS update (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE05 code needed for Grouped Events, Enable/Disable Events
@@ -449,8 +450,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - All events: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading all event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -464,8 +467,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group birth: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading birth event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -479,8 +484,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group marriage: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading marriage event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -494,8 +501,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group death: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading death event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -509,8 +518,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group burial: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading burial event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -524,8 +535,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group history: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading history event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -539,8 +552,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group address: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading address event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -607,8 +622,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				 try {
 					 resetEventList(eventGroup);
 				 } catch (HBException hbe) {
-					 System.out.println(" HG0552ManageEvent - event group misc: " + hbe.getMessage());	//$NON-NLS-1$
-					 hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading misc. event list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				 }
 			 }
 		 };
@@ -646,8 +663,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 11: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user11 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -661,8 +680,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 14: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user14 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -676,8 +697,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 15: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user15 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -691,8 +714,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 16: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user16 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -706,8 +731,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 17: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user17 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -721,8 +748,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 18: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user18 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -736,8 +765,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - User 19: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading user19 event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -804,8 +835,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println(" HG0552ManageEvent - event group 99: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 loading misc. event list " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		};
@@ -846,8 +879,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 					try {
 						resetRoleList(selectedEventType);
 					}  catch (HBException hbe) {
-						System.out.println(" HG0552ManageEvent - eventlist load: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0552 loading role list " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 					btn_Select.setEnabled(false);
 				// Enable all the relevant action buttons
@@ -891,8 +926,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 								dispose();
 							}
 						} catch (HBException hbe) {
-							System.out.println(" HG0552ManageEvent - eventlist select: " + hbe.getMessage());	//$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0552 selecting role " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
 	    			// Otherwise, save the roleList index and selected value for use
 	    				indexSelectedRole = roleList.getSelectedIndex();
@@ -926,8 +963,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println("HG0552ManageEvent - add event type: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 adding event " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -958,8 +997,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println("HG0552ManageEvent - edit event type: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 editing event " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -980,8 +1021,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println("HG0552ManageEvent - copy event type: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 copying event " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -994,15 +1037,23 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 				try {
 					int errorCode = pointEventRoleManager.deleteEventType(selectedEventType);
 					if (errorCode == 0)
-						JOptionPane.showMessageDialog(btn_Delete, "Event type /" + eventTypeName + "/ deleted",
-														"Delete Event", JOptionPane.INFORMATION_MESSAGE);
+						JOptionPane.showMessageDialog(btn_Delete,
+													HG0552Msgs.Text_66 + eventTypeName	// Event type '
+													+ HG0552Msgs.Text_67,		// ' deleted
+													HG0552Msgs.Text_65, 		// Delete Event
+													JOptionPane.INFORMATION_MESSAGE);
 					if (errorCode == 1)
-						JOptionPane.showMessageDialog(btn_Delete, "Event type '" + eventTypeName + "' in use - cannot be deleted",
-														"Delete Event", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(btn_Delete,
+													HG0552Msgs.Text_66 + eventTypeName 	// Event type '
+													+ HG0552Msgs.Text_68,	// 'is in use - cannot be deleted
+													HG0552Msgs.Text_65, 	// Delete Event
+													JOptionPane.ERROR_MESSAGE);
 					resetEventList(eventGroup);
 				} catch (HBException hbe) {
-					System.out.println("HG0552ManageEvent - delete event type: " + hbe.getMessage());
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0552 deleting event " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -1097,7 +1148,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  */
     public void resetRoleList(int selectedEvent) throws HBException {
     	roleListmodel = (DefaultListModel<String>) roleList.getModel();
-    	String[] newRoleList = pointEventRoleManager.getRolesForEvent(selectedEvent, "");
+    	String[] newRoleList = pointEventRoleManager.getRolesForEvent(selectedEvent, "");	//$NON-NLS-1$
 
     // Turn off RoleListener and clear role list
     	roleListenOn = false;

@@ -7,15 +7,15 @@ public class HG0552Msgs extends NLS {
 
 	public static String Text_0;
 	public static String Text_1;
-	public static String Text_2;	
-	public static String Text_3;	
+	public static String Text_2;
+	public static String Text_3;
 	public static String Text_4;
-	public static String Text_5;	
-	public static String Text_6;	
+	public static String Text_5;
+	public static String Text_6;
 	public static String Text_7;
 	public static String Text_8;
-	public static String Text_9;	
-	
+	public static String Text_9;
+
 	public static String Text_10;
 	public static String Text_11;
 	public static String Text_12;
@@ -59,12 +59,16 @@ public class HG0552Msgs extends NLS {
 	public static String Text_62;
 	public static String Text_63;
 	public static String Text_64;
-	
+	public static String Text_65;
+	public static String Text_66;
+	public static String Text_67;
+	public static String Text_68;
+
 	public HG0552Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG0552-" + guiLanguage;  //$NON-NLS-1$
 		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, HG0552Msgs.class);			
+		NLS.initializeMessages(BUNDLE_NAME, HG0552Msgs.class);
 	}
 
 }

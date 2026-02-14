@@ -69,6 +69,7 @@ package hre.gui;
  * 			  2025-06-30 Make all double-click actions consistent (D Ferguson)
  *			  2025-07-13 Handle passing of sexCode through to HG0547 (D Ferguson)
  * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
+ * 			  2026-02-02 Fix initial sizing problem due to card layout rules (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
@@ -206,7 +207,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	String[] tableNameHeader;
 	Object[][] objParentData;
 	boolean canOnlyAddParent = false;
-	Object[][] objSelfData;
 	ArrayList<ImageIcon> listImages;
 	ArrayList<String> listImagesCaptions;
 	ArrayList<String> listTexts;
@@ -304,7 +304,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  ***********************************/
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[grow]10[grow]5[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[grow]10[]5[grow][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
     	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);
@@ -428,7 +428,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  **************************************/
 		JPanel controlPanel = new JPanel();
 		controlPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(controlPanel, "cell 0 1, growx, aligny top");	//$NON-NLS-1$
+		contents.add(controlPanel, "cell 0 1 1 2, aligny top");	//$NON-NLS-1$
 		controlPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_EditType = new JLabel(HG0506Msgs.Text_9);		// Edit Category
@@ -474,7 +474,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  **************************************/
 		JPanel leftBotmPanel = new JPanel();
 		leftBotmPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(leftBotmPanel, "cell 0 2, growx, aligny bottom");	//$NON-NLS-1$
+		contents.add(leftBotmPanel, "cell 0 3, growx, aligny bottom");	//$NON-NLS-1$
 		leftBotmPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]10"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lblPerPrompt = new JLabel(HG0506Msgs.Text_16);		// Go to Person #:
@@ -496,31 +496,39 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  **************************************************/
 		JPanel rightPanel = new JPanel(new CardLayout());
 		rightPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(rightPanel, "cell 1 1 2 2, grow");	//$NON-NLS-1$
+		contents.add(rightPanel, "cell 1 2 1 2, aligny top, grow");	//$NON-NLS-1$
 
 		// Define cards of the CardLayout, each card-Panel with its own layout manager
 		JPanel cardEvents = new JPanel();
+		cardEvents.setPreferredSize(new Dimension(700, 400));
 		cardEvents.setLayout(new MigLayout("", "[grow]", "[]10[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardEvents, "EVENTS");	//$NON-NLS-1$
 		JPanel cardPartners = new JPanel();
+		cardPartners.setPreferredSize(new Dimension(700, 400));
 		cardPartners.setLayout(new MigLayout("", "[grow]", "[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardPartners, "PARTNERS");	//$NON-NLS-1$
 		JPanel cardAssocs = new JPanel();
+		cardAssocs.setPreferredSize(new Dimension(700, 400));
 		cardAssocs.setLayout(new MigLayout("", "[grow]", "[]10[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardAssocs, "ASSOCIATES");	//$NON-NLS-1$
 		JPanel cardNames = new JPanel();
+		cardNames.setPreferredSize(new Dimension(700, 400));
 		cardNames.setLayout(new MigLayout("", "[grow]", "[grow]"));		//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardNames, "NAMES");	//$NON-NLS-1$
 		JPanel cardFlags = new JPanel();
-		cardFlags.setLayout(new MigLayout("", "[]10[]", "[grow]"));		//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardFlags.setPreferredSize(new Dimension(700, 400));
+		cardFlags.setLayout(new MigLayout("", "[grow]10[]", "[grow]"));		//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardFlags, "FLAGS");		//$NON-NLS-1$
 		JPanel cardMedia = new JPanel();
-		cardMedia.setLayout(new MigLayout("", "[]", "[]20[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardMedia.setPreferredSize(new Dimension(700, 400));
+		cardMedia.setLayout(new MigLayout("", "[grow]", "[]20[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardMedia, "MEDIA");	//$NON-NLS-1$
 		JPanel cardNotepads = new JPanel();
+		cardNotepads.setPreferredSize(new Dimension(700, 40));
 		cardNotepads.setLayout(new MigLayout("", "[grow]", "[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardNotepads, "NOTEPADS");	//$NON-NLS-1$
 		JPanel cardDNA = new JPanel();
+		cardDNA.setPreferredSize(new Dimension(700, 400));
 		cardDNA.setLayout(new MigLayout("", "[grow]", "[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardDNA, "DNA");	//$NON-NLS-1$
 
@@ -544,11 +552,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		DefaultTableModel eventsModel = new DefaultTableModel(objEventData, eventTableHeader);
 		JTable tableEvents = new JTable(eventsModel) {
 			private static final long serialVersionUID = 1L;
-			@Override
-			public Dimension getPreferredScrollableViewportSize() {
-			    return new Dimension(super.getPreferredSize().width,
-			    		super.getPreferredScrollableViewportSize().height);
-			  }
 			// Make all columns non-editable
 			@Override
 			public boolean isCellEditable(int row, int col) {
@@ -579,7 +582,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			        return c;
 			    }
 		};
-
+		tableEvents.setPreferredScrollableViewportSize(new Dimension(700, 400));
 		tableEvents.setFillsViewportHeight(true);
 		tableEvents.getColumnModel().getColumn(0).setMinWidth(80);
 		tableEvents.getColumnModel().getColumn(0).setPreferredWidth(120);		// Event
@@ -729,7 +732,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 /************
  * cardNames - setup a scrollPane and table for All Names
  ************/
-	//JTable tableNames = new JTable() {
 		tableNames = new JTable() {
 			private static final long serialVersionUID = 1L;
 				@Override

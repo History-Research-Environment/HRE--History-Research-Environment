@@ -35,10 +35,37 @@ public class TMGtypes {
 	  public static final String SOURCE_ELEMENT = "U";
 	  public static final String REPOSITORY_LINK = "W";
 	  public static final String EXCLUDED_PAIR = "XD";
+	  
+	  public static final String[] TMGfiles =
+		  	 {"String PERSON = $",
+			  "SOURCE_TYPE = A",
+			  "FOCUS_GROUP_MEMBER = B",
+			  "FLAG = C",
+			  "DATA_SET = D",
+			  "DNA = DNA",
+			  "EVENT_WITNESS = E",
+			  "PARENT_CHILD_RELATIONSHIP = F",
+			  "EVENT = G",
+			  "EXHIBIT = I",
+			  "TIMELINE_LOCK = K",
+			  "RESEARCH_LOG = L",
+			  "SOURCE = M",
+			  "NAME = N",
+			  "NAME_DICTIONARY = ND",
+			  "NAME_PART_TYPE = NPT",
+			  "NAME_PART_VALUE = NPV",
+			  "FOCUS_GROUP = O",
+			  "PLACE = P",
+			  "PLACE_DICTIONARY = PD",
+			  "PLACE_PART_TYPE = PPT",
+			  "PLACE_PART_VALUE = PPV",
+			  "REPOSITORY = R",
+			  "SOURCE_CITATION = S",
+			  "STYLE = ST",
+			  "TAG_TYPE = T",
+			  "SOURCE_ELEMENT = U",
+			  "REPOSITORY_LINK = W",
+			  "EXCLUDED_PAIR = XD"};
 }
 
 
-/* Location:              C:\Temp\HRE Mockup Product-win32.win32.x86_64\plugins\org.historyresearchenvironment.usergui_1.0.0.201801161825.jar!\org\historyresearchenvironment\tmg\h2\Dbf2H2\TmgTypes.class
- * Java compiler version: 8 (52.0)
- * JD-Core Version:       0.7.1
- */

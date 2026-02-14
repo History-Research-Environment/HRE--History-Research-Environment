@@ -48,7 +48,7 @@ package hre.gui;
  * 			  2025-02-16 Fixed error in birt event list - adding language (N Tolleshaug)
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  * 			  2025-03-24 Remove all Citation tables (D Ferguson)
- * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
+ * 			  2026-02-02 Log all catch block and DEBUG msgs (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
  * NOTE02 need Sentence Editor function eventually
@@ -728,11 +728,9 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Set datalanguage for event  role manager
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();
 		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
-		
-		//pointPersonHandler.pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+
 	// Collect event types/roles for Birth, etc
 		birthEventList = pointPersonHandler.getEventTypeList(birthEventGroup);
-		//System.out.println(" birthEventList: " + birthEventList.length);
 		birthEventType = pointPersonHandler.getEventTypes();
 		DefaultComboBoxModel<String> birthEvents = new DefaultComboBoxModel<String>(birthEventList);
 		comboBirthType = new JComboBox<String>(birthEvents);
@@ -1874,8 +1872,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int selectedBaptIndex = comboBaptType.getSelectedIndex();
 				int selectedEventType = baptEventType[selectedBaptIndex];
-				if (HGlobal.DEBUG)
-					System.out.println("Bapt event index/type: " + selectedBaptIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+	   	    		HB0711Logging.logWrite("Status: in HG0505AddPer bapt event index/type: " + selectedBaptIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				try {
 					baptRoleList = pointPersonHandler.getRolesForEvent(selectedEventType, selectBaptRoles);
 					baptRoleType = pointPersonHandler.getEventRoleTypes();
@@ -1926,8 +1924,8 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				int selectedBurialIndex = comboBurialType.getSelectedIndex();
 				int selectedEventType = burialEventType[selectedBurialIndex];
-				if (HGlobal.DEBUG)
-					System.out.println(" Burial event index/type: " + selectedBurialIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+	   	    		HB0711Logging.logWrite("Status: in HG0505AddPer burial event index/type: " + selectedBurialIndex + "/" + selectedEventType + " - /"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				try {
 					burialRoleList = pointPersonHandler.getRolesForEvent(selectedEventType, selectBurialRoles);
 					burialRoleType = pointPersonHandler.getEventRoleTypes();

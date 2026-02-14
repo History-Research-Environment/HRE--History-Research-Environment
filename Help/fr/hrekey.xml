@@ -3,10 +3,10 @@
 
 <indexitem text="Importer un projet TMG" target="41700tmgimport">
 </indexitem>
-<indexitem text="Ouverture d'un projet TMG importé" target="40200openproject">
+<indexitem text="Ouverture d'un projet TMG importÃ©" target="40200openproject">
 </indexitem>
 
-<indexitem text="Gérer un projet HRE" >
+<indexitem text="GÃ©rer un projet HRE" >
 	<indexentry text="Sauvegarder un projet" target="40500backupproject" />
 	<indexentry text="Restaurer un projet" target="40600restoreproject" />
 	<indexentry text="Copier un projet" target="40800copyproject" />

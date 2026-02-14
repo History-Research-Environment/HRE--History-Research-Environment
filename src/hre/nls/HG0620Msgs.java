@@ -23,6 +23,11 @@ public class HG0620Msgs extends NLS {
 	public static String Text_28;
 	public static String Text_29;
 
+	public static String Text_30;
+	public static String Text_31;
+	public static String Text_32;
+	public static String Text_33;
+
 	public HG0620Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG0620-" + guiLanguage;  //$NON-NLS-1$

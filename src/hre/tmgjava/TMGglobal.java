@@ -33,8 +33,8 @@ import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "11.01.2026";			// Set Build number
-	public static String releaseDate = "11 Jan 2026";		// and release date
+	public static String buildNo = "15.02.2026";			// Set Build number
+	public static String releaseDate = "15 Feb 2026";		// and release date
 
 	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
 	public static String databaseVersion = "v22c 2025-09-18";	// Database version DDL
@@ -51,6 +51,8 @@ public class TMGglobal {
 	//public static boolean TRACE = true;	 // Set up stack trace for debug to external file
 
 	// Switches for process monitor Output
+	//public static boolean TMGFILEDUMP = false; // Controls TMG table dump to file
+	public static boolean TMGFILEDUMP = true; // Controls TMG table dump to file
 	//public static boolean TMGTRACE = false; // Controls TMG table load messages
 	public static boolean TMGTRACE = true; // Controls TMG table load messages
 	//public static boolean HRETRACE = false; // Controls HRE table load and index messages
@@ -102,7 +104,9 @@ public class TMGglobal {
 
 // ****** Log file for for console output from converter enabled by TRACE
 // ******-- Specific for user NTo - need to general for all Users ---********
-	public static String logFile = "C:\\Users\\Nils\\HRE\\NTo-B32-V22C-Log.txt";
+	public static String dumpTableFolder = "C:\\Users\\Nils\\HRE\\";
+// ******-- Specific for user NTo - need to general for all Users ---********
+	public static String logFile = "C:\\Users\\Nils\\HRE\\NTo-B32-V22c-Conslole.log";
 // **************************************************************************
 	public static String tmgStartFolder = "C:\\Users\\Nils\\Documents\\The Master Genealogist v9\\Projects\\";
 // DDL 22c **************************************************************************

@@ -55,6 +55,7 @@ package hre.tmgjava;
  *			  2025-09-01 - Add new source table process (updateT737Templates) (D Ferguson)
  *			  2025-09-19 - Change TMGLanguage code to find most common language (D Ferguson)
  * 			  2026-01-15 - Log catch block msgs (D Ferguson)
+ * 			  2026-02-08 - Added TMG table dump to user HRE folder (N. Tolleshaug)
  *******************************************************************************************/
 
 import java.awt.Dialog.ModalityType;
@@ -953,8 +954,16 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		try {
 		// Send console output to file.
 			if (TMGglobal.TRACE) redirectOutput(TMGglobal.logFile);
+			
 		// Test HDATE convert
 			//if (TMGglobal.TRACE) testHdateConvert();
+			
+		// Dump TMG table to HRE folder
+			if (TMGglobal.TMGFILEDUMP) {
+				new TMGfileDump(true);
+				return;
+			}
+			
 		// Select database
 			if (!TMGglobal.databaseVersion.startsWith("v22c")) throw new HCException(" MAIN - HRE database version not accepted");
 			tmghreDataBase = TMGglobal.tmghreBase22c;

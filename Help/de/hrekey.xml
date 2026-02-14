@@ -3,7 +3,7 @@
 
 <indexitem text="TMG-Projekt importieren" target="41700tmgimport">
 </indexitem>
-<indexitem text="Öffnen eines importierten TMG-Projekts" target="40200openproject">
+<indexitem text="Ã–ffnen eines importierten TMG-Projekts" target="40200openproject">
 </indexitem>
 
 <indexitem text="Verwalten eines HRE-Projekts" >
@@ -11,7 +11,7 @@
 	<indexentry text="Ein Projekt wiederherstellen" target="40600restoreproject" />
 	<indexentry text="Ein Projekt kopieren" target="40800copyproject" />
 	<indexentry text="Projekt umbenennen" target="40900renameproject" />
-	<indexentry text="Projekt löschen" target="41000deleteproject" />
+	<indexentry text="Projekt lÃ¶schen" target="41000deleteproject" />
 	<indexentry text="Projektinformationen anzeigen" target="41400summproject" />
 </indexitem>
 
