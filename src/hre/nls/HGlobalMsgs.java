@@ -15,6 +15,9 @@ public class HGlobalMsgs extends NLS {
 	public static String Text_9;
 	public static String Text_10;
 
+	public static String Text_11;
+	public static String Text_12;
+
 	public static String Text_52;
 	public static String Text_53;
 	public static String Text_54;

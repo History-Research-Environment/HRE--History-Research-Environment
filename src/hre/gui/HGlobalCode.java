@@ -8,6 +8,8 @@ package hre.gui;
  * 			  2025-10-07 Add bracket validation routines (NLS'd) (D Ferguson)
  * 			  2025-11-17 Removed SourceElement routines to HBReportHandler (D Ferguson)
  * 			  2026-01-04 Log debug msgs (D Ferguson)
+ * v0.05.0033 2026-02-28 Added NLS messages for HBTreeCreator (N. Tolleshaug)
+ * 			  2026-03-01 Implemented full NLS and changed routine name (D Ferguson)
  ****************************************************************************************/
 
 import java.awt.Component;
@@ -75,6 +77,16 @@ public class HGlobalCode {
 			HGlobalMsgs.Text_57,		// Filename
 			HGlobalMsgs.Text_58};		// Server
 		return rmtprojTableHdr;
+	}
+
+/**
+ * Supply NLS versions of 'No recorded Father/Mother' to HBTreeCreator
+ * @return String[] messages
+ */
+	public static String[] getNoParentMessgaes() {
+		String[] messages = {HGlobalMsgs.Text_11,		// No recorded Father
+							 HGlobalMsgs.Text_12};		// No recorded Mother
+		return messages;
 	}
 
 /********************************
@@ -261,7 +273,6 @@ public class HGlobalCode {
  * @param numCols -  Number of columns this applies to
  */
 	public static class JTableCellTabbing {
-		@SuppressWarnings("serial")
 		public static void setTabMapping(final JTable theTable, final int startRow, final int numRows, final int startCol, final int numCols) {
 			// Calculate last row and column for tabbing
 		    final int endRow = startRow + (numRows - 1);

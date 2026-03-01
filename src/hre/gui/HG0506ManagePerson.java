@@ -72,6 +72,7 @@ package hre.gui;
  * 			  2026-02-02 Fix initial sizing problem due to card layout rules (D Ferguson)
  * 			  2026-02-18 Fix 32.13 - Parent table grows when shouldn't (D Ferguson)
  * v0.05.0033 2026-02-21 Show relationship panel (if valid) (D Ferguson)
+ * 			  2026-03-01 If goto # invalid, clear entry box (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
@@ -490,6 +491,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    NumberFormat format = NumberFormat.getInstance();
 	    NumberFormatter formatter = new NumberFormatter(format);
 	    formatter.setValueClass(Integer.class);
+	    format.setGroupingUsed(false);
 	    formatter.setMinimum(1);
 	    formatter.setMaximum(5000000);
 	    JFormattedTextField persNum = new JFormattedTextField(formatter);
@@ -1287,8 +1289,9 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        			pointPersonHandler.initiateManagePerson(pointOpenProject, personPID, screenID);
 
 	        		} else {
-						JOptionPane.showMessageDialog(persNum, HG0506Msgs.Text_27 + enteredNum,
-													HG0506Msgs.Text_28, JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(persNum, HG0506Msgs.Text_27 + enteredNum,		// No person with number:
+													HG0506Msgs.Text_28, JOptionPane.ERROR_MESSAGE); // Select Person
+						persNum.setValue(null);		// clear input field
 					}
 	        	}
 			}
@@ -2515,7 +2518,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
                 case SELF -> "selv";
                 case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
                 case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "bror" : "søster";
+                case SIBLING -> d.sexCode == "M" ? "bror" : "sï¿½ster";
                 case NIBLING -> nibling(d.generationsDown, d.sexCode);
                 case PIBLING -> pibling(d.generationsUp, d.sexCode);
                 case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
@@ -2527,13 +2530,13 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
             return "tipp-".repeat(up - 2) + (sex == "M" ? "oldefar" : "oldemor");
         }
         private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "sønn" : "datter";
+            if (down == 1) return sex == "M" ? "sï¿½nn" : "datter";
             if (down == 2) return sex == "M" ? "barnebarn" : "barnebarn"; // gender-neutral
             return "tipp-".repeat(down - 2) + "barnebarn";
         }
         private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "nevø" : "niese";
-            return "gammel-".repeat(down - 1) + (sex == "M" ? "nevø" : "niese");
+            if (down == 1) return sex == "M" ? "nevï¿½" : "niese";
+            return "gammel-".repeat(down - 1) + (sex == "M" ? "nevï¿½" : "niese");
         }
         private String pibling(int up, String sex) {
             if (up == 1) return sex == "M" ? "onkel" : "tante";
