@@ -121,9 +121,9 @@ package hre.bila;
   * 		   2025-04-17 - Only count children if bio relationship (Issue 31.67) (D Ferguson)
   * 		   2025-04-26 - If parent not known pass '---' parent-name in parentTable (D Ferguson)
   *            2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
-  *            2026-01-27 - line 234 - pointEventRoleManager = 
+  *            2026-01-27 - line 234 - pointEventRoleManager =
   *            				pointOpenProject.getEventRoleManager(); (N.Tolleshaug)
-  *            
+  * v0.05.0033 2026-02-20 - Provide API to get person's relationship data (D Ferguson)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -174,7 +174,7 @@ import hre.tmgjava.HCException;
 /**
   * Class HBPersonHandler
   * @author Nils Tolleshaug
-  * @version v0.04.0032
+  * @version v0.05.0033
   * @since 2019-12-20
   */
 public class HBPersonHandler extends HBBusinessLayer {
@@ -237,7 +237,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 		} else System.out.println(" HBPersonHandler() - pointOpenProject == null!");
 		if (HGlobal.DEBUG)
 			System.out.println("Person Handler initiated!");
-		
+
 	}
 
 /**
@@ -293,7 +293,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 		return null_RPID;
 	}
 
-
 	public String[] getManagedStyleNameAndDates() {
 		return pointManagePersonData.getNameData();
 	}
@@ -312,6 +311,10 @@ public class HBPersonHandler extends HBBusinessLayer {
 
 	public Object[][] getManagedNameTable() {
 		return pointManagePersonData.getNameTable();
+	}
+
+	public int[] getManagedRelateTable() {
+		return pointManagePersonData.getRelateTable();
 	}
 
 	public Object[][] getManagedFlagTable() {
@@ -1719,13 +1722,13 @@ public class HBPersonHandler extends HBBusinessLayer {
  * @return HG0507PersonSelectMin
  * @throws HBException
  */
-	public HG0507SelectPerson activateAssociateAdd(HBProjectOpenData pointOpenProject, HG0547EditEvent pointerEditEvent, 
+	public HG0507SelectPerson activateAssociateAdd(HBProjectOpenData pointOpenProject, HG0547EditEvent pointerEditEvent,
 			int eventNumber) throws HBException {
 		HG0507SelectPerson pointSelectAssociate = null;
 		try {
 			pointAddPersonRecord = new AddPersonRecord(pointDBlayer, pointOpenProject);
 			pointSelectAssociate = new HG0507SelectAssociate(this, pointOpenProject, eventNumber, -1, true);
-			if (pointerEditEvent == null) 
+			if (pointerEditEvent == null)
 				System.out.println("HBPersonHandler - activateAssociateAdd - pointEdotevent = null");
 			pointSelectAssociate.pointEditEvent = pointerEditEvent;
 			return pointSelectAssociate;
@@ -1748,7 +1751,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 		try {
 			pointAddPersonRecord = new AddPersonRecord(pointDBlayer, pointOpenProject);
 			pointSelectAssociate = new HG0507SelectAssociate(this, pointOpenProject, eventNumber, rowInTable, false);
-			if (pointerEditEvent == null) 
+			if (pointerEditEvent == null)
 				System.out.println("HBPersonHandler - activateAssociateAdd - pointEdotevent = null");
 			pointSelectAssociate.pointEditEvent = pointerEditEvent;
 			pointSelectAssociate.setEditMode();
@@ -1889,7 +1892,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 		long personNamePID = null_RPID;
 
 		HG0509ManagePersonName pointManagePersonNameScreen = null;
-		//int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 
 	// Load data from database(dataBaseIndex) into ManagePersonNameData
 		pointManagePersonNameData = new ManagePersonNameData(pointDBlayer, pointOpenProject);
@@ -1905,7 +1907,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 
 		if (HGlobal.DEBUG)
 			System.out.println(" activatePersonNameEdit: " + personNamePID);
-
 
 		pointManagePersonNameData.updateManagePersonNameTable(personNamePID);
 		pointManagePersonNameScreen = new HG0509EditPersonName(this, pointOpenProject, personNamePID);
@@ -2019,8 +2020,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 		}
 		return null;
 	}
-
-
 
 /**
  * deletePersonInTable(long personPID, HBProjectOpenData pointOpenProject)
@@ -2248,6 +2247,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 			throw new HBException(" HBPersonHandler - deletePartner : " + sqle.getMessage());
 		}
 	}
+
 /**
  * deleteEventForPerson(long assocPersonRPID)
  * @param assocPersonRPID
@@ -2270,7 +2270,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 				eventTableRS.deleteRow();
 				if (HGlobal.DEBUG)
 					System.out.println(" Deleted event and assoc for PID: " + assocPersonRPID);
-
 			}
 			eventTableRS.close();
 		// End transaction
@@ -2546,6 +2545,7 @@ class ManagePersonData extends HBBusinessLayer {
 	Object [][] nameTable;
 	Object [][] personFlagTable;
 	String[] tableFlagDescript;
+	int[] relateTable = new int[4];
 
 	public ManagePersonData(HDDatabaseLayer pointDBlayer, int dataBaseIndex, HBProjectOpenData pointOpenProject) {
 		super();
@@ -2626,6 +2626,10 @@ class ManagePersonData extends HBBusinessLayer {
 
 	public Object[][] getNameTable() {
 		return nameTable;
+	}
+
+	public int[] getRelateTable() {
+		return relateTable;
 	}
 
 	public Object[][] getFlagTable() {
@@ -2758,8 +2762,14 @@ class ManagePersonData extends HBBusinessLayer {
 		// Count marriages
 			marriages = countMarriages(selectPersonPID);
 
-		// Set up all name table
+		// Setup all name table
 			preparePersonNameTable(selectPersonPID);
+
+		// Setup relationship table
+			relateTable[0] = personSelected.getInt("RELATE1");
+			relateTable[1] = personSelected.getInt("RELATE2");
+			relateTable[2] = personSelected.getInt("RELATE3");
+			relateTable[3] = personSelected.getInt("RELATE4");
 
 		// Set flag list
 			getPersonFlagList(selectPersonPID);

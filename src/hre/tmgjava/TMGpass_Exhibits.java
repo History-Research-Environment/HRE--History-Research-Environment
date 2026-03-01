@@ -33,10 +33,11 @@ package hre.tmgjava;
  *  		  2023-09-05 - Eliminated debug error line 47X in console out (N. Tolleshaug)
  *  		  2023-09-06 - Modified image exception handling (N. Tolleshaug)
  * v0.04.0032 2026-01-17 - Log all catch blocks (D Ferguson)
+ * 			  2026-02-16 - First test for caption text == null - line 586
+ * v0.05.0033 2026-02-24 - Update JPG thumbnail code - fix CMYK/YCCK/ICC issues (D Ferguson)
  **********************************************************************************/
 
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -582,12 +583,13 @@ class TMGpass_Exhibits {
 				filePath = returnStringContent(tmgIrow.getString("IFILENAME"));
 				captionText = returnStringContent(tmgIrow.getString("CAPTION"));
 			}
-
-			if (captionText.length() > 150) {
-				if (EXHCHECK) System.out.println(" checkExhibitContent - Long caption Text nr: "
-						+ exhibit + " length: " + captionText.length() + " / " + captionText);
-				captionText = captionText.substring(0,150);
-			}
+			if (captionText != null) {
+				if (captionText.length() > 150) {
+					if (EXHCHECK) System.out.println(" checkExhibitContent - Long caption Text nr: "
+							+ exhibit + " length: " + captionText.length() + " / " + captionText);
+					captionText = captionText.substring(0,150);
+				}
+			} else captionText = "";
 
 		} catch (NullPointerException ime) {
 			if (HGlobal.writeLogs) {
@@ -610,6 +612,8 @@ class TMGpass_Exhibits {
 	g.drawImage(originalImage, 0, 0, WIDTH, HEIGHT, null);
 	g.dispose();
 
+	NOTE: above simple code replaced to avoid problems with CMYK/YCCK/ICC issues.
+
 	*** or if you want to get a bit more sophisticated use bilinear interpolation (little bit slower):
 	g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 	g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -618,30 +622,41 @@ class TMGpass_Exhibits {
 	g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 	g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
  */
+
 	private byte[] createNewImageThumb(int exhibitIndex, String filePath) {
-		int WIDTH = 160, HEIGHT  = 200;
+	    int WIDTH = 160, HEIGHT = 200;
 	    File imageFile = new File(filePath);
-	    Image originalImage = null;
-		try {
-			BufferedImage thumbnail = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
-			originalImage = ImageIO.read(imageFile);
-			Graphics2D g = thumbnail.createGraphics();
-			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			g.drawImage(originalImage, 0, 0, WIDTH, HEIGHT, null);
-			g.dispose();
-			ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
-			ImageIO.write(thumbnail, "jpg", byteOutStream);
-			return byteOutStream.toByteArray();
-		} catch (Exception all) {
-			errorExhibits++;
-			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGpassExhibits creating thumbnail. Exhibit no. "
-									+ exhibitIndex + " Path: " + filePath + all.getMessage());
-				HB0711Logging.printStackTraceToFile(all);
-			}
-			return null;
-		}
+	    try {
+	     // Read original
+	        BufferedImage src = ImageIO.read(imageFile);
+	     // Normalize to RGB to avoid CMYK/YCCK/ICC issues
+	        BufferedImage originalImage = new BufferedImage(
+	                src.getWidth(),
+	                src.getHeight(),
+	                BufferedImage.TYPE_INT_RGB
+	        );
+	        Graphics2D g0 = originalImage.createGraphics();
+	        g0.drawImage(src, 0, 0, null);
+	        g0.dispose();
+	     // Create thumbnail
+	        BufferedImage thumbnail = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+	        Graphics2D g = thumbnail.createGraphics();
+	        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+	        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	        g.drawImage(originalImage, 0, 0, WIDTH, HEIGHT, null);
+	        g.dispose();
+	        ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+	        ImageIO.write(thumbnail, "jpg", byteOutStream);
+	        return byteOutStream.toByteArray();
+	    } catch (Exception all) {
+	        errorExhibits++;
+	        if (HGlobal.writeLogs) {
+	            HB0711Logging.logWrite("ERROR: in TMGpassExhibits creating thumbnail. Exhibit no. "
+	                    + exhibitIndex + " Path: " + filePath + " " + all.getMessage());
+	            HB0711Logging.printStackTraceToFile(all);
+	        }
+	        return null;
+	    }
 	}
 
 /**

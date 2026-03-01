@@ -12,6 +12,7 @@ package hre.gui;
  *			  2025-12-17 NLS code up to this point (D Ferguson)
  *            2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
  *			  2026-01-04 Log catch block errors (D Ferguson)
+ *			  2026-02-21 Added preliminary methods for sentence preload (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 sentence saving after edit
@@ -50,6 +51,7 @@ import hre.bila.HB0711Logging;
 import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBReportHandler;
 import hre.bila.HBWhereWhenHandler;
 import hre.nls.HG0548Msgs;
 import net.miginfocom.swing.MigLayout;
@@ -64,6 +66,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	HBWhereWhenHandler pointWhereWhenHandler;
 	HBEventRoleManager pointEventRoleManager;
+	HBReportHandler pointReportHandler;
 	HG0547EditEvent pointEditEvent;
 	int dataBaseIndex;
 	int eventNumber;
@@ -107,6 +110,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		this.pointEditEvent = pointEditEvent;
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();
+		pointReportHandler = pointOpenProject.getReportHandler();
 		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 		this.roleName = roleName;
 		this.eventNumber = eventNumber;
@@ -232,7 +236,12 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	// End of Panel Definition
 
 	// Load initial Role setting's sentence and convert role numbers to names
-		sentenceTextArea.append(convertSentRoleNumToNames());
+		roleSentence = getRoleSentenceforEvents();
+		System.out.println(" Rolesentence: " + roleSentence);
+		sentenceTextArea.append(convertSentRoleNumToNames(roleSentence));
+    	previewTextArea.setText("");
+    	previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+    	
 		// If we need to, show the Sentence Warning msg
 		if (showWarning) {
 			warningMsg();
@@ -262,9 +271,12 @@ public class HG0548EditSentence extends HG0450SuperDialog {
             public void changedUpdate(DocumentEvent e) {updateFieldState();}
             protected void updateFieldState() {
 
-            	 // for every edit, if the edited sentence matches the event's default role sentence,
-            	// enable the word "(default)" in the 'lbl_default field
-            	// if it doesn't match, diable the default field
+       /* for every edit, if the edited sentence matches the event's default role sentence,
+          enable the word "(default)" in the 'lbl_default field
+          if it doesn't match, diable the default field */
+            	roleSentence = convertSentRoleNamesToNums(sentenceTextArea.getText());
+            	previewTextArea.setText("");
+            	previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
             	sentenceChanged = true;
             	btn_Save.setEnabled(true);
             }
@@ -290,12 +302,16 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 					}
 				// NO option - carry on with the new combobox selection
 				currentComboIndex = comboRoleNames.getSelectedIndex();
-				// Clear out current sentence
-				roleSentence = "";		//$NON-NLS-1$
-				sentenceTextArea.setText("");	//$NON-NLS-1$
-				// Load and convert sentence role numbers to role namese
-				sentenceTextArea.append(convertSentRoleNumToNames());
-				// If we need to, show the Sentence Warning msg
+			// Collect current sentence
+				roleSentence = getRoleSentenceforEvents();
+			// Clear out current sentence	
+				sentenceTextArea.setText("");
+			// Load and convert sentence role numbers to role namese	
+				sentenceTextArea.append(convertSentRoleNumToNames(roleSentence));
+			// Seup preview of sentence
+		    	previewTextArea.setText("");
+		    	previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+			// If we need to, show the Sentence Warning msg	
 				if (showWarning) {
 					warningMsg();
 					showWarning = false;
@@ -337,31 +353,41 @@ public class HG0548EditSentence extends HG0450SuperDialog {
  * convertSentRoleNumToNames - load sentence and convert role numbers to role names
  * @return formatted sentence
  */
-	public String convertSentRoleNumToNames() {
-		// Setup default rolename/nums for this routine to use
-		String[] formatRoleNames = eventRoleNames;
-		int[] formatRoleNums = eventRoleNumbers;
-        String replacement = "";		//$NON-NLS-1$
-
+	public String getRoleSentenceforEvents() {
 		// Load the sentence for this langcode and selected combobox entry
 		try {
 			roleSentence = pointWhereWhenHandler.pointLibraryResultSet.
 					selectSentenceString(eventNumber, eventRoleNumbers[comboRoleNames.getSelectedIndex()],
 										 lang_code, dataBaseIndex);
+			//return convertSentRoleNumToNames(roleSentence);
 		} catch (HBException hbe) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0548 sentence loading " + hbe.getMessage()); //$NON-NLS-1$
 				HB0711Logging.printStackTraceToFile(hbe);
 			}
+			return "";
 		}
-
-		// If roleSentence has error flag, change error message and return
+		//return convertSentRoleNumToNames(roleSentence);
+		return roleSentence;
+	}
+	
+/**
+ * public String convertSentRoleNumToNames(String roleSentence)
+ * @param roleSentence
+ * @return
+ */
+	public String convertSentRoleNumToNames(String roleSentence) {
+		// Setup default rolename/nums for this routine to use
+		String[] formatRoleNames = eventRoleNames;
+		int[] formatRoleNums = eventRoleNumbers;
+        String replacement = "";		//$NON-NLS-1$
+	// If roleSentence has error flag, change error message and return
 		if (roleSentence.equals("NOSENTENCE")) {			//$NON-NLS-1$
 			roleSentence = HG0548Msgs.Text_12;		// No sentence exists for this role in this language
 			return roleSentence;
 		}
-		// Check for male/female sentences needing to be split at the TMG $!& marker
-		// and check sexCode to select correct sentence to use
+	// Check for male/female sentences needing to be split at the TMG $!& marker
+	// and check sexCode to select correct sentence to use
 		if (roleSentence.contains("$!&")) {		//$NON-NLS-1$
 			multiSexSentences = true;
 			sexSentences = roleSentence.split("\\$!&");	// NOTE need escape for $!  //$NON-NLS-1$

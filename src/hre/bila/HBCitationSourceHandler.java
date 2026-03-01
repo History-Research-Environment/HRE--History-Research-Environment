@@ -52,6 +52,7 @@ package hre.bila;
  *			  2025-12-14 - Implemented edit source element name (N Tolleshaug)
  *		      2025-12-22 - Add, edit and copy source type implemented (N. Tolleshaug)
  *			  2026-01-27 - Updated constructor for multiple projects (N. Tolleshaug)
+ *			  2026-02-18 - Fix for 32.21 - Source element table add new source (N. Tolleshaug)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -136,7 +137,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	boolean sourceActive;
 
 // Sourcce element T738 data
-	String sourceElementNumber, sourceElementData;
+	String sourceElementNumber = "", sourceElementData = "";
 	long nextSourceElementDataPID;
 	long nextSourceElementTablePID;
 
@@ -633,7 +634,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 			sourceElementTableRS = requestTableData(selectString, dataBaseIndex);
 			try {
-				if (isResultSetEmpty(sourceElementTableRS)) System.out.println(" No data in ResultSet!");
+				if (isResultSetEmpty(sourceElementTableRS)) System.out.println(" updateSourceElementData - No data in ResultSet!");
 				else {
 					sourceElementTableRS.first();
 					updateSourceElementT738_SORC_ELMNT(sourceElementTableRS);
@@ -1278,7 +1279,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  */
 	public void updateElementDataChangeList(String elementName, String elementNumber, String elementData) {
 		if (HGlobal.DEBUG)
-			System.out.println(" addToElementDataChangeList(): " +  elementName + "/" + elementNumber + "/" + elementData);
+			System.out.println(" updateElementDataChangeList(): " +  elementName + "/" + elementNumber + "/" + elementData);
 		elementNameDataChanges.put(elementNumber, elementData);
 	}
 
@@ -1298,9 +1299,10 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		for (Map.Entry<String, String> entry : elementNameDataChanges.entrySet()) {
 			sourceElementNumber = entry.getKey();
 			sourceElementData = entry.getValue();
+            if (HGlobal.DEBUG) 
+            	System.out.println("Element Data: " + sourceElementNumber + ", Data: " + sourceElementData);
 			addToSourceElementDataT734_SORC_DATA(nextSourceElementDataPID, sourceElementDataRS);
 			nextSourceElementDataPID++;
-            //System.out.println("Element Data: " + sourceElementNumber + ", Data: " + sourceElementData);
 		}
 	}
 

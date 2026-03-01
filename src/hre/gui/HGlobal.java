@@ -1,4 +1,5 @@
 package hre.gui;
+
 /************************************************************************
  * PUBLIC VARIABLES MODULE
  * Split off from HG0401HREMain 2019-05-17
@@ -21,6 +22,8 @@ package hre.gui;
  * 			  2024-11-15 Added boolean married name prompt option (D Ferguson)
  * v0.04.0032 2024-12-22 Updated for Build 32 and database v22c (N. Tolleshaug)
  * 			  2025-05-12 Modified Object[] userCred = {"","","","", false} (D Ferguson)
+ * v0.05.0033 2026-02-21 Added new field focusPerson (D Ferguson)
+ * 			  2026-02-23 Set pluginEnabled=false as default (D Ferguson)
  ************************************************************************/
 
 import java.awt.Color;
@@ -33,11 +36,11 @@ import hre.bila.HBProjectOpenData;
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author D Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version Build 0.04.3226.0101
+ * @version Build 0.05.3326.0221
  */
 public class HGlobal {
-	public static String buildNo = "0.04.3226.0215";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "15 Feb 2026";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.05.3326.0221";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "21 Feb 2026";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "v22c";		    // Set Database DDL version //$NON-NLS-1$
 
@@ -59,6 +62,7 @@ public class HGlobal {
 	public static String thisComputer;						// computer HRE is running on
 	public static String defDatabaseEngine = "H2";	        // standard database engine //$NON-NLS-1$
 	public static String userID = "";						// UserID as known by the OS, copied to userCred[0] //$NON-NLS-1$
+	public static String focusPerson = "Focus Person";		// default focus person name
 
 	public static String passWord = "";						// Store used password remote login //$NON-NLS-1$
 	public static String remoteID = "";						// Store used remote user login  //$NON-NLS-1$
@@ -125,7 +129,7 @@ public class HGlobal {
 	public static boolean showCancelmsg = true;				// whether Cancel messages are shown to user (default true)
 	public static boolean openLastProject = false;			// whether Last used project opened at HRE startup (default false)
 	public static boolean backupActivProject = false;		// whether to auto-backup Active Project at close (default false)
-	public static boolean pluginEnabled = true;				// whether plugins are loaded at open project(default true)
+	public static boolean pluginEnabled = false;			// whether plugins are loaded at open project(default false)
 	public static boolean reloadPS = true;					// whether to always reload Person Selector (default true)
 	public static boolean promptMarrName = false;			// whether to prompt to enter a Married Name (default false)
 	public static boolean writeLogs = true;					// whether external Log files are written (default true)

@@ -13,6 +13,7 @@ package hre.gui;
  * v0.03.0031 2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2025-02-23 Fix crash when invoking Reminder (D Ferguson)
  *			  2026-01-05 Log catch block errors correctly (D Ferguson)
+ *			  2026-02-16 Let flag table grow if screen grows (D Ferguson)
  *******************************************************************************/
 
 import java.awt.Dimension;
@@ -114,7 +115,7 @@ public class HG0512FlagManager extends HG0450SuperDialog {
 		setTitle(HG0512Msgs.Text_0);	// Flag Manager
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[]10[grow]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Get the Table Headings, which are: Flag Name, System?, Language, Active?, All Possible Settings
 		tableColHeads = pointManagePersonFlag.setTranslatedData(screenID, "1", false); //$NON-NLS-1$

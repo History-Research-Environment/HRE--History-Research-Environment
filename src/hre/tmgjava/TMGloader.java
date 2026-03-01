@@ -22,6 +22,7 @@ package hre.tmgjava;
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  * v0.04.0032 2025-07-21 - Added tables for import of source A,M,S,R,U,W tables (N. Tolleshaug)
  *			  2026-01-14 - Log catch block msgs (D Ferguson)
+ * v0.05.0032 2026-02-24 - Added HB0711Logging.logWrite("Action: in TMGloader loading XXXX tables");
  *****************************************************************************************/
 
 import java.io.File;
@@ -121,7 +122,9 @@ public class TMGloader {
  * @throws HCException
  */
 	public void loadTmgSupportTables() throws HCException {
-		//STYLE TYPE TABLE
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in TMGloader loading Support tables");
+	//STYLE TYPE TABLE
 		loadFileTMG(TMGtypes.STYLE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.STYLE + ".dbf");
 		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.STYLE + ".fpt");
@@ -130,7 +133,7 @@ public class TMGloader {
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.STYLE , TMGglobal.tmg_ST_table);
 		resetProgress();
 
-		//STYLE TYPE TABLE
+	//STYLE TYPE TABLE
 		loadFileTMG(TMGtypes.FLAG);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.FLAG + ".dbf");
 		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.FLAG + ".fpt");
@@ -145,6 +148,8 @@ public class TMGloader {
  * @throws HCException
  */
 	public void loadTmgNameTables() throws HCException {
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in TMGloader loading Name tables");
 
 	//DBFReader tmgReader;
 		resetProgress();
@@ -210,8 +215,10 @@ public class TMGloader {
 	} // Name loading
 
 	public void loadTmgPlaceTables() throws HCException {
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in TMGloader loading Place tables");
 		resetProgress();
-		//PLACE FILE
+	//PLACE FILE
 		loadFileTMG(TMGtypes.PLACE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PLACE + ".dbf");
 		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.PLACE + ".fpt");
@@ -252,6 +259,10 @@ public class TMGloader {
  * @throws HCException
  */
 	public void loadTmgEventTables(boolean all) throws HCException {
+		
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in TMGloader loading Event tables");
+		
 		resetProgress();
 
 	// WITNESS TABLE
@@ -285,6 +296,8 @@ public class TMGloader {
 	}
 
 	public void loadTmgSourceTables() throws HCException {
+		if (HGlobal.writeLogs)
+			HB0711Logging.logWrite("Action: in TMGloader loading Source tables");
 	// Source type
 		loadFileTMG(TMGtypes.SOURCE_TYPE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".dbf");

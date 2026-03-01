@@ -12,6 +12,7 @@ package hre.bila;
  * 			  2021-03-23 move error msgs to HGlobal routine (N. Tolleshaug)
  * 			  2021-04-05 add method to print Java stack trace to log (N. Tolleshaug)
  * v0.03.0031 2023-12-28 changed WildcardFileFilter to match commons-io-2.15.1 version (D Ferguson)
+ * v0.05.0033 2026-02-22 Get Project name correctly for the log record (D Ferguson)
  *******************************************************************************
 * For documentation on the OpenCSV functions used here, see:
 * https://sourceforge.net/projects/opencsv/
@@ -48,7 +49,7 @@ import hre.gui.HGlobalCode;
 /**
  * Log file read, write, manage
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.05.0033
  * @since 2019-05-17
  */
 
@@ -56,7 +57,7 @@ public class HB0711Logging {
 
 	private static String logfileName;			// for path + filename of this Log file
 	public static List<String[]> allLogEntries;	// for all log records from a Read operation
-	private static HBProjectOpenData pointSelectedProject;
+	private static String noName = " ------- ";
 
 /**
  * START of logWrite - create the log file if it doesn't exist
@@ -79,27 +80,21 @@ public class HB0711Logging {
 		String nowTime = LocalTime.now().toString();
 
 	// Select open project in the list and prepare output
-		String projectName = " ------- ";
+		String projectName = noName;
 
-		if (HG0401HREMain.mainFrame != null) {
-			pointSelectedProject = HG0401HREMain.mainFrame.getSelectedOpenProject();
-			if (pointSelectedProject != null) {
-				projectName = pointSelectedProject.getProjectName();
-			}
-		}
+		if (HG0401HREMain.mainFrame != null)
+			projectName = HG0401HREMain.mainFrame.getStatusProject();
+		else projectName = noName;
 
-		if (HGlobal.DEBUG) {
+		if (HGlobal.DEBUG)
 			System.out.println("Logged project: " + projectName);
-		}
 
 		String[] logRecord = { nowDate, nowTime,  HGlobal.thisComputer, projectName, actionEntry} ;
 
     // Now create an Arraylist and load it with 1 or both Strings
 		List<String[]> allLogRecords = new ArrayList<>();
 		if (!logFile.exists())
-		 {
 			allLogRecords.add(headerRecord);	// if no log file exists, write header record first
-		}
 		allLogRecords.add(logRecord);
 
 		try (
@@ -125,7 +120,8 @@ public class HB0711Logging {
 		File logFile = new File(logfileName);
 		if (!logFile.exists()) {			// if log file does not exist, write error message and exit
 			HGlobalCode.logErrorMessage(2, "");
-			return;				}
+			return;
+			}
 		try { CSVParser csvParser = new CSVParserBuilder().withSeparator(',').build();
 			  CSVReader reader = new CSVReaderBuilder(new FileReader(logfileName)).withCSVParser(csvParser).withSkipLines(1).build();
 			  allLogEntries = reader.readAll();

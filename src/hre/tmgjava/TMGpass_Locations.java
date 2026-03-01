@@ -17,6 +17,9 @@ package hre.tmgjava;
  *			  2023-08-29 - Import year < 1000 in start/end year (N. Tolleshaug)
  * v0.03.0031 2023-08-16 - Corrected class name in printout (N. Tolleshaug)
  * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
+ * v0.05.0033 2026-02-23 - Logging  - ERROR PPV Place Element vectorSize < 1 (N. Tolleshaug)
+ * v0.05.0033 2026-02-24 - line 207  modified to if (HGlobal.writeLogs) ... (N. Tolleshaug)
+ * 			  2026-02-26 - Modified Writelog messag to "WARNING" ((N. Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
@@ -201,8 +204,13 @@ class TMGpass_Locations {
  */
 		if (placeNr > 1) {
 			vectorSize = tmgPPVtable.getVectorSize(placeNr);
-			if (vectorSize < 1)
-				System.out.println(" TMGpass_Location - PPV Place vectorSize < 1 : " + placeNr + "/" + vectorSize);
+			if (vectorSize < 1) {
+				System.out.println(" ERROR: TMGpass_Location - Location data missing for P.dbf table row: " 
+							+ placeNr + "/" + vectorSize);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("WARNING: TMGpass_Location - Location element data missing for location in P.dbf table row: " 
+							+ placeNr + "/" + vectorSize);
+			}
 			printReport =  "" + (indexP_PID+1) + " Pers: " + personNr + " - " + eventName + " at ";
 			for (int i = 0; i < vectorSize; i++ ) {
 				placeNrInx = tmgPPVtable.findVectorInt(placeNr, i,"UID");

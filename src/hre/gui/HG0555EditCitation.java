@@ -34,6 +34,7 @@ package hre.gui;
  *			  2025-10-29 Change parser to replace < > with {{ }} markers (D Ferguson)
  *			  2025-11-02 Fix source template scrollpane size/pack issues (D Ferguson)
  * 			  2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
+ * 			  2026-02-16 Fix src # entry formatter to disallow commma (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -286,9 +287,9 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 		JButton btn_sorcSelect = new JButton(HG0555Msgs.Text_11);	// Select Source
 		citePanel.add(btn_sorcSelect, "cell 0 0, alignx right");	//$NON-NLS-1$
 
-	    NumberFormat format = NumberFormat.getInstance();
+	    NumberFormat format = NumberFormat.getIntegerInstance();
 	    NumberFormatter formatter = new NumberFormatter(format);
-	    formatter.setValueClass(Integer.class);
+	    format.setGroupingUsed(false);
 	    formatter.setMinimum(1);
 	    formatter.setMaximum(99999);
 	    srcNum = new JFormattedTextField(formatter);

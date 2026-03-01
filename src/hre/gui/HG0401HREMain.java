@@ -90,6 +90,8 @@ package hre.gui;
  * 			  2025-06-29 Set calls to Evidence screens with pointOpenProject (D Ferguson)
  * 			  2025-09-25 Add greyed-out logo to contentsPane to improve look (D Ferguson)
  * 			  2026-01-02 Logged catch block and DEBUG actions (D Ferguson)
+ * v0.05.0033 2026-02-22 Add routine to get Active project name from status bar (D Ferguson)
+ * 			  2026-02-28 Fix 32.36 Stop AncDescReport screen blocking HRE close (D Ferguson)
  *****************************************************************************************/
 
 import java.awt.AlphaComposite;
@@ -179,7 +181,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * HRE Main menu
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2020-05-10
  */
 
@@ -400,6 +402,11 @@ public class HG0401HREMain extends JFrame {
 	   if (actionCode == 10) actionText = HG0401Msgs.Text_136 + actionText;	// TCP server start failed
 	   setStatusAction(actionText);
    }    // End setStatusAction(code, String)
+
+// To get projname from the Status Bar field
+   public String getStatusProject() {
+	   return statusProjName.getText();
+   } 	// End getStatusProject()
 
 /*********************************************************
  * Setup all menus as per the GUI Mainmenu specification
@@ -952,7 +959,7 @@ public class HG0401HREMain extends JFrame {
 			if (HGlobal.numOpenProjects == 0) {
 					if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: exiting HRE");} //$NON-NLS-1$
 					HB0744UserAUX.writeUserAUXfile(); // do final output of UserAux (captures final position of main Menu screen)
-			// Stop tcp server to release port 9092
+				// Stop tcp server to release port 9092
 					HBToolHandler pointToolHandler = (HBToolHandler) pointBusinessLayer[8];
 					pointToolHandler.stopTCPserver();
 					System.exit(0);					// and exit
@@ -1607,7 +1614,9 @@ public class HG0401HREMain extends JFrame {
 				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 				ancdesScreen = new HG0660AncestorDescendant(pointOpenProject,
 						pointOpenProject.getPersonHandler());
-				ancdesScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+				ancdesScreen.setModalityType(JDialog.ModalityType.MODELESS);
+				ancdesScreen.setAlwaysOnTop(true);
+				ancdesScreen.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 				Point xyReport;
 				if (longMenu) xyReport = menuWhWh.getLocationOnScreen();
 				else xyReport = menuReports.getLocationOnScreen();

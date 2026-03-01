@@ -56,6 +56,9 @@ package hre.tmgjava;
  *			  2025-09-19 - Change TMGLanguage code to find most common language (D Ferguson)
  * 			  2026-01-15 - Log catch block msgs (D Ferguson)
  * 			  2026-02-08 - Added TMG table dump to user HRE folder (N. Tolleshaug)
+ *v0.05.0033  2026-02-16 - Correct default language setting if no language found (D Ferguson)
+ * 			  2026-02-16 - Added if (TMGglobal.DEBUG) in stopTCPSever()
+ 			  2026-02-28 - Fixed default language setting if no language found (D Ferguson)
  *******************************************************************************************/
 
 import java.awt.Dialog.ModalityType;
@@ -253,7 +256,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 			String [] pjcData = readPJCfile(plcFilePath);
 
-			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
+			processMonitor.setStatus(completedNumberPasses, totalNumberPasses);
 
 			processMonitor.setContextOfAction(" Project name: " + TMGglobal.chosenFilename);
 
@@ -431,7 +434,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * stopTCPServer()
  */
 	public void stopTCPServer() {
-		if (tcpServ.server != null) tcpServ.stopTCPserver();
+		if (TMGglobal.DEBUG)
+			if (tcpServ.server != null) tcpServ.stopTCPserver();
 	}
 
 /**
@@ -548,7 +552,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  * @return
  */
 	private String locateTMGlanguage() {
-		String wsentance = "", language = "en-US";
+		String wsentance = "", language = "";
 		List<String> possibles = new ArrayList<>();
 		try {
 			tmgLoader.loadTmgEventTables(false);
@@ -568,8 +572,18 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
 	                .entrySet().stream().max((o1, o2) -> o1.getValue().compareTo(o2.getValue()))
 	                .map(Map.Entry::getKey).orElse(null);
+			if (mostCommon == null) {
+				mostCommon = "ENGLISH";
+				System.out.println(" TMG project Language not found; set to ENGLISH");
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: in TMGHREconverter language defaulted to ENGLISH");
+			}
+			else {
+				System.out.println(" TMG project language found: " + mostCommon);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("Action: in TMGHREconverter language found as "+ mostCommon);
+			}
 			language = HREmemo.getLangCode(mostCommon).trim();
-			System.out.println(" Language found: " + mostCommon);
 			TMGglobal.tmg_E_table.closeTMGtable();
 		} catch (HCException hce) {
 			if (TMGglobal.TRACE) hce.printStackTrace();
@@ -954,16 +968,16 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		try {
 		// Send console output to file.
 			if (TMGglobal.TRACE) redirectOutput(TMGglobal.logFile);
-			
+
 		// Test HDATE convert
 			//if (TMGglobal.TRACE) testHdateConvert();
-			
+
 		// Dump TMG table to HRE folder
 			if (TMGglobal.TMGFILEDUMP) {
 				new TMGfileDump(true);
 				return;
 			}
-			
+
 		// Select database
 			if (!TMGglobal.databaseVersion.startsWith("v22c")) throw new HCException(" MAIN - HRE database version not accepted");
 			tmghreDataBase = TMGglobal.tmghreBase22c;

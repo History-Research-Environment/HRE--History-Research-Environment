@@ -38,6 +38,10 @@ package hre.gui;
  *			  2025-12-22 Updated foot note template error handling (N. Tolleshaug)
  *			  2025-12-29 NLS update (D Ferguson)
  *			  2026-01-07 Log catch block msgs (D Ferguson)
+ *			  2026-02-18 Fix for 32.21 - Source element table add new source (N. Tolleshaug)
+ *			  2026-02-18 Fix for 32.21 - Source element table edit source (N. Tolleshaug)
+ *			  2026-02-20 Sort SorcDefntable before loading to combobox (D Ferguson)
+ *			  2026-02-27 Test -  if (uniqueElementNums.size() > 0) (N. Tolleshaug)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -53,6 +57,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -247,7 +252,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
  * Setup the screen layouts
  * protected void screenLayout()
  */
-	 @SuppressWarnings("serial")
 	protected void screenLayout() {
 		contents = new JPanel();
 		setContentPane(contents);
@@ -301,14 +305,12 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		JLabel abbrev = new JLabel(HG0566Msgs.Text_8);	// Abbreviation
 		titlePanel.add(abbrev, "cell 0 1, alignx right");	//$NON-NLS-1$
 		abbrevText = new JTextField();
-//		abbrevText.setColumns(60);
 		abbrevText.setEditable(true);
 		titlePanel.add(abbrevText, "cell 1 1, alignx left, growx");	//$NON-NLS-1$
 
 		JLabel srcType = new JLabel(HG0566Msgs.Text_9);	// Source Type
 		titlePanel.add(srcType, "cell 0 2, alignx right");	//$NON-NLS-1$
 		DefaultComboBoxModel<String> comboTypeModel = new DefaultComboBoxModel<>();
-		//JComboBox<String> comboSourceTypes = new JComboBox<>(comboTypeModel);
 		comboSourceTypes = new JComboBox<>(comboTypeModel);
 		titlePanel.add(comboSourceTypes, "cell 1 2, alignx left");	//$NON-NLS-1$
 
@@ -494,7 +496,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
         addPanel.add(idPanel, "cell 1 0, aligny top"); //$NON-NLS-1$
 
-		// Define sub-panel for Source Memo/Source reference text (if any)
+	// Define sub-panel for Source Memo/Source reference text (if any)
         JPanel memoPanel = new JPanel();
         memoPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),HG0566Msgs.Text_25)); // Source Reference text
         memoPanel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -516,7 +518,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
         addPanel.add(memoPanel, "cell 0 1 2"); //$NON-NLS-1$
 
-		// Define sub-panel for Reminder text (if any)
+	// Define sub-panel for Reminder text (if any)
         JPanel remPanel = new JPanel();
         remPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),HG0566Msgs.Text_26));	// Source Reminder
         remPanel.setLayout(new MigLayout("insets 10", "[]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -538,7 +540,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
         addPanel.add(remPanel, "cell 0 2 2"); //$NON-NLS-1$
 
-    	// ******Define Connections panel for repository, source of source
+    // ******Define Connections panel for repository, source of source
         JPanel connPanel = new JPanel();
         tabPane.addTab(HG0566Msgs.Text_27, null, connPanel);		// Connections
         tabPane.setMnemonicAt(0, KeyEvent.VK_C);
@@ -704,6 +706,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			sourceEditData[14] = sourceCompilerPID;		used
  */
 	 protected void loadData() {
+		//System.out.println(" Entering loadData()! ");
 	// Set the title and abbrev text
 		titleText.setText((String)sourceEditData[0]);
 		abbrevText.setText((String)sourceEditData[1]);
@@ -711,6 +714,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	// Load comboSourceTypes from the Source Defn table and set the index by matching PIDs
 		// First save this sourceDefnPID for checking later if Defn changes
 		originalSourceDefnPID = sourceDefnPID;
+		// Then sort the sorcDefnTable by the first column
+		Arrays.sort(sorcDefnTable, (row1, row2) -> ((String) row1[0]).compareTo((String) row2[0]));
+		// Then load the comboSourceTypes combobox
 		long compare = sourceDefnPID;
 		for (int j = 0; j < sorcDefnTable.length; j++) {
 			comboSourceTypes.addItem((String) sorcDefnTable[j][0]);
@@ -745,15 +751,18 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		shortFootNumberedTemplate = (String)sourceEditData[7];		// get Source short footer
 		biblioNumberedTemplate = (String)sourceEditData[8];			// get Source bibliography
 		createAndDisplayTextTemplates();
+		
+		//System.out.println("Templates name: " + fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate );
+		//System.out.println("Template numbers: " + fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate );
 
 	// Create Lists of all UNIQUE Source Element Numbers and Source Element Names from the Source templates
 		uniqueElementNums =
-				extractUniqueElementNums(fullFootNumberedTemplate+shortFootNumberedTemplate+biblioNumberedTemplate);
+				extractUniqueElementNums(fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate);
 		uniqueElementNames =
-				extractUniqueElementNames(fullFootNamedTemplate+shortFootNamedTemplate+biblioNamedTemplate);
+				extractUniqueElementNames(fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate);
 
 	// Match Element numbers from the above to create an Element Value list aligned with Element Names (if needed)
-		if (pointEditSource instanceof HG0566UpdateSource)	loadElementValueTable(false);
+		if (pointEditSource instanceof HG0566UpdateSource) loadElementValueTable(false);
 		if (pointEditSource instanceof HG0566AddSource)	loadElementDefinitionTable();
 		if (pointEditSource instanceof HG0566CopySource) loadElementValueTable(true);
 
@@ -860,12 +869,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		TableModelListener elmntListener = new TableModelListener() {
 			@Override
             public void tableChanged(TableModelEvent tme) {
+				String nameElementName, nameElementData, elementNumber;
                 if (tme.getType() == TableModelEvent.UPDATE) {
                     int row = tme.getFirstRow();
                     if (row > -1) {
-                    		String nameElementName = (String) tableSrcElmntValues.getValueAt(row, 0);
-                    		String nameElementData = (String) tableSrcElmntValues.getValueAt(row, 1);
-							String elementNumber = tableSrcElmntValueData[row][2];
+                		nameElementName = (String) tableSrcElmntValues.getValueAt(row, 0);
+                		nameElementData = (String) tableSrcElmntValues.getValueAt(row, 1);
+						elementNumber = (String) tableSrcElmntValueData[row][2];
+						if (HGlobal.DEBUG && HGlobal.writeLogs)
+									HB0711Logging.logWrite("DEBUG in HG0566Edit Update row: " 	//$NON-NLS-1$
+									+ row + " - " + nameElementName + "/" +elementNumber);		//$NON-NLS-1$ //$NON-NLS-2$
 						if (nameElementData != null) {
 							btn_Save.setEnabled(true);
 							nameElementDataChanged = true;
@@ -1139,6 +1152,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					biblioNumberedTemplate = "";	//$NON-NLS-1$
 				}
 				createAndDisplayTextTemplates();
+				
+				//System.out.println("Templates name: " + fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate );
+				//System.out.println("Template numbers: " + fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate );
 
 			// Create Lists of all UNIQUE Source Element Numbers and Names from the revised Source templates
 				uniqueElementNums =
@@ -1147,7 +1163,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 						extractUniqueElementNames(fullFootNamedTemplate+shortFootNamedTemplate+biblioNamedTemplate);
 
 			// Rebuild the Source Element Value table to show the values that might still apply
-				if (pointEditSource instanceof HG0566UpdateSource)	loadElementValueTable(false);
+				if (pointEditSource instanceof HG0566UpdateSource) loadElementValueTable(false);
 				if (pointEditSource instanceof HG0566AddSource)	loadElementDefinitionTable();
 				if (pointEditSource instanceof HG0566CopySource) loadElementValueTable(true);
 				btn_Save.setEnabled(true);
@@ -1162,6 +1178,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			}
 		});
 
+		// Active chkbox listener
 		activChkBox.addActionListener (new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
@@ -1390,11 +1407,11 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		if (fullFootNumberedTemplate.isEmpty()) {
 				fullFootOverride.setVisible(false); // turn off (overriden)
 				fullFootNumberedTemplate = sorcDefnTemplates[0];	// use Source Defn full footer
-			}
+		}
 		else {		// set flags to indicate this is a changed template as came from Source record
 			fullFootOverride.setVisible(true);
 			fullFootTextChanged = true;
-			}
+		}
 		fullFootNamedTemplate =
 				pointReportHandler.convertNumsToNames(fullFootNumberedTemplate, codeToTextMap); // convert to Names
 		fullFootText.setText(fullFootNamedTemplate.trim());
@@ -1406,11 +1423,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		if (shortFootNumberedTemplate.isEmpty()) {
 				shortFootOverride.setVisible(false); // turn off (overriden)
 				shortFootNumberedTemplate = sorcDefnTemplates[1];	// use Source Defn short footer
-			}
-		else {		// set flags to indicate this is a changed template as came from Source record
+		} else {		// set flags to indicate this is a changed template as came from Source record
 			shortFootOverride.setVisible(true);
 			shortFootTextChanged = true;
-			}
+		}
 		shortFootNamedTemplate =
 				pointReportHandler.convertNumsToNames(shortFootNumberedTemplate, codeToTextMap); // convert to Names
 		shortFootText.setText(shortFootNamedTemplate.trim());
@@ -1422,11 +1438,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		if (biblioNumberedTemplate.isEmpty()) {
 				biblioOverride.setVisible(false); // turn off (overriden)
 				biblioNumberedTemplate = sorcDefnTemplates[2];	// use Source Defn bibliography
-			}
-		else {		// set flags to indicate this is a changed template as came from Source record
+		} else {		// set flags to indicate this is a changed template as came from Source record
 			biblioOverride.setVisible(true);
 			biblioTextChanged = true;
-			}
+		}
 		biblioNamedTemplate =
 				pointReportHandler.convertNumsToNames(biblioNumberedTemplate, codeToTextMap); // convert to Names
 		biblioText.setText(biblioNamedTemplate.trim());
@@ -1435,26 +1450,44 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	}	// End createAndDisplayTextTemplates
 
 /**
- * loadElementDefTable()
+ * public void loadElementDefinitionTable()
  */
 	public void loadElementDefinitionTable() {
+		int nrOfRows = 0, index = 0;
 		uniqueElementValues = new ArrayList<String>();
-		// Reload tableSrcElmntValueData
+		
+	// Reload tableSrcElmntValueData
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
-		tableSrcElmntValueData = new String[uniqueElementNames.size()][3];
-		for (int i=0; i < uniqueElementNames.size(); i++) {
+		
+		if (uniqueElementNums.size() > 0) {
+			for (int i = 0; i < uniqueElementNames.size(); i++)
+				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) nrOfRows++;
+			} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: " 
+																	+ uniqueElementNums.size());
+		
+		tableSrcElmntValueData = new String[nrOfRows][3];
+		if (uniqueElementNums.size() > 0)
+			for (int i = 0; i < uniqueElementNames.size(); i++) {
 			// Ignore elements with numbers in the 'specials' range as they will not have T734 values
-			if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
-				tableSrcElmntValueData[i][0] = uniqueElementNames.get(i).trim();
-				tableSrcElmntValueData[i][1] = "";		//$NON-NLS-1$
-				tableSrcElmntValueData[i][2] = uniqueElementNums.get(i);
-				srcElmntValueModel.addRow(tableSrcElmntValueData[i]);
+				if (HGlobal.DEBUG && HGlobal.writeLogs)
+							HB0711Logging.logWrite("DEBUG in HG0566Edit unique names/numbers: "		//$NON-NLS-1$
+							+ uniqueElementNames.get(i).trim() + "/" + uniqueElementNums.get(i).trim());	//$NON-NLS-1$
+				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
+					tableSrcElmntValueData[index][0] = uniqueElementNames.get(i).trim();
+					tableSrcElmntValueData[index][1] = "";		//$NON-NLS-1$
+					tableSrcElmntValueData[index][2] = uniqueElementNums.get(i).trim();
+					if (HGlobal.DEBUG && HGlobal.writeLogs)
+								HB0711Logging.logWrite("DEBUG in HG0566Edit loadElementDefinitionTable nr: " 	//$NON-NLS-1$
+									+ index + " - " + tableSrcElmntValueData[index][0]							//$NON-NLS-1$
+									+ "/" + tableSrcElmntValueData[index][2]);									//$NON-NLS-1$
+					srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+					index++;
+				}
 			}
-		}
 	}
 
-/*
- * loadElementValueTable
+/**
+ * public void loadElementValueTable(boolean addNewElementRecords)
  */
 	public void loadElementValueTable(boolean addNewElementRecords) {
 		// Use the uniqueElementNums list to match Element numbers in the imported
@@ -1462,12 +1495,13 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		// then use that to load the table of Element names and values.
 		// Any existing Element names/values that exist in the new Source Defn will be preserved.
 		// But ignore Elements with numbers > 40000 (which were TMG Grp 28-32) as they do not have T734 values
+		int nrOfRows = 0, index = 0;
 		int numValues = tableSourceElmntDataValues.length;
 		uniqueElementValues = new ArrayList<String>();
 		boolean matched = false;
-		for (int i=0; i < uniqueElementNums.size(); i++) {
+		for (int i = 0; i < uniqueElementNums.size(); i++) {
 			matched = false;
-			for (int j=0; j < numValues; j++) {
+			for (int j = 0; j < numValues; j++) {
 				if (uniqueElementNums.get(i).equals(tableSourceElmntDataValues[j][0])) {
 							uniqueElementValues.add(tableSourceElmntDataValues[j][1]);
 							matched = true;
@@ -1478,24 +1512,31 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		}
 
 	// (Re)load tableSrcElmntValueData
+		if (uniqueElementNums.size() > 0) {
+			for (int i = 0; i < uniqueElementNames.size(); i++)
+				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) nrOfRows++;
+			} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: " 
+					 												+ uniqueElementNums.size());
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
-		tableSrcElmntValueData = new String[uniqueElementNames.size()][3];
-		for (int i=0; i < uniqueElementNames.size(); i++) {
-			// Ignore elements with numbers in the 'specials' range as they will not have T734 values
-			if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
-				tableSrcElmntValueData[i][0] = uniqueElementNames.get(i).trim();
-				tableSrcElmntValueData[i][1] = uniqueElementValues.get(i).trim();
-				tableSrcElmntValueData[i][2] = uniqueElementNums.get(i);
-				srcElmntValueModel.addRow(tableSrcElmntValueData[i]);
-
-		// If copy source add changes to ElementDataChangeList to create source element copy
-				if (addNewElementRecords)
-					pointCitationSourceHandler.updateElementDataChangeList(
-								tableSrcElmntValueData[i][0],
-								tableSrcElmntValueData[i][2],
-								tableSrcElmntValueData[i][1]);
+		tableSrcElmntValueData = new String[nrOfRows][3];
+		if (uniqueElementNums.size() > 0)
+			for (int i = 0; i < uniqueElementNames.size(); i++) {
+				// Ignore elements with numbers in the 'specials' range as they will not have T734 values
+				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
+					tableSrcElmntValueData[index][0] = uniqueElementNames.get(i).trim();
+					tableSrcElmntValueData[index][1] = uniqueElementValues.get(i).trim();
+					tableSrcElmntValueData[index][2] = uniqueElementNums.get(i);
+					srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+	
+			// If copy source add changes to ElementDataChangeList to create source element copy
+					if (addNewElementRecords)
+						pointCitationSourceHandler.updateElementDataChangeList(
+									tableSrcElmntValueData[index][0],
+									tableSrcElmntValueData[index][2],
+									tableSrcElmntValueData[index][1]);
+					index++;
+				}
 			}
-		}
 	}	// End loadElementValueTable
 
 /*
@@ -1509,6 +1550,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		Matcher matcher = Pattern.compile("\\[(\\d{5})\\]").matcher(input);	//$NON-NLS-1$
 		while (matcher.find()) {
 			uniqueEntries.add(matcher.group(1)); // strip brackets
+			if (HGlobal.DEBUG && HGlobal.writeLogs)
+				HB0711Logging.logWrite("DEBUG in HG0566Edit extractUniqueElementNums: " + matcher.group(1)); //$NON-NLS-1$
 		}
 		return new ArrayList<>(uniqueEntries);
 	}	// End extractUniqueElementNums
@@ -1656,10 +1699,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				pointEditSource, // Parent component (null for default frame)
 				HG0566Msgs.Text_47, //Select another Person or Delete current entry?
 				HG0566Msgs.Text_48 + personTypeSelected, // Edit
-				0, 3, null, options, options[0] // Specifies the options
+							0, 3, null, options, options[0] // Specifies the options
 				);
 		// Process the user's choice
-		if (choice == JOptionPane.YES_OPTION) {			//Select option
+		if (choice == JOptionPane.YES_OPTION) {			// Select option
 			activatePersonSelect(textFieldSelection);
 			btn_Save.setEnabled(true);
 		}

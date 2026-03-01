@@ -153,7 +153,7 @@ public class TMGHREprogressMonitor extends JFrame
 /**
  * Create the Dialog.
  */
-public TMGHREprogressMonitor() {
+    public TMGHREprogressMonitor() {
 		//Window windowInstance = this;
 		monitorPanel = new JPanel();
 		monitorPanel.setPreferredSize(new Dimension(400, 550));

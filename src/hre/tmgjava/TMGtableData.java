@@ -15,6 +15,12 @@ package hre.tmgjava;
  * v0.01.0027 2022-01-29 - Added methods getValueBoolean(N. Tolleshaug)
  * 			  2022-05-16 - Progress bar implemented for TMG file load (N. Tolleshaug)
  * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
+ * v0.05.0033 2026-02-23 - Added writeDbfObjects routine (debug purpose) (N. Tolleshaug)
+ * 			  2025-02-23 - Change all System.out msgs to logged msgs (D Ferguson)
+ * 			  2025-02-24 - Modified error messages for getVectorSixe() (N. Tolleshaug)
+ * 			  2025-02-24 - Modified to use only if (HGlobal.writeLogs) 
+ * 						   not dependant of TMGglobal.DEBUG == true (N. Tolleshaug)
+ * 
  * ************************************************************************************
  * NOTE 1
  * The HashMap for access to PID_Number handles only the first occurrence of the ID_Numner
@@ -88,6 +94,29 @@ public class TMGtableData {
 		// Report progress in %
 		int progress = (int)Math.round(((double)completed / (double)nrOfTables) * 100);
 		pointConvert.setStatusProgress(progress);
+	}
+	
+/**
+ * public void writeDbfObjects(DBFReader dbfReader)
+ * @param dbfReader
+ * @throws HCException
+ */
+	public void writeDbfObjects(DBFReader dbfReader) throws HCException {
+		Object[] rowObjects;
+		try {
+			while ((rowObjects = dbfReader.nextRecord()) != null) {
+				for (Object rowObject : rowObjects) {
+					System.out.print(rowObject + " / ");
+				}
+				System.out.println();
+			}
+		} catch (DBFException dbfe) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGtableData objects DBF exception: " + dbfe.getMessage());
+				HB0711Logging.printStackTraceToFile(dbfe);
+			}
+			throw new HCException("TMGtableData/writeDbfObjects/DBFException: " + dbfe.getMessage());
+		}
 	}
 
 /**
@@ -196,31 +225,6 @@ public class TMGtableData {
 		}
 	}
 
-
-/**
- *
- * @param dbfReader
- * @throws HCException
- */
-	public void writeDbfObjects(DBFReader dbfReader) throws HCException {
-		Object[] rowObjects;
-		try {
-			while ((rowObjects = dbfReader.nextRecord()) != null) {
-
-				for (Object rowObject : rowObjects) {
-					System.out.print(rowObject + " / ");
-				}
-				System.out.println();
-			}
-		} catch (DBFException dbfe) {
-			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGtableData objects DBF exception: " + dbfe.getMessage());
-				HB0711Logging.printStackTraceToFile(dbfe);
-			}
-			throw new HCException("TMGtableData/writeDbfObjects/DBFException: " + dbfe.getMessage());
-		}
-	}
-
 /**
  * getByteContent - returns the byte content of MEMO field
  * @param listIndex
@@ -231,11 +235,11 @@ public class TMGtableData {
 	public byte[] getByteContent(int listIndex, String fieldName) throws HCException {
 		try {
 			if (PIDlist.get(listIndex) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/Arraylist Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData Arraylist Error Key: "
+							+ listIndex + ", FieldName: " + fieldName);
 				throw new HCException("TMGtableData/Arraylist get Bytes Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+							+ listIndex + ", FieldName: " + fieldName);
 			}
 			return PIDlist.get(listIndex).getBytes(fieldName);
 		} catch (DBFException dbfe) {
@@ -257,11 +261,11 @@ public class TMGtableData {
 	public String getValueString(int listIndex, String fieldName) throws HCException {
 		try {
 			if (PIDlist.get(listIndex) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData\nArraylist Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData\nArraylist Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData Arraylist Error Key: "
+							+ listIndex + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/Arraylist Error Key: "
+							+ listIndex + ", FieldName: " + fieldName);
 			}
 			return PIDlist.get(listIndex).getString(fieldName);
 		} catch (DBFException dbfe) {
@@ -284,9 +288,9 @@ public class TMGtableData {
 	public String findValueString(int PID, String fieldName) throws HCException {
 		try {
 			if (PIDmap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findValueString/HashMap Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findValueString/HashMap Error Key: " + PID + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findValueString HashMap Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findValueString HashMap Error Key: " + PID + ", FieldName: " + fieldName);
 			}
 			return PIDmap.get(PID).getString(fieldName);
 		} catch (DBFException dbfe) {
@@ -309,14 +313,14 @@ public class TMGtableData {
 	public String findVectorString(int PID, int vectorIndex, String fieldName) throws HCException {
 		try {
 			if (multiPidMap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findVectorString/HashMap Multi Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findVectorString/HashMap Multi Errror Key: " + PID + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findVectorString/HashMap Multi Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findVectorString/HashMap Multi Errror Key: " + PID + ", FieldName: " + fieldName);
 			}
 			if (vectorIndex < 0 || vectorIndex >= multiPidMap.get(PID).size()) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findVectorString/HashMap Multi Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findVectorString/HashMap Multi Errror Key: " + PID + "Vector idex: " + vectorIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findVectorString HashMap Multi Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findVectorString/HashMap Multi Errror Key: " + PID + " Vector index: " + vectorIndex + ", FieldName: " + fieldName);
 			}
 			return multiPidMap.get(PID).get(vectorIndex).getString(fieldName);
 		} catch (DBFException dbfe) {
@@ -371,18 +375,19 @@ public class TMGtableData {
  * @param PID
  * @return int - size of Vector
  */
-	public int getVectorSize(int PID) throws HCException {
+	public int getVectorSize(int RowNumber) throws HCException {
 		try {
-			if (existVector(PID)) return multiPidMap.get(PID).size();
-			if (TMGglobal.DEBUG) System.out.println("TMGtableData - HashMap vector size = 0 for PID: " + PID);
-			HB0711Logging.logWrite("TMG to HRE - TMGtableData - Name or place elements missing for PID: " + PID);
+			if (existVector(RowNumber)) return multiPidMap.get(RowNumber).size();
+			System.out.println(" ERROR: in TMGtableData HashMap vector size = 0 for table row: " + RowNumber);
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in TMGtableData HashMap vector size = 0 for table row: " + RowNumber);
 			return 0;
 		} catch (DBFException dbfe) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in TMGtableData getVectorSize DBF exception: " + dbfe.getMessage());
 				HB0711Logging.printStackTraceToFile(dbfe);
 			}
-			throw new HCException("TMGtableData/getVectorSize/DBFException: " + dbfe.getMessage());
+			throw new HCException("TMGtableData/etVectorSize/DBFException: " + dbfe.getMessage());
 		}
 	}
 
@@ -397,11 +402,11 @@ public class TMGtableData {
 	public Object findValueObject(int PID,String fieldName) throws HCException {
 		try {
 			if (PIDmap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findValueObject/HashMap Error Key: " + PID
-							+ " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findValueObject HashMap Error Key: " + PID
+							+ ", FieldName: " + fieldName);
 				throw new HCException("TMGtableData/findValueObject/HashMap Error Key: " + PID
-						+ " - FieldName: " + fieldName);
+						+ ", FieldName: " + fieldName);
 			}
 			return PIDmap.get(PID).getObject(fieldName);
 		} catch (DBFException dbfe) {
@@ -423,11 +428,11 @@ public class TMGtableData {
 	public int getValueInt(int listIndex, String fieldName) throws HCException {
 		try {
 			if (PIDlist.get(listIndex) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/getValueInt/HashMap Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData getValueInt HashMap Error Key: "
+							+ listIndex + ", FieldName: " + fieldName);
 				throw new HCException("TMGtableData/getValueInt/HashMap Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+							+ listIndex + ", FieldName: " + fieldName);
 			}
 			return PIDlist.get(listIndex).getInt(fieldName);
 		} catch (DBFException dbfe) {
@@ -449,11 +454,11 @@ public class TMGtableData {
 	public int findValueInt(int PID, String fieldName) throws HCException {
 		try {
 			if (PIDmap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findValueInt/HashMap Error Key: "
-							+ PID + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findValueInt HashMap Error Key: "
+							+ PID + ", FieldName: " + fieldName);
 				throw new HCException("TMGtableData/findValueInt/HashMap Error Key: "
-							+ PID + " - FieldName: " + fieldName);
+							+ PID + ",  FieldName: " + fieldName);
 			}
 			return PIDmap.get(PID).getInt(fieldName);
 		} catch (DBFException dbfe) {
@@ -475,14 +480,14 @@ public class TMGtableData {
 	public int findVectorInt(int PID, int vectorIndex, String fieldName) throws HCException {
 		try {
 			if (multiPidMap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findVectorInt/HashMap Multi Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findVectorInt/HashMap Multi Errror Key: " + PID + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findVectorInt HashMap Multi Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findVectorInt/HashMap Multi Errror Key: " + PID + ", FieldName: " + fieldName);
 			}
 			if (vectorIndex < 0 || vectorIndex >= multiPidMap.get(PID).size()) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findVectorInt/HashMap Multi Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findVectorInt/HashMap Multi Errror Key: " + PID + "Vector idex: " + vectorIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findVectorInt HashMap Multi Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findVectorInt/HashMap Multi Errror Key: " + PID + "Vector idex: " + vectorIndex + ", FieldName: " + fieldName);
 			}
 			return multiPidMap.get(PID).get(vectorIndex).getInt(fieldName);
 		} catch (DBFException dbfe) {
@@ -504,11 +509,11 @@ public class TMGtableData {
 	public boolean getValueBoolean(int listIndex,String fieldName) throws HCException {
 		try {
 			if (PIDlist.get(listIndex) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/getValueBoolean/HashMap Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData getValueBoolean HashMap Error Key: "
+							+ listIndex + ", FieldName: " + fieldName);
 				throw new HCException("TMGtableData/getValueBoolean/HashMap Error Key: "
-							+ listIndex + " - FieldName: " + fieldName);
+							+ listIndex + ", FieldName: " + fieldName);
 			}
 			return PIDlist.get(listIndex).getBoolean(fieldName);
 		} catch (DBFException dbfe) {
@@ -530,11 +535,11 @@ public class TMGtableData {
 	public Boolean findValueBoolean(int PID, String fieldName) throws HCException {
 		try {
 			if (PIDmap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findValueInt/HashMap Error Key: "
-							+ PID + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findValueInt HashMap Error Key: "
+							+ PID + ", FieldName: " + fieldName);
 				throw new HCException("TMGtableData/findValueInt/HashMap Error Key: "
-							+ PID + " - FieldName: " + fieldName);
+							+ PID + ", FieldName: " + fieldName);
 			}
 			return PIDmap.get(PID).getBoolean(fieldName);
 		} catch (DBFException dbfe) {
@@ -556,14 +561,14 @@ public class TMGtableData {
 	public boolean findVectorBoolean(int PID, int vectorIndex, String fieldName) throws HCException {
 		try {
 			if (multiPidMap.get(PID) == null) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findVectorBoolean/HashMap Multi Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findVectorBoolean/HashMap Multi Errror Key: " + PID + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findVectorBoolean HashMap Multi Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findVectorBoolean/HashMap Multi Errror Key: " + PID + ", FieldName: " + fieldName);
 			}
 			if (vectorIndex < 0 || vectorIndex >= multiPidMap.get(PID).size()) {
-				if (TMGglobal.DEBUG)
-					System.out.println("TMGtableData/findVectorBoolean/HashMap Multi Error Key: " + PID + " - FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findVectorBoolean/HashMap Multi Errror Key: " + PID + "Vector idex: " + vectorIndex + " - FieldName: " + fieldName);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGtableData findVectorBoolean HashMap Multi Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("TMGtableData/findVectorBoolean/HashMap Multi Errror Key: " + PID + " Vector idex: " + vectorIndex + ", FieldName: " + fieldName);
 			}
 			return multiPidMap.get(PID).get(vectorIndex).getBoolean(fieldName);
 		} catch (DBFException dbfe) {

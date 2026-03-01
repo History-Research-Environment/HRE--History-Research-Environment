@@ -5,6 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import hre.gui.HG0547EditEvent;
+
 import hre.nls.HGlobalMsgs;
 
 /************************************************************************************************
@@ -18,6 +21,7 @@ import hre.nls.HGlobalMsgs;
  *			  2025-11-14 - Add ex-HGlobalcode Source Element name/number conversion (D Ferguson)
  *			  2025-12-22 - convertNamesToNums modified to return HBException(N. Tolleshaug)
  *			  2026-01-27 - Line 43 - pointHREmemo = pointOpenProject.getHREmemo();(N. Tolleshaug)
+ *			  2026-02-21 - Added preliminary methods for sentence preload (N. Tolleshaug)
  *********************************************************************************************/
 
 public class HBReportHandler extends HBBusinessLayer {
@@ -599,5 +603,144 @@ public class HBReportHandler extends HBBusinessLayer {
 	}    // End validate FormatCodes
 
 
-
+	String sentencePreview = "";
+	HG0547EditEvent pointEditEvent;
+/**
+ * public void sentenceParser(String input)
+ * @param input
+ */
+    public String sentenceParser(HG0547EditEvent pointEditEvent, String inputSentence) {
+       // input = "[Per] ble født <[1990]><[Oslo]>. <Disse var også med: [Kari og Knut].> <[Hjemmefødsel]>";
+    	
+        // Define the Regex pattern to identify content within square brackets
+    	this.pointEditEvent = pointEditEvent;
+    	String reportSentence = inputSentence, replaceString;
+    	String variableData, match;
+        String regexStandard = "\\[(.*?)\\]";
+        //String regexRoles = "\\[R:\\d{5}\\]";
+        String regexRoles = "\\[R:\\d{5}\\]";
+        
+        Pattern patternVariables = Pattern.compile(regexStandard);
+        Pattern patternRoles = Pattern.compile(regexRoles);
+        Matcher matcherVariables = patternVariables.matcher(inputSentence);
+        Matcher matcherRoles = patternRoles.matcher(inputSentence);
+        HashMap<String, String> sentenceElements = new HashMap<>();
+        int count = 0;
+        while (matcherVariables.find()) {
+            // matcher.group(1) extracts the content inside the []
+        	variableData = returnSentenceVariableData(matcherVariables.group(1));
+        	sentenceElements.put(matcherVariables.group(0).trim(), variableData);
+            count++;
+        } 
+        //if (HGlobal.DEBUG) 
+        	System.out.println(" Number of variables: " + count);
+        count = 0;
+        matcherRoles = patternRoles.matcher(inputSentence);
+        while (matcherRoles.find()) {
+            // matcher.group(1) extracts the content inside the []
+        	match = matcherRoles.group();
+        	System.out.println(" Match: " + match);
+        	match = match.replace("[","");
+        	match = match.replace("]","");
+        	variableData = returnSentenceVariableData(match);
+        	sentenceElements.put(matcherRoles.group(0).trim(), variableData);
+            count++;
+        } 
+        
+        //if (HGlobal.DEBUG) 
+        	System.out.println(" Number of roles: " + count);
+        
+        matcherVariables = patternVariables .matcher(inputSentence);
+        while (matcherVariables.find()) {
+        	String sentenceMatch = matcherVariables.group(0).trim();
+        	//System.out.println(" Variable replace: " + sentenceMatch+ "/" 
+        	//		+ sentenceElements.get(sentenceMatch));
+        	replaceString = sentenceElements.get(sentenceMatch);
+        	if (replaceString == null) replaceString = "";
+        	reportSentence = reportSentence.replace(sentenceMatch,replaceString);
+        }
+        matcherRoles = patternRoles .matcher(inputSentence);
+        while (matcherRoles.find()) {
+        	String sentenceMatch = matcherRoles.group(0).trim();
+        	//System.out.println(" Role replace: " + sentenceMatch+ "/" 
+        	//		+ sentenceElements.get(sentenceMatch));
+        	
+        	replaceString = sentenceElements.get(sentenceMatch);
+        	if (replaceString == null) replaceString = "";
+        	reportSentence = reportSentence.replace(sentenceMatch, replaceString);
+        }     
+        
+        reportSentence = reportSentence.replace("<"," ");
+        reportSentence = reportSentence.replace(">"," ");
+        
+      // Output results
+        //if (HGlobal.DEBUG) {
+        	sentenceElements.forEach((key, value) -> System.out.print(key + ":" + value + ","));
+        	System.out.println();
+        //}
+        return reportSentence;        
+    }
+     
+/*    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
+ *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]> 
+ */
+    
+/**
+ * private String returnSentenceVariableData(String sentenceVariable)    
+ * @param sentenceVariable
+ * @return
+ */
+    private String returnSentenceVariableData(String sentenceVariable) {
+    	String variableData = "";
+    	Object[][] locationData;
+    	if (sentenceVariable.startsWith("R")) { 
+    		String[] roleNumber = sentenceVariable.split(":");
+    		System.out.println(" Role number: " + roleNumber[1]);
+    		if (roleNumber[1].equals("00003"))
+    			variableData = pointEditEvent.getPersonName();
+    		return variableData;
+    	}
+    	if (sentenceVariable.startsWith("P")) {
+// Process Px
+    		variableData = pointEditEvent.getPersonName();
+    	} else if (sentenceVariable.startsWith("D")) {
+    		variableData = pointEditEvent.getEventDate();
+    	} else if (sentenceVariable.startsWith("L")) {
+    // process Lx variables
+    		 locationData = pointEditEvent.getLocationData(); 
+    		 	if (sentenceVariable.equals("L")) {
+	    	    	for (int i = 0; i < locationData.length; i++)
+	    	    		if (locationData[i][1] != null)
+	    	    			if (((String) locationData[i][1]).length() > 0)
+	    	    				variableData = variableData + (String)locationData[i][1] + ", ";
+	    	    	return variableData;
+    	 		} else if (sentenceVariable.equals("L1")) {
+    	    		variableData = (String)locationData[0][1];
+    	    	} else if (sentenceVariable.equals("L2")) {
+    	    		variableData = (String)locationData[1][1];
+    	    	} else if (sentenceVariable.equals("L3")) {
+    	    		variableData = (String)locationData[2][1];
+    	    	} else if (sentenceVariable.equals("L4")) {
+    	    		variableData = (String)locationData[3][1];
+    	    	} else if (sentenceVariable.equals("L5")) {
+    	    		variableData = (String)locationData[4][1];
+    	    	}
+    		 	return variableData;	
+    	 } else if (sentenceVariable.startsWith("W")) {
+    // Process witness
+    		 	variableData = pointEditEvent.getWinessName();
+    		 if (sentenceVariable.equals("WO")) {
+    			 variableData = pointEditEvent.getWinessName();
+    		 } else  if (sentenceVariable.equals("WO")) {
+    			 variableData = pointEditEvent.getWinessName();    		 
+    		 } else if (sentenceVariable.equals("WM")) {
+        			 variableData = "Witness memo";
+    		 }
+    		 return variableData;
+    	 } else if (sentenceVariable.startsWith("M")) {
+    		 variableData = pointEditEvent.getMemoText();
+    	 }	
+    	return variableData;
+    }
+	
 }		// End HBRepoortHandler

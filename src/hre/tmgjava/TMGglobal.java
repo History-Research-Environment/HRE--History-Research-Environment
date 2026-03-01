@@ -51,8 +51,8 @@ public class TMGglobal {
 	//public static boolean TRACE = true;	 // Set up stack trace for debug to external file
 
 	// Switches for process monitor Output
-	//public static boolean TMGFILEDUMP = false; // Controls TMG table dump to file
-	public static boolean TMGFILEDUMP = true; // Controls TMG table dump to file
+	public static boolean TMGFILEDUMP = false; // Controls TMG table dump to file
+	//public static boolean TMGFILEDUMP = true; // Controls TMG table dump to file
 	//public static boolean TMGTRACE = false; // Controls TMG table load messages
 	public static boolean TMGTRACE = true; // Controls TMG table load messages
 	//public static boolean HRETRACE = false; // Controls HRE table load and index messages

@@ -52,6 +52,8 @@ package hre.gui;
   * 		  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
   * 		  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
   * 		  2026-01-20 Log all catch blocks and other msgs (D Ferguson)
+  * 		  2026-02-17 Added get methods for sentence building (N. Tolleshaug)
+  * 		  2026-02-18 Allow Memo/Citation panels to expand in sync (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -248,7 +250,32 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     }
 
 /**
- * Create the dialog
+ *  Get methods for sentence builder
+ */
+    public String getPersonName() {
+    	return eventPersonName.trim();
+    }
+
+    public String getEventDate() {
+    	return dateText.getText().trim();
+    }
+
+    public Object[][] getLocationData() {
+    	return tableLocationData;
+    }
+
+    public String getWinessName() {
+    	if (tableAssocsData.length > 0)
+    		return (String) tableAssocsData[0][0];
+		return "";
+    }
+
+    public String getMemoText() {
+    	return memoText.getText().trim();
+    }
+
+/**
+ * Constructor for the dialog
  * @throws HBException
  */
 	public HG0547EditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
@@ -360,7 +387,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  ***********************************/
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "[]10[]", "[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[grow]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
     	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);
@@ -405,7 +432,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		contents.add(rightPanel, "cell 1 0, grow");	//$NON-NLS-1$
 		// Define cards of the CardLayout, each card-Panel with its own layout manager
 		JPanel cardEvent = new JPanel();
-		cardEvent.setLayout(new MigLayout("", "[grow]10[grow]", "[]10[grow]10[grow]5[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		// This Event layout setup to ensure Memo/Citation sub-panels grow at same rate
+		cardEvent.setLayout(new MigLayout(
+		        "insets 0, fill",          		//$NON-NLS-1$ // fill ensures vertical growth is shared
+		        "[grow, fill]10[grow, fill]",	//$NON-NLS-1$
+		        "[]10[]10[grow, fill]"     		//$NON-NLS-1$ // row 2 grows equally for both columns
+		));
 		rightPanel.add(cardEvent, "EVENT");	//$NON-NLS-1$
 		JPanel cardFlags = new JPanel();
 		cardFlags.setLayout(new MigLayout("", "[]10[]", "[grow]"));		//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -592,7 +624,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	// Setup Memo sub-panel
 		JPanel botmLeftEvntPanel = new JPanel();
 		botmLeftEvntPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		botmLeftEvntPanel.setLayout(new MigLayout("insets 5", "[grow]", "[]5[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		botmLeftEvntPanel.setLayout(new MigLayout("insets 5", "[grow, fill]", "[]5[grow, fill]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_Memo = new JLabel(HG0547Msgs.Text_11);	// Memo:
 		lbl_Memo.setFont(lbl_Memo.getFont().deriveFont(lbl_Memo.getFont().getStyle() | Font.BOLD));
@@ -609,18 +641,21 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    memoText.setBorder(new JTable().getBorder());		// match Table border
 	// Setup scrollpane with textarea and starter size
 		JScrollPane memoTextScroll = new JScrollPane(memoText);
-		memoTextScroll.setPreferredSize(new Dimension(150, 100));
-		memoTextScroll.getViewport().setOpaque(false);
-		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
-		memoText.setCaretPosition(0);	// set scrollbar to top
-		botmLeftEvntPanel.add(memoTextScroll, "cell 0 1, grow, alignx left, aligny top");	//$NON-NLS-1$
+		memoTextScroll.setMinimumSize(new Dimension(200, 80));
 
-		cardEvent.add(botmLeftEvntPanel, "cell 0 2, grow, aligny top");	//$NON-NLS-1$
+		memoTextScroll.getViewport().setOpaque(false);
+		memoTextScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);  // Vert scroll if needed
+		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		memoText.setCaretPosition(0);	// set scrollbar to top
+
+		botmLeftEvntPanel.add(memoTextScroll, "cell 0 1, grow, push");		//$NON-NLS-1$
+
+		cardEvent.add(botmLeftEvntPanel, "cell 0 2, grow, push");			//$NON-NLS-1$
 
 	// Setup Citation sub-panel
 		JPanel botmRightEvntPanel = new JPanel();
 		botmRightEvntPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		botmRightEvntPanel.setLayout(new MigLayout("insets 5", "[][grow][80!]", "[]5[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		botmRightEvntPanel.setLayout(new MigLayout("insets 5", "[grow][grow][80!]", "[]5[grow, fill]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_Citation = new JLabel(HG0547Msgs.Text_12);	// Citation:
 		lbl_Citation.setFont(lbl_Citation.getFont().deriveFont(lbl_Citation.getFont().getStyle() | Font.BOLD));
@@ -692,8 +727,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		tableCite.setFillsViewportHeight(true);
 		JScrollPane citeScrollPane = new JScrollPane(tableCite);
 		citeScrollPane.setFocusTraversalKeysEnabled(false);
-		citeScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		citeScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		citeScrollPane.setMinimumSize(new Dimension(200, 80));
+
 	// Set Source#, Surety to be center-aligned
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
@@ -703,9 +739,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		if (tableCite.getRowCount() > 0)
 			JTableCellTabbing.setTabMapping(tableCite, 0, tableCite.getRowCount(), 1, 2);
 	// Add to Event panel
-		botmRightEvntPanel.add(citeScrollPane, "cell 0 1 3 1, alignx left, aligny top");	//$NON-NLS-1$
+		botmRightEvntPanel.add(citeScrollPane, "cell 0 1 3 1, grow, push");	//$NON-NLS-1$
 
-		cardEvent.add(botmRightEvntPanel, "cell 1 2 1 2, aligny top");	//$NON-NLS-1$
+		cardEvent.add(botmRightEvntPanel, "cell 1 2, grow, push");			//$NON-NLS-1$
 
 /***************************************
  * Setup cardFlags for Flags

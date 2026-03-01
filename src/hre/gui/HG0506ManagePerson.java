@@ -70,6 +70,8 @@ package hre.gui;
  *			  2025-07-13 Handle passing of sexCode through to HG0547 (D Ferguson)
  * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
  * 			  2026-02-02 Fix initial sizing problem due to card layout rules (D Ferguson)
+ * 			  2026-02-18 Fix 32.13 - Parent table grows when shouldn't (D Ferguson)
+ * v0.05.0033 2026-02-21 Show relationship panel (if valid) (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE06 need listener and code for handling Notepads
@@ -159,7 +161,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Person
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2020-08-09
  */
 public class HG0506ManagePerson extends HG0451SuperIntFrame {
@@ -192,6 +194,11 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	JTable tablePartners;
 	JTable tableParents;
     JScrollPane partnerScrollPane;
+
+    // For relationships
+    JPanel relatePanel;
+    JLabel relationship1, relationship2;
+    int[] relateTable;
 
 /**
  * Objects holding card/panel data
@@ -304,7 +311,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
  ***********************************/
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[grow]10[]5[grow][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "[]10[grow]", "[]10[]5[grow][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
     	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);
@@ -499,6 +506,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		contents.add(rightPanel, "cell 1 2 1 2, aligny top, grow");	//$NON-NLS-1$
 
 		// Define cards of the CardLayout, each card-Panel with its own layout manager
+		// Dimension of each panel set to avoid any panel blowing whole cardLayout too big
 		JPanel cardEvents = new JPanel();
 		cardEvents.setPreferredSize(new Dimension(700, 400));
 		cardEvents.setLayout(new MigLayout("", "[grow]", "[]10[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -1059,7 +1067,59 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		JLabel lbl_DNA = new JLabel("DNA to be able to be loaded and edited here eventually");	//$NON-NLS-1$ (temporary code)
 		cardDNA.add(lbl_DNA);
 
+/***************************************************
+ * Setup middlePane for (optional) Relationship data
+ ***************************************************/
+		// NB:  need to know the sexCode from the Flags for this code to work correctly.
+		// Hence the code to populate this panel has to be AFTER setting the Flag panel.
+		relatePanel = new JPanel();
+		relatePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		contents.add(relatePanel, "cell 1 1, aligny top, growx, hidemode 3");	//$NON-NLS-1$
+		relatePanel.setLayout(new MigLayout("insets 5", "[]", "[][]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+		JLabel relation = new JLabel(HG0506Msgs.Text_90);		// Relationship:
+		relatePanel.add(relation, "Cell 0 0");	//$NON-NLS-1$
+		relationship1 = new JLabel();
+		relationship2 = new JLabel();
+		relatePanel.add(relationship1, "Cell 1 0");	//$NON-NLS-1$
+		relatePanel.add(relationship2, "Cell 1 1");	//$NON-NLS-1$
+
+		relatePanel.setVisible(false);		// default to not visible
+
+		// Initialize relationship texts
+		String relateText1 = "", relateText2 = "";	//$NON-NLS-1$ //$NON-NLS-2$
+
+		// Get focus person's name
+		String focusPersonName = HGlobal.focusPerson;
+
+		// Check the sexCode - if not M or F we can't calculate a relationship, so ignore relationship lookup
+		if (sexCode.equals("M") || sexCode.equals("F")) {		//$NON-NLS-1$ //$NON-NLS-2$
+			// Get relationship data (2 x 2 integer pairs), work out relationships and display the panel (if needed)
+			relateTable = pointPersonHandler.getManagedRelateTable();
+			// Check if first pair zero - if not, get the relationship
+			if (relateTable[0] != 0 || relateTable[1] != 0) {
+				RelationshipDescriptor d1 = RelationshipClassifier.classify(relateTable[0], relateTable[1], sexCode);
+				RelationshipNamer namer = RelationshipNamerFactory.forLanguage(HGlobal.dataLanguage);
+				relateText1 = namer.name(d1);
+			}
+	        // Repeat for the 2nd pair
+			if (relateTable[2] != 0 || relateTable[3] != 0) {
+				RelationshipDescriptor d2 = RelationshipClassifier.classify(relateTable[2], relateTable[3], sexCode);
+				RelationshipNamer namer = RelationshipNamerFactory.forLanguage(HGlobal.dataLanguage);
+				relateText2 = namer.name(d2);
+			}
+			// Put the text (if any) into the relationship panel
+			if (relateText1.isEmpty() && relateText2.isEmpty()) relatePanel.setVisible(false);
+			else {
+				relationship1.setText(relateText1 + HG0506Msgs.Text_91 + focusPersonName);			// of
+				if (!relateText2.isEmpty()) relationship2.setText(relateText2 + HG0506Msgs.Text_91 + focusPersonName);  //  of
+				relatePanel.setVisible(true);
+			}
+		}
+
+/***********************
 // Display the screen
+***********************/
 		pack();
 		HG0401HREMain.mainPane.add(personManagerFrame);
 		personManagerFrame.setVisible(true);
@@ -2105,5 +2165,385 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        }
 	    }
 	}	// End DCTextField
+
+// ======================================
+// Universal Relationship Descriptors
+// ======================================
+	public static class RelationshipDescriptor {
+		    enum Type {SELF, ANCESTOR, DESCENDANT, SIBLING, NIBLING, PIBLING, COUSIN }
+
+		    public final Type type;
+		    public final int generationsUp;
+		    public final int generationsDown;
+		    public final int cousinDegree;
+		    public final int cousinRemoval;
+	        public final String sexCode;       // "M" or "F"
+
+		    public RelationshipDescriptor(Type type, int generationsUp, int generationsDown,
+		                                  int cousinDegree, int cousinRemoval, String sexCode)
+		    	{
+			        this.type = type;
+			        this.generationsUp = generationsUp;
+			        this.generationsDown = generationsDown;
+			        this.cousinDegree = cousinDegree;
+			        this.cousinRemoval = cousinRemoval;
+			        this.sexCode = sexCode;
+		    	}
+		}	// End RelationshipDescriptor
+
+// ===================================================
+// Conversion of (x,y) pair to RelationshipDescriptor
+// ===================================================
+	public static class RelationshipClassifier {
+	    public static RelationshipDescriptor classify(int x, int y, String sexCode) {
+	        // SELF
+	        if (x == 0 && y == 0)
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.SELF, 0, 0, 0, 0, sexCode );
+
+	        // DIRECT ANCESTOR  (root is ABOVE target)  (0, +k)
+	        if (x == 0 && y > 0)
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.ANCESTOR, y, 0, 0, 0, sexCode );
+
+	        // DIRECT DESCENDANT (root is BELOW target) (-k, 0)
+	        if (y == 0 && x < 0)
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.DESCENDANT, 0, -x, 0, 0, sexCode );
+
+	        // SIBLING  (-1, -1)
+	        if (x == -1 && y == -1)
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.SIBLING, 0, 0, 0, 0, sexCode );
+
+	        // NIBLING (niece/nephew)  (-k, -1)  where k > 1
+	        if (y == -1 && x < -1)
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.NIBLING, 0, -(x + 1), 0, 0, sexCode );
+
+	        // PIBLING (aunt/uncle) (-1, -k)  where k > 1
+	        if (x == -1 && y < -1)
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.PIBLING, -(y + 1), 0, 0, 0, sexCode );
+
+	        // COUSINS
+	        // (-k, -k)  → degree = k - 1
+	        // (-k1, -k2) → removal = |k1 - k2|
+	        if (x < -1 && y < -1) {
+	            int kRoot   = -y;   // steps root → LCA
+	            int kTarget = -x;   // steps target → LCA
+	            int k = Math.min(kRoot, kTarget);   // 2→1st, 3→2nd, 4→3rd
+	            int degree = k - 1;                 // 1,2,3,...
+	            int removal = Math.abs(kRoot - kTarget);
+	            return new RelationshipDescriptor(
+	                    RelationshipDescriptor.Type.COUSIN, 0, 0, degree, removal, sexCode );
+	        }
+	        // FALLBACK (should never happen)
+	        return new RelationshipDescriptor(
+	                RelationshipDescriptor.Type.SELF, 0, 0, 0, 0, sexCode  );
+	    }
+	}		// End RelationshipClassifier
+
+    public interface RelationshipNamer {
+        String name(RelationshipDescriptor d);
+    }
+
+    public static class RelationshipNamerFactory {
+        public static RelationshipNamer forLanguage(String lang) {
+            return switch (lang) {
+                case "en-US" -> new EnglishNamer();		//$NON-NLS-1$
+                case "en-GB" -> new EnglishNamer();		//$NON-NLS-1$
+                case "fr-FR" -> new FrenchNamer();		//$NON-NLS-1$
+                case "de-DE" -> new GermanNamer();		//$NON-NLS-1$
+                case "es-ES" -> new SpanishNamer();		//$NON-NLS-1$
+                case "nl-NL" -> new DutchNamer();		//$NON-NLS-1$
+                case "it-IT" -> new ItalianNamer();		//$NON-NLS-1$
+                case "no-NB" -> new NorwegianNamer();	//$NON-NLS-1$
+			default -> new EnglishNamer();
+            };
+        }
+    }		// End RelationshipNamerFactory
+
+// ================================================================================
+// LANGUAGE IMPLEMENTATIONS
+// NB: SELF case should never be returned as (0,0) pairs should never
+// be passed into these routines.
+// NB: no NLS done after this point as ALL strings are already language-specific
+// ===============================================================================
+// ---------------- ENGLISH ----------------
+    public static class EnglishNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "self";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "brother" : "sister";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "father" : "mother";
+            if (up == 2) return sex == "M" ? "grandfather" : "grandmother";
+            return "great-".repeat(up - 2) + (sex == "M" ? "grandfather" : "grandmother");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "son" : "daughter";
+            if (down == 2) return sex == "M" ? "grandson" : "granddaughter";
+            return "great-".repeat(down - 2) + (sex == "M" ? "grandson" : "granddaughter");
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "nephew" : "niece";
+            return "great-".repeat(down - 1) + (sex == "M" ? "nephew" : "niece");
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "uncle" : "aunt";
+            return "great-".repeat(up - 1) + (sex == "M" ? "uncle" : "aunt");
+        }
+        private String cousin(int degree, int removal) {
+            int n = degree; // 1→1st, 2→2nd, 3→3rd
+            String base = ordinal(n) + " cousin";
+            if (removal == 0) return base;
+            return base + " " + removal + " time" + (removal > 1 ? "s" : "") + " removed";
+        }
+        private String ordinal(int n) {
+            return switch (n) {
+                case 1 -> "1st";
+                case 2 -> "2nd";
+                case 3 -> "3rd";
+                default -> n + "th";
+            };
+        }
+    }		// End EnglishNamer
+ // ---------------- FRENCH ----------------
+    public static class FrenchNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "soi-même";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "frère" : "soeur";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "père" : "mère";
+            if (up == 2) return sex == "M" ? "grand-père" : "grand-mère";
+            return "arrière-".repeat(up - 2) + (sex == "M" ? "grand-père" : "grand-mère");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "fils" : "fille";
+            if (down == 2) return sex == "M" ? "petit-fils" : "petite-fille";
+            return "arrière-".repeat(down - 2) + (sex == "M" ? "petit-fils" : "petite-fille");
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "neveu" : "nièce";
+            return "petit-".repeat(down - 1) + (sex == "M" ? "neveu" : "nièce");
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "oncle" : "tante";
+            return "grand-".repeat(up - 1) + (sex == "M" ? "oncle" : "tante");
+        }
+        private String cousin(int degree, int removal, String sex) {
+            String base = (sex == "M" ? "cousin" : "cousine") + " " + degree + "ᵉ degré";
+            if (removal == 0) return base;
+            return base + " éloigné(e) de " + removal + " génération(s)";
+        }
+    }	// End FrenchNamer
+ // ---------------- GERMAN ----------------
+    public static class GermanNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "selbst";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "Bruder" : "Schwester";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "Vater" : "Mutter";
+            if (up == 2) return sex == "M" ? "Großvater" : "Großmutter";
+            return "Ur-".repeat(up - 2) + (sex == "M" ? "Großvater" : "Großmutter");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "Sohn" : "Tochter";
+            if (down == 2) return sex == "M" ? "Enkel" : "Enkelin";
+            return "Ur-".repeat(down - 2) + (sex == "M" ? "Enkel" : "Enkelin");
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "Neffe" : "Nichte";
+            return "Groß-".repeat(down - 1) + (sex == "M" ? "Neffe" : "Nichte");
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "Onkel" : "Tante";
+            return "Groß-".repeat(up - 1) + (sex == "M" ? "Onkel" : "Tante");
+        }
+        private String cousin(int degree, int removal, String sex) {
+            String base = degree + ". Grades " + (sex == "M" ? "Cousin" : "Cousine");
+            if (removal == 0) return base;
+            return base + ", " + removal + " mal entfernt";
+        }
+    }		// End GermanNamer
+ // ---------------- SPANISH ----------------
+    public static class SpanishNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "yo mismo";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "hermano" : "hermana";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "padre" : "madre";
+            if (up == 2) return sex == "M" ? "abuelo" : "abuela";
+            return "bis-".repeat(up - 2) + (sex == "M" ? "abuelo" : "abuela");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "hijo" : "hija";
+            if (down == 2) return sex == "M" ? "nieto" : "nieta";
+            return "bis-".repeat(down - 2) + (sex == "M" ? "nieto" : "nieta");
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "sobrino" : "sobrina";
+            return "sobrino/sobrina de " + (down - 1) + "º grado";
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "tío" : "tía";
+            return "tío/tía de " + (up - 1) + "º grado";
+        }
+        private String cousin(int degree, int removal, String sex) {
+            String base = (sex == "M" ? "primo" : "prima") + " de " + degree + "º grado";
+            if (removal == 0) return base;
+            return base + ", " + removal + " vez" + (removal > 1 ? "es" : "") + " removido";
+        }
+    }		// End SpanishNamer
+ // ---------------- DUTCH ----------------
+    public static class DutchNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "zelf";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "broer" : "zus";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "vader" : "moeder";
+            if (up == 2) return sex == "M" ? "grootvader" : "grootmoeder";
+            return "over-".repeat(up - 2) + (sex == "M" ? "grootvader" : "grootmoeder");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "zoon" : "dochter";
+            if (down == 2) return sex == "M" ? "kleinzoon" : "kleindochter";
+            return "achter-".repeat(down - 2) + (sex == "M" ? "kleinzoon" : "kleindochter");
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "neef" : "nicht";
+            return "achterneef/achternicht";
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "oom" : "tante";
+            return "oudoom/oudtante";
+        }
+        private String cousin(int degree, int removal, String sex) {
+            String base = degree + "e graad " + (sex == "M" ? "neef" : "nicht");
+            if (removal == 0) return base;
+            return base + ", " + removal + " keer verwijderd";
+        }
+    }		// End DutchNamer
+ // ---------------- ITALIAN ----------------
+    public static class ItalianNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "sé stesso";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "fratello" : "sorella";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "padre" : "madre";
+            if (up == 2) return sex == "M" ? "nonno" : "nonna";
+            return "bis-".repeat(up - 2) + (sex == "M" ? "nonno" : "nonna");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "figlio" : "figlia";
+            if (down == 2) return sex == "M" ? "nipote" : "nipote"; // gender-neutral in Italian
+            return "bis-".repeat(down - 2) + "nipote";
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "nipote" : "nipote"; // nephew/niece both "nipote"
+            return "pro-".repeat(down - 1) + "nipote";
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "zio" : "zia";
+            return "pro-".repeat(up - 1) + (sex == "M" ? "zio" : "zia");
+        }
+        private String cousin(int degree, int removal, String sex) {
+            String base = (sex == "M" ? "cugino" : "cugina") + " di " + degree + "º grado";
+            if (removal == 0) return base;
+            return base + ", " + removal + " volta" + (removal > 1 ? "e" : "") + " rimosso";
+        }
+    }		// End ItalianNamer
+ // ---------------- NORWEGIAN ----------------
+    public static class NorwegianNamer implements RelationshipNamer {
+        @Override
+        public String name(RelationshipDescriptor d) {
+            return switch (d.type) {
+                case SELF -> "selv";
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
+                case SIBLING -> d.sexCode == "M" ? "bror" : "s�ster";
+                case NIBLING -> nibling(d.generationsDown, d.sexCode);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
+            };
+        }
+        private String ancestor(int up, String sex) {
+            if (up == 1) return sex == "M" ? "far" : "mor";
+            if (up == 2) return sex == "M" ? "bestefar" : "bestemor";
+            return "tipp-".repeat(up - 2) + (sex == "M" ? "oldefar" : "oldemor");
+        }
+        private String descendant(int down, String sex) {
+            if (down == 1) return sex == "M" ? "s�nn" : "datter";
+            if (down == 2) return sex == "M" ? "barnebarn" : "barnebarn"; // gender-neutral
+            return "tipp-".repeat(down - 2) + "barnebarn";
+        }
+        private String nibling(int down, String sex) {
+            if (down == 1) return sex == "M" ? "nev�" : "niese";
+            return "gammel-".repeat(down - 1) + (sex == "M" ? "nev�" : "niese");
+        }
+        private String pibling(int up, String sex) {
+            if (up == 1) return sex == "M" ? "onkel" : "tante";
+            return "gammel-".repeat(up - 1) + (sex == "M" ? "onkel" : "tante");
+        }
+        private String cousin(int degree, int removal, String sex) {
+            String base = degree + ". grad " + (sex == "M" ? "fetter" : "kusine");
+            if (removal == 0) return base;
+            return base + ", " + removal + " gang fjernet";
+        }
+    }		// End NorwegianNamer
 
 }  // End of HG0506ManagePerson

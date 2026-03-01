@@ -37,6 +37,7 @@ package hre.tmgjava;
  *			   2025-10-25 - Chesnay project adjustment - database input > 400
  *			   2025-12-13 - Get T738 table size correctly in addToSourceElementTable (D Ferguson)
  *			   2026-01-17 - Log all catch blocks (D Ferguson)
+ *			   2026-02-19 - Fix 32.24/25. Do ALL T738 steps for en-US and all languages (D Ferguson)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -380,9 +381,6 @@ public class TMGpass_Source {
 					sourceElementTablePID++;
 				}
 			}
-
-			// If the project language is en-US, we don't need the next 2 steps, so can exit early
-			if (tmgHreConverter.languageTMG().equals("en-US")) return;
 
 		// (Phase 4) Get the T738 ID# of all imported T738's whose Name is in elmntNameBaseList,
 		// and save their ID# in elmntNumberNewList.

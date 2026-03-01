@@ -1,6 +1,7 @@
 package hre.gui;
 /**************************************************************************************
  * Person Select - Specification 05.07 GUI_EntitySelect 2019-09-16
+ * ************************************************************************************
  * v0.00.0012 2019-09-16 by D Ferguson
  * v0.00.0014 2019-11-18 changes for HB0711 static classes (D Ferguson)
  * v0.00.0015 2019-12-07 changed code for HG0514 call (D Ferguson)

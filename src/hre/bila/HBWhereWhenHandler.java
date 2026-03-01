@@ -87,6 +87,7 @@ package hre.bila;
   *			   2015-11-01 - Modified and splitted code for createLocation record (N. Tolleshaug)
   *			   2026-01-01 - Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
   *			   2026-01-27 - Updated code for constructor (N. Tolleshaug)
+  *			   2026-02-21	Line 3230 - removed memo text "no memo found"
   *****************************************************************************************/
 
 import java.awt.Cursor;
@@ -3227,7 +3228,7 @@ class EditEventRecord extends HBBusinessLayer {
 			eventResultSet.first();
 			memoElementPID = eventResultSet.getLong("MEMO_RPID");
 			if (memoElementPID == null_RPID) {
-				return " No memo found";
+				return "";
 			}
 			if (HGlobal.DEBUG) {
 				System.out.println(" MemoPID: " + memoElementPID);
