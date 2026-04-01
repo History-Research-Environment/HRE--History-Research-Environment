@@ -15,8 +15,10 @@
   
 <p><b>PREPARING TMG:</b></p> 
 A number of processes should be performed in TMG to help make a successful import. These are:
-<p> 1. Flags: under the TMG File menu, click on the Flag Manager entry. When it opens, just close the screen. This simple action will repair a number of inconsistencies that may be present in TMG flag entries.</p>
-<p> 2. Exhibit Thumbnails: under certain conditions TMG exhibit thumbnails can be lost or corrupted and cannot be imported into HRE. To address this problem, perform the following: open any TMG Exhibit log with an entry in it and right-click on the exhibit. Select 'Refresh all thumbnails'. Note that this may take some time to finish if you have a large number of exhibits.</p>
+<p> 1. Flags: under the TMG File menu, click on the Flag Manager entry. When it opens, just close the screen. This simple action will repair a number of inconsistencies that may be present in TMG flag entries</p>
+<p> 2. Exhibit Thumbnails: under certain onditions TMG exhibit thumbnails can be lost or corrupted and cannot be imported into HRE. To address this problem, perform the following: open any TMG Exhibit log with an entry in it and right-click on the exhibit. Select 'Refresh all thumbnails'. Note that this may take some time to finish if you have a large number of exhibits</p>
+<p> 3. Review the TMG Picklist for people with no names. It is strongly recommended that a naming convention like 'Unknown, UNKNOWN' is used as unnamed people can cause import problems</p>
+<p> 4. TMG File Maintenance: run File > Maintenance > Optimize, then File > Maintenance > Verify File Integrity</p>
 <br>
 <p><b>BEFORE STARTING AN IMPORT:</b></p>
 Check the TMG project only contains one dataset - the import process will only import the first dataset of a TMG project.<br>
@@ -31,8 +33,12 @@ Decide where you are going to store the HRE database when imported. If you don't
 <p> 5. Once this is nominated the import process will begin</p> 
 <p> 6. A progress window will appear as HRE steps through the chosen TMG database, and reads it into HRE as a new HRE Project</p>
 <p> 7. When you click on <b>Close</b> the TMG data will be available for use by HRE</p>
-<p> 8. Use the HRE Open Project menu item to open the project</p>
-<p> 9. This may be an opportune time to Backup this new HRE Project, before any editing is carried out.</p>
+<p> 8. Open the HRE Reports >> Logging screen and Browse to the log file with today's date. Use the filter for ERROR entries to focus on possible import errors. Correct any errors in your TMG project</p>
+<p> 9. Also review the log for WARNINGs - these may indicate further problems with TMG data you may need to correct</p>
+<p> 10. Now use HRE to delete the HRE project you have created and repeat the import process</p>
+<p> 11. Repeat steps 8 - 10 untill the Log shows no ERROR entries. Note that the HRE project's integrity cannot be trusted AND SHOULD NOT BE USED if the Log shows ERRORs</p>
+<p> 12. Use the HRE Open Project menu item to open the project</p>
+<p> 13. This may be an opportune time to Backup this new HRE Project, before any editing is carried out.</p>
 <p><b>NOTE:</b>  The TMG database is not altered in any way. It remains in its original folder and will still be available in TMG.</p>
 <br>
 <p><b>IMPORT PROCESS ERRORS:</b></p>
@@ -60,7 +66,7 @@ Select whichever check-boxes you have been told to use by HRE Support and repeat
 
 <br>
 <div id="updated">
-<i>This page was updated on: 28 Dec 2023</i></div>
+<i>This page was updated on: 29 Mar 2026</i></div>
 <br>
 
 </body>

@@ -23,12 +23,14 @@ package hre.gui;
  * v0.03.0031 2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-03 Logged catch block actions (D Ferguson)
  * 			  2026-01-22 Adjust debug ConsoleLog filename; set file checkbox on with DEBUG (D Ferguson)
+ * v0.05.0033 2026-03-06 Add a 'Review the Help before proceeding' msg (D Ferguson)
  ***************************************************************************************************/
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -66,7 +68,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * TMGProject Import
  * @author R Thompson originally
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2019-07-21
  */
 
@@ -97,7 +99,7 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 		contents = new JPanel();
 		contents.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "10[]10[]10", "20[]20[]20[]20[]30[]10[]"));	 //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10", "10[]10[]10", "20[]10[]15[]15[]15[]20[]10[]"));	 //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JToolBar toolBar = new JToolBar();
 		toolBar.setFloatable(false);
@@ -122,38 +124,43 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north"); //$NON-NLS-1$
 
+		JTextArea txt_Advice = new JTextArea(HG0417Msgs.Text_10); // PLEASE REVIEW THE HELP PAGE BEFORE PROCEEDING
+		txt_Advice.setOpaque(false);
+		txt_Advice.setFont(txt_Advice.getFont().deriveFont(Font.BOLD)); // Derive a new bold font
+		contents.add(txt_Advice, "cell 0 0 2"); //$NON-NLS-1$
+
 		JTextArea txt_Instruct = new JTextArea(HG0417Msgs.Text_16 +		// TMG import is a 3-step process:
 												HG0417Msgs.Text_17 +	// 1. define the name of your new HRE Project;
 												HG0417Msgs.Text_18 +	// 2. choose where to place the HRE Database file and give the file a name;
 												HG0417Msgs.Text_19);	// 3. locate your TMG project's PJC file and start the import process.
 		txt_Instruct.setOpaque(false);
-		contents.add(txt_Instruct, "cell 0 0 2"); //$NON-NLS-1$
+		contents.add(txt_Instruct, "cell 0 1 2"); //$NON-NLS-1$
 
 		JLabel lbl_ProjectName = new JLabel(HG0417Msgs.Text_21);	// Define the Project Name
-		contents.add(lbl_ProjectName, "cell 0 1");		 //$NON-NLS-1$
+		contents.add(lbl_ProjectName, "cell 0 2");		 //$NON-NLS-1$
 
 		txt_ProjectName = new JTextField();
 		txt_ProjectName.setHorizontalAlignment(SwingConstants.LEFT);
 		txt_ProjectName.setToolTipText(HG0417Msgs.Text_23);	// Enter the new HRE Project name
 		txt_ProjectName.setText(HG0417Msgs.Text_24);		// Step 1: enter the new HRE project's name
 		txt_ProjectName.setColumns(30);
-		contents.add(txt_ProjectName, "cell 1 1, growx"); 	//$NON-NLS-1$
+		contents.add(txt_ProjectName, "cell 1 2, growx"); 	//$NON-NLS-1$
 
 		JLabel lbl_Location = new JLabel(HG0417Msgs.Text_26);	// Define the file Location
-		contents.add(lbl_Location, "cell 0 2, alignx right"); 	//$NON-NLS-1$
+		contents.add(lbl_Location, "cell 0 3, alignx right"); 	//$NON-NLS-1$
 
 		JButton btn_Browse = new JButton(HG0417Msgs.Text_28);	// Step 2: set the name/location of the new HRE database
 		btn_Browse.setHorizontalAlignment(SwingConstants.LEFT);
 		btn_Browse.setToolTipText(HG0417Msgs.Text_29);			// Select location and enter new HRE database name
 		btn_Browse.setVisible(true);
 		btn_Browse.setEnabled(false);
-		contents.add(btn_Browse, "cell 1 2, growx"); //$NON-NLS-1$
+		contents.add(btn_Browse, "cell 1 3, growx"); //$NON-NLS-1$
 
 		JButton btn_Create = new JButton(HG0417Msgs.Text_42);	// Step 3: select TMG project's PJC file for import
 		btn_Create.setHorizontalAlignment(SwingConstants.LEFT);
 		btn_Create.setEnabled(false);
 		btn_Create.setToolTipText(HG0417Msgs.Text_43);			// Convert to the new HRE project database
-		contents.add(btn_Create, "cell 1 3, growx"); 			//$NON-NLS-1$
+		contents.add(btn_Create, "cell 1 4, growx"); 			//$NON-NLS-1$
 
 		// Setup hidden panel to display switch controls for Import
 		JPanel switchPanel= new JPanel();
@@ -161,7 +168,7 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 		switchPanel.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.RAISED,
 				new Color(255, 255, 255), new Color(160, 160, 160)), HG0417Msgs.Text_70,	// Controls for monitoring TMG Import
 				TitledBorder.LEFT, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		contents.add(switchPanel, "cell 0 4 2, growx, hidemode 3"); 	//$NON-NLS-1$
+		contents.add(switchPanel, "cell 0 5 2, growx, hidemode 3"); 	//$NON-NLS-1$
 		switchPanel.setLayout(new MigLayout("insets 10", "[]20[]20[]", "[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		trace = new JCheckBox(HG0417Msgs.Text_71);		// Console to file
@@ -194,7 +201,7 @@ public class HG0417TMGProjectImport extends HG0450SuperDialog {
 
 		JButton btn_Cancel = new JButton(HG0417Msgs.Text_39);	// Cancel
 		btn_Cancel.setToolTipText(HG0417Msgs.Text_40);			// Cancel the import process and return to the main menu
-		contents.add(btn_Cancel, "cell 1 5, alignx right"); 	//$NON-NLS-1$
+		contents.add(btn_Cancel, "cell 1 6, alignx right"); 	//$NON-NLS-1$
 
 		// Make switchPanel visible if we're in DEBUG mode and set TRACE as default
 		if (HGlobal.DEBUG) {

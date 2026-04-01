@@ -15,8 +15,10 @@
   
 <p><b>PREPARANDO TMG:</b></p> 
 Se deben realizar una serie de procesos en TMG para ayudar a realizar una importación exitosa. Estos son:
-<p> 1. Banderas: en el menú Archivo TMG, haga clic en la entrada Administrador de banderas. Cuando se abra, simplemente cierre la pantalla. Esta simple acción reparará una serie de inconsistencias que pueden estar presentes en las entradas de la bandera TMG.</p>
-<p> 2. Miniaturas de exhibición: bajo ciertas condiciones, las miniaturas de exhibición de TMG se pueden perder o dañar y no se pueden importar a HRE. Para solucionar este problema, realice lo siguiente: abra cualquier registro de exhibición de TMG que tenga una entrada y haga clic derecho en la exhibición. Seleccione 'Actualizar todas las miniaturas'. Tenga en cuenta que esto puede tardar algún tiempo en finalizar si tiene una gran cantidad de exhibiciones.</p>
+<p> 1. Banderas: en el menú Archivo TMG, haga clic en la entrada Administrador de banderas. Cuando se abra, simplemente cierre la pantalla. Esta simple acción reparará una serie de inconsistencias que pueden estar presentes en las entradas de la bandera TMG</p>
+<p> 2. Miniaturas de exhibición: bajo ciertas condiciones, las miniaturas de exhibición de TMG se pueden perder o dañar y no se pueden importar a HRE. Para solucionar este problema, realice lo siguiente: abra cualquier registro de exhibición de TMG que tenga una entrada y haga clic derecho en la exhibición. Seleccione 'Actualizar todas las miniaturas'. Tenga en cuenta que esto puede tardar algún tiempo en finalizar si tiene una gran cantidad de exhibiciones</p>
+<p> 3. Revise la lista desplegable de TMG para personas sin nombre. Se recomienda encarecidamente utilizar una convención de nomenclatura como "Desconocido, DESCONOCIDO", ya que las personas sin nombre pueden causar problemas de importación</p>
+<p> 4. Mantenimiento de archivos TMG: ejecute Archivo > Mantenimiento > Optimizar, luego Archivo > Mantenimiento > Verificar integridad del archivo.</p>
 <br>
 <p><b>ANTES DE INICIAR UNA IMPORTACIÓN:</b></p>
 Verifique que el proyecto TMG solo contenga un conjunto de datos: el proceso de importación solo importará el primer conjunto de datos de un proyecto TMG.<br>
@@ -31,8 +33,12 @@ Decida dónde va a almacenar la base de datos HRE cuando la importe. Si no neces
 <p> 5. Una vez nominado, comenzará el proceso de importación</p>
 <p> 6. Aparecerá una ventana de progreso a medida que HRE recorre la base de datos TMG elegida y la lee en HRE como un nuevo proyecto HRE</p>
 <p> 7. Al hacer clic en <b>Cerrar</b>, los datos de TMG estarán disponibles para que los utilice HRE</p>
-<p> 8. Utilice el elemento de menú HRE Open Project para abrir el proyecto</p>
-<p> 9. Este puede ser un momento oportuno para realizar una copia de seguridad de este nuevo proyecto HRE, antes de realizar cualquier edición.</p>
+<p> 8. Abra la pantalla Informes de HRE >> Registro y busque el archivo de registro con la fecha de hoy. Use el filtro de entradas de ERROR para centrarse en posibles errores de importación. Corrija cualquier error en su proyecto TMG</p>
+<p> 9. Revise también el registro en busca de WARNING; estas pueden indicar otros problemas con los datos de TMG que deba corregir</p> 
+<p> 10. Ahora use HRE para eliminar el proyecto HRE que creó y repita el proceso de importación.</p>
+<p> 11. Repita los pasos 8 - 10 hasta que el registro no muestre entradas de ERROR. Tenga en cuenta que no se puede confiar en la integridad del proyecto HRE y NO DEBE USARSE si el registro muestra ERRORES</p>
+<p> 12. Utilice el elemento de menú HRE Open Project para abrir el proyecto</p>
+<p> 13. Este puede ser un momento oportuno para realizar una copia de seguridad de este nuevo proyecto HRE, antes de realizar cualquier edición.</p>
 <p><b>NOTA:</b> La base de datos de TMG no se modifica de ninguna manera. Permanece en su carpeta original y seguirá estando disponible en TMG.</p>
 <br>
 <p><b>ERRORES EN EL PROCESO DE IMPORTACIÓN:</b></p>
@@ -60,7 +66,7 @@ Seleccione las casillas de verificación que le haya indicado el soporte de HRE 
 
 <br>
 <div id="updated">
-<i>Esta página fue actualizada el: 28 de diciembre de 2023</i></div>
+<i>Esta página fue actualizada el: 30 de marzo de 2026</i></div>
 <br>
 
 </body>

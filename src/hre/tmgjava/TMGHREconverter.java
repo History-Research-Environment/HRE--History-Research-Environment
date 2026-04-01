@@ -58,9 +58,14 @@ package hre.tmgjava;
  * 			  2026-02-08 - Added TMG table dump to user HRE folder (N. Tolleshaug)
  *v0.05.0033  2026-02-16 - Correct default language setting if no language found (D Ferguson)
  * 			  2026-02-16 - Added if (TMGglobal.DEBUG) in stopTCPSever()
- 			  2026-02-28 - Fixed default language setting if no language found (D Ferguson)
- *******************************************************************************************/
-
+ *			  2026-02-28 - Fixed default language setting if no language found (D Ferguson)
+ *			  2026-03-17 - Updated/Added HCException handling for each pass (N. Tolleshaug)
+ *			  2026-03-18 - Updated log messages for each pass (N. Tolleshaug)
+ *			  2026-03-19 - Revised WARNINGS and ERROR messages (N. Tolleshaug)
+ *			  2026-03-28 - Edietd MESSAGE to MESSAGE: (N. Tolleshaug)
+ ******************************************************************************************
+ * NOTES
+ ******************************************************************************************/
 import java.awt.Dialog.ModalityType;
 import java.io.BufferedReader;
 import java.io.File;
@@ -366,27 +371,29 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			reporNameStyleUse();
 
 		} catch (HCException hce) {
-			processMonitor.setContextOfAction(" ERROR - HRE conversion terminated!");
+			processMonitor.setContextOfAction(" ERROR - TMG import terminated!");
 			if (TMGglobal.DEBUG) System.out.println("Converter TMG error\n" + hce.getMessage());
-			JOptionPane.showMessageDialog(null,	"TMG Convert error:"
+			JOptionPane.showMessageDialog(null,	"TMG import error:"
 					+ "\nError: " + hce.getMessage(),"TMG to HRE",JOptionPane.INFORMATION_MESSAGE);
 			if (TMGglobal.TRACE) hce.printStackTrace();
 		// Log Stack Trace
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGHREconverter conversion: " + hce.getMessage());
+				HB0711Logging.logWrite("ERROR: TMGHREconverter terminated: " + hce.getMessage());
 				HB0711Logging.printStackTraceToFile(hce);
 			}
 		} catch (Exception exc) {
-			processMonitor.setContextOfAction(" PROGRAM EXCEPTION - HRE conversion terminated!");
+			processMonitor.setContextOfAction(" PROGRAM EXCEPTION - TMG import terminated!");
 			JOptionPane.showMessageDialog(null,	"TMG-HRE Converter error detected.\nSee log for more info."
-					+ "\nException message: " + exc.getMessage(),"TMG to HRE",JOptionPane.INFORMATION_MESSAGE);
+					+ "\nerror: " + exc.getMessage(),"TMG to HRE",JOptionPane.INFORMATION_MESSAGE);
 			// Log Stack Trace
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGHREconverter conversion: " + exc.getMessage());
+				HB0711Logging.logWrite("ERROR: TMGHREconverter terminated: " + exc.getMessage());
 				HB0711Logging.printStackTraceToFile(exc);
 			}
 		}  finally {
-			System.out.println(" TMG to HRE conversion completed!");
+			if (HGlobal.writeLogs) 
+				HB0711Logging.logWrite("MESSAGE: TMG import to HRE completed!");
+			System.out.println(" TMG to HRE import completed!");
 	    }
 	}
 
@@ -621,21 +628,33 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	}
 
 	private void passSupportData() throws HCException {
-		setStatusMessage("*Support pass - HRE name table processing");
+		setStatusMessage("** Support pass - HRE name table processing");
+		if (HGlobal.writeLogs) 
+			HB0711Logging.logWrite("MESSAGE: - Support pass - HRE name table processing");
 		setStatusMessage(" Loading TMG style tables");
 		tmgLoader.loadTmgSupportTables();
 		timeReport("load TMG style tables");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-
-		pointSupportPass = new TMGpass_Support(pointDB);
-
-		setStatusMessage(" Updating HRE T16X_NAME_STYLES");
-		pointSupportPass.addNameStyleToHRE(this);
-		timeReport("updated T160_NAME_STYLES");
-
-		setStatusMessage(" Updating HRE T251_FLAG_DEFN");
-		pointSupportPass.updateFlagFromTMG(this);
-		timeReport("updated T251_FLAG_DEFN");
+		try {
+			pointSupportPass = new TMGpass_Support(pointDB);
+			setStatusMessage(" Updating HRE T16X_NAME_STYLES");
+			pointSupportPass.addNameStyleToHRE(this);
+			timeReport("updated T160_NAME_STYLES");
+			setStatusMessage(" Updating HRE T251_FLAG_DEFN");
+			pointSupportPass.updateFlagFromTMG(this);
+			timeReport("updated T251_FLAG_DEFN");
+		} catch (HCException hce) {
+			System.out.println("Pass Support Tables error: " + hce.getMessage());
+			setStatusMessage(" ### WARNING Pass Support Tables ERROR");
+			statusMessage = "ERROR";
+			JOptionPane.showMessageDialog(null, "Pass Support Tables terminated: \n"
+					+  "TMG Import pass not completed!", "Pass Support Tables",JOptionPane.WARNING_MESSAGE);
+			// Log Stack Trace
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passSupportData(): " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
+		}
 	}
 
 /**
@@ -644,13 +663,13 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	private void passPersonData() throws HCException {
 		setStatusMessage("** 1st - pass - HRE name table processing");
+		if (HGlobal.writeLogs) 
+			HB0711Logging.logWrite("MESSAGE: -  1st - pass - HRE name table processing");
 		setStatusMessage(" Loading TMG name tables");
 		tmgLoader.loadTmgNameTables();
 		timeReport("load TMG Name tables");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-
 		pointPersonPass = new TMGpass_Persons(pointDB);
-
 		try {
 
 		// HRE T401_PERSONS
@@ -700,12 +719,13 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 		} catch (HCException hce) {
 			System.out.println("passPersonData error: " + hce.getMessage());
+			setStatusMessage(" ### WARNING Pass Person Tables ERROR");
 			statusMessage = "ERROR";
-			JOptionPane.showMessageDialog(null, "PassPersonData error: \n"
-					+  hce.getMessage(), "Project HRE pass",JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Pass Person Tables terminated! \n"
+					+  "TMG Import pass not completed!", "Pass Person Tables",JOptionPane.WARNING_MESSAGE);
 		// Log Stack trace
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGHREconverter passPersonData: " + hce.getMessage());
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passPersonData(): " + hce.getMessage());
 				HB0711Logging.printStackTraceToFile(hce);
 			}
 		}
@@ -713,6 +733,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	private void passLocationData() throws HCException {
 		setStatusMessage("** 2nd - pass - HRE place tables processing");
+		if (HGlobal.writeLogs) 
+			HB0711Logging.logWrite("MESSAGE: -  2nd - pass - HRE place tables processing");
 		setStatusMessage(" Loading TMG place tables");
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgPlaceTables();
@@ -722,29 +744,27 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 */
 		setStatusMessage(" Processing  Places from TMG");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-
 		pointLocationPass = new TMGpass_Locations(pointDB);
-
+		
 		try {
 			pointLocationPass.addLocationsToHRE(this);
 			setStatusMessage(" Completed T551, T552 and T553 LOCATIONS");
 			timeReport("HRE place data processing");
 			completedNumberPasses++;
 			processMonitor.setStatus(completedNumberPasses, totalNumberPasses);
-
 			closeAllTMGtables("Place");
 
 		} catch (HCException hce) {
-			System.out.println(" ERROR PassPlaceData: " + hce.getMessage());
-			JOptionPane.showMessageDialog(null, "ERROR PassLocationtData: \n"
-					+  hce.getMessage(), "Place pass",JOptionPane.ERROR_MESSAGE);
+			System.out.println(" ERROR Pass Location Tables: " + hce.getMessage());
+			setStatusMessage(" ### WARNING Pass Location Tables ERROR!");
+			JOptionPane.showMessageDialog(null, "Pass Location Tables terminated\n"
+					+  "TMG Import pass not completed!", "Pass PlaceTable",JOptionPane.WARNING_MESSAGE);
 		// Log Stack Trace
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGHREconverter passLocationData: " + hce.getMessage());
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passLocationData(): " + hce.getMessage());
 				HB0711Logging.printStackTraceToFile(hce);
 			}
 		}
-
 	}
 
 /**
@@ -753,6 +773,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	private void passEventData() throws HCException {
 		setStatusMessage("** 3rd - pass - HRE event tables processing");
+		if (HGlobal.writeLogs) 
+			HB0711Logging.logWrite("MESSAGE: -  3rd - pass - HRE event tables processing");
 		setStatusMessage(" Loading TMG event tables");
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgEventTables(true);
@@ -763,11 +785,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 */
 		setStatusMessage(" Processing Events from TMG");
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
-
 		pointEventPass = new TMGpass_Events(pointDB);
-
 		try {
-
 			pointEventPass.addEventTagTables(this);
 			setStatusMessage(" Completed EVENT TAG table");
 
@@ -795,11 +814,12 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 		} catch (HCException hce) {
 			System.out.println(" ERROR PassEventData: " + hce.getMessage());
-			JOptionPane.showMessageDialog(null, "ERROR PassEventData: \n"
-					+  hce.getMessage(), "Event pass",JOptionPane.ERROR_MESSAGE);
+			setStatusMessage(" ### WARNING Pass Event Tables ERROR");
+			JOptionPane.showMessageDialog(null, "Pass Event Tables terminated!\n"
+					+  "TMG Import pass not completed!", "Pass Event Tables",JOptionPane.WARNING_MESSAGE);
 			// Log Stack Trace
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGHREconverter passEventData: " + hce.getMessage());
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passEventData(): " + hce.getMessage());
 				HB0711Logging.printStackTraceToFile(hce);
 			}
 		}
@@ -811,25 +831,39 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	private void passSourceData() throws HCException {
 		setStatusMessage("** 4th - pass - HRE source table processing");
+		if (HGlobal.writeLogs) 
+			HB0711Logging.logWrite("MESSAGE: - 4th - pass - HRE source table processing");
 		setStatusMessage(" Loading TMG source tables");
 		tmgLoader.loadTmgSourceTables();
-		timeReport("load TMG Source tables");
-
-	// Copy TMG source tables
-		pointSourcePass.initSourceTables(); // from TMG A, M, R, S, U, W tables
-	// Import Source tables
-		pointSourcePass.addToSourceElementTable(this);	// Process T738 SORC_ELEMENT
-		pointSourcePass.addToSourceDefnTable(this); 	// Build T737 SORC_DEFN
-		pointSourcePass.addToSourceTable(this);			// Build T736 SORC, T734 SORC_DATA
-		pointSourcePass.updateT737Templates(this);		// Update T737 source template formats
-		pointSourcePass.addToCitationTable(this);		// Build T735 CITN
-		pointSourcePass.addToReposTable(this);			// Build T739 REPO
-		pointSourcePass.addToSorceLinkTable(this);		// Build T740 SORC_LINK
-
-		pointSourcePass.testReposTables();
-		pointSourcePass.citationStat();
-		completedNumberPasses++;
-		processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
+		timeReport("load TMG Source tables");	
+		try {
+		// Copy TMG source tables
+			pointSourcePass.initSourceTables(); // from TMG A, M, R, S, U, W tables
+		// Import Source tables
+			pointSourcePass.addToSourceElementTable(this);	// Process T738 SORC_ELEMENT
+			pointSourcePass.addToSourceDefnTable(this); 	// Build T737 SORC_DEFN
+			pointSourcePass.addToSourceTable(this);			// Build T736 SORC, T734 SORC_DATA
+			pointSourcePass.updateT737Templates(this);		// Update T737 source template formats
+			pointSourcePass.addToCitationTable(this);		// Build T735 CITN
+			pointSourcePass.addToReposTable(this);			// Build T739 REPO
+			pointSourcePass.addToSorceLinkTable(this);		// Build T740 SORC_LINK
+	
+			pointSourcePass.testReposTables();
+			pointSourcePass.citationStat();
+			completedNumberPasses++;
+			processMonitor.setStatus(completedNumberPasses,totalNumberPasses);
+		} catch (HCException hce) {
+			System.out.println("Pass Source Tables error: " + hce.getMessage());
+			setStatusMessage(" ### WARNING Pass Source Tables ERROR!");
+			statusMessage = "ERROR";
+			JOptionPane.showMessageDialog(null, "Pass Source Tables terminated!\n"
+					+ "TMG Import pass not completed!", "Pass Source Tables",JOptionPane.WARNING_MESSAGE);
+			// Log Stack Trace
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passSourceData(): " + hce.getMessage());
+				HB0711Logging.printStackTraceToFile(hce);
+			}
+		}
 	}
 
 /**
@@ -838,6 +872,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	private void passExhibitData() throws HCException {
 		setStatusMessage("** 5th - pass - HRE exhibit table processing");
+		if (HGlobal.writeLogs) 
+			HB0711Logging.logWrite("MESSAGE: - 5th - pass - HRE exhibit table processing");
 		setStatusMessage(" Loading TMG exhibit table");
 		processMonitor.setProgress(0);
 		tmgLoader.loadTmgExhibitTables();
@@ -863,12 +899,13 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 		} catch (HCException | SQLException hce) {
 			System.out.println("Pass Exhibit Data error: " + hce.getMessage());
+			setStatusMessage(" ### WARNING Pass Exhibit Tables ERROR");
 			statusMessage = "ERROR";
-			JOptionPane.showMessageDialog(null, "Pass Exhibit Data error: \n"
-					+  hce.getMessage(), "Event pass",JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Pass Exhibit Tables terminated! \n"
+					+ "TMG Import pass not completed!", "Pass Exhibit Tables",JOptionPane.WARNING_MESSAGE);
 			// Log Stack Trace
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGHREconverter passExhibitData: " + hce.getMessage());
+				HB0711Logging.logWrite("ERROR: in TMGHREconverter passExhibitData(): " + hce.getMessage());
 				HB0711Logging.printStackTraceToFile(hce);
 			}
 		}

@@ -82,6 +82,7 @@ package hre.bila;
  *			  2024-11-05 - Change literal " for" in Event info to ":" (D Ferguson)
  *			  2024-12-06 - line 3689 - if (isResultSetEmpty(partnerRelationRS)) (N. Tolleshaug);
  *			  2024-12-10 - Updated name table for Person VP (N. Tolleshaug)
+ * v0.05.0033 2026-03-09 - Translation of 'No recorded Father/mother' (D Ferguson)
  *********************************************************************************
  * NOTE 1 - Not implemented handling of missing birth date line 1023
  * NOTE 2 - line 2996 findLocationWithImage() always return false???
@@ -106,11 +107,12 @@ import hre.gui.HG0530ViewEvent;
 import hre.gui.HG0530ViewLocation;
 import hre.gui.HG0530ViewPeople;
 import hre.gui.HGlobal;
+import hre.gui.HGlobalCode;
 
 /**
  * class ViewpointHandler
  * @author Nils Tolleshaug
- * @version v0.03.0031
+ * @version v0.05.0033
  * @since 2019-12-20
  */
 public class HBViewPointHandler extends HBBusinessLayer {
@@ -780,14 +782,13 @@ public class HBViewPointHandler extends HBBusinessLayer {
 									pointOpenProject.toFrontOpenScreen(screenIDtest);
 									return errorCode;
 
-								} else {
-									personVPindex = i;
-									screenID = screenIDtest;
-									if (HGlobal.DEBUG) {
-										System.out.println("HBViewPointHandler - Person VP reopen VPnr: "
-												+ personVPindex + " ScreenID: " + screenIDtest
-												+ " personVP-PID: " + personTablePID);
-									}
+								}
+								personVPindex = i;
+								screenID = screenIDtest;
+								if (HGlobal.DEBUG) {
+									System.out.println("HBViewPointHandler - Person VP reopen VPnr: "
+											+ personVPindex + " ScreenID: " + screenIDtest
+											+ " personVP-PID: " + personTablePID);
 								}
 						}
 					}
@@ -1066,14 +1067,13 @@ public class HBViewPointHandler extends HBBusinessLayer {
 										pointOpenProject.toFrontOpenScreen(screenIDtest);
 									return errorCode;
 
-								} else {
-									locationVPindex = i;
-									screenID = screenIDtest;
-									if (HGlobal.DEBUG) {
-										System.out.println(" Location VP for PID reopen indexVP: "
-												+ locationVPindex + " ScreenID: " + screenIDtest
-												+ " locationVP-PID: " + locationTablePID);
-									}
+								}
+								locationVPindex = i;
+								screenID = screenIDtest;
+								if (HGlobal.DEBUG) {
+									System.out.println(" Location VP for PID reopen indexVP: "
+											+ locationVPindex + " ScreenID: " + screenIDtest
+											+ " locationVP-PID: " + locationTablePID);
 								}
 						}
 					}
@@ -1474,12 +1474,13 @@ class ViewPeopleData extends HBBusinessLayer {
 		String[] grandParents, parents, person, childType, grandChildType;
 
 	String selfSex; // To be returned for person sex
+	String[] noParentMessages = HGlobalCode.getNoParentMessgaes();
 
 	Object [][] partnerTable;
 
 	Object [][] parentTable = {
-			    {" Not set ", " No recorded father", "  ? "},
-				{" Not set ", " No recorded mother", "  ? "}};
+			    {" ", " " + noParentMessages[0], " "},
+				{" ", " " + noParentMessages[1], " "}};
 
 	Object [][] eventsTable = {{null, null, null, null, null}};
 
@@ -1536,6 +1537,7 @@ class ViewPeopleData extends HBBusinessLayer {
 		this.pointOpenProject = pointOpenProject;
 		dateFormatSelect();
 		pointMediaHandler = pointOpenProject.getMediaHandler();
+
 
 		if (HGlobal.DEBUG) {
 			System.out.println("Dateformat: "
@@ -1971,8 +1973,8 @@ class ViewPeopleData extends HBBusinessLayer {
 				relativesGC2Table[i][3] = grandChilds[3];
 				relativesGC2Table[i][4] = grandChilds[4];
 			}
-			
-		// Se up nametable	
+
+		// Se up nametable
 			preparePersonNameTable(personTablePID);
 
 		// set up all images
@@ -1998,7 +2000,7 @@ class ViewPeopleData extends HBBusinessLayer {
 		}
 		return errorCode;
 	}
-	
+
 /**
  * allNameTable(long selectPersonPID)	Name table initia
  * @param selectPersonPID
@@ -2016,7 +2018,7 @@ class ViewPeopleData extends HBBusinessLayer {
 			selectString = setSelectSQL("*", personTable, " PID = " + selectPersonPID);
 			personTableRS = requestTableData(selectString, dataBaseIndex);
 			personTableRS.first();
-			
+
 		// Set up table
 			selectString = setSelectSQL("*", personNameTable, ownerRecordField + " = " + selectPersonPID);
 			personNameTableRS = requestTableData(selectString, dataBaseIndex);

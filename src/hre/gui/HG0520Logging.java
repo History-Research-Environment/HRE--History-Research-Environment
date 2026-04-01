@@ -11,14 +11,13 @@ package hre.gui;
  * v0.01.0025 2021-01-08 correct header names; correct btn_clear handling (D Ferguson)
  * 			  2021-04-05 NLS; allow resizing to handle a log file with long log entries (D Ferguson)
  * v0.01.0026 2021-05-05 stop NPE caused by null or corrupt data (D Ferguson)
+ * v0.05.0033 2026-03-27 Add ability to filter on 3 log entry types (D Ferguson)
  **************************************************************************************/
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -28,6 +27,7 @@ import java.util.List;
 
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -35,7 +35,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
-import javax.swing.RowSorter;
+import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
@@ -54,7 +54,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Logging GUI
  * @author D Ferguson
- * @version v0.01.0026
+ * @version v0.05.0033
  * @since 2019-06-24
  */
 
@@ -67,6 +67,10 @@ public class HG0520Logging extends HG0450SuperDialog {
 	private ArrayList<Integer> rowsSelected = new ArrayList<>();
 
 	private JTable table_LogEntries;
+	private TableRowSorter<TableModel> logSorter;
+
+	JCheckBox chk_Error, chk_Warning, chk_Message;
+
 
 /**
  * Collect JTable for output by SuperDialog
@@ -77,9 +81,9 @@ public class HG0520Logging extends HG0450SuperDialog {
 		return table_LogEntries;
 	}
 
-	/**
-	 * Create the Dialog.
-	 */
+/**
+ * Create the Dialog.
+ */
 	public HG0520Logging() {
 		// Setup references for HG0450
 		windowID = screenID;
@@ -102,21 +106,35 @@ public class HG0520Logging extends HG0450SuperDialog {
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north"); //$NON-NLS-1$
 
-		JLabel lbl_Select = new JLabel(HG0520Msgs.Text_8);
+		JLabel lbl_Select = new JLabel(HG0520Msgs.Text_8);		// Select a log file:
 		contents.add(lbl_Select, "cell 0 0"); //$NON-NLS-1$
 
-		JButton btn_Browse = new JButton(HG0520Msgs.Text_10);
+		JButton btn_Browse = new JButton(HG0520Msgs.Text_10);	// Browse...
 		btn_Browse.setToolTipText(HG0520Msgs.Text_11);
 		contents.add(btn_Browse, "cell 1 0"); //$NON-NLS-1$
 
-		JLabel lbl_LogFilename = new JLabel(HG0520Msgs.Text_13);
+		chk_Error= new JCheckBox(HG0520Msgs.Text_5);		// Display only ERROR entries
+		chk_Error.setHorizontalTextPosition(SwingConstants.LEFT);
+		chk_Error.setVisible(false);
+		contents.add(chk_Error, "cell 1 0, gapx 60"); //$NON-NLS-1$
+
+		chk_Warning = new JCheckBox("WARNING ");	//$NON-NLS-1$
+		chk_Warning.setHorizontalTextPosition(SwingConstants.LEFT);
+		chk_Warning.setVisible(false);
+		contents.add(chk_Warning, "cell 1 0, gapx 10"); //$NON-NLS-1$
+
+		chk_Message= new JCheckBox("MESSAGE ");		//$NON-NLS-1$
+		chk_Message.setHorizontalTextPosition(SwingConstants.LEFT);
+		chk_Message.setVisible(false);
+		contents.add(chk_Message, "cell 1 0, gapx 10"); //$NON-NLS-1$
+
+		JLabel lbl_LogFilename = new JLabel(HG0520Msgs.Text_13);		// Log filename
 		contents.add(lbl_LogFilename, "cell 0 2,alignx right"); //$NON-NLS-1$
 		JLabel lbl_FilenameData = new JLabel(""); //$NON-NLS-1$
 		contents.add(lbl_FilenameData, "cell 1 2"); //$NON-NLS-1$
 
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(new Rectangle(20, 100, 0, 0));
-		contents.add(scrollPane, "cell 0 3 2 1,grow, pushy"); //$NON-NLS-1$
+		contents.add(scrollPane, "cell 0 3 2 1, grow, push"); //$NON-NLS-1$
 
 		JButton btn_Clear = new JButton(HG0520Msgs.Text_18);
 		btn_Clear.setToolTipText(HG0520Msgs.Text_19);
@@ -141,22 +159,17 @@ public class HG0520Logging extends HG0450SuperDialog {
 			headings.add(HG0520Msgs.Text_31);
 
 		// Setup a table to hold all Log entries as non-editable by the user and set initial TableModel
-		table_LogEntries = new JTable() { private static final long serialVersionUID = 1L;
-										 @Override
-										public boolean isCellEditable(int row, int column) {
-											return false;}};
-		table_LogEntries.setBackground(new Color(255, 255, 255));
-		table_LogEntries.setPreferredScrollableViewportSize(new Dimension(750, 400));
+		table_LogEntries = new JTable() {
+		    @Override public boolean isCellEditable(int r, int c) { return false; }
+		};
 		table_LogEntries.setModel(new DefaultTableModel(
-			new String[][] {    },
-			new String[] {HG0520Msgs.Text_32, HG0520Msgs.Text_33, HG0520Msgs.Text_34, HG0520Msgs.Text_35, HG0520Msgs.Text_36}
-				));
-		// Set the ability to sort on columns
-		table_LogEntries.setAutoCreateRowSorter(true);
-		TableRowSorter<TableModel> sorter = new TableRowSorter<>(table_LogEntries.getModel());
-		table_LogEntries.setRowSorter(sorter);
-		List <RowSorter.SortKey> sortKeys = new ArrayList<>();
-		sorter.setSortKeys(sortKeys);
+		    new String[][] {},
+		    new String[] {HG0520Msgs.Text_32, HG0520Msgs.Text_33,
+		                  HG0520Msgs.Text_34, HG0520Msgs.Text_35,
+		                  HG0520Msgs.Text_36}
+		));
+
+
 		// Set tooltips, column widths and header format
 		table_LogEntries.getTableHeader().setToolTipText(HG0520Msgs.Text_37);
 		JTableHeader pHeader = table_LogEntries.getTableHeader();
@@ -200,18 +213,19 @@ public class HG0520Logging extends HG0450SuperDialog {
 				table_LogEntries.getColumnModel().getColumn(1).setMinWidth(100);			//time
 				table_LogEntries.getColumnModel().getColumn(1).setMaxWidth(120);
 				table_LogEntries.getColumnModel().getColumn(1).setPreferredWidth(100);
-				table_LogEntries.getColumnModel().getColumn(2).setMinWidth(75);				//PC
+				table_LogEntries.getColumnModel().getColumn(2).setMinWidth(75);				//server
 				table_LogEntries.getColumnModel().getColumn(2).setPreferredWidth(100);
 				table_LogEntries.getColumnModel().getColumn(2).setMaxWidth(200);
-				table_LogEntries.getColumnModel().getColumn(3).setMinWidth(100);			//project name
-				table_LogEntries.getColumnModel().getColumn(3).setPreferredWidth(150);
-				table_LogEntries.getColumnModel().getColumn(4).setMinWidth(300);			//log entry
-				table_LogEntries.getColumnModel().getColumn(4).setPreferredWidth(500);
+				table_LogEntries.getColumnModel().getColumn(3).setMinWidth(80);			//project name
+				table_LogEntries.getColumnModel().getColumn(3).setPreferredWidth(100);
+				table_LogEntries.getColumnModel().getColumn(4).setMinWidth(400);			//log entry
+				table_LogEntries.getColumnModel().getColumn(4).setPreferredWidth(1000);
 			}}
 
-		new tableSizer();
 		scrollPane.setViewportView(table_LogEntries);
-
+		new tableSizer();
+		// Force viewport size
+		table_LogEntries.setPreferredScrollableViewportSize(new Dimension(1000, 400));		// W x H
 		pack();
 
 /***
@@ -221,7 +235,15 @@ public class HG0520Logging extends HG0450SuperDialog {
 		btn_Browse.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				// Disable and make Error, etc chkboxes invisible until new file opened
+				chk_Error.setVisible(false);
+				chk_Error.setSelected(false);
+				chk_Warning.setVisible(false);
+				chk_Warning.setSelected(false);
+				chk_Message.setVisible(false);
+				chk_Message.setSelected(false);
 				btn_Browse.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				// Enable FileChooser for hrel files
 				HG0577FileChooser chooseFile=new HG0577FileChooser("Open", "HRE Log files (*.hrel)", "hrel", null, null, 1);	 //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				chooseFile.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xy = btn_Browse.getLocationOnScreen();         // Gets Browse button location on screen
@@ -240,11 +262,31 @@ public class HG0520Logging extends HG0450SuperDialog {
 							DefaultTableModel tableModel = new DefaultTableModel(HB0711Logging.allLogEntries.toArray(new Object[][] {}), headings.toArray() );
 							table_LogEntries.setModel(tableModel);
 							table_LogEntries.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+							// Install sorter
+							logSorter = new TableRowSorter<>(table_LogEntries.getModel());
+							table_LogEntries.setRowSorter(logSorter);
+							// Disable auto-resize
+							table_LogEntries.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+							// Apply column widths
 							new tableSizer();
-							// then enable function button
-							btn_Output.setEnabled(true); }
+							// Force viewport to use real table width
+							table_LogEntries.setPreferredScrollableViewportSize(new Dimension(1000, 400));	//W x H
+							// Repack window
+							HG0520Logging.this.pack();
+							// then enable function button and Error selection chkboxes
+							btn_Output.setEnabled(true);
+							chk_Error.setVisible(true);
+							chk_Warning.setVisible(true);
+							chk_Message.setVisible(true);
+
+					}
 			}
 		});
+
+		// Error/Warning/Message checkbox listners - when turned on select only those entries
+		chk_Error.addActionListener(_ -> applyFilters());
+		chk_Warning.addActionListener(_ -> applyFilters());
+		chk_Message.addActionListener(_ -> applyFilters());
 
 		//Output button - takes selected table entries (or all table) and sends to Output function
 		btn_Output.addActionListener(new ActionListener() {
@@ -261,8 +303,8 @@ public class HG0520Logging extends HG0450SuperDialog {
 	            			}
 	            HG0531Output outputWindow=new HG0531Output(getTitle(), table_LogEntries);
 			    outputWindow.setModalityType(ModalityType.APPLICATION_MODAL);
-			    Point xy = btn_Output.getLocationOnScreen();             	// Gets Output button location on screen
-			    outputWindow.setLocation(xy.x, xy.y);       	        	// Sets screen top-left corner relative to that
+			    Point xy = table_LogEntries.getLocationOnScreen();      // Gets table area location on screen
+			    outputWindow.setLocation(xy.x, xy.y);       	        // Sets screen top-left corner relative to that
 		        outputWindow.setVisible(true);
 			}
 		});
@@ -299,5 +341,32 @@ public class HG0520Logging extends HG0450SuperDialog {
 		    }
 		});
 	}	// End HG0520Logging constructor
+
+/**
+ * applyFilters - handle checkboxes to display only ERROR/WARNING/MESSAGE log entries
+ */
+	private void applyFilters() {
+	    TableRowSorter<?> sorter = (TableRowSorter<?>) table_LogEntries.getRowSorter();
+	    boolean showError   = chk_Error.isSelected();
+	    boolean showWarning = chk_Warning.isSelected();
+	    boolean showMessage = chk_Message.isSelected();
+
+	    // If nothing selected, show all rows
+	    if (!showError && !showWarning && !showMessage) {
+	        sorter.setRowFilter(null);
+	        return;
+	    }
+	    sorter.setRowFilter(new RowFilter<Object,Object>() {
+	        @Override
+	        public boolean include(Entry<?, ?> entry) {
+	            String value = entry.getStringValue(4); 	// column 4 = log entry text
+	            if (value == null) return false;
+	            if (showError   && value.contains("ERROR"))   return true;	//$NON-NLS-1$
+	            if (showWarning && value.contains("WARNING")) return true;	//$NON-NLS-1$
+	            if (showMessage && value.contains("MESSAGE")) return true;	//$NON-NLS-1$
+	            return false;
+	        }
+	    });
+	}		// End applyFilters
 
 }	// End HG0520Logging

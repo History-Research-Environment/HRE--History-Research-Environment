@@ -17,8 +17,11 @@ package hre.gui;
  *						 Add language selection combo-box (D Ferguson)
  *			  2025-12-29 NLS all code to this point (D Ferguson)
  *			  2025-12-30 Remove Select button (redundant) (D Ferguson)
- *			  2025-12-31 Updated language setting for add source definition (N. Tolleshaug)
+ *			  2025-12-31 Updated language setting for add source type (N. Tolleshaug)
  *			  2026-01-06 Log catch block msgs (D Ferguson)
+ * v0.05.0033 2026-03-19 Fix 'cannot delete' msg (remove '#') (D Ferguson)
+ * 						 Add confirmation prompt to delete Source type action (D Ferguson)
+ * 						 Ensure selected Source Type is retained after Save/Copy (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -82,7 +85,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Source Types
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2025-01-17
  */
 
@@ -313,21 +316,21 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 
 	// End of Panel Definitions
 
- 	// Get Source Defn data for the current Data language.
+ 	// Get Source Type data for the current Data language.
 		// If only en-US records exist, that is all that will be returned.
 		// tableSourceTypeData contains SourceDefnName, PID (only display 1st col)
 		try {
 			tableSourceTypeData = pointCitationSourceHandler.getSourceDefnList(HGlobal.dataLanguage);
 		} catch (HBException hbe) {
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in HG0567 loading Source Defns: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.logWrite("ERROR: in HG0567 loading Source Types: " + hbe.getMessage()); //$NON-NLS-1$
 				HB0711Logging.printStackTraceToFile(hbe);
 			}
 		}
 		if (tableSourceTypeData.length == 0 ) {
 			JOptionPane.showMessageDialog(scrollTable,
 							HG0567Msgs.Text_12,		// No data found in HRE database
-							HG0567Msgs.Text_13, 		// Source Definition select error
+							HG0567Msgs.Text_13, 		// Source Type select error
 							JOptionPane.ERROR_MESSAGE);
 			dispose();
 		}
@@ -393,7 +396,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 				// find source clicked
 					int clickedRow = tableSourceType.getSelectedRow();
 					int selectedRowInTable = tableSourceType.convertRowIndexToModel(clickedRow);
-				// Get the Source Defn templates using the selected sorcDefnPID value
+				// Get the Source Type templates using the selected sorcDefnPID value
 					selectedSourceDefnPID = (long)tableSourceTypeData[selectedRowInTable][1];
 					try {
 						sorcDefnTemplates = pointCitationSourceHandler
@@ -404,7 +407,7 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 							HB0711Logging.printStackTraceToFile(hbe);
 						}
 					}
-				// Get the source template from the Source Defn templates, then convert
+				// Get the source template from the Source Type templates, then convert
 				// the Element [nnnnn] entries into Element Names via the hashmap codeToTextMap
 				// and load the result into the text areas for display.
 				// Start with the Full footer
@@ -473,12 +476,16 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (tableSourceType.getSelectedRow() == -1) return;
+				// save current selected row
+				int currentRow = tableSourceType.getSelectedRow();
 				editSourcetypeScreen = new HG0568EditSourceType(pointOpenProject, true, false, selectedSourceDefnPID);
 				pointCitationSourceHandler.pointManageSourceType = pointManageSourceType;
 				editSourcetypeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				editSourcetypeScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				editSourcetypeScreen.setVisible(true);
+				// ensure current row is still the selected one
+				tableSourceType.setRowSelectionInterval(currentRow, currentRow);
 			}
 		});
 
@@ -487,12 +494,16 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (tableSourceType.getSelectedRow() == -1) return;
+				// save current selected row
+				int currentRow = tableSourceType.getSelectedRow();
 				editSourcetypeScreen = new HG0568EditSourceType(pointOpenProject, false, true, selectedSourceDefnPID);
 				pointCitationSourceHandler.pointManageSourceType = pointManageSourceType;
 				editSourcetypeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				editSourcetypeScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				editSourcetypeScreen.setVisible(true);
+				// ensure copied row is still the selected one (as we don't know where the copied one is)
+				tableSourceType.setRowSelectionInterval(currentRow, currentRow);
 			}
 
 		});
@@ -502,20 +513,27 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (tableSourceType.getSelectedRow() == -1) return;
+				if (JOptionPane.showConfirmDialog(contents,
+							HG0567Msgs.Text_18,			// Are you sure you want to delete this Source Type?
+						    HG0567Msgs.Text_19,			// Delete Source Type
+						   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+					return;
+				}
 				try {
 					pointCitationSourceHandler.pointManageSourceType = pointManageSourceType;
 					pointCitationSourceHandler.deleteSourceDefinition(selectedSourceDefnPID);
 				} catch (HBException hbe) {
 					if (hbe.getMessage().startsWith("#")) {		//$NON-NLS-1$
+						String times = hbe.getMessage().substring(1);	//strip # off
 				        JOptionPane.showMessageDialog(pointManageSourceType,
-				        		HG0567Msgs.Text_15		// Source Definition is used
-				        		+ hbe.getMessage()
+				        		HG0567Msgs.Text_15		// Source Type is used
+				        		+ times
 				        		+ HG0567Msgs.Text_16,		//  times. \nCannot be deleted
-				                HG0567Msgs.Text_17,		// Source Definition delete error
+				                HG0567Msgs.Text_17,		// Source Type delete error
 				                JOptionPane.ERROR_MESSAGE);
 					} else {
 						if (HGlobal.writeLogs) {
-							HB0711Logging.logWrite("ERROR: in HG0567 on Source Defn delete: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.logWrite("ERROR: in HG0567 on Source Type delete: " + hbe.getMessage()); //$NON-NLS-1$
 							HB0711Logging.printStackTraceToFile(hbe);
 						}
 					}

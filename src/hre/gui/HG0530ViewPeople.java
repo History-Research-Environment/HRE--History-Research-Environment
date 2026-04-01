@@ -38,6 +38,7 @@ package hre.gui;
  * 			  2024-12-12 Make Names Alt.Type column biggger (D Ferguson)
  * v0.04.0032 2024-12-23 Fix initial over-packing of GUI losing the Names section (D Ferguson)
  * 			  2026-01-05 Log catch block and DEBUG actions (D Ferguson)
+ * v0.05.0033 2026-03-16 Initiate ManagePerson with its screenID (not personVP screenID) (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Color;
@@ -102,7 +103,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for People with collapsing panels for People Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2020-05-10
  */
 
@@ -1067,7 +1068,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 		           	// DOUBLE-CLICK - if column=0, change ManagePerson focus to this Person
 	           			if (colClicked == 0) {
 			        		// change ManagePerson focus
-		           			pointPersonHandler.initiateManagePerson(pointOpenProject, personTablePID, screenID);
+		           			pointPersonHandler.initiateManagePerson(pointOpenProject, personTablePID, "50600");
 		           		} else {
 		           	// DOUBLE-CLICK other columns open Person VP for this Person
 		           			errorCode = pointViewpointHandler.initiatePersonVP(pointOpenProject, personTablePID);

@@ -36,11 +36,11 @@ import hre.bila.HBProjectOpenData;
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author D Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version Build 0.05.3326.0221
+ * @version Build 0.05.3326.0327
  */
 public class HGlobal {
-	public static String buildNo = "0.05.3326.0221";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "21 Feb 2026";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.05.3326.0327";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "27 Mar 2026";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "v22c";		    // Set Database DDL version //$NON-NLS-1$
 

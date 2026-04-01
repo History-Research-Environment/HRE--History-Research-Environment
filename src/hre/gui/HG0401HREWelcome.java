@@ -13,6 +13,7 @@ package hre.gui;
  * 			  2023-09-18 resize logo to shrink screen depth (D Ferguson)
  * v0.03.0031 2024-10-01 organize imports (D Ferguson)
  * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
+ * v0.05.0033 2026-03-08 If user sets new project folder create it if doesn't exist (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -29,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
@@ -58,7 +60,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * HRE Welcome screen
  * @author D Ferguson
- * @version v0.03.0032
+ * @version v0.05.0033
  * @since 2019-01-31
  */
 
@@ -78,10 +80,10 @@ public class HG0401HREWelcome extends JDialog {
 	// Set start folder for Filechooser for HRE projects
 	String startFolder = System.getProperty("user.home") + File.separator + "hre" + File.separator;	//$NON-NLS-1$ //$NON-NLS-2$
 
-	public HG0401HREWelcome() {
+public HG0401HREWelcome() {
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		setResizable(false);
-		setTitle(HG0401WMsgs.Text_0);
+		setTitle(HG0401WMsgs.Text_0);		// Welcome to HRE
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/hre/images/HRE-32.png")));  //$NON-NLS-1$
 		JPanel contents = new JPanel();
 		contents.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -98,21 +100,21 @@ public class HG0401HREWelcome extends JDialog {
 		txtHREname.setOpaque(false);
 		txtHREname.setEditable(false);
 		txtHREname.setFont(new Font("Arial", Font.BOLD, 20)); //$NON-NLS-1$
-		txtHREname.setText(HG0401WMsgs.Text_4);
+		txtHREname.setText(HG0401WMsgs.Text_4);		// \ \ \ \ \ Welcome to \r\n History Research \r\n    Environment
 		contents.add(txtHREname, "cell 1 0, center"); //$NON-NLS-1$
 
 		JTextArea txtVer = new JTextArea();
 		txtVer.setOpaque(false);
 		txtVer.setEditable(false);
 		txtVer.setFont(new Font("Arial", Font.PLAIN, 15)); //$NON-NLS-1$
-		txtVer.setText((HG0401WMsgs.Text_5) + HGlobal.buildNo);
+		txtVer.setText((HG0401WMsgs.Text_5) + HGlobal.buildNo);	// Build v
 		contents.add(txtVer, "cell 1 1, center"); //$NON-NLS-1$
 
 		JTextArea txtDate = new JTextArea();
 		txtDate.setOpaque(false);
 		txtDate.setEditable(false);
 		txtDate.setFont(new Font("Arial", Font.PLAIN, 15)); //$NON-NLS-1$
-		txtDate.setText((HG0401WMsgs.Text_6) + HGlobal.releaseDate);
+		txtDate.setText((HG0401WMsgs.Text_6) + HGlobal.releaseDate);		// Release Date
 		contents.add(txtDate, "cell 1 2, center"); //$NON-NLS-1$
 
 	// Variable section 1 contents
@@ -120,20 +122,20 @@ public class HG0401HREWelcome extends JDialog {
 		txtNewUser.setOpaque(false);
 		txtNewUser.setWrapStyleWord(true);
 		txtNewUser.setLineWrap(true);
-		txtNewUser.setText(HG0401WMsgs.Text_9);
+		txtNewUser.setText(HG0401WMsgs.Text_9);		// Welcome - as you are a new user we'd like to save your name and email address etc etc
 		txtNewUser.setEditable(false);
 		contents.add(txtNewUser, "cell 0 3 2, growx, growy, hidemode 2"); //$NON-NLS-1$
 
 		txtNameEntry = new JTextField();
 		txtNameEntry.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-		txtNameEntry.setToolTipText(HG0401WMsgs.Text_2);
-		txtNameEntry.setText(HG0401WMsgs.Text_11);
+		txtNameEntry.setToolTipText(HG0401WMsgs.Text_2);		// Area for entry of User's name
+		txtNameEntry.setText(HG0401WMsgs.Text_11);				// --- (enter your name) ---
 		txtNameEntry.setColumns(41);
 		contents.add(txtNameEntry, "cell 0 4 2, hidemode 2"); //$NON-NLS-1$
 
 		txtEmailEntry = new JTextField();
-		txtEmailEntry.setText(HG0401WMsgs.Text_12);
-		txtEmailEntry.setToolTipText(HG0401WMsgs.Text_1);
+		txtEmailEntry.setText(HG0401WMsgs.Text_12);				// --- (enter your email address) ---
+		txtEmailEntry.setToolTipText(HG0401WMsgs.Text_1);		// Area for entry of User's Email address
 		txtEmailEntry.setColumns(41);
 		contents.add(txtEmailEntry, "cell 0 5 2, hidemode 2");	//$NON-NLS-1$
 
@@ -142,12 +144,12 @@ public class HG0401HREWelcome extends JDialog {
 		txtProjFolder.setOpaque(false);
 		txtProjFolder.setWrapStyleWord(true);
 		txtProjFolder.setLineWrap(true);
-		txtProjFolder.setText(HG0401WMsgs.Text_25 + HG0401WMsgs.Text_26);
+		txtProjFolder.setText(HG0401WMsgs.Text_25 + HG0401WMsgs.Text_26); // Now select the default location for storing your HRE Project files .....
 		txtProjFolder.setEditable(false);
 		contents.add(txtProjFolder, "cell 0 6 2, growx, growy, hidemode 2"); //$NON-NLS-1$
 		txtProjFolder.setVisible(false);
 
-		JFileChooser chooseFolder = new JFileChooser(startFolder);
+		JFileChooser chooseFolder = new JFileChooser(startFolder);	// startFolder = default HRE folder
 		// Setup FileChooser in minimal (fast start) mode
         chooseFolder.putClientProperty("FileChooser.useShellFolder", Boolean.FALSE);  //$NON-NLS-1$
         chooseFolder.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -174,11 +176,11 @@ public class HG0401HREWelcome extends JDialog {
 		infoPane.setVisible(false);
 
 	// Fixed section 4 contents
-		JCheckBox chkbxDoNotShow = new JCheckBox(HG0401WMsgs.Text_8);
+		JCheckBox chkbxDoNotShow = new JCheckBox(HG0401WMsgs.Text_8);	// Do not show this window again
 		contents.add(chkbxDoNotShow, "cell 0 9, hidemode 3"); //$NON-NLS-1$
 		chkbxDoNotShow.setVisible(false);
 
-		JButton btnSave = new JButton(HG0401WMsgs.Text_7);
+		JButton btnSave = new JButton(HG0401WMsgs.Text_7);	// Save
 		btnSave.setEnabled(false);
 		contents.add(btnSave, "cell 1 9, alignx right"); //$NON-NLS-1$
 
@@ -305,9 +307,27 @@ public class HG0401HREWelcome extends JDialog {
 			@Override
 			public void actionPerformed(ActionEvent fc) {
 				if (fc.getActionCommand().equals(JFileChooser.APPROVE_SELECTION)) {
-				// Use the selected folder as the global setting for HRE projects
+					// Use the selected folder as the global setting for HRE projects
 						String projectFolder = chooseFolder.getSelectedFile().getPath();
 						if (!projectFolder.endsWith(File.separator)) projectFolder = projectFolder + File.separator;
+
+					// Check if folder name has been changed by the user.
+					// If so, we need to check folder exists and create it if it doesn't
+						if (!projectFolder.equals(startFolder)) {
+							// isDirectory is true if folder exists and is a folder
+							Path projectPath = Paths.get(projectFolder);
+							boolean isDirectory = Files.isDirectory(projectPath);
+							// Create folder
+							if (!isDirectory) {
+								try {
+						            Files.createDirectories(projectPath);
+						        } catch (IOException ioe) {
+						        	if (HGlobal.writeLogs)
+				    					HB0711Logging.logWrite("ERROR: in HG0401W folder create failed " + ioe.getMessage()); //$NON-NLS-1$
+						        }
+							}
+						}
+						// Save as project location in HGlobal
 		                HGlobal.pathHRElocation = projectFolder;
 		        // Now copy the HRE Sample database to this location
 		        // Note: cannot use a bila routine as HB layer may not be set up yet
@@ -317,13 +337,19 @@ public class HG0401HREWelcome extends JDialog {
 		                } catch (NoSuchFileException nsfe) {
 		    				if (HGlobal.writeLogs)
 		    					HB0711Logging.logWrite("ERROR: in HG0401W Sample database not found " + nsfe.getMessage()); //$NON-NLS-1$
-		    	        	JOptionPane.showMessageDialog(null, HG0401WMsgs.Text_29
-									+  nsfe.getMessage(), HG0401WMsgs.Text_30, JOptionPane.ERROR_MESSAGE);
+		    	        	JOptionPane.showMessageDialog(null,
+		    	        							HG0401WMsgs.Text_29		// No file to copy \n
+		    	        							+  nsfe.getMessage(),
+		    	        							HG0401WMsgs.Text_30, 	// HRE Sample File setup
+		    	        							JOptionPane.ERROR_MESSAGE);
 		    	        } catch (IOException ioe) {
 		    				if (HGlobal.writeLogs)
 		    					HB0711Logging.logWrite("ERROR: in HG0401W Sample database IO error " + ioe.getMessage()); //$NON-NLS-1$
-		    	        	JOptionPane.showMessageDialog(null, HG0401WMsgs.Text_31
-									+  ioe.getMessage(), HG0401WMsgs.Text_30, JOptionPane.ERROR_MESSAGE);
+		    	        	JOptionPane.showMessageDialog(null,
+		    	        						HG0401WMsgs.Text_31		// File copy failed \n
+		    	        						+  ioe.getMessage(),
+		    	        						HG0401WMsgs.Text_30, 	// HRE Sample File setup
+		    	        						JOptionPane.ERROR_MESSAGE);
 		    			}
 		        // Now create an entry for the Sample file in UserProjects
 			    		String[] sample = {"HRE Sample project", 		// project		//$NON-NLS-1$
@@ -371,8 +397,10 @@ public class HG0401HREWelcome extends JDialog {
             	if (!HGlobalCode.isNameValid((String) HGlobal.userCred[1])) {
             		txtNameEntry.setBackground(Color.YELLOW);
             		txtNameEntry.setForeground(Color.BLACK);
-            		JOptionPane.showMessageDialog(txtNameEntry , HG0401WMsgs.Text_21,
-					HG0401WMsgs.Text_22, JOptionPane.ERROR_MESSAGE);
+            		JOptionPane.showMessageDialog(txtNameEntry ,
+            								HG0401WMsgs.Text_21,	// Please enter a valid name
+            								HG0401WMsgs.Text_22, 	// Your Name
+            								JOptionPane.ERROR_MESSAGE);
             		}
 					else {nameValid = true;
 						  txtNameEntry.setBackground(Color.WHITE);
@@ -382,8 +410,10 @@ public class HG0401HREWelcome extends JDialog {
             	if (!HGlobalCode.isEmailValid((String) HGlobal.userCred[3])) {
             		txtEmailEntry.setBackground(Color.YELLOW);
             		txtEmailEntry.setForeground(Color.BLACK);
-            		JOptionPane.showMessageDialog(txtEmailEntry , HG0401WMsgs.Text_23,
-					HG0401WMsgs.Text_24, JOptionPane.ERROR_MESSAGE);
+            		JOptionPane.showMessageDialog(txtEmailEntry ,
+            								HG0401WMsgs.Text_23,		// Please enter a valid email address
+            								HG0401WMsgs.Text_24, 		// Your Email Address
+            								JOptionPane.ERROR_MESSAGE);
             		}
 					else {emailValid = true;
 						  txtEmailEntry.setBackground(Color.WHITE);

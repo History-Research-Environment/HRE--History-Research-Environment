@@ -1,5 +1,7 @@
 package hre.bila;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -7,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import hre.gui.HG0547EditEvent;
-
+import hre.gui.HGlobal;
 import hre.nls.HGlobalMsgs;
 
 /************************************************************************************************
@@ -22,6 +24,11 @@ import hre.nls.HGlobalMsgs;
  *			  2025-12-22 - convertNamesToNums modified to return HBException(N. Tolleshaug)
  *			  2026-01-27 - Line 43 - pointHREmemo = pointOpenProject.getHREmemo();(N. Tolleshaug)
  *			  2026-02-21 - Added preliminary methods for sentence preload (N. Tolleshaug)
+ * v0.05.0033 2026-03-08 - Added class ReportEventData extends HBBusinessLayer (N. Tolleshaug)
+ * 			  2026-03-17 - Changed class name from ReportEventData to ReportEventTMG (N. Tolleshaug)
+ * 			  2026-03-23 - Handle escape char in parseFootnoteBiblio (D Ferguson)
+ * 			  2026-03-27 - Handle escape char in validateBrackets & convertNamesToNums (D Ferguson)
+ * 			  2026-03-28 - Updated sentence varible ouput from database (N. Tolleshaug)
  *********************************************************************************************/
 
 public class HBReportHandler extends HBBusinessLayer {
@@ -33,7 +40,40 @@ public class HBReportHandler extends HBBusinessLayer {
 	HBRepositoryHandler pointRepositoryHandler;
 	HBNameStyleManager pointLocationStyleData;
 	HREmemo pointHREmemo;
+	ReportEventTMG pointReportEventTMG;
 	int dataBaseIndex = -1;
+
+	String[] locationNameCodeArray, personNameCodeArray;
+	String personNameCodes = "1100|2000|3000|5000|5200|5700|3700|5500|3300|";
+	String personNameFields ="Title|Prefix|GivenName|PreSurname|Surname|Suffix|OtherName|SortSurname|SortGiven|";
+	String locationNameCodes = "0500|1100|3000|3100|3400|3500|3900|0100|4100|4300|";
+	String locationNameFields = "Addressee|Detail|City|County|State|Country|Postal|Phone|LatLong|Temple|";
+
+	boolean EditEventCase = true;  //Switch on local eventEdit data or repor data
+
+	public void turnOnReportHandling() {
+		EditEventCase = false;
+	}
+
+	public void turnOnEditEvent() {
+		EditEventCase = true;
+	}
+
+	public ReportEventTMG createReportEventData(long eventTablePID) {
+		try {
+		// Set up the element code arrays
+			personNameCodeArray = personNameCodes.split("\\|");
+			locationNameCodeArray = locationNameCodes.split("\\|");
+			pointReportEventTMG = new ReportEventTMG(pointOpenProject, eventTablePID);
+		// Set report handler mode
+			turnOnReportHandling();
+			return pointReportEventTMG;
+		} catch (HBException hbe) {
+			System.out.println(" HBReportHandler - ReportEventData. " + hbe.getMessage());
+			hbe.printStackTrace();
+			return null;
+		}
+	}
 
 /**
  * Constructor HBReportHandler
@@ -147,12 +187,17 @@ public class HBReportHandler extends HBBusinessLayer {
 	 ******************************/
 		// In Phase 2 we want to break the revised input string into an array of 'tokens',
 		// each containing just 1 component of the input string.
-		// So we setup a regex to break the text string into 'tokens' in tokensPh2[]
-		String regex2 = "\\[[^\\]]*\\]|\\{\\{[^}]*\\}\\}|[^\\[\\]\\{\\}]+"; //$NON-NLS-1$
+		// So we setup a regex to break the text string into 'tokens' in tokensPh2[].
+        // This regex will extract each string enclosed in [ ] OR {{ }} OR plain text OR \x sequences
+        // note that {{ }} strings will enclose more [ ] strings - process them in Phase 3.
+		String regex2 =
+		        "\\\\."                 // \X  â†’ escaped sequence as its own token
+		      + "|\\[[^\\\\\\]]*\\]"    // [ ... ] but stop before '\' or ']'
+		      + "|\\{\\{[^\\\\}]*\\}\\}"// {{ ... }} but stop before '\' or '}'
+		      + "|[^\\\\\\[\\]\\{\\}]+";// plain text, no '\', '[', ']', '{', '}'
 		Pattern pattern2 = Pattern.compile(regex2);
         Matcher matcher2 = pattern2.matcher(workText);
-        // This regex will extract each string enclosed in [ ] or {{ }} or plain text
-        // note that {{ }} strings will enclose more [ ] strings - process them in Phase 3.
+
         while (matcher2.find()) {
             tokensPh2[tokenNumPh2] = matcher2.group();
             tokenNumPh2++ ;
@@ -424,7 +469,8 @@ public class HBReportHandler extends HBBusinessLayer {
 	 * PHASE 7 - build final output string
 	 ****************************************************/
         // Build the tokens into our workText string, ignoring {{, }} and blank ones
-  		// Also ignore unsubstituted/dead tokens and any punctuation after them
+  		// Also ignore unsubstituted/dead tokens and any punctuation after them.
+		// Also strip out escape characters but leave the escape target
 		workText = ""; //$NON-NLS-1$
         for (int i=0; i < tokenNumPh3; i++) {
         	if (tokensPh3[i].trim().startsWith("[")) {						//$NON-NLS-1$
@@ -437,8 +483,12 @@ public class HBReportHandler extends HBBusinessLayer {
         			}
         		}
         	}
+        	// Remove dead brackets
         	if (tokensPh3[i].contains("{{")) tokensPh3[i] = "";				//$NON-NLS-1$ //$NON-NLS-2$
            	if (tokensPh3[i].contains("}}")) tokensPh3[i] = "";				//$NON-NLS-1$ //$NON-NLS-2$
+        	// Remove escape characters
+        	if (tokensPh3[i].startsWith("\\")) tokensPh3[i] = tokensPh3[i].substring(1);
+        	// Add token to final string
         	if (!tokensPh3[i].equals("")) workText = workText + tokensPh3[i] ; //$NON-NLS-1$
         }
 
@@ -499,11 +549,12 @@ public class HBReportHandler extends HBBusinessLayer {
  * @param template
  * @param hashmap
  * @return converted template
- * @throws HBException 
+ * @throws HBException
  */
 	public String convertNamesToNums(String template, Map<String, String> textToCodeMap) throws HBException {
-	// Setup a regex to find [Element names] entries in template
-		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");		//$NON-NLS-1$
+	// Setup a regex to find [Element names] entries in template ignoring the effect of escape chars
+	// creating problems, like \[[AUTHOR]\] does
+		Pattern pattern = Pattern.compile("(?<!\\\\)\\[[^\\]]+\\]");
 		Matcher matcher = pattern.matcher(template);
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
@@ -539,11 +590,13 @@ public class HBReportHandler extends HBBusinessLayer {
  * @return error string
  */
 	public String validateBrackets(String input) {
+		// Before we start, eliminate any escape character and its target from input
+		String cleanInput = input.replaceAll("\\\\.", "  ");
 		// Test String input for matching [ ] brackets.
 		// Returns null string if all OK, otherwise returns error msg
 	    int openIndex = -1;
-	    for (int i = 0; i < input.length(); i++) {
-	        char c = input.charAt(i);
+	    for (int i = 0; i < cleanInput.length(); i++) {
+	        char c = cleanInput.charAt(i);
 	        if (c == '[') {
 	            if (openIndex != -1) {
 	            	// Unmatched opening bracket after position openIndex
@@ -602,24 +655,24 @@ public class HBReportHandler extends HBBusinessLayer {
 		return null;		// All good
 	}    // End validate FormatCodes
 
-
 	String sentencePreview = "";
 	HG0547EditEvent pointEditEvent;
+
 /**
  * public void sentenceParser(String input)
  * @param input
+ * @throws HBException
  */
-    public String sentenceParser(HG0547EditEvent pointEditEvent, String inputSentence) {
-       // input = "[Per] ble født <[1990]><[Oslo]>. <Disse var også med: [Kari og Knut].> <[Hjemmefødsel]>";
-    	
+    public String sentenceParser(HG0547EditEvent pointEditEvent, String inputSentence) throws HBException {
+       // input = "[Per] ble fï¿½dt <[1990]><[Oslo]>. <Disse var ogsï¿½ med: [Kari og Knut].> <[Hjemmefï¿½dsel]>";
+
         // Define the Regex pattern to identify content within square brackets
     	this.pointEditEvent = pointEditEvent;
     	String reportSentence = inputSentence, replaceString;
     	String variableData, match;
         String regexStandard = "\\[(.*?)\\]";
-        //String regexRoles = "\\[R:\\d{5}\\]";
         String regexRoles = "\\[R:\\d{5}\\]";
-        
+
         Pattern patternVariables = Pattern.compile(regexStandard);
         Pattern patternRoles = Pattern.compile(regexRoles);
         Matcher matcherVariables = patternVariables.matcher(inputSentence);
@@ -627,75 +680,93 @@ public class HBReportHandler extends HBBusinessLayer {
         HashMap<String, String> sentenceElements = new HashMap<>();
         int count = 0;
         while (matcherVariables.find()) {
-            // matcher.group(1) extracts the content inside the []
+        // matcher.group(1) extracts the content inside the []
         	variableData = returnSentenceVariableData(matcherVariables.group(1));
         	sentenceElements.put(matcherVariables.group(0).trim(), variableData);
             count++;
-        } 
-        //if (HGlobal.DEBUG) 
+        }
+        if (HGlobal.DEBUG)
         	System.out.println(" Number of variables: " + count);
         count = 0;
         matcherRoles = patternRoles.matcher(inputSentence);
         while (matcherRoles.find()) {
-            // matcher.group(1) extracts the content inside the []
+         // matcher.group(1) extracts the content inside the []
         	match = matcherRoles.group();
-        	System.out.println(" Match: " + match);
+        	//System.out.println(" Match: " + match);
         	match = match.replace("[","");
         	match = match.replace("]","");
         	variableData = returnSentenceVariableData(match);
         	sentenceElements.put(matcherRoles.group(0).trim(), variableData);
             count++;
-        } 
-        
-        //if (HGlobal.DEBUG) 
+        }
+
+        if (HGlobal.DEBUG)
         	System.out.println(" Number of roles: " + count);
-        
+
         matcherVariables = patternVariables .matcher(inputSentence);
         while (matcherVariables.find()) {
         	String sentenceMatch = matcherVariables.group(0).trim();
-        	//System.out.println(" Variable replace: " + sentenceMatch+ "/" 
+        	//System.out.println(" Variable replace: " + sentenceMatch+ "/"
         	//		+ sentenceElements.get(sentenceMatch));
         	replaceString = sentenceElements.get(sentenceMatch);
         	if (replaceString == null) replaceString = "";
-        	reportSentence = reportSentence.replace(sentenceMatch,replaceString);
+        	reportSentence = reportSentence.replace(sentenceMatch, replaceString);
         }
         matcherRoles = patternRoles .matcher(inputSentence);
         while (matcherRoles.find()) {
         	String sentenceMatch = matcherRoles.group(0).trim();
-        	//System.out.println(" Role replace: " + sentenceMatch+ "/" 
+        	//System.out.println(" Role replace: " + sentenceMatch+ "/"
         	//		+ sentenceElements.get(sentenceMatch));
-        	
+
         	replaceString = sentenceElements.get(sentenceMatch);
         	if (replaceString == null) replaceString = "";
         	reportSentence = reportSentence.replace(sentenceMatch, replaceString);
-        }     
-        
-        reportSentence = reportSentence.replace("<"," ");
-        reportSentence = reportSentence.replace(">"," ");
-        
+        }
+
+        reportSentence = reportSentence.replace("<","");
+        reportSentence = reportSentence.replace(">","");
+        reportSentence = reportSentence.replace("(en-US)","");
+
       // Output results
-        //if (HGlobal.DEBUG) {
+        if (HGlobal.DEBUG) {
         	sentenceElements.forEach((key, value) -> System.out.print(key + ":" + value + ","));
         	System.out.println();
-        //}
-        return reportSentence;        
+        }
+        //if (!EditEventCase) System.out.println(" Report entence build: " + reportSentence);
+        return reportSentence;
     }
-     
+
 /*    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
- *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]> 
+ *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
  */
-    
+
 /**
- * private String returnSentenceVariableData(String sentenceVariable)    
+ * private String returnSentenceVariableData(String sentenceVariable)
+ * @param sentenceVariable
+ * @return
+ * @throws HBException
+ */
+    private String returnSentenceVariableData(String sentenceVariable) throws HBException {
+    	if (EditEventCase)
+    		return returnSentenceVariable(sentenceVariable);
+		return pointReportEventTMG.returnSentenceVariable(sentenceVariable);
+    }
+
+/*    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
+ *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
+ */
+
+/**
+ * private String returnSentenceVariableData(String sentenceVariable)
  * @param sentenceVariable
  * @return
  */
-    private String returnSentenceVariableData(String sentenceVariable) {
+    private String returnSentenceVariable(String sentenceVariable) {
     	String variableData = "";
     	Object[][] locationData;
-    	if (sentenceVariable.startsWith("R")) { 
+    	if (sentenceVariable.startsWith("R")) {
     		String[] roleNumber = sentenceVariable.split(":");
-    		System.out.println(" Role number: " + roleNumber[1]);
+    		//System.out.println(" Role number: " + roleNumber[1]);
     		if (roleNumber[1].equals("00003"))
     			variableData = pointEditEvent.getPersonName();
     		return variableData;
@@ -707,14 +778,15 @@ public class HBReportHandler extends HBBusinessLayer {
     		variableData = pointEditEvent.getEventDate();
     	} else if (sentenceVariable.startsWith("L")) {
     // process Lx variables
-    		 locationData = pointEditEvent.getLocationData(); 
+    		 locationData = pointEditEvent.getLocationData();
     		 	if (sentenceVariable.equals("L")) {
 	    	    	for (int i = 0; i < locationData.length; i++)
 	    	    		if (locationData[i][1] != null)
 	    	    			if (((String) locationData[i][1]).length() > 0)
 	    	    				variableData = variableData + (String)locationData[i][1] + ", ";
 	    	    	return variableData;
-    	 		} else if (sentenceVariable.equals("L1")) {
+    	 		}
+				if (sentenceVariable.equals("L1")) {
     	    		variableData = (String)locationData[0][1];
     	    	} else if (sentenceVariable.equals("L2")) {
     	    		variableData = (String)locationData[1][1];
@@ -725,22 +797,372 @@ public class HBReportHandler extends HBBusinessLayer {
     	    	} else if (sentenceVariable.equals("L5")) {
     	    		variableData = (String)locationData[4][1];
     	    	}
-    		 	return variableData;	
+    		 	return variableData;
     	 } else if (sentenceVariable.startsWith("W")) {
     // Process witness
-    		 	variableData = pointEditEvent.getWinessName();
+    		 	variableData = pointEditEvent.getWitnessName();
     		 if (sentenceVariable.equals("WO")) {
-    			 variableData = pointEditEvent.getWinessName();
+    			 variableData = pointEditEvent.getWitnessName();
     		 } else  if (sentenceVariable.equals("WO")) {
-    			 variableData = pointEditEvent.getWinessName();    		 
+    			 variableData = pointEditEvent.getWitnessName();
     		 } else if (sentenceVariable.equals("WM")) {
         			 variableData = "Witness memo";
     		 }
     		 return variableData;
     	 } else if (sentenceVariable.startsWith("M")) {
     		 variableData = pointEditEvent.getMemoText();
-    	 }	
+    	 }
     	return variableData;
     }
-	
+
+
+    /**
+	T450_EVNT
+	PID
+	CL_COMMIT_RPID
+	HAS_CITATIONS
+	OWNS_EVENTS
+	VISIBLE_ID
+	SURETY
+	EVNT_TYPE
+	PRIM_ASSOC_BASE_TYPE
+	PRIM_ASSOC_RPID
+	PRIM_ASSOC_ROLE_NUM
+	BEST_IMAGE_RPID
+	EVNT_OWNER_RPID
+	EVNT_LOCN_RPID
+	SORT_HDATE_RPID
+	START_HDATE_RPID
+	END_HDATE_RPID
+	THEME_RPID
+	MEMO_RPID
+	PRIM_ASSOC_SENTENCE_
+*/
+
+	class ReportEventTMG extends HBBusinessLayer {
+		HBProjectOpenData pointOpenProject;
+		HBPersonHandler pointPersonHandler;
+		HBWhereWhenHandler pointWhereWhenHandler;
+		HBLibraryResultSet pointLibraryResultSet;
+		long eventTablePID, memoRPID;
+		String selectString, eventDate, locationName, eventPersonName, eventPersonNamePri, eventPersonNameSec ;
+		ResultSet eventTableRS, personTableRS, assocTableRS, partnerTableRS;
+		long personTablePID, nameStylePID, eventBestPersonNamePID, startHdate, eventLocationPID, priPartnerPID, secPartnerPID;
+		int dataBaseIndex, viibleIdent, eventType, eventGroup;
+		HashMap<String,String> personNameElements, locationNameElements;
+		long[] associatePID;
+		int[] associateRoles;
+		String[] partnerNames, nameStyleCodes;
+		boolean partnerEvent = false;
+
+		ReportEventTMG(HBProjectOpenData pointOpenProject, long eventTablePID) throws HBException {
+			this.eventTablePID = eventTablePID;
+			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+			pointHREmemo = pointOpenProject.getHREmemo();
+			pointPersonHandler = pointOpenProject.getPersonHandler();
+			pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+			pointLibraryResultSet = pointPersonHandler.pointLibraryResultSet;
+			this.pointDBlayer = pointPersonHandler.pointDBlayer;
+		// Look up data from eventable
+			selectString = setSelectSQL("*", eventTable,"PID = " + eventTablePID);
+			eventTableRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				eventTableRS.first();
+				eventType = eventTableRS.getInt("EVNT_TYPE");
+				personTablePID = eventTableRS.getLong("PRIM_ASSOC_RPID");
+				startHdate = eventTableRS.getLong("START_HDATE_RPID");
+				eventLocationPID = eventTableRS.getLong("EVNT_LOCN_RPID");
+				memoRPID = eventTableRS.getLong("MEMO_RPID");
+		// look up data from persontable
+				selectString = setSelectSQL("*", personTable, "PID = " + personTablePID);
+				personTableRS = requestTableData(selectString, dataBaseIndex);
+				personTableRS.first();
+				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				viibleIdent = personTableRS.getInt("VISIBLE_ID");
+				nameStyleCodes = getOuputReportStyleCodes(eventBestPersonNamePID);
+		// Collect date and event group
+				eventDate = pointPersonHandler.pointLibraryResultSet.exstractDate(startHdate, dataBaseIndex);
+				eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
+		    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
+	    // Get and extract the partner names and roles
+		    		partnerEvent = true;
+					selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
+					partnerTableRS = requestTableData(selectString, dataBaseIndex);
+					partnerTableRS.first();
+					priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
+					secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
+					//priRoleNum = partnerTableRS.getInt("PRI_ROLE");
+					//secRoleNum = partnerTableRS.getInt("SEC_ROLE");
+					//eventType = partnerTableRS.getInt("PARTNER_TYPE");
+					partnerTableRS.close();
+    	    	} else {
+    				eventPersonNamePri = eventPersonName;
+    				//roleNamePri = pointWhereWhenHandler.getEventRoleName(eventType, roleNumber);
+    			}
+
+			} catch (SQLException sqle) {
+				sqle.printStackTrace();
+				throw new HBException("ReportEventData error: " + sqle.getMessage());
+			}
+
+			//System.out.println("ReportEventData -->");
+/*
+			for (Map.Entry<String, String> entry : locationNameElements.entrySet()) {
+			    System.out.println(entry.getKey() + ": " + entry.getValue());
+			}
+
+			System.out.println();
+
+			for (Map.Entry<String, String> entry : personNameElements.entrySet()) {
+			    System.out.println(entry.getKey() + ": " + entry.getValue());
+			}
+
+			System.out.println(" Event Person name: " + getPersonName());
+			System.out.println(" Event date: " + eventDate);
+			System.out.println(" Event location: " + getLocationName());
+			System.out.println(" -->End - ReportEventData"); */
+		}
+		
+/**
+ * private String returnSentenceVariable(String sentenceVariable)
+ * @param sentenceVariable
+ * @return
+ * @throws HBException
+ */
+		 private String returnSentenceVariable(String sentenceVariable) throws HBException {
+			int rows = 0;
+
+		// Procee R - role variables
+	    	if (sentenceVariable.startsWith("R")) {
+	    		if (rows == 0)
+	    			rows = collectAssocatePersons(eventTablePID);
+	    		if (personNameElements == null)
+	    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
+	    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
+	    		String[] roleNumber = sentenceVariable.split(":");
+	    		if (roleNumber.length > 1) {
+	    			//System.out.println(" Role number: " + roleNumber[1]);
+	    			if (roleNumber[1].equals("00003")) return getPersonName(personNameElements, viibleIdent);
+	    			if (partnerEvent) {
+	    				if (roleNumber[1].equals("00003")) return findPersonName(priPartnerPID);
+	    				if (roleNumber[1].equals("00004")) return findPersonName(secPartnerPID);
+	    			} else if (roleNumber[1].equals("00003")) 
+	    				return getPersonName(personNameElements, viibleIdent);
+	    		}
+	    	}
+
+	    // Process Px
+	    	if (sentenceVariable.startsWith("P")) {
+	    		if (personNameElements == null)
+	    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
+	    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
+	    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+")) 
+	    				return getPersonName(personNameElements, viibleIdent);
+	    		
+	    		if (sentenceVariable.equals("PO")) {
+	    			if (partnerEvent) {
+	    				if (personTablePID == secPartnerPID)
+	    					return findPersonName(priPartnerPID);
+	    				else return findPersonName(secPartnerPID);
+	    			} else {
+						rows = collectAssocatePersons(eventTablePID);
+						if (rows < 1) return "";
+						return findPersonName(associatePID[0]);
+	    			}
+	    		}
+
+	    		switch (sentenceVariable) {
+	    			case "PG":  return personNameElements.get(personNameCodeArray[2]);
+	    			case "PF": return personNameElements.get(personNameCodeArray[2]);
+	    			case "PL":  return personNameElements.get(personNameCodeArray[4]);
+	    			case "PGS": return personNameElements.get(personNameCodeArray[2]);
+	    			case "PFS":  return personNameElements.get(personNameCodeArray[2]);
+	    			case "PLS":  return personNameElements.get(personNameCodeArray[4]);
+	    			default: return "";
+	    		}
+	    	} 
+	    	
+	    // Process date
+	    	if (sentenceVariable.startsWith("D")) {
+	    		return  eventDate;
+	    	}
+	    	
+	    // process Lx variables
+	    	if (sentenceVariable.startsWith("L")) {
+				if (locationNameElements == null)
+					locationNameElements = pointPersonHandler.pointLibraryResultSet.
+					   selectLocationNameElements(eventLocationPID, dataBaseIndex);
+			 	if (sentenceVariable.equals("L")) return getLocationName();
+	    		switch (sentenceVariable) {
+	    			case "L1":  return locationNameElements.get(locationNameCodeArray[0]);
+	    			case "L2":  return locationNameElements.get(locationNameCodeArray[1]);
+	    			case "L3":  return locationNameElements.get(locationNameCodeArray[2]);
+	    			case "L4":  return locationNameElements.get(locationNameCodeArray[3]);
+	    			case "L5":  return locationNameElements.get(locationNameCodeArray[4]);
+	    			case "L6":  return locationNameElements.get(locationNameCodeArray[5]);
+	    			default: return "";
+	    		}
+	    	 } 
+	    	
+	    // Process witness
+	    	 if (sentenceVariable.startsWith("W")) {
+	    		 if (rows == 0)
+	    			 rows = collectAssocatePersons(eventTablePID);
+	    		 if (rows < 1) return "";
+	    		 if (sentenceVariable.equals("W")) 
+	    			 return findPersonName(associatePID[0]);
+				 if (sentenceVariable.equals("WO") && rows > 0)
+	    			 return findPersonName(associatePID[0]);
+				 if (sentenceVariable.equals("WO") && rows > 1)
+	    			 return findPersonName(associatePID[1]);
+				 if (sentenceVariable.equals("WM")) {
+	        			 return "Witness memo";
+	    		 }
+	    	 }  
+	    	 
+	    // Process memo
+	    	 if (sentenceVariable.startsWith("M")) {
+					return pointHREmemo.readMemo(memoRPID);
+	    	 }
+	    	 return "";
+	    }
+
+/**
+ * private String[] getOuputStyleCodes(long nameStyleOutputPID)
+ * @param nameStyleOutputPID
+ * @return
+ * @throws HBException
+ */
+		private String[] getOuputReportStyleCodes(long bestPersonNamePID) throws HBException {
+			ResultSet bestPersonNameRS,nameStyleOutputRS;
+			String codeString = "No String";
+			long nameStyleOutputPID;
+			String[] outputDataCodes = null;
+			selectString = setSelectSQL("*", personNameTable,"PID = " + bestPersonNamePID);
+			bestPersonNameRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				bestPersonNameRS.first();
+				nameStyleOutputPID = bestPersonNameRS.getLong("NAME_STYLE_RPID");
+				nameStyleOutputRS = pointLibraryResultSet.getOutputStylesTable(nameStylesOutput,
+						"N", nameStyleOutputPID, dataBaseIndex);
+				if (isResultSetEmpty(nameStyleOutputRS)) return outputDataCodes;
+
+				nameStyleOutputRS.beforeFirst();
+				while (nameStyleOutputRS.next()) {
+					if (nameStyleOutputRS.getString("OUT_TYPE").equals("R")) {
+							codeString = nameStyleOutputRS.getString("OUT_ELEMNT_CODES");
+							outputDataCodes = codeString.split("\\|");
+							break;
+					}
+				}
+				//System.out.println(" Output Style Codes: " + codeString);
+				return outputDataCodes;
+			} catch (SQLException sqle) {
+				System.out.println(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+				sqle.printStackTrace();
+				throw new HBException(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+			}
+
+		}
+		
+/**
+ * private String returnPersonName(long personTablePID)
+ * @param personTablePID
+ * @return
+ * @throws HBException
+ */
+		private String findPersonName(long personTablePID) throws HBException {
+			HashMap<String,String> personNameElements;
+			int viibleIdent;
+			selectString = setSelectSQL("*", personTable, "PID = " + personTablePID);
+			personTableRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				personTableRS.first();
+				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				viibleIdent = personTableRS.getInt("VISIBLE_ID");
+				personNameElements =  pointLibraryResultSet.
+						selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
+				return getPersonName(personNameElements, viibleIdent);
+			} catch (SQLException sqle) {
+				sqle.printStackTrace();
+				throw new HBException(" ReportEventData - collectAssocatePersons error: " + sqle.getMessage());
+			}
+		}
+
+/**
+ * public String getPersonName()
+ * @return
+ */
+		private String getPersonName(HashMap<String,String> personNameElements, int viibleIdent) {
+			String nameElement, nameCode, personName = "";
+			boolean first = true, comma = false;
+			for (int i = 0; i < nameStyleCodes.length; i++) {
+				nameCode = nameStyleCodes[i];
+				if (nameCode.contains("#")) {
+					comma = true;
+					nameCode = nameCode.substring(0,4);
+					//System.out.println(" New name code: " + nameCode);
+				}
+				nameElement = personNameElements.get(nameCode);
+				if (comma) nameElement = nameElement + ",";
+				if (nameElement != null) {
+					if (first)
+						personName =  nameElement;
+					else personName = personName + " " + nameElement;
+					if (first) first = false;
+				}
+				comma = false;
+			}
+			return personName + "(" + viibleIdent + ")";
+		}
+
+/**
+ * public String getLocationName()
+ * @return
+ */
+		private  String getLocationName() {
+			String nameElement, locationName = "";
+			boolean first = true;
+			for (int i = 0; i < locationNameCodeArray.length; i++) {
+				nameElement = locationNameElements.get(locationNameCodeArray[i]);
+				if (nameElement != null) {
+					if (first)
+						locationName = locationName + nameElement;
+					else locationName = locationName + ", " + nameElement;
+					if (first) first = false;
+				}
+			}
+			return locationName;
+		}
+
+/**
+ * collectAssocatePersons(long eventTablePID)
+ * @param eventTablePID
+ * @return
+ * @throws HBException
+ */
+		private int collectAssocatePersons(long eventTablePID) throws HBException {
+			int nrOfRows = 0, index = 0;
+			ResultSet assocTableRS;
+			selectString = setSelectSQL("*", eventAssocTable,"EVNT_RPID = " + eventTablePID);
+			assocTableRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				assocTableRS.last();
+				nrOfRows = assocTableRS.getRow();
+				associatePID = new long[nrOfRows];
+				associateRoles = new int[nrOfRows];
+				assocTableRS.beforeFirst();
+				while (assocTableRS.next()) {
+					associatePID[index] = assocTableRS.getLong("ASSOC_RPID");
+					associateRoles[index] = assocTableRS.getInt("ROLE_NUM");
+					//System.out.println(" Assocs: " + associatePID[index] + "/" + associateRoles[index]);
+					index++;
+				}
+			} catch (SQLException sqle) {
+				sqle.printStackTrace();
+				throw new HBException(" ReportEventData - collectAssocatePersons error: " + sqle.getMessage());
+			}
+			return nrOfRows;
+		}
+	} // End ReportEventData
 }		// End HBRepoortHandler

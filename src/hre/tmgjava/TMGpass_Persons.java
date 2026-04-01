@@ -44,7 +44,8 @@ package hre.tmgjava;
  * 			  2026-01-22 - Import TMG Relationship fields (D Ferguson)
  * v0.05.0033 2026-02-23 - Logging  - ERROR NPV Name Element vectorSize < 1 (N. Tolleshaug)
  *			  2026-02-24 - line 765  modified to if (HGlobal.writeLogs) ... (N. Tolleshaug)
- *		      2026-02-26 - Modified Writelog messag to "WARNING" ((N. Tolleshaug)
+ *		      2026-02-26 - Modified Writelog message to "WARNING" (N. Tolleshaug)
+ *			  2026-03-28 - Modified some Writelog WARNING message to "MESSAGE:" (N. Tolleshaug)
  ****************************************************************************************/
 
 import java.sql.ResultSet;
@@ -763,10 +764,10 @@ public class TMGpass_Persons {
 			namePartValueInx = tmgNtable.getValueInt(indexNPID,"RECNO");
 			vectorPartSize = tmgNPVtable.getVectorSize(namePartValueInx);
 			if (vectorPartSize < 1) {
-				System.out.println(" ERROR: TMGpass_Person - Name element data missing row: " + namePartValueInx + "/" + vectorPartSize);
+				System.out.println(" MESSAGE: TMGpass_Person - Name element data missing row: " + namePartValueInx + "/" + vectorPartSize);
 				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("WARNING: TMGpass_Person - Name element data missing for person in N.dbf table row : " 
-							+ namePartValueInx + "/" + vectorPartSize);
+					HB0711Logging.logWrite("MESSAGE: TMGpass_Person - Name element data missing for person in N.dbf table row : " 
+							+ namePartValueInx);
 			}
 			for (int i = 0; i < vectorPartSize; i++ ) {
 				nameNrInx = tmgNPVtable.findVectorInt(namePartValueInx, i,"UID");

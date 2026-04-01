@@ -46,6 +46,7 @@ package hre.bila;
  * 			  2025-05-26 - Add getUserName routine for assessorRPID lookup (D Ferguson)
  * 			  2025-07-02 - Added selectSentenceString for TMG sentences (N. Tolleshaug)
  * 			  2025-09-25 - Apply fix for Issue 32.08 (D Ferguson)
+ * v0.05.0033 2026-03-08 - Added HashMap<String,String> selectPersonNameElements (N. Tolleshaug)
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -464,6 +465,45 @@ public class HBLibraryResultSet {
 	}
 
 /**
+ * public HashMap<String,String> selectPersonNameElements(long ownerRPID, int dataBaseIndex)
+ * @param ownerRPID
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
+	public HashMap<String,String> selectPersonNameElements(long ownerRPID, int dataBaseIndex) throws HBException {
+		String selectString;
+		ResultSet nameElementTable;
+		HashMap<String,String> elementCodemap = new HashMap<>();
+		try {
+			selectString = pointBusinessLayer.
+				setSelectSQL("*", pointBusinessLayer.personNamesTableElements, "OWNER_RPID = " + ownerRPID);
+			nameElementTable = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+
+		// Check if ResultSet has no rows and return
+			nameElementTable.last();
+			if (nameElementTable.getRow() == 0) {
+				if (HGlobal.DEBUG) System.out.println("selectPersonNameElements - No names in table");	
+				return elementCodemap;
+			}
+
+		// If ResultSet has rows - collect place data from ResultSet
+			nameElementTable.beforeFirst();
+			while (nameElementTable.next()) {
+				String elementCode = nameElementTable.getString("ELEMNT_CODE").trim();
+				String elementDescription = nameElementTable.getString("NAME_DATA").trim();
+				elementCodemap.put(elementCode, elementDescription);
+			}
+			return elementCodemap;
+		} catch (SQLException sqle) {
+			System.out.println("Get selectPersonNameElements error: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException("Get selectPersonNameElements error: " + sqle.getMessage());
+		}
+	}
+
+
+/**
  * Method to be modified according to name style implementation
  * NOT used in business layer!!!
  * selectPersNameElements(long namePID, int dataBaseIndex)
@@ -559,7 +599,7 @@ public class HBLibraryResultSet {
  * @param dataBaseIndex
  * @return String[][]
  * @throws HBException
- */
+*/
 	public String[] selectLocationNameElements(long ownerRPID, String[] elemntCodes, int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet placeElementTable;
@@ -604,7 +644,7 @@ public class HBLibraryResultSet {
 			throw new HBException("Get Place data DDLv21c error: " + sqle.getMessage());
 		}
 	}
-
+ 
 /**
  * public selectLocationNameElements(long ownerRPID, int dataBaseIndex)
  * @param ownerRPID

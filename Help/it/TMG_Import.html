@@ -15,8 +15,10 @@
   
 <p><b>PREPARAZIONE DELLA TMG:</b></p> 
 È necessario eseguire una serie di processi in TMG per garantire il successo dell'importazione. Questi sono:
-<p> 1. Flag: nel menu File TMG, fare clic sulla voce Flag Manager. Quando si apre, basta chiudere lo schermo. Questa semplice azione riparerà una serie di incoerenze che potrebbero essere presenti nelle voci dei flag TMG.</p>
-<p> 2. Miniature delle mostre: in determinate condizioni le miniature delle mostre TMG possono andare perse o danneggiate e non possono essere importate in HRE. Per risolvere questo problema, procedi come segue: apri qualsiasi registro dell'esposizione TMG con una voce al suo interno e fai clic con il pulsante destro del mouse sull'esposizione. Seleziona "Aggiorna tutte le miniature". Tieni presente che il completamento dell'operazione potrebbe richiedere del tempo se hai un numero elevato di esposizioni.</p>
+<p> 1. Flag: nel menu File TMG, fare clic sulla voce Flag Manager. Quando si apre, basta chiudere lo schermo. Questa semplice azione riparerà una serie di incoerenze che potrebbero essere presenti nelle voci dei flag TMG</p>
+<p> 2. Miniature delle mostre: in determinate condizioni le miniature delle mostre TMG possono andare perse o danneggiate e non possono essere importate in HRE. Per risolvere questo problema, procedi come segue: apri qualsiasi registro dell'esposizione TMG con una voce al suo interno e fai clic con il pulsante destro del mouse sull'esposizione. Seleziona "Aggiorna tutte le miniature". Tieni presente che il completamento dell'operazione potrebbe richiedere del tempo se hai un numero elevato di esposizioni</p>
+<p> 3. Esaminare la lista di selezione TMG per le persone senza nome. Si raccomanda vivamente di utilizzare una convenzione di denominazione come 'Sconosciuto, SCONOSCIUTO' poiché le persone senza nome possono causare problemi di importazione</p>
+<p> 4. Manutenzione del file TMG: eseguire File > Manutenzione > Ottimizzi, quindi File > Manutenzione > Convalidi l'integrità della file.</p>
 <br>
 <p><b>PRIMA DI INIZIARE UN'IMPORTAZIONE:</b></p>
 Verifica che il progetto TMG contenga solo un set di dati: il processo di importazione importerà solo il primo set di dati di un progetto TMG.<br>
@@ -31,8 +33,12 @@ Decidi dove archiviare il database HRE una volta importato. Se non vuoi necessar
 <p> 5. Una volta nominato, inizierà il processo di importazione</p>
 <p> 6. Apparirà una finestra di avanzamento mentre HRE attraversa il database TMG scelto e lo legge in HRE come un nuovo progetto HRE</p>
 <p> 7. Quando si fa clic su <b>Chiudi</b> i dati TMG saranno disponibili per l'utilizzo da parte di HRE</p>
-<p> 8. Utilizza la voce di menu Apri progetto di HRE per aprire il progetto</p>
-<p> 9. Potrebbe essere il momento opportuno per eseguire il backup di questo nuovo progetto HRE, prima che venga eseguita qualsiasi modifica.</p>
+<p> 8. Aprire la schermata Report HRE >> Registrazione e individuare il file di registro con la data odierna. Utilizzare il filtro per le voci di ERROR per concentrarsi su possibili errori di importazione. Correggere eventuali errori nel progetto TMG</p>
+<p> 9. Esaminare inoltre il registro per individuare gli WARNING: questi potrebbero indicare ulteriori problemi con i dati TMG che potrebbero richiedere una correzione</p>
+<p> 10. Ora utilizzare HRE per eliminare il progetto HRE creato e ripetere il processo di importazione</p>
+<p> 11. Ripeti i passaggi 8 - 10 finché il registro non mostra più voci di ERROR. Tieni presente che l'integrità del progetto HRE non può essere considerata attendibile e NON DEVE ESSERE UTILIZZATA se il registro mostra ERRORI.</p>
+<p> 12. Utilizza la voce di menu Apri progetto di HRE per aprire il progetto</p>
+<p> 13. Potrebbe essere il momento opportuno per eseguire il backup di questo nuovo progetto HRE, prima che venga eseguita qualsiasi modifica.</p>
 <p><b>NOTA:</b> il database TMG non viene modificato in alcun modo. Rimane nella sua cartella originale e sarà ancora disponibile in TMG.</p>
 <br>
 <p><b>ERRORI DEL PROCESSO DI IMPORTAZIONE:</b></p>
@@ -60,7 +66,7 @@ Seleziona le caselle di controllo che ti è stato detto di utilizzare dal suppor
 
 <br>
 <div id="updated">
-<i>Questa pagina è stata aggiornata il: 28 dicembre 2023</i></div>
+<i>Questa pagina è stata aggiornata il: 30 marzo 2026</i></div>
 <br>
 
 </body>

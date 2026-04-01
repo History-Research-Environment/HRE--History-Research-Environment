@@ -15,8 +15,10 @@
   
 <p><b>PRÉPARATION DU TMG :</b></p> 
 Un certain nombre de processus doivent être effectués dans TMG pour réussir une importation. Ceux-ci sont:
-<p> 1. Indicateurs : dans le menu Fichier TMG, cliquez sur l'entrée administrateur d'indicateur. Lorsqu'il s'ouvre, fermez simplement l'écran. Cette action simple réparera un certain nombre d'incohérences qui peuvent être présentes dans les entrées d'indicateur TMG.</p>
-<p> 2. Vignettes d'exposition : sous certaines conditions, les vignettes d'exposition TMG peuvent être perdues ou corrompues et ne peuvent pas être importées dans HRE. Pour résoudre ce problème, procédez comme suit : ouvrez n'importe quel journal d'exposition TMG contenant une entrée et cliquez avec le bouton droit sur l'exposition. Sélectionnez « Actualiser toutes les vignettes ». Notez que cela peut prendre un certain temps si vous avez un grand nombre d’expositions.</p>
+<p> 1. Indicateurs : dans le menu Fichier TMG, cliquez sur l'entrée administrateur d'indicateur. Lorsqu'il s'ouvre, fermez simplement l'écran. Cette action simple réparera un certain nombre d'incohérences qui peuvent être présentes dans les entrées d'indicateur TMG</p>
+<p> 2. Vignettes d'exposition : sous certaines conditions, les vignettes d'exposition TMG peuvent être perdues ou corrompues et ne peuvent pas être importées dans HRE. Pour résoudre ce problème, procédez comme suit : ouvrez n'importe quel journal d'exposition TMG contenant une entrée et cliquez avec le bouton droit sur l'exposition. Sélectionnez « Actualiser toutes les vignettes ». Notez que cela peut prendre un certain temps si vous avez un grand nombre d’expositions</p>
+<p> 3. Vérifiez la liste de sélection TMG pour les personnes sans nom. Il est fortement recommandé d'utiliser une convention de nommage comme « Inconnu, INCONNU », car les personnes sans nom peuvent entraîner des problèmes d'importation</p>
+<p> 4. Maintenance des fichiers TMG : exécutez Fichier > Entretien > Optimiser, puis Fichier > Entreitien > Vérifier l’intégrité des fichiers.</p>
 <br>
 <p><b>AVANT DE COMMENCER UNE IMPORTATION :</b></p>
 Vérifiez que le projet TMG ne contient qu'un seul ensemble de données - le processus d'importation importera uniquement le premier ensemble de données d'un projet TMG.<br>
@@ -29,10 +31,14 @@ Décidez où vous allez stocker la base de données HRE lors de son importation.
 <p> 3. Cliquez dans la deuxième case pour sélectionner l'EMPLACEMENT où vous souhaitez enregistrer le nouveau projet. Il s'agira par défaut du paramètre actuel d'emplacement des fichiers HRE, mais vous pouvez modifier cet emplacement si nécessaire, en utilisant la gestion habituelle des fichiers et des dossiers. Entrez le nom de fichier que vous souhaitez utiliser pour ce projet</p>
 <p> 4. Sélectionnez ensuite l'emplacement de votre base de données TMG, en cliquant sur son fichier .pjc</p>
 <p> 5. Une fois que celui-ci sera désigné, le processus d'importation commencera</p> 
-<p> 6. Une fenêtre de progression apparaîtra au fur et à mesure que HRE parcourt la base de données TMG choisie et la lit dans HRE en tant qu'un nouveau projet HRE.</p>
+<p> 6. Une fenêtre de progression apparaîtra au fur et à mesure que HRE parcourt la base de données TMG choisie et la lit dans HRE en tant qu'un nouveau projet HRE</p>
 <p> 7. Lorsque vous cliquez sur <b>Fermer</b>, les données TMG seront disponibles pour l'utilisation par HRE</p>
-<p> 8. Utilisez l'élément de menu HRE Ouvrir un Projet pour ouvrir le projet</p>
-<p> 9. Cela peut être le moment opportun pour sauvegarder ce nouveau projet HRE, avant des modifications.</p>
+<p> 8. Ouvrez l'écran « Rapports HRE » > « Journalisation » et accédez au fichier journal correspondant à la date du jour. Utilisez le filtre « ERROR » pour identifier les erreurs d'importation potentielles. Corrigez les erreurs dans votre projet TMG</p>
+<p> 9. Consultez également le journal à la recherche d'avertissements (WARNINGs) ; ceux-ci peuvent indiquer d'autres problèmes avec les données TMG que vous devrez peut-être corriger</p>
+<p> 10. Supprimez maintenant le projet HRE que vous avez créé à l'aide de HRE, puis répétez le processus d'importation</p>
+<p> 11. Répétez les étapes 8 - 10 jusqu'à ce que le journal ne contienne plus d'ERROR. Notez que l'intégrité du projet HRE ne peut être garantie et qu'il ne doit pas être utilisé si le journal contient des erreurs</p>
+<p> 12. Utilisez l'élément de menu HRE Ouvrir un Projet pour ouvrir le projet</p>
+<p> 13. Cela peut être le moment opportun pour sauvegarder ce nouveau projet HRE, avant des modifications.</p>
 <p><b>NOTE:</b>  La base de données TMG n'est en aucun cas modifiée. Il reste dans son dossier d'origine et sera toujours disponible dans TMG.</p>
 <br>
 <p><b>ERREURS DU PROCESSUS D'IMPORTATION :</b></p>
@@ -60,7 +66,7 @@ Cochez les cases que le support HRE vous a demandé d'utiliser et répétez les 
 
 <br>
 <div id="mis à jour">
-<i>Cette page a été mise à jour le : 28 décembre 2023</i></div>
+<i>Cette page a été mise à jour le : 30 mars 2026</i></div>
 <br>
 
 </body>

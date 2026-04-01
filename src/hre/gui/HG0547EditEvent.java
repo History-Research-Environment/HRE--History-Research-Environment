@@ -252,6 +252,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 /**
  *  Get methods for sentence builder
  */
+    public long getEventTablePID() {
+    	return eventPID;
+    }
+    
     public String getPersonName() {
     	return eventPersonName.trim();
     }
@@ -264,7 +268,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     	return tableLocationData;
     }
 
-    public String getWinessName() {
+    public String getWitnessName() {
     	if (tableAssocsData.length > 0)
     		return (String) tableAssocsData[0][0];
 		return "";

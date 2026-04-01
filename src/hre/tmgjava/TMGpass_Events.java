@@ -71,6 +71,9 @@ package hre.tmgjava;
  * 			  2025-08-02 - Extract Primary roles; remove adding 'Subject' role (D Ferguson)
  * 			  2026-01-13 - Setting up SENTENCE_SET_RPID in T461 role table (N. Tolleshaug)
  * 			  2026-01-17 - Log all catch blocks (D Ferguson)
+ * 			  2026-03-18 - Error handling of Issue 32.47 (N. Tolleshaug)
+ * 			  2026-03-19 - Error handling of Issue 32.52 (N. Tolleshaug)
+ * 			  2026-03-23 - Small correction in message text (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -368,7 +371,7 @@ class TMGpass_Events  {
 			tmgDate = tmgGtable.getValueString(rowPID,"EDATE");
 			tmgSort = tmgGtable.getValueString(rowPID,"SRTDATE");
 			if (tmgSort.length() == 20 && !tmgSort.startsWith("0")) {
-				System.out.println(" WARNING - addToT450_EVENTS - TMG srtdate used from ..G.dbf row: " + recNr
+				System.out.println(" WARNING: - addToT450_EVENTS - TMG srtdate used from ..G.dbf row: " + recNr
 							+ " short date format: " + tmgSort + " tmgdate length: " + tmgSort.length());
 				tmgSort = tmgSort + "0";
 			}
@@ -427,9 +430,16 @@ class TMGpass_Events  {
 
 		// Insert row
 			hreTable.insertRow();
+		} catch (HCException hce) {	
+			if (hce.getMessage().startsWith("###")) {
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("WARNING: in addToT450_EVNT TMG E table recno: " + recNr + " excluded");
+					System.out.println(" WARNING: in addToT450_EVNT TMG E table recno: " + recNr + " excluded");
+				}
+			} else throw new HCException(hce.getMessage());
 		} catch (SQLException sqle) {
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT450 " + sqle.getMessage());
+				HB0711Logging.logWrite("ERROR:: in TMGpassEvents addToT450 " + sqle.getMessage());
 				HB0711Logging.printStackTraceToFile(sqle);
 			}
 			throw new HCException("TMGpass_Events - addTo table T450_EVNT - error: " + sqle.getMessage());
@@ -776,8 +786,13 @@ class TMGpass_Events  {
 							} else System.out.print(" ** MISSING ROLE NUMBER for: " + language + " Event: " + etypeName
 									+ " Evnr: " + eventTypeNr + " Role sentence: [R=" + roleSentence[j]);
 						}
-					} else System.out.print(" ** INCOMPLETE SENTENCE for Event: " + etypeName
+					} else {
+						System.out.print(" WARNING: Incomplete sentence for Event: " + etypeName
 							+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
+						if (HGlobal.writeLogs) 
+							HB0711Logging.logWrite(" WARNING: Incomplete sentence for Event: " + etypeName 
+									+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
+					}
 			}
 		return;
 	}
@@ -1019,16 +1034,32 @@ class TMGpass_Events  {
 		if (TMGglobal.DEBUG)
 				System.out.println("** addTo T460_EVENT_DEFN PID: " + (primaryIndex + proOffset + 1));
 
-	// Abbrev too long:
+		// Abbrev too long?
 		if (abbrev.length() > 10) {
-			System.out.println(" Long T460_EVNT_DEFN - EVNT_ABBREV: " + abbrev + " - Length: "
+			System.out.println(" WARNUNG: addTo_T460_EVNT_DEFN - EVNT_ABBREV: " + abbrev + " - Length: "
 					+ abbrev.length() + "/10");
+			if (HGlobal.writeLogs) 
+				HB0711Logging.logWrite("WARNUNG: addTo_T460_EVNT_DEF - EVNT_ABBREV: " 
+					+ abbrev + " - Length: " + abbrev.length() + "/10");
 			abbrev = abbrev.substring(0,10);
 		}
+	// Reminder too long?
 		if (reminder.length() > 2000) {
-			System.out.println(" Long T460_EVNT_DEFN - EVNT_HINT - Length: "
+			System.out.println(" WARNUNG: addTo_T460_EVNT_DEF - EVNT_HINT - Length: "
 					+ reminder.length() + "/2000");
+			if (HGlobal.writeLogs) 
+				HB0711Logging.logWrite("WARNUNG: addTo_T460_EVNT_DEF - EVNT_HINT: " 
+					+ reminder + " - Length: " + reminder.length() + "/2000");
 			reminder = reminder.substring(0,2000);
+		}
+	// Pasttense too long?
+		if (pasttense.length() > 30) {
+			System.out.println(" WARNUNG: addTo_T460_EVNT_DEF - EVNT_PAST - Length: "
+					+ pasttense.length() + "/30");
+			if (HGlobal.writeLogs) 
+				HB0711Logging.logWrite("WARNUNG: addTo_T460_EVNT_DEF - EVNT_PAST: " 
+					+ pasttense + " - Length: " + pasttense.length() + "/30");
+			pasttense = pasttense.substring(0,30);
 		}
 
 		try {

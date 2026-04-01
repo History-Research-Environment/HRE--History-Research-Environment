@@ -10,6 +10,7 @@ package hre.tmgjava;
  * 			  2023-08-15 - If TMG data length is 20 add one "0" (N. Tolleshaug)
  * 			  2024-07-16 - Updated TMG to Hdate according to HRE (N. Tolleshaug)
  * v0.04.0032 2026-01-14 - Log catch block and other msgs (D Ferguson)
+ * v0.05.0033 2026-03-28 - Test/Correct number of chars in TMG hdate (N. Tolleshaug)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -79,16 +80,26 @@ public class HREhdate {
 
 	// Test number of chars in hdate from TMG and exclude illegal dates
 		if (hdate.length() != 21 && !hdate.startsWith("0")) {
-			System.out.println(" WARNING - HREhdate - addToT170_22a TMG date/sort: "
+			System.out.println(" WARNING: - HREhdate - addToT170_22c TMG date/sort length: "
 					+ hdate.length() + " hdatePID: " + hdatePID + " TMGdate: " + hdate);
-			if (hdate.length() != 20) {
-				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("ERROR: in HREhdate Illegal number of chars in TMG date. Size="
-								+ hdate.length() + " TMGdate: " + hdate);
-	 			throw new HCException("Illegal number of chars in TMG date.Size=" + hdate.length() +
-					" TMGdate: " + hdate);
-	 		}
-			hdate = hdate + "0";
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("WARNING: in HREhdate Illegal number of chars in TMG date Size = "
+							+ hdate.length() + " TMGdate: " + hdate);
+			
+			if (hdate.length() != 21) {
+				int difference = hdate.length() - 21;
+				//System.out.println(" Difference: " + difference);
+				if (difference < 0) 
+					while (difference < 0) {
+						hdate = hdate + "0";
+						difference++;
+					}
+				if (difference > 0) hdate = hdate.substring(0, hdate.length() - difference);
+				System.out.println(" WARNING: - Corrected number of chars in TMG date Size now = "
+						+ hdate.length() + " TMGdate: " + hdate);
+				HB0711Logging.logWrite("WARNING: - Corrected number of chars in TMG date Size now = "
+						+ hdate.length() + " TMGdate: " + hdate);
+	 		}		
 		}
 
 	// Convert from TMG to HDate variables

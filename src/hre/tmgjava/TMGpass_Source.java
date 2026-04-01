@@ -37,7 +37,18 @@ package hre.tmgjava;
  *			   2025-10-25 - Chesnay project adjustment - database input > 400
  *			   2025-12-13 - Get T738 table size correctly in addToSourceElementTable (D Ferguson)
  *			   2026-01-17 - Log all catch blocks (D Ferguson)
- *			   2026-02-19 - Fix 32.24/25. Do ALL T738 steps for en-US and all languages (D Ferguson)
+ * v0.05.0033  2026-02-19 - Fix 32.24/25. Do ALL T738 steps for en-US and all languages (D Ferguson)
+ *			   2026-03-02 - Substituted HREmemo.returnStringContent("") to "" (N. Tolleshaug)
+ *			   2026-03-02 - In getT738Number() test for elementNumber not found  (N. Tolleshaug)
+ *			   2026-03-03 - If elementNumber not found, log ERROR with Source/Type ID (D Ferguson)
+ *			   2026-03-02 - Added TRACE output to add message for console log (N. Tolleshaug)
+ *			   2026-03-05 - Do not write T734 records if element ID# unmatched (D Ferguson)
+ *			   2026-03-05 - Remove {([])} from footers due to unreplaced elements (D Ferguson)
+ *			   2026-03-05 - Replaced getT738Number with new method using HashMap (N. Tolleshaug)
+ * 			   2026-03-18 - Error handling of Issue 32.47 (N. Tolleshaug)
+ * 			   2026-03-19 - Error handling of Issue 32.52 (N. Tolleshaug)
+ * 			   2026-03-21 - Handle TMG escape char when extracting Element names (D Ferguson)
+ * 			   2026-03-23 - Handle TMG escape char when converting Element name to number (D Ferguson)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -134,7 +145,10 @@ public class TMGpass_Source {
 	public HashMap<Integer,Long> eventIndexPID = new HashMap<Integer, Long>();
 
 // Hashmap to look up elementNumber from U.dbf
-	public HashMap<String,Integer> sorcElmntNameIndex = new HashMap<String,Integer>();
+	//public HashMap<String,Integer> sorcElmntNameIndex = new HashMap<String,Integer>();
+
+// Hashmap to look up elementNumber from T738
+	public HashMap<String,String> numberIndexT738 = new HashMap<String,String>();
 
 // Hashmap for source def table PID
 	public HashMap<Integer,Long> sorcDefinPIDindex = new HashMap<Integer,Long>();
@@ -227,10 +241,18 @@ public class TMGpass_Source {
 					continue;
 				}
 				if (sourceRefTable.equals("E")) {
-					citedRecordRPID = eventIndexPID.get(referedRecord);
-					citedTableName = "T450";
-					insertRowT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);
-					events++;
+					if (eventIndexPID.containsKey(referedRecord)) {
+						citedRecordRPID = eventIndexPID.get(referedRecord);
+						citedTableName = "T450";
+						insertRowT735_CITN( index_S_Table, citationTablePID, tableT735_CITN);
+						events++;
+					} else {
+						System.out.println(" WARNING: TMGpassEvents ddToCitationTable "
+								+  " S-table row: " + index_S_Table);
+						if (HGlobal.writeLogs)
+							HB0711Logging.logWrite("WARNING: TMGpassEvents ddToCitationTable "
+									+ " S-table row: " + index_S_Table);
+					}
 					continue;
 				}
 				if (sourceRefTable.equals("P")) {
@@ -358,6 +380,8 @@ public class TMGpass_Source {
 					if (!ignore) {
 						elmntNameImported.add(elementName);
 						elementNumber =  String.format("%05d", (groupNumber*1000 + elementRecNum));
+					// Update HashMap for T738 names
+						numberIndexT738.put(elementName.trim(), elementNumber.trim());
 						insertRowT738_SORC_ELMNT(sourceElementTablePID, tableT738_SORC_ELMNT);
 						sourceElementTablePID++;
 					}
@@ -373,10 +397,12 @@ public class TMGpass_Source {
 			int baseNum = 0;
 			for (int i = 0; i < elmntNumberBaseList.size(); i++) {
 				baseNum = Integer.parseInt(elmntNumberBaseList.get(i));
-				// Write out the 'special case' T738's (Numbers > 40000)
+			// Write out the 'special case' T738's (Numbers > 40000)
 				if (baseNum >= 40000) {
 					elementNumber = elmntNumberBaseList.get(i);
 					elementName = elmntNameBaseList.get(i);
+				// Update HashMap for T738 names
+					numberIndexT738.put(elementName.trim(), elementNumber.trim());
 					insertRowT738_SORC_ELMNT(sourceElementTablePID, tableT738_SORC_ELMNT);
 					sourceElementTablePID++;
 				}
@@ -414,6 +440,7 @@ public class TMGpass_Source {
 		// (Phase 5) Update T738 ID#s for all preloaded records
 			// Build a ResultSet of all T738s with language other than the TMG project language
 			ResultSet hreTableT738Langs;
+			String elementNameToUpdate;
 			String notLang = "'" + tmgHreConverter.languageTMG() + "'";
 			selectString = pointHREbase.setSelectSQL("*", "T738_SORC_ELMNT", "SORC_ELMNT_LANG !=" + notLang);
 			hreTableT738Langs = pointHREbase.requestTabledata("T738_SORC_ELMNT", selectString);
@@ -425,10 +452,13 @@ public class TMGpass_Source {
 					elementNumber = hreTableT738Langs.getString("SORC_ELMNT_NUM");
 					for (int k = 0; k < elmntNumberBaseList.size(); k++) {
 						if (elementNumber.equals(elmntNumberBaseList.get(k))) {
-							elementNewNumber = elmntNumberNewList.get(k);
+							elementNewNumber = elmntNumberNewList.get(k).trim();
 							// Do the update IF they are different
 							if (!elementNumber.equals(elementNewNumber)) {
+								elementNameToUpdate = hreTableT738Langs.getString("SORC_ELMNT_NAME").trim();
 								hreTableT738Langs.updateString("SORC_ELMNT_NUM", elementNewNumber);
+							// Add to the numberIndexT738 HashMap for other languages
+								numberIndexT738.put(elementNameToUpdate, elementNewNumber);
 								hreTableT738Langs.updateRow();
 							}
 							break;
@@ -515,6 +545,7 @@ public class TMGpass_Source {
 		long sourceTablePID, T734tablePID = proOffset;
 		List<String> elementNameList = null, elementNumberList = null;
 		String allTemplates = "", sorcFullFoot ="", sorcShortFoot = "", sorcBiblio = "", uncitedField = "";
+		String workFooter = "";
 		String[] T737Templates;
 		String[][] splitInfo;
 		if (sourceDump)
@@ -559,7 +590,10 @@ public class TMGpass_Source {
 			// Pass M.info to elementInfoExtract routine to extract source text data into splitInfo.
 			// splitInfo[][] will contain rows of source element data + group# of that data in text format
 				elementSourceInfo = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"INFO"));
+
 				splitInfo = elementInfoExtract(elementSourceInfo);
+				//if (splitInfo[index_M_Table][1].length() < 5)
+					//System.out.println(" elementSourceInfo; " + index_M_Table +  "" + elementSourceInfo);
 
 			// Get all 3 source templates from T737 SORC_DEFN for this source type
 				T737Templates = getT737SourceTemplates(sourceType);
@@ -578,66 +612,80 @@ public class TMGpass_Source {
 				uncitedField = HREmemo.returnStringContent(tmgMtable.getValueString(index_M_Table,"UNCITEDFLD"));
 				if (!uncitedField.isEmpty()) allTemplates = allTemplates + uncitedField;
 
-				if (sourceDump) System.out.println("Source#=" + index_M_Table + "  allTemplates=" + allTemplates);
+				if (sourceDump) System.out.println("Source No. " + index_M_Table + "  allTemplates=" + allTemplates);
 
 			// Now extract out of allTemplates a List of all unique [SOURCE ELEMENTS] that appear.
 				elementNameList = extractElementNames(allTemplates);
 
 			// Lookup T738 Source Elements for records with matching element names and get
-			// their IDs into a new elementNumberList
+			// their IDs into a new elementNumberList.
+			// Also pass across identity of this Source# in case needed for an ERROR msg
 				elementNumberList = new ArrayList<String>();
+				String sourceID = "Source: " + abbrevTitle;
 				for (int i = 0; i < elementNameList.size(); i++) {
-					elementNumberList.add(getT738Number(elementNameList.get(i)));
+					elementNumberList.add(getT738Number(elementNameList.get(i), sourceID));
 				}
 
 			// If there is an ElementNumberlist entry starting with '01', this means the Source Title
-			// has been used as part of one of the templates, so create a T734 record for it
+			// has been used as part of one of the templates, so create a T734 record for it (if its valid)
 				for (int j = 0; j < elementNumberList.size(); j++) {
 					if (elementNumberList.get(j).startsWith("01") ) {
-						T734tablePID = T734tablePID + 1;
-						insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
-								elementNumberList.get(j), sourceTitle, tableT734_SORC_ELMNT_DATA);
-					}
-				}
-
-			// For each piece of source data in splitinfo[j][0] find the elementName/number it is for.
-			// To get the right element, the group# in splitInfo[j][1] will match the 1st 2 digits
-			// of the ID# from the T738 record, now held in elementNumberList (Note, there can only be
-			// one record that satisfies this match as TMG only allows 1 item from each group).
-			// When found, place the element Number back into splitInfo[j][1]
-			if (splitInfo.length > 0) {
-				for (int j = 0; j < splitInfo.length; j++) {
-					for (int k = 0; k < elementNumberList.size(); k++) {
-					// Check the size of elementNumberList(k) - should never be empty, but
-					// exit from the loop if it is
-						if (elementNumberList.get(k).length() == 0) break;
-					// Extract the group# (1st 2 digits) of an elemenNumberList entry
-						String group = elementNumberList.get(k).substring(0, 2);
-					// if it matches the splitInfo group#, update splitInfo with the full 5-digit element#
-						if (splitInfo[j][1].equals(group)) {
-							splitInfo[j][1] = elementNumberList.get(k);
-							break;
+						if (elementNumberList.get(j).length() < 5)
+							System.out.println(" T734 element mumber < 01: " + elementNumberList.get(j));
+						else {	// otherwise write out the T734 record
+							T734tablePID = T734tablePID + 1;
+							insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
+									elementNumberList.get(j), sourceTitle, tableT734_SORC_ELMNT_DATA);
 						}
 					}
-					// Create a T734 SORC DATA record holding:
-					// - PID of this Source #
-					// - the element ID# from splitInfo[][1] (as matched above) that defines the T738 SORC ELMNT
-					// - the source's data from splitInfo[][0] (as extracted from M.info)
-					T734tablePID = T734tablePID + 1;
-					insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
-							splitInfo[j][1], splitInfo[j][0], tableT734_SORC_ELMNT_DATA);
 				}
-			}
+
+				// For each piece of source data in splitinfo[j][0] find the elementName/number it is for.
+				// To get the right element, the group# in splitInfo[j][1] will match the 1st 2 digits
+				// of the ID# from the T738 record, now held in elementNumberList (Note, there can only be
+				// one record that satisfies this match as TMG only allows 1 item from each group).
+				// When found, place the element Number back into splitInfo[j][1]
+				if (splitInfo.length > 0) {
+					for (int j = 0; j < splitInfo.length; j++) {
+						for (int k = 0; k < elementNumberList.size(); k++) {
+						// Check the size of elementNumberList(k) - should never be empty, but
+						// exit from the loop if it is
+							if (elementNumberList.get(k).length() == 0) break;
+						// Extract the group# (1st 2 digits) of an elemenNumberList entry
+							String group = elementNumberList.get(k).substring(0, 2);
+						// if it matches the splitInfo group#, update splitInfo with the full 5-digit element#
+							if (splitInfo[j][1].equals(group)) {
+								splitInfo[j][1] = elementNumberList.get(k);
+								break;
+							}
+						}
+						// Create a T734 SORC DATA record holding:
+						// - PID of this Source #
+						// - the element ID# from splitInfo[][1] (as matched above) that defines the T738 SORC ELMNT
+						// - the source's data from splitInfo[][0] (as extracted from M.info).
+						// BUT if the element ID# has not been matched, do not write the T734.
+						if (splitInfo[j][1].length() < 5)		// no match found
+							System.out.println(" T734 element mumber - splitInfo - " + j + " - " + splitInfo[j][1] + "/" + splitInfo[j][0]);
+						else {		// otherwise, write the T734
+							T734tablePID = T734tablePID + 1;
+							insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
+									splitInfo[j][1], splitInfo[j][0], tableT734_SORC_ELMNT_DATA);
+						}
+					}
+				}
 
 			// For each of the 3 M table source templates, convert their element [NAME] entries
-			// to [number] entries (if they have any template data to convert)
-			numberedFullFoot = templateNameToNumber(sorcFullFoot, elementNameList, elementNumberList);
-			numberedShortFoot = templateNameToNumber(sorcShortFoot, elementNameList, elementNumberList);
-			numberedBiblio = templateNameToNumber(sorcBiblio, elementNameList, elementNumberList);
-
+			// to [number] entries (if they have any template data to convert),
+			// and also remove any elements not converted to numbers (like "{([])}").
+				workFooter = templateNameToNumber(sorcFullFoot, elementNameList, elementNumberList);
+				numberedFullFoot = workFooter.replace("{([])}", "");
+				workFooter = templateNameToNumber(sorcShortFoot, elementNameList, elementNumberList);
+				numberedShortFoot = workFooter.replace("{([])}", "");
+				workFooter = templateNameToNumber(sorcBiblio, elementNameList, elementNumberList);
+				numberedBiblio = workFooter.replace("{([])}", "");
 
 			// Finally, create new T736 SORC record for this M record
-			insertRowT736_SORC(index_M_Table, sourceTablePID, tableT736_SORC);
+				insertRowT736_SORC(index_M_Table, sourceTablePID, tableT736_SORC);
 			} catch (HCException hce) {
 				if (HGlobal.writeLogs) {
 					HB0711Logging.logWrite("ERROR: in TMGpassSource addToT736SourceTable: " + hce.getMessage());
@@ -657,12 +705,16 @@ public class TMGpass_Source {
 		// and convert these templates from [NAME] entries to [number] entries
 		List<String> nameList = null, numberList = null;
 		String template = "";
+		String workFooter = "";
+		String sourceDefnName = "";
 		ResultSet hreTable;
 		String selectString = pointHREbase.setSelectSQL("*", "T737_SORC_DEFN", "");
 		hreTable = pointHREbase.requestTabledata("T737_SORC_DEFN", selectString);
 		try {
 			hreTable.beforeFirst();
 			while (hreTable.next()) {
+			// Get the ID of this Source Defn (in case needed for an error msg)
+				sourceDefnName = "Source Type: " + hreTable.getString("SORC_DEFN_NAME");
 			// Get FullFoot source template from T737 SORC_DEFN
 				template = hreTable.getString("SORC_DEFN_FULLFOOT");
 			// Extract List of all unique [SOURCE ELEMENTS] that appear.
@@ -671,10 +723,11 @@ public class TMGpass_Source {
 			// and get their IDs into a new numberList
 				numberList = new ArrayList<String>();
 				for (int i = 0; i < nameList.size(); i++) {
-					numberList.add(getT738Number(nameList.get(i)));
+					numberList.add(getT738Number(nameList.get(i), sourceDefnName));
 				}
-			// Convert the source templates from [NAMES] to [numbers]
-				numberedFullFoot = templateNameToNumber(template, nameList, numberList);
+			// Convert the source templates from [NAMES] to [numbers] and remove {([])} rubbish
+				workFooter = templateNameToNumber(template, nameList, numberList);
+				numberedFullFoot = workFooter.replace("{([])}", "");
 			// and replace the T737 FullFoot template with the numbered version
 				hreTable.updateString("SORC_DEFN_FULLFOOT", numberedFullFoot);
 
@@ -683,9 +736,10 @@ public class TMGpass_Source {
 				nameList = extractElementNames(template);
 				numberList = new ArrayList<String>();
 				for (int i = 0; i < nameList.size(); i++) {
-					numberList.add(getT738Number(nameList.get(i)));
+					numberList.add(getT738Number(nameList.get(i), sourceDefnName));
 				}
-				numberedShortFoot = templateNameToNumber(template, nameList, numberList);
+				workFooter = templateNameToNumber(template, nameList, numberList);
+				numberedShortFoot = workFooter.replace("{([])}", "");
 				hreTable.updateString("SORC_DEFN_SHORTFOOT", numberedShortFoot);
 
 			// Repeat the above process for the Biblio template
@@ -693,9 +747,10 @@ public class TMGpass_Source {
 				nameList = extractElementNames(template);
 				numberList = new ArrayList<String>();
 				for (int i = 0; i < nameList.size(); i++) {
-					numberList.add(getT738Number(nameList.get(i)));
+					numberList.add(getT738Number(nameList.get(i), sourceDefnName));
 				}
-				numberedBiblio = templateNameToNumber(template, nameList, numberList);
+				workFooter = templateNameToNumber(template, nameList, numberList);
+				numberedBiblio = workFooter.replace("{([])}", "");
 				hreTable.updateString("SORC_DEFN_Biblio", numberedBiblio);
 
 				hreTable.updateRow();
@@ -1015,7 +1070,7 @@ public class TMGpass_Source {
  * @throws HCException
  */
 	private void insertRowT737_SORC_DEFN(int index_A_Table, long T737tablePID, ResultSet hreTable) throws HCException {
-		String reminderNote;
+		String reminderNote, template;
 		try {
 		    // move cursor to insert row
 				hreTable.moveToInsertRow();
@@ -1025,15 +1080,15 @@ public class TMGpass_Source {
 				hreTable.updateInt("SORC_DEFN_TYPE", sourceDefType);
 				hreTable.updateString("SORC_DEFN_NAME", tmgAtable.getValueString(index_A_Table, "NAME"));
 				hreTable.updateString("SORC_DEFN_LANG", tmgHreConverter.languageTMG());
-				// Test TMG Source template values for "--" before storing them; set to "" if found
-				String template = tmgAtable.getValueString(index_A_Table,"CUSTFOOT");
-				if (template.equals("--")) hreTable.updateString("SORC_DEFN_FULLFOOT", HREmemo.returnStringContent(""));
+			// Test TMG Source template values for "--" before storing them; set to "" if found
+				template = tmgAtable.getValueString(index_A_Table,"CUSTFOOT");
+				if (template.equals("--")) hreTable.updateString("SORC_DEFN_FULLFOOT", "");
 				else hreTable.updateString("SORC_DEFN_FULLFOOT", HREmemo.returnStringContent(template));
 				template = tmgAtable.getValueString(index_A_Table,"CUSTSHORT");
-				if (template.equals("--")) hreTable.updateString("SORC_DEFN_SHORTFOOT", HREmemo.returnStringContent(""));
+				if (template.equals("--")) hreTable.updateString("SORC_DEFN_SHORTFOOT", "");
 				else hreTable.updateString("SORC_DEFN_SHORTFOOT", HREmemo.returnStringContent(template));
 				template = tmgAtable.getValueString(index_A_Table,"CUSTBIB");
-				if (template.equals("--")) hreTable.updateString("SORC_DEFN_BIBLIO", HREmemo.returnStringContent(""));
+				if (template.equals("--")) hreTable.updateString("SORC_DEFN_BIBLIO", "");
 				else hreTable.updateString("SORC_DEFN_BIBLIO", HREmemo.returnStringContent(template));
 				reminderNote = HREmemo.returnStringContent(tmgAtable.getValueString(index_A_Table,"REMINDERS"));
 			// Processing memo to T167_MEMO_SET
@@ -1195,35 +1250,73 @@ public class TMGpass_Source {
 	}
 
 /**
- * getT738Number(String elementName)
+ * getT738Number(String elementName, String elmntLocation)
  * @return
  * @throws HCException
  * @throws SQLException
- */
-	private String getT738Number(String elementName) throws HCException  {
+
+	private String getT738Number(String elementName, String elmntLocation) throws HCException  {
 		// Get the T738 element number of the parameter elementName.
 		// SQL stmt will crash if the Element Name contains a quote mark, so test
 		// and adjust the name.
 		String correctedName = elementName.replace("'", "''");
-		String number = "";
+		String sourceElementNumber = "";
 		ResultSet hreTable;
 		String selectString = pointHREbase.setSelectSQL("*", "T738_SORC_ELMNT",
-												"SORC_ELMNT_NAME = " + "'"+correctedName + "'");
+												"SORC_ELMNT_NAME = " + "'" + correctedName + "'");
 		hreTable = pointHREbase.requestTabledata("T738_SORC_ELMNT", selectString);
 		try {
 			hreTable.beforeFirst();
 			while (hreTable.next()) {
-					number = hreTable.getString("SORC_ELMNT_NUM");
+				sourceElementNumber = hreTable.getString("SORC_ELMNT_NUM");
 			}
-			return number;
+		// Test for valid element number returned
+			if (sourceElementNumber.length() < 5) {
+				if (TMGglobal.TRACE)
+					System.out.println(" ERROR: in TMGpassSource getT738Number illegal Element name: "
+											+ elementName + " in " + elmntLocation);
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGpassSource getT738Number illegal Element name: " + elementName
+														+ " in " + elmntLocation);
+			}
+			return sourceElementNumber;
 
 		} catch (SQLException sqle) {
+			if (TMGglobal.TRACE)
+				System.out.println(" ERROR: in TMGpassSource insertT738number: " + sqle.getMessage());
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in TMGpassSource insertT738number: " + sqle.getMessage());
 				HB0711Logging.printStackTraceToFile(sqle);
 			}
-			throw new HCException("get T738 lookup error: " + sqle.getMessage());
+			throw new HCException("TMGpass_Source - getT738Number error: " + sqle.getMessage());
 		}
+	}
+*/
+/**
+ * private String getT738Number(String elementName, String elmntLocation)
+ * @param elementName
+ * @param elmntLocation
+ * @return
+ * @throws HCException
+ */
+	private String getT738Number(String elementName, String elmntLocation) throws HCException  {
+		// Get the T738 element number of the parameter elementName.
+		String correctedName = elementName;
+		String sourceElementNumber = "";
+		if (numberIndexT738.containsKey(correctedName))
+			sourceElementNumber = numberIndexT738.get(correctedName.trim());
+		else //if (TMGglobal.TRACE)
+			System.out.println(" ERROR: TMGpassSource in getT738Number - not found key: " + correctedName + " in " + elmntLocation);
+	// Test for valid element number returned
+		if (sourceElementNumber.length() < 5) {
+			if (TMGglobal.TRACE)
+				System.out.println(" ERROR: in TMGpassSource getT738Number illegal Element name: "
+										+ elementName + " in " + elmntLocation);
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("ERROR: in TMGpassSource getT738Number illegal Element name: " + elementName
+													+ " in " + elmntLocation);
+		}
+		return sourceElementNumber;
 	}
 
 /**
@@ -1272,18 +1365,20 @@ public class TMGpass_Source {
  * @return
  */
 	private List<String> extractElementNames(String sourceTemplate) {
-	// Extract all [xxx] strings from the parameter contaning all source templates.
-	// Ensure all text is upper-case with no duplicated [xxx] in the final List
+	// First, create a String 'clean' with the TMG escape char ("\") and its target ermoved.
+	// Then extract all [xxx] strings from 'clean' contaning all source templates, but
+	// dropping any [xxxx] items containing ":" (as these aren't source elements).
+	// Ensure all text is upper-case with no duplicated [xxx] in the final returned List.
+		String clean = sourceTemplate.replaceAll("\\\\.", "");
 		return Pattern
 	            .compile("\\[[^\\]]+\\]")       // match “[text]”
-	            .matcher(sourceTemplate)
+	            .matcher(clean)
 	            .results()                      // stream of all matches
 	            .map(MatchResult::group)        // extract “[text]”
 	            .filter(s -> !s.contains(":"))  // drop any “[...:]”
 	            .map(s -> s.toUpperCase())    	// uppercase brackets + content
 	            .distinct()                     // remove duplicates, keep first, retain order
 	            .toList();                      // collect into immutable List
-
 	}
 
 /**
@@ -1295,13 +1390,13 @@ public class TMGpass_Source {
  */
 	private String templateNameToNumber(String template, List<String> nameList, List<String> numberList) {
 		// Build lookup map: "[TEXT HERE]" → "12345"
-		// Esnure braketed input always converted to uppercase for conversion to T738 numbers
+		// Ensure braketed input always converted to uppercase for conversion to T738 numbers
 		Map<String, String> replacementMap = new HashMap<>();
 		for (int i = 0; i < nameList.size(); i++)
 			replacementMap.put(nameList.get(i).toUpperCase(), numberList.get(i));
 
-		// Regex to find all bracketed entries
-		Pattern pattern = Pattern.compile("\\[[^\\]]+\\]");
+		// Regex to find all bracketed entries  (including those inside escaped [] entries)
+		Pattern pattern = Pattern.compile("(?<!\\\\)\\[(.*?)(?<!\\\\)]");
 		Matcher matcher = pattern.matcher(template);
 
 		StringBuffer result = new StringBuffer();

@@ -23,8 +23,8 @@
 <tocitem text="Select Person By..." target="50700selectperson"/>
 <tocitem text="Manage Person" target="50600manageperson"/>
 <tocitem text="Add Person" target="50500addperson"/>
-<tocitem text="Flag Manager" target="51200flagmanager"/>
-<tocitem text="Person Name Styles" target="52500personnamestyles"/>
+<tocitem text="Manage Flags" target="51200flagmanager"/>
+<tocitem text="Manage Person Name Styles" target="52500personnamestyles"/>
 <tocitem text="Convert TMG Name Styles to HRE" target="52700convertnamestyle"/>
 </tocitem>
 

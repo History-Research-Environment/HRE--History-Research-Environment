@@ -13,6 +13,8 @@ package hre.bila;
  * 			  2021-04-05 add method to print Java stack trace to log (N. Tolleshaug)
  * v0.03.0031 2023-12-28 changed WildcardFileFilter to match commons-io-2.15.1 version (D Ferguson)
  * v0.05.0033 2026-02-22 Get Project name correctly for the log record (D Ferguson)
+ * 			  2026-03-08 On first call to logWrite, set Java stderr to go to log file ( D Ferguson)
+ * 			  2026-03-09 APPEND stderr to HRE logfile; add identifiable start record (D Ferguson)
  *******************************************************************************
 * For documentation on the OpenCSV functions used here, see:
 * https://sourceforge.net/projects/opencsv/
@@ -22,8 +24,11 @@ package hre.bila;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.LocalDate;
@@ -58,6 +63,8 @@ public class HB0711Logging {
 	private static String logfileName;			// for path + filename of this Log file
 	public static List<String[]> allLogEntries;	// for all log records from a Read operation
 	private static String noName = " ------- ";
+	private static boolean firstTimeThru = true;
+	private static String[] asteriskRecord = {"**********", "**********",  " STARTING HRE ", "**********", "**********"} ;
 
 /**
  * START of logWrite - create the log file if it doesn't exist
@@ -86,15 +93,15 @@ public class HB0711Logging {
 			projectName = HG0401HREMain.mainFrame.getStatusProject();
 		else projectName = noName;
 
-		if (HGlobal.DEBUG)
-			System.out.println("Logged project: " + projectName);
-
 		String[] logRecord = { nowDate, nowTime,  HGlobal.thisComputer, projectName, actionEntry} ;
 
     // Now create an Arraylist and load it with 1 or both Strings
 		List<String[]> allLogRecords = new ArrayList<>();
+	// if no log file exists, write header record first
 		if (!logFile.exists())
-			allLogRecords.add(headerRecord);	// if no log file exists, write header record first
+			allLogRecords.add(headerRecord);
+		if (firstTimeThru)
+			allLogRecords.add(asteriskRecord);
 		allLogRecords.add(logRecord);
 
 		try (
@@ -107,6 +114,19 @@ public class HB0711Logging {
 		} catch (Exception wre) {
 	   	    HGlobalCode.logErrorMessage(1, wre.getMessage());		// Write error
 	   	}
+
+		// if first time through logWrite, set Java stderr to append to same logfile
+		if (firstTimeThru) {
+			firstTimeThru = false;
+			try {
+				FileOutputStream fos = new FileOutputStream(logFile, true); // true = append
+				PrintStream errors = new PrintStream(fos, true);
+				System.setErr(errors);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+
 	} // End of logWrite
 
 /**

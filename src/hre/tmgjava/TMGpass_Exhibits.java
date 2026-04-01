@@ -35,6 +35,7 @@ package hre.tmgjava;
  * v0.04.0032 2026-01-17 - Log all catch blocks (D Ferguson)
  * 			  2026-02-16 - First test for caption text == null - line 586
  * v0.05.0033 2026-02-24 - Update JPG thumbnail code - fix CMYK/YCCK/ICC issues (D Ferguson)
+ * 			  2026-03-04 - Test for existing image file - logFile report (N. Tolleshaug)
  **********************************************************************************/
 
 import java.awt.Graphics2D;
@@ -43,6 +44,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Files;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -502,13 +504,20 @@ class TMGpass_Exhibits {
 		String filePath = returnStringContent(tmgIrow.getString("IFILENAME"));
 		if (filePath.length() > 0) {
 			if (TMGglobal.CONVERT_EXH_PATH) filePath = "" + convertFilePath(filePath);
-			thumbCont = createNewImageThumb(idExhibit, filePath);
-			if (thumbCont != null) {
-				createdExhibits++;
-				if (TMGglobal.DEBUG)
-					System.out.println(" Created Thumb nr:  " + idExhibit + " size: " + thumbCont.length
-						+ " path: " + filePath + " length: " + filePath.length());
-			}
+			File file = new File(filePath);
+			if (Files.isRegularFile(file.toPath())) {
+				thumbCont = createNewImageThumb(idExhibit, filePath);
+				if (thumbCont != null) {
+					createdExhibits++;
+					if (TMGglobal.DEBUG)
+						System.out.println(" Created Thumb nr:  " + idExhibit + " size: " + thumbCont.length
+							+ " path: " + filePath + " length: " + filePath.length());
+				}
+			} else 
+		        if (HGlobal.writeLogs) 
+		            HB0711Logging.logWrite("ERROR: in TMGpassExhibits - Exhibut file does not exist "
+		                     + " Path: " + filePath);
+			if (TMGglobal.TRACE) System.out.println( "Exhibut file does not exist: " + filePath);
 		}
 		return thumbCont;
 	}

@@ -42,6 +42,7 @@ package hre.gui;
  *			  2026-02-18 Fix for 32.21 - Source element table edit source (N. Tolleshaug)
  *			  2026-02-20 Sort SorcDefntable before loading to combobox (D Ferguson)
  *			  2026-02-27 Test -  if (uniqueElementNums.size() > 0) (N. Tolleshaug)
+ *			  2026-03-03 Line 1491 fixed error in  loadElementValueTable (N. Tolleshaug)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -1496,6 +1497,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		// Any existing Element names/values that exist in the new Source Defn will be preserved.
 		// But ignore Elements with numbers > 40000 (which were TMG Grp 28-32) as they do not have T734 values
 		int nrOfRows = 0, index = 0;
+		int uniqueElementSize;
 		int numValues = tableSourceElmntDataValues.length;
 		uniqueElementValues = new ArrayList<String>();
 		boolean matched = false;
@@ -1510,18 +1512,26 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	// If no match for this Element Name, add a blank Value to the Value List
 			if (matched == false) uniqueElementValues.add("");		//$NON-NLS-1$
 		}
+		
+		if (uniqueElementNums.size() != uniqueElementNames.size()) {
+			uniqueElementSize = uniqueElementNums.size();
+			System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: " 
+							+ uniqueElementNames.size() + "/" + uniqueElementNums.size());
+			if (HGlobal.writeLogs) HB0711Logging.logWrite(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: " 
+					+ uniqueElementNames.size() + "/" + uniqueElementNums.size());
+		} else uniqueElementSize = uniqueElementNames.size();
 
 	// (Re)load tableSrcElmntValueData
-		if (uniqueElementNums.size() > 0) {
-			for (int i = 0; i < uniqueElementNames.size(); i++)
+		if (uniqueElementSize > 0) {
+			for (int i = 0; i < uniqueElementSize; i++)
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) nrOfRows++;
-			} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: " 
-					 												+ uniqueElementNums.size());
+		} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: " 
+					 												+ uniqueElementSize);
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
 		tableSrcElmntValueData = new String[nrOfRows][3];
-		if (uniqueElementNums.size() > 0)
-			for (int i = 0; i < uniqueElementNames.size(); i++) {
-				// Ignore elements with numbers in the 'specials' range as they will not have T734 values
+		if (uniqueElementSize > 0)
+			for (int i = 0; i < uniqueElementSize; i++) {
+			// Ignore elements with numbers in the 'specials' range as they will not have T734 values
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
 					tableSrcElmntValueData[index][0] = uniqueElementNames.get(i).trim();
 					tableSrcElmntValueData[index][1] = uniqueElementValues.get(i).trim();

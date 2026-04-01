@@ -13,10 +13,11 @@ package hre.gui;
  *            2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
  *			  2026-01-04 Log catch block errors (D Ferguson)
  *			  2026-02-21 Added preliminary methods for sentence preload (N. Tolleshaug)
+ * v0.05.0033 2026-03-08 Added more code for sentence preload (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 sentence saving after edit
- * NOTE04 sentence preview
+ * NOTE04 sentence preview prelininary solution
  ************************************************************************************/
 
 import java.awt.Component;
@@ -76,6 +77,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	long proOffset  = 1000000000000000L;
 
 	private JPanel contents;
+	long eventTablePID;
 
 	JTextArea sentenceTextArea, previewTextArea;
 	JLabel lbl_Preview;
@@ -116,6 +118,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		this.eventNumber = eventNumber;
 		this.sexCode = sexCode;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		eventTablePID = pointEditEvent.getEventTablePID();
 
 	// Setup references for HG0450
 		windowID = screenID;
@@ -232,15 +235,22 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		btn_Save = new JButton(HG0548Msgs.Text_8);		// Save
 		btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 1 5, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
-
 	// End of Panel Definition
-
+		
+	// create eventReportDate instance
+		pointReportHandler.createReportEventData(eventTablePID);
 	// Load initial Role setting's sentence and convert role numbers to names
-		roleSentence = getRoleSentenceforEvents();
-		System.out.println(" Rolesentence: " + roleSentence);
+		currentComboIndex = comboRoleNames.getSelectedIndex();
+		roleSentence = getRoleSentenceforEvents(currentComboIndex);
+		//System.out.println(" Rolesentence: " + roleSentence);
 		sentenceTextArea.append(convertSentRoleNumToNames(roleSentence));
     	previewTextArea.setText("");
-    	previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+    	try {
+			previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+		} catch (HBException hbe) {
+			// TODO Auto-generated catch block
+			hbe.printStackTrace();
+		}
     	
 		// If we need to, show the Sentence Warning msg
 		if (showWarning) {
@@ -276,7 +286,12 @@ public class HG0548EditSentence extends HG0450SuperDialog {
           if it doesn't match, diable the default field */
             	roleSentence = convertSentRoleNamesToNums(sentenceTextArea.getText());
             	previewTextArea.setText("");
-            	previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+            	try {
+					previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+				} catch (HBException hbe) {
+					// TODO Auto-generated catch block
+					hbe.printStackTrace();
+				}
             	sentenceChanged = true;
             	btn_Save.setEnabled(true);
             }
@@ -289,35 +304,43 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent event) {
 				// Check if previous sentence was changed before proceeding
 				comboRoleNames.getUI().setPopupVisible(comboRoleNames, false);
-				if (sentenceChanged) {
-					if (JOptionPane.showConfirmDialog(lbl_Preview,
-							HG0548Msgs.Text_9 +		// This sentence edit has not been saved. \n
-							HG0548Msgs.Text_10,		// Continue editing or Save this sentence?
-							HG0548Msgs.Text_11,		// Sentence not saved?
-							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-								// YES option - reset combobox and return
-								comboRoleNames.setSelectedIndex(currentComboIndex);
-								return;
+				if (!(comboRoleNames.getSelectedIndex() == -1)) {
+					if (sentenceChanged) {
+						if (JOptionPane.showConfirmDialog(lbl_Preview,
+								HG0548Msgs.Text_9 +		// This sentence edit has not been saved. \n
+								HG0548Msgs.Text_10,		// Continue editing or Save this sentence?
+								HG0548Msgs.Text_11,		// Sentence not saved?
+								JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+									// YES option - reset combobox and return
+									comboRoleNames.setSelectedIndex(currentComboIndex);
+									return;
 								}
+						}
+					// NO option - carry on with the new combobox selection
+					currentComboIndex = comboRoleNames.getSelectedIndex();
+					System.out.println(" Selected index: " + currentComboIndex);
+				// Collect current sentence
+					roleSentence = getRoleSentenceforEvents(currentComboIndex);
+				// Clear out current sentence	
+					sentenceTextArea.setText("");
+				// Load and convert sentence role numbers to role namese	
+					sentenceTextArea.append(convertSentRoleNumToNames(roleSentence));
+				// Seup preview of sentence
+			    	previewTextArea.setText("");
+			    	try {
+						previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+					} catch (HBException hbe) {
+						// TODO Auto-generated catch block
+						hbe.printStackTrace();
 					}
-				// NO option - carry on with the new combobox selection
-				currentComboIndex = comboRoleNames.getSelectedIndex();
-			// Collect current sentence
-				roleSentence = getRoleSentenceforEvents();
-			// Clear out current sentence	
-				sentenceTextArea.setText("");
-			// Load and convert sentence role numbers to role namese	
-				sentenceTextArea.append(convertSentRoleNumToNames(roleSentence));
-			// Seup preview of sentence
-		    	previewTextArea.setText("");
-		    	previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
-			// If we need to, show the Sentence Warning msg	
-				if (showWarning) {
-					warningMsg();
-					showWarning = false;
+				// If we need to, show the Sentence Warning msg	
+					if (showWarning) {
+						warningMsg();
+						showWarning = false;
+					}
+					sentenceChanged = false;
+					btn_Save.setEnabled(false);
 				}
-				sentenceChanged = false;
-				btn_Save.setEnabled(false);
 			}
 		});
 
@@ -325,7 +348,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
-				// Convert rolenames back to rolenumbers via convert routine
+			// Convert rolenames back to rolenumbers via convert routine
 				editedSentence = sentenceTextArea.getText();
 				sentenceToSave = convertSentRoleNamesToNums(editedSentence);
 				// if sentenceToSave is null, the conversion routine flagged an error - do not save it
@@ -353,13 +376,14 @@ public class HG0548EditSentence extends HG0450SuperDialog {
  * convertSentRoleNumToNames - load sentence and convert role numbers to role names
  * @return formatted sentence
  */
-	public String getRoleSentenceforEvents() {
+	public String getRoleSentenceforEvents(int currentComboIndex) {
 		// Load the sentence for this langcode and selected combobox entry
 		try {
 			roleSentence = pointWhereWhenHandler.pointLibraryResultSet.
-					selectSentenceString(eventNumber, eventRoleNumbers[comboRoleNames.getSelectedIndex()],
+					//selectSentenceString(eventNumber, eventRoleNumbers[comboRoleNames.getSelectedIndex()],
+					selectSentenceString(eventNumber, eventRoleNumbers[currentComboIndex],
 										 lang_code, dataBaseIndex);
-			//return convertSentRoleNumToNames(roleSentence);
+			return roleSentence;
 		} catch (HBException hbe) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0548 sentence loading " + hbe.getMessage()); //$NON-NLS-1$
@@ -367,8 +391,6 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			}
 			return "";
 		}
-		//return convertSentRoleNumToNames(roleSentence);
-		return roleSentence;
 	}
 	
 /**

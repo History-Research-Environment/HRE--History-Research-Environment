@@ -25,6 +25,8 @@ package hre.gui;
  *			  2025-12-03 Improved handlig of header for inactive sources empty (N. Tolleshaug)
  *			  2025-12-17 NLS all code (D Ferguson)
  *			  2026-01-07 Log catch block msgs (D Ferguson)
+ * v0.05.0033 2026-03-19 Add confirmation prompt to delete Source action (D Ferguson)
+ * 						 Ensure selected Source Type is retained after Save/Copy (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -63,6 +65,8 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -84,7 +88,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Source
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2025-01-12
  */
 
@@ -393,51 +397,59 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for Source table mouse click - load Source templates and selected Source's PID; do Edit if double-click
+		// Listener for Source table row selection - load Source templates and selected Source's PID
+		tableSource.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent selectSrc) {
+				if (!selectSrc.getValueIsAdjusting()) {
+					if (tableSource.getSelectedRow() != -1) {
+					// find source that was clicked
+						clickedRow = tableSource.getSelectedRow();
+						selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
+						selectedSourcePID = (long)tableSourceData[selectedRowInTable][3];
+					// Get the underlying Source Defn templates using the sorcDefnPID value
+						selectedSorcDefnPID = (long)tableSourceData[selectedRowInTable][5];
+						try {
+							sorcDefnTemplates = pointCitationSourceHandler
+												.getSourceDefnTemplates(selectedSorcDefnPID);
+						} catch (HBException hbe) {
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0565 loading Source templates: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
+						}
+					// Try the Source's template; if empty, get the template from the Source Defn templates,
+					// then convert the Element [nnnnn] entries into Element Names using the Hashmap codeToTextMap
+					// and load result into the text areas for display.
+					// Start with the Full footer
+						templateText = (String)tableSourceData[selectedRowInTable][6];		// Source full footer
+						if (templateText.isEmpty()) templateText = sorcDefnTemplates[0];	// Source Defn full footer
+						fullFootText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
+					// then the Short footer
+						templateText = (String)tableSourceData[selectedRowInTable][7];		// Source short footer
+						if (templateText.isEmpty()) templateText = sorcDefnTemplates[1];	// Source Defn short footer
+						shortFootText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
+					// then the Bibliography template
+						templateText = (String)tableSourceData[selectedRowInTable][8];		// Source bibliography
+						if (templateText.isEmpty()) templateText = sorcDefnTemplates[2];	// Source Defn bibliography
+						biblioText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
+					// Set control buttons
+						btn_Edit.setEnabled(true);
+						btn_Copy.setEnabled(true);
+						if (tableSourceData != null) btn_Select.setEnabled(true);
+						btn_Delete.setEnabled(true);
+					}
+				}
+			}
+		});
+
+		// Listener for tableSource mouse double-click
 		tableSource.addMouseListener(new MouseAdapter() {
 			@Override
 	        public void mousePressed(MouseEvent me) {
 				if (tableSource.getSelectedRow() != -1) {
-				// find source that was clicked
-					clickedRow = tableSource.getSelectedRow();
-					selectedRowInTable = tableSource.convertRowIndexToModel(clickedRow);
-					selectedSourcePID = (long)tableSourceData[selectedRowInTable][3];
-				// Get the underlying Source Defn templates using the sorcDefnPID value
-					selectedSorcDefnPID = (long)tableSourceData[selectedRowInTable][5];
-					try {
-						sorcDefnTemplates = pointCitationSourceHandler
-											.getSourceDefnTemplates(selectedSorcDefnPID);
-					} catch (HBException hbe) {
-						if (HGlobal.writeLogs) {
-							HB0711Logging.logWrite("ERROR: in HG0565 loading Source templates: " + hbe.getMessage()); //$NON-NLS-1$
-							HB0711Logging.printStackTraceToFile(hbe);
-						}
-					}
-				// Try the Source's template; if empty, get the template from the Source Defn templates,
-				// then convert the Element [nnnnn] entries into Element Names using the Hashmap codeToTextMap
-				// and load result into the text areas for display.
-				// Start with the Full footer
-					templateText = (String)tableSourceData[selectedRowInTable][6];		// Source full footer
-					if (templateText.isEmpty()) templateText = sorcDefnTemplates[0];	// Source Defn full footer
-					fullFootText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
-				// then the Short footer
-					templateText = (String)tableSourceData[selectedRowInTable][7];		// Source short footer
-					if (templateText.isEmpty()) templateText = sorcDefnTemplates[1];	// Source Defn short footer
-					shortFootText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
-				// then the Bibliography template
-					templateText = (String)tableSourceData[selectedRowInTable][8];		// Source bibliography
-					if (templateText.isEmpty()) templateText = sorcDefnTemplates[2];	// Source Defn bibliography
-					biblioText.setText(pointReportHandler.convertNumsToNames(templateText, codeToTextMap));
-				// Set control buttons
-					btn_Edit.setEnabled(true);
-					btn_Copy.setEnabled(true);
-					if (tableSourceData != null) btn_Select.setEnabled(true);
-					btn_Delete.setEnabled(true);
+	        		// DOUBLE_CLICK - make it an Edit
+		           	if (me.getClickCount() == 2) btn_Edit.doClick();
 				}
-        	// If DOUBLE_CLICK - make it an Edit
-	           	if (me.getClickCount() == 2) {
-	           		btn_Edit.doClick();
-	           	}
 			}
 		});
 
@@ -459,11 +471,15 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// Check if no row selected (like after a Delete!)
 				if (tableSource.getSelectedRow() == -1) return;
+				// save current selected row
+				int currentRow = tableSource.getSelectedRow();
 				HG0566UpdateSource updateScreen = new HG0566UpdateSource(pointOpenProject, selectedSourcePID, pointManageSource);
 				updateScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				updateScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				updateScreen.setVisible(true);
+				// ensure current row is still the selected one
+				tableSource.setRowSelectionInterval(currentRow, currentRow);
 			}
 		});
 
@@ -473,12 +489,15 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// Check if no row selected (like after a Delete!)
 				if (tableSource.getSelectedRow() == -1) return;
+				// save current selected row
+				int currentRow = tableSource.getSelectedRow();
 				HG0566CopySource updateScreen = new HG0566CopySource(pointOpenProject, selectedSourcePID, pointManageSource);
 				updateScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				updateScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				updateScreen.setVisible(true);
-
+				// ensure copied row is still the selected one (as we don't know where the copied one is)
+				tableSource.setRowSelectionInterval(currentRow, currentRow);
 			}
 		});
 
@@ -488,6 +507,12 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent actEvent) {
 				// Check if no row selected (like after another Delete!)
 				if (tableSource.getSelectedRow() == -1) return;
+				if (JOptionPane.showConfirmDialog(contents,
+						HG0565Msgs.Text_28,			// Are you sure you want to delete this Source?
+					    HG0565Msgs.Text_29,			// Delete Source
+					   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+					return;
+				}
 				try {
 					selectedRowInTable = tableSource.convertRowIndexToModel(tableSource.getSelectedRow());
 					int numberCiteded = (int) tableSourceData[selectedRowInTable][2];

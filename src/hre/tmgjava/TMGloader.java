@@ -22,7 +22,8 @@ package hre.tmgjava;
  *			  2024-11-25 - Convert "\\" usage to File.separator (D Ferguson)
  * v0.04.0032 2025-07-21 - Added tables for import of source A,M,S,R,U,W tables (N. Tolleshaug)
  *			  2026-01-14 - Log catch block msgs (D Ferguson)
- * v0.05.0032 2026-02-24 - Added HB0711Logging.logWrite("Action: in TMGloader loading XXXX tables");
+ * v0.05.0032 2026-02-24 - Added HB0711Logging.logWrite("ACTION: in TMGloader loading XXXX tables");
+ * 			  2026-03-28 - Changed Action. to ACTION:(N. Tolleshaug)
  *****************************************************************************************/
 
 import java.io.File;
@@ -123,7 +124,7 @@ public class TMGloader {
  */
 	public void loadTmgSupportTables() throws HCException {
 		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: in TMGloader loading Support tables");
+			HB0711Logging.logWrite("ACTION: in TMGloader loading Support tables");
 	//STYLE TYPE TABLE
 		loadFileTMG(TMGtypes.STYLE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.STYLE + ".dbf");
@@ -149,7 +150,7 @@ public class TMGloader {
  */
 	public void loadTmgNameTables() throws HCException {
 		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: in TMGloader loading Name tables");
+			HB0711Logging.logWrite("ACTION: in TMGloader loading Name tables");
 
 	//DBFReader tmgReader;
 		resetProgress();
@@ -216,7 +217,7 @@ public class TMGloader {
 
 	public void loadTmgPlaceTables() throws HCException {
 		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: in TMGloader loading Place tables");
+			HB0711Logging.logWrite("ACTION: in TMGloader loading Place tables");
 		resetProgress();
 	//PLACE FILE
 		loadFileTMG(TMGtypes.PLACE);
@@ -261,7 +262,7 @@ public class TMGloader {
 	public void loadTmgEventTables(boolean all) throws HCException {
 		
 		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: in TMGloader loading Event tables");
+			HB0711Logging.logWrite("ACTION: in TMGloader loading Event tables");
 		
 		resetProgress();
 
@@ -297,7 +298,7 @@ public class TMGloader {
 
 	public void loadTmgSourceTables() throws HCException {
 		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: in TMGloader loading Source tables");
+			HB0711Logging.logWrite("ACTION: in TMGloader loading Source tables");
 	// Source type
 		loadFileTMG(TMGtypes.SOURCE_TYPE);
 		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".dbf");
@@ -359,7 +360,7 @@ public class TMGloader {
 	//DBFReader tmgReader;
 		if (TMGglobal.DUMP) System.out.println(" Loading Exhibit Tables");
 		if (HGlobal.writeLogs)
-			HB0711Logging.logWrite("Action: in TMGloader loading Exhibit tables");
+			HB0711Logging.logWrite("ACTION: in TMGloader loading Exhibit tables");
 		resetProgress();
 	//EXHIBIT FILE
 		loadFileTMG(TMGtypes.EXHIBIT);

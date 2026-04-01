@@ -33,8 +33,8 @@ import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "15.02.2026";			// Set Build number
-	public static String releaseDate = "15 Feb 2026";		// and release date
+	public static String buildNo = "15.03.2026";			// Set Build number
+	public static String releaseDate = "28 Mar.. 2026";		// and release date
 
 	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
 	public static String databaseVersion = "v22c 2025-09-18";	// Database version DDL

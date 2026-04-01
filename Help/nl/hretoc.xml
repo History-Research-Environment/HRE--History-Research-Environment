@@ -23,7 +23,7 @@
 <tocitem text="Selecteer person..." target="50700selectperson"/>
 <tocitem text="Beheer persoon" target="50600manageperson"/>
 <tocitem text="Toevoegen persoon" target="50500addperson"/>
-<tocitem text="Vlag manager" target="51200flagmanager"/>
+<tocitem text="Vlaggen beheren" target="51200flagmanager"/>
 <tocitem text="Stijlen voor persoonsnamen beheren" target="52500personnamestyles"/>
 <tocitem text="Converteer TMG-naamstijlen naar HRE" target="52700convertnamestyle"/>
 </tocitem>
