@@ -8,6 +8,8 @@ package hre.tmgjava;
  * 		      2023-09-06 - if (language.equals("DUTCH")) code = "nl-NL"; (N. Tolleshaug)
  * v0.04.0032 2025-09-18 - if (language.equals("FRENCH2")) code = "fr-FR"; (D Ferguson)
  * 			  2026-01-14 - Log catch block and other msgs (D Ferguson)
+ * v0.05.0033 2026-04-22 - Updated String returnStringContent(String content) (N. Tolleshaug)
+ * 			  2026-04-23 - Updated to return "" when the [B@ entries are found (N. Tolleshaug)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -148,11 +150,24 @@ public class HREmemo {
  * @return
  */
 	public static String returnStringContent(String content) {
-		if (content == null) return "";
-		if (content.length() == 64) {
-		   if (content.trim().length() == 0) return "";
+		String returned = "";
+		if (content != null) returned = new String(content);
+		else return "";
+	// This seems to be a strange output from javadbf when table contains an empty string
+	// Seems to and "array".toString result
+		if (content.startsWith("[B@")) {
+			System.out.println(" HREmemo - returned string: " + content);
+			if (HGlobal.writeLogs) 
+				HB0711Logging.logWrite("WARNING: HREmemo in returnStringContent: " + content); //$NON-NLS-1$
+			return "";
 		}
-		return content;
+		if (content.length() == 64) {
+			if (content.trim().length() == 0) {
+				//System.out.println(" HREmemo - 64 char returned form javadbj: " + "/" + content + "/");
+				return "";
+			}
+		} 
+		return returned;
 	}
 
 /**

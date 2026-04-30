@@ -92,8 +92,12 @@ package hre.gui;
  * 			  2026-01-02 Logged catch block and DEBUG actions (D Ferguson)
  * v0.05.0033 2026-02-22 Add routine to get Active project name from status bar (D Ferguson)
  * 			  2026-02-28 Fix 32.36 Stop AncDescReport screen blocking HRE close (D Ferguson)
- *****************************************************************************************/
-
+ * 			  2026-04-04 Remove Notepads from Person Menu (D Ferguson)
+ * 			  2026-04-20 Fix 33.02 change P-symbol popup location (D Ferguson)
+ *********************************************************************************************
+ * NLS: Text_37 no longer used
+ **********************************
+ */
 import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -491,8 +495,9 @@ public class HG0401HREMain extends JFrame {
 	    // Person MENU
 		// Define OS-independent Keystroke accelerators for this menu
 		KeyStroke ctrlM = KeyStroke.getKeyStroke(KeyEvent.VK_M, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()); // For opening ManagePerson
-		// TAKE CARE HERE! currently there are 9 menu entries (incl. Separator) before dynamic items are added
-		// If the number of menu entries are changed you MUST also change Classes updateRecentPersons, deleteRecentPerson, clickPeople, removeRecents
+		// TAKE CARE HERE! currently there are 8 menu entries (incl. Separator) before dynamic items are added
+		// If the number of menu entries are changed
+		//    you MUST also change Classes updateRecentPersons, deleteRecentPerson, clickPeople, removeRecents
 		menuPerson = new JMenu(HG0401Msgs.Text_31);							// Person
 		menuPerson.setVisible(false);	// set not visible until 1st project opened
 		menuBar.add(menuPerson);
@@ -531,9 +536,6 @@ public class HG0401HREMain extends JFrame {
 			JMenuItem menuPersonFlag = new JMenuItem(HG0401Msgs.Text_36);	// Administer all Person Flags
 			menuPersonFlag.setEnabled(false);
 			menuPerson.add(menuPersonFlag);
-			JMenuItem menuPersonNote = new JMenuItem(HG0401Msgs.Text_37);	// Administer all Person Notepads
-			menuPersonNote.setEnabled(false);
-			menuPerson.add(menuPersonNote);
 			JMenuItem menuPersonAcc = new JMenuItem(HG0401Msgs.Text_38);	// Administer all Person Accents
 			menuPersonAcc.setEnabled(false);
 			menuPerson.add(menuPersonAcc);
@@ -857,7 +859,6 @@ public class HG0401HREMain extends JFrame {
 						menuPersonAdd.setEnabled(false);
 						menuPersonManSty.setEnabled(false);
 						menuPersonFlag.setEnabled(false);
-						menuPersonNote.setEnabled(false);
 						menuPersonAcc.setEnabled(false);
 						menuPersonPartner.setEnabled(false);
 						menuPersonFather.setEnabled(false);
@@ -1775,7 +1776,7 @@ public class HG0401HREMain extends JFrame {
 				Point xyStatus = menuStatus.getLocationOnScreen();
 			// Adjust position if running on a Mac, when 'P' is at right of menu
 				if (HGlobal.osType.contains("mac")) xyStatus.x = xyStatus.x - 250;  //$NON-NLS-1$
-				projStatus.setLocation(xyStatus.x, xyStatus.y+20);
+				projStatus.setLocation(xyStatus.x, xyStatus.y);
 				projStatus.setAlwaysOnTop(true);
 				projStatus.setVisible(true);
 	          }
@@ -1884,7 +1885,7 @@ public class HG0401HREMain extends JFrame {
   		   menuPerSex.clear();
   		   // Remove Recently Used entries from Person menu
   		   int numItems = menuPerson.getMenuComponentCount();
-  		   for (int i = numItems-1; i >= 9; i--) {
+  		   for (int i = numItems-1; i >= 8; i--) {
   			 menuPerson.remove(i);
   		   }
   	   } 	// End removeRecents
@@ -2007,17 +2008,17 @@ public class HG0401HREMain extends JFrame {
            	String persClicked = (String) getValue(Action.NAME);
    	    	// match that value into the list of current Recent Person menuItems
    	    	int menuNum;
-   	    	for (menuNum = 9; menuNum < menuPerson.getMenuComponentCount(); menuNum++) {
+   	    	for (menuNum = 8; menuNum < menuPerson.getMenuComponentCount(); menuNum++) {
    			   	JMenuItem persItem = (JMenuItem) menuPerson.getMenuComponent(menuNum);
    			   	String persText = persItem.getText();
    			   	if(persText.trim().equals(persClicked.trim())) break;
    	    	}
 
    	    	// There can be a mis-match in the number of PIDs vs menu entries, so correct that first
-   	    	while (menuPerPID.size() + 9 > menuPerson.getMenuComponentCount()) menuPerPID.remove(0);
-   	    	// menuNum is a number in range of 10-19; set it for 0-9 range of menuPerPIDs
+   	    	while (menuPerPID.size() + 8 > menuPerson.getMenuComponentCount()) menuPerPID.remove(0);
+   	    	// menuNum is a number in range of 9-19; set it for 0-8 range of menuPerPIDs
    	    	// and then extract the persPID that matches the persClicked name
-   	    	Long persPID = menuPerPID.get(menuNum-9);
+   	    	Long persPID = menuPerPID.get(menuNum-8);
 
            	// Load ManagePerson for selected person
            	HBProjectOpenData pointOpenProject = getSelectedOpenProject();
@@ -2035,7 +2036,7 @@ public class HG0401HREMain extends JFrame {
 	   public void updateRecentPersons(String addName, String sex, Long persPID) {
 		   String addPerson = "  " + addName.trim();	//$NON-NLS-1$
 			// There can be a mis-match in the number of PIDs vs menu entries, so correct that first
-	    	while (menuPerPID.size() + 9 > menuPerson.getMenuComponentCount()) {
+	    	while (menuPerPID.size() + 8 > menuPerson.getMenuComponentCount()) {
 	    		menuPerName.remove(0);
 	    		menuPerSex.remove(0);
 	    		menuPerPID.remove(0);
@@ -2046,7 +2047,7 @@ public class HG0401HREMain extends JFrame {
 			   if (persPID.equals(menuPerPID.get(i))) {
 				   // Have found Person already in menu list, but name may have been
 				   // edited by user, so update the menu list and name list with Person-name
-				   menuPerson.getItem(i+9).setText(addPerson);
+				   menuPerson.getItem(i+8).setText(addPerson);
 				   menuPerName.set(i, addPerson);
 				   return;
 			   }
@@ -2063,9 +2064,9 @@ public class HG0401HREMain extends JFrame {
 		   menuPerSex.add(sex);
 		   menuPerPID.add(persPID);
 		   // But we only want 10 entries in the list, so delete the oldest
-		   // entry if the menuPerson size has got to 9 (basic menu) + 11 = 20 entries
-		   if (menuPerson.getMenuComponentCount() == 20) {
-				   menuPerson.remove(9);	// remove oldest menu item
+		   // entry if the menuPerson size has got to 8 (basic menu) + 11 = 19 entries
+		   if (menuPerson.getMenuComponentCount() == 19) {
+				   menuPerson.remove(8);	// remove oldest menu item
 				   menuPerName.remove(0);	// remove matching Name
 				   menuPerSex.remove(0);	// remove matching sex
 				   menuPerPID.remove(0);	// remove matching PID
@@ -2085,7 +2086,7 @@ public class HG0401HREMain extends JFrame {
 				   menuPerSex.remove(i);	// remove matching sex
 				   menuPerPID.remove(i);	// remove matching PID
 				   // Delete from the menu list
-				   menuPerson.remove(i+9);
+				   menuPerson.remove(i+8);
 				   return;
 			   }
 		   }

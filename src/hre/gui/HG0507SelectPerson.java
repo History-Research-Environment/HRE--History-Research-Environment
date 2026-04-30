@@ -21,6 +21,7 @@ package hre.gui;
  * 			  2025-06-05 Partial fix to layout issues with large fonts (D Ferguson)
  * 			  2025-11-28 Modified for use with HG0566EditSource (N.Tolleshaug)
 * 			  2026-01-06 Log catch block msgs (D Ferguson)
+* v0.05.0033  2026-04-09 Modified for use for select focus person (N.Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -789,8 +790,17 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					clickedRow = tablePersons.getSelectedRow();
 					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
+					//System.out.println(" Selected Person PID: " + personPID);
 					dispose();
-
+				// Temp solution to avoid setting of focusPerson	
+					if (!addRelation)
+						try {
+							pointOpenProject.setFocusPersonPID(personPID);
+						} catch (HBException hbe) {
+							System.out.println(" ERROR: - Update T126 focus person PID");
+							hbe.printStackTrace();
+						}
+				// Only allowed if used to select citation person names.
 					pointCitationSourceHandler.updatePersonName(personPID);
 				}
 			}

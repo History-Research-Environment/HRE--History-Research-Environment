@@ -118,7 +118,13 @@ public class HG0501Msgs extends NLS {
 	public static String Text_153;
 	public static String Text_154;
 	public static String Text_155;
+	public static String Text_156;
+	public static String Text_157;
+	public static String Text_158;
+	public static String Text_159;
 
+	public static String Text_160;
+	public static String Text_161;
 
 	public HG0501Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language

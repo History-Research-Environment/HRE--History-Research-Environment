@@ -63,6 +63,7 @@ package hre.tmgjava;
  *			  2026-03-18 - Updated log messages for each pass (N. Tolleshaug)
  *			  2026-03-19 - Revised WARNINGS and ERROR messages (N. Tolleshaug)
  *			  2026-03-28 - Edietd MESSAGE to MESSAGE: (N. Tolleshaug)
+ *			  2026-04-06 - Updated setting of focusperson T126 (N. Tolleshaug)
  ******************************************************************************************
  * NOTES
  ******************************************************************************************/
@@ -120,6 +121,8 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 	long oneMilliSec = 1000L;
 	long startTime;
 	long timeElapsed;
+	
+	String [] pjcData;
 
 	private static String tmgStartFolder;
 	private static String tmghreDataBase;
@@ -259,7 +262,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 			String plcFilePath = tmgFolderPath + File.separator + tmgProjectName + "__" + ".pjc";
 			processMonitor.setContextOfAction(" PJC at: " + plcFilePath);
 
-			String [] pjcData = readPJCfile(plcFilePath);
+			pjcData = readPJCfile(plcFilePath);
 
 			processMonitor.setStatus(completedNumberPasses, totalNumberPasses);
 
@@ -507,7 +510,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  *********************************************************/
 	@SuppressWarnings("resource")
 	public String[] readPJCfile(String filePath) throws HCException {
-		  String [] data = new String[10];
+		  String [] data = new String[11];
 		  data[0] = "Researcher's Name not found";
 		  data[1] = "Mapping Country not found";
 		  data[2] = "PJC Version not found";
@@ -518,6 +521,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		  data[7] = "Last VFI not found";
 		  data[8] = "Last Optimized not found";
 		  data[9] = "Source ruleset not found";
+		  data[10] = "RelateFocus not found";
 
 		  File file = new File(filePath);
 		  BufferedReader buffer;
@@ -535,6 +539,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 					if (string.startsWith("LastVFI")) data[7] = string;
 					if (string.startsWith("LastOptimized")) data[8] = string;
 					if (string.startsWith("SourceRule")) data[9] = string;
+					if (string.startsWith("RelateFocus")) data[10] = string;
 					ruleSet = data[9];
 
 				}
@@ -629,6 +634,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 
 	private void passSupportData() throws HCException {
 		setStatusMessage("** Support pass - HRE name table processing");
+		
 		if (HGlobal.writeLogs) 
 			HB0711Logging.logWrite("MESSAGE: - Support pass - HRE name table processing");
 		setStatusMessage(" Loading TMG style tables");
@@ -637,6 +643,7 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		HREdatabaseHandler pointDB = hreLoader.getDataBasePointer();
 		try {
 			pointSupportPass = new TMGpass_Support(pointDB);
+			pointSupportPass.updateProject(pointDB, pjcData[10]);
 			setStatusMessage(" Updating HRE T16X_NAME_STYLES");
 			pointSupportPass.addNameStyleToHRE(this);
 			timeReport("updated T160_NAME_STYLES");

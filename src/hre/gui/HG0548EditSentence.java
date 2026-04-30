@@ -56,6 +56,8 @@ import hre.bila.HBReportHandler;
 import hre.bila.HBWhereWhenHandler;
 import hre.nls.HG0548Msgs;
 import net.miginfocom.swing.MigLayout;
+//import testbed.parser.TMG_TB_Parser_Case;
+//import tmg_parser.TMG_Parser;
 
 /**
  * Edit Sentence
@@ -247,8 +249,9 @@ public class HG0548EditSentence extends HG0450SuperDialog {
     	previewTextArea.setText("");
     	try {
 			previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+			pointReportHandler.runTMGparcer(roleSentence);
 		} catch (HBException hbe) {
-			// TODO Auto-generated catch block
+			System.out.println(" HG0548EditSentence - initiate: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
     	
@@ -288,8 +291,10 @@ public class HG0548EditSentence extends HG0450SuperDialog {
             	previewTextArea.setText("");
             	try {
 					previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
+				// Attempt to trigger complete sentence parcer
+					//pointReportHandler.runTMGparcer(roleSentence);
 				} catch (HBException hbe) {
-					// TODO Auto-generated catch block
+					System.out.println(" HG0548EditSentence - sentence edit: " + hbe.getMessage());
 					hbe.printStackTrace();
 				}
             	sentenceChanged = true;
@@ -330,7 +335,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			    	try {
 						previewTextArea.append(pointReportHandler.sentenceParser(pointEditEvent, roleSentence));
 					} catch (HBException hbe) {
-						// TODO Auto-generated catch block
+						System.out.println(" HG0548EditSentence - listener combo: " + hbe.getMessage());
 						hbe.printStackTrace();
 					}
 				// If we need to, show the Sentence Warning msg	
@@ -523,5 +528,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		return workSentence + "$!&" + sexSentences[1];							//$NON-NLS-1$
 
 	}		// End convertSentRoleNamesToNums
+	
+
+	
 
 }  // End of HG0548EditSentence

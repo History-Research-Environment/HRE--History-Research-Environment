@@ -18,7 +18,7 @@ package hre.tmgjava;
  * v0.05.0033 2026-02-23 - Added writeDbfObjects routine (debug purpose) (N. Tolleshaug)
  * 			  2025-02-23 - Change all System.out msgs to logged msgs (D Ferguson)
  * 			  2025-02-24 - Modified error messages for getVectorSixe() (N. Tolleshaug)
- * 			  2025-02-24 - Modified to use only if (HGlobal.writeLogs) 
+ * 			  2025-02-24 - Modified to use only if (HGlobal.writeLogs)
  * 						   not dependant of TMGglobal.DEBUG == true (N. Tolleshaug)
  * 			  2026-03-16 - Exception handling in public Vector<DBFRow> findVectorRows (N. Tolleshaug)
  * 			  2026-03-18 - Error handling of Issue 32.47 (N. Tolleshaug)
@@ -97,7 +97,7 @@ public class TMGtableData {
 		int progress = (int)Math.round(((double)completed / (double)nrOfTables) * 100);
 		pointConvert.setStatusProgress(progress);
 	}
-	
+
 /**
  * public void writeDbfObjects(DBFReader dbfReader)
  * @param dbfReader
@@ -380,7 +380,7 @@ public class TMGtableData {
 	public int getVectorSize(int RowNumber) throws HCException {
 		try {
 			if (existVector(RowNumber)) return multiPidMap.get(RowNumber).size();
-			System.out.println(" WARNUNG: in TMGtableData HashMap vector size = 0 for table row: " + RowNumber);
+			System.out.println(" WARNING: in TMGtableData HashMap vector size = 0 for table row: " + RowNumber);
 			if (HGlobal.writeLogs)
 				HB0711Logging.logWrite("WARNING: in TMGtableData HashMap vector size = 0 for table row: " + RowNumber);
 			return 0;

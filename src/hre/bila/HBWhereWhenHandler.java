@@ -88,8 +88,8 @@ package hre.bila;
   *			   2026-01-01 - Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
   *			   2026-01-27 - Updated code for constructor (N. Tolleshaug)
   *			   2026-02-21	Line 3230 - removed memo text "no memo found"
+  *	v0.05.0033 2026-04-03 - Read and update T552 Memo record (comment) (N. Tolleshaug)
   *****************************************************************************************/
-
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -116,7 +116,7 @@ import hre.gui.HG0547UpdateEvent;
 import hre.gui.HG0551DefineEvent;
 import hre.gui.HG0552ManageEvent;
 import hre.gui.HGlobal;
-import hre.tmgjava.HCException;
+//import hre.tmgjava.HCException;
 
 /**
   * WhereWhenHandler constructor
@@ -315,16 +315,16 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		pointEditEventRecord.updateEventPartnerTable(partnerTablePID, newEventRecordPID);
 	}
 
-	public void createFromGUIMemo(String memodata) throws HBException {
-		pointEditEventRecord.createFromGUIMemo(memodata);
+	public void createEventMemo(String memodata) throws HBException {
+		pointEditEventRecord.createEventMemo(memodata);
 	}
 
-	public String readFromGUIMemo(long memoElementPID) throws HBException {
-		return pointEditEventRecord.readFromGUIMemo(memoElementPID);
+	public String readEventMemo(long memoElementPID) throws HBException {
+		return pointEditEventRecord.readEventMemo(memoElementPID);
 	}
 
-	public void updateFromGUIMemo(String memodata) throws HBException {
-		pointEditEventRecord.updateFromGUIMemo(memodata);
+	public void updateEventMemo(String memodata) throws HBException {
+		pointEditEventRecord.updateEventMemo(memodata);
 	}
 
 	public long createAssocTableRow(int roleNumber, long personPID) throws HBException {
@@ -364,6 +364,18 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 	public String[] getNameData() {
 		return pointManageLocationData.getNameData();
+	}
+	
+	public void createLocationNameMemo(String memodata) throws HBException {
+		pointManageLocationData.createLocationNameMemo(memodata);
+	}
+
+	public String readLocationNameMemo(long memoElementPID) throws HBException {
+		return pointManageLocationData.readLocationNameMemo(memoElementPID);
+	}
+
+	public void updateLocationNameMemo(String memodata) throws HBException {
+		pointManageLocationData.updateLocationNameMemo(memodata);
 	}
 
 	public int updateManageLocationNameTable(long locationTablePID, boolean copyRepository) throws HBException {
@@ -1934,6 +1946,7 @@ class ManageLocationNameData extends HBBusinessLayer {
 	long proOffset = 1000000000000000L;
 	long null_RPID  = 1999999999999999L;
 	protected HBMediaHandler pointMediaHandler = null;
+	HREmemo pointHREmemo;
 
 	Object[][] nameElementTable;
 	String[] locationHeaderData;
@@ -1953,7 +1966,9 @@ class ManageLocationNameData extends HBBusinessLayer {
 	//String[] nameStyleAndDates = new String[3];
 	String[] nameStyleAndDates = {"","",""};
 	long[] nameStylePID;
-	ResultSet locationNameResultSet;
+	ResultSet locationNameResultSet, locationNameRS;
+	long memoElementPID, nextHREMemoPID;
+	String memoElement;
 
 	String[] nameStyleNames;
 	String[] nameStyleText;
@@ -2020,6 +2035,7 @@ class ManageLocationNameData extends HBBusinessLayer {
 		locationHeaderData = setTranslatedData("50800","1", false);
 		locationNameChanges = new HashMap<String,String>();
 		pointMediaHandler = pointOpenProject.getMediaHandler();
+		pointHREmemo = pointOpenProject.getHREmemo();
 	}
 
 /**
@@ -2539,6 +2555,122 @@ class ManageLocationNameData extends HBBusinessLayer {
 			System.out.println("HBWhereWhenHandler - updateLocationElementData(): " + sqle.getMessage());
 			sqle.printStackTrace();
 			throw new HBException("HBWhereWhenHandler - updateLocationElementData(): " + sqle.getMessage());
+		}
+	}
+	
+/**
+ * readLocationNameMemo(long locationNamePID)
+ * @param memoElementPID
+ * @return memostring
+ * @throws HBException
+ */
+	public String readLocationNameMemo(long locationNamePID) throws HBException {
+
+		String selectString = setSelectSQL("*", locationNameTable, " PID = " + locationNamePID);
+		locationNameRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			locationNameRS.first();
+			memoElementPID = locationNameRS.getLong("MEMO_RPID");
+			if (memoElementPID == null_RPID) {
+				return "";
+			}
+			if (HGlobal.DEBUG) {
+				System.out.println(" MemoPID: " + memoElementPID);
+			}
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException(" HBWhereWhenHandler + readLocationNameMemo error: " + sqle.getMessage());
+		}
+		return pointHREmemo.readMemo(memoElementPID);
+	}
+		
+/**
+ * updateFromGUIMemo(String memoElement)
+ * @param memoElement
+ * @param memoOwnerTable
+ * @param nextOwnerPID
+ * @throws HBException
+ */
+	public void createMemoRecord(String memoElement) throws HBException {
+		this.memoElement = memoElement;
+
+	//	No memo element if textlength is zero
+		if (memoElement.length() == 0) {
+			return;
+		}
+
+		try {
+			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+			nextHREMemoPID = pointHREmemo.addMemoRecord(memoElement);
+
+		// Now commit all updated for memo
+			updateTableData("COMMIT", dataBaseIndex);
+		} catch (HBException hbe) {
+			updateTableData("ROLLBACK", dataBaseIndex);
+			System.out.println(" HBPersonHandler - reateLocationMemoRecord error: " + hbe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("Error HBWhereWhenHandler - createLocationMemoRecord: :  " + hbe.getMessage());
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
+			throw new HBException(" HBWhereWhenHandler - reateLocationMemoRecord error: " + hbe.getMessage());
+		}
+	}
+
+/**
+ * public void createLocationNameMemo(String memoElement)
+ * @param memoElement
+ * @param memoOwnerTable
+ * @param nextOwnerPID
+ * @throws HBException
+ */
+	public void createLocationNameMemo(String memoElement) throws HBException {
+		this.memoElement = memoElement;
+
+	//	No memo element if textlength is zero
+		if (memoElement.length() == 0) {
+			return;
+		}
+
+		try {
+			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+			nextHREMemoPID = pointHREmemo.addMemoRecord(memoElement);
+
+		// Now commit all updated for memo
+			updateTableData("COMMIT", dataBaseIndex);
+		} catch (HBException hbe) {
+			updateTableData("ROLLBACK", dataBaseIndex);
+			System.out.println(" HBWhereWhenHandler - createLocationNameMemo error: " + hbe.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("Error HBWhereWhenHandler - createLocationNameMemo: :  " + hbe.getMessage());
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
+			throw new HBException(" HBWhereWhenHandler - createLocationNameMemo error: " + hbe.getMessage());
+		}
+	}
+
+/**
+ * public void updateLocationNameMemo(String memoElement)
+ * @param memoElement
+ * @param memoPID
+ * @throws HBException
+ */
+	public void updateLocationNameMemo(String memoElement) throws HBException {
+		HREmemo pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
+		if (memoElementPID != null_RPID) {
+			pointHREmemo.findT167_MEMOrecord(memoElement, memoElementPID);
+		} else {
+			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+			createMemoRecord(memoElement);
+			try {
+				locationNameRS.updateLong("MEMO_RPID", nextHREMemoPID);
+				locationNameRS.updateRow();
+				updateTableData("COMMIT", dataBaseIndex);
+			} catch (SQLException sqle) {
+				System.out.println(" HBWhereWhenHandler  - updateLocationNameMemo ROLLBACK: \n" + sqle.getMessage());
+				updateTableData("ROLLBACK", dataBaseIndex);
+				System.out.println(" HBWhereWhenHandler - updateLocationNameMemo: " + sqle.getMessage());
+				sqle.printStackTrace();
+			}
 		}
 	}
 
@@ -3220,7 +3352,7 @@ class EditEventRecord extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-	public String readFromGUIMemo(long eventPID) throws HBException {
+	public String readEventMemo(long eventPID) throws HBException {
 
 		String selectString = setSelectSQL("*", eventTable, " PID = " + eventPID);
 		eventResultSet = requestTableData(selectString, dataBaseIndex);
@@ -3248,7 +3380,7 @@ class EditEventRecord extends HBBusinessLayer {
  * @param nextOwnerPID
  * @throws HBException
  */
-	public void createFromGUIMemo(String memoElement) throws HBException {
+	public void createEventMemo(String memoElement) throws HBException {
 		this.memoElement = memoElement;
 
 	//	No memo element if textlength is zero
@@ -3280,13 +3412,13 @@ class EditEventRecord extends HBBusinessLayer {
  * @param memoPID
  * @throws HBException
  */
-	public void updateFromGUIMemo(String memoElement) throws HBException {
+	public void updateEventMemo(String memoElement) throws HBException {
 		HREmemo pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 		if (memoElementPID != null_RPID) {
 			pointHREmemo.findT167_MEMOrecord(memoElement, memoElementPID);
 		} else {
 			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
-			createFromGUIMemo(memoElement);
+			createEventMemo(memoElement);
 			try {
 				eventResultSet.updateLong("MEMO_RPID", nextHREMemoPID);
 				eventResultSet.updateRow();

@@ -10,6 +10,7 @@ public class HG0565Msgs extends NLS {
 	public static String Text_4;
 	public static String Text_5;
 	public static String Text_7;
+	public static String Text_8;
 	public static String Text_9;
 
 	public static String Text_10;

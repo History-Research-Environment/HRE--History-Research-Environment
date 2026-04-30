@@ -39,6 +39,7 @@ package hre.gui;
  * v0.04.0032 2024-12-23 Fix initial over-packing of GUI losing the Names section (D Ferguson)
  * 			  2026-01-05 Log catch block and DEBUG actions (D Ferguson)
  * v0.05.0033 2026-03-16 Initiate ManagePerson with its screenID (not personVP screenID) (D Ferguson)
+ * 			  2026-04-04 Remove Notepads sub-panel (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Color;
@@ -311,10 +312,8 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
     	// Then show Flag panel title
     	String flagsTitle = HG05300Msgs.Text_26
     			+ " (" + activeFlags + ")";   	// Flags (#)      //$NON-NLS-1$ //$NON-NLS-2$
-    	String notepadTitle = HG05300Msgs.Text_27
-    			+ " (" + "0" + ")";   // Notepads (0)   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     	String[] titles = {"not used", eventsTitle, HG05300Msgs.Text_23, associateTitle, namesTitle, // dummy, Events, Relatives, Associates, Names  //$NON-NLS-1$
-    			 		   "not used", imagesTitle, flagsTitle, notepadTitle}; 			// Names, dummy, Images, Flags, Notepad)  //$NON-NLS-1$
+    			 		   "not used", imagesTitle, flagsTitle}; 			// Names, dummy, Images, Flags)  //$NON-NLS-1$
         actPanels = new ActionPanel[titles.length];
         for(int j = 0; j < actPanels.length; j++)
             actPanels[j] = new ActionPanel(titles[j], this);
@@ -333,8 +332,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         JPanel p5 = peoplePriImage();
         JPanel p6 = peopleImages();
         JPanel p7 = peopleFlags();
-        JPanel p8 = peopleNotes();
-        dataPanels = new JPanel[] {p0, p1, p2, p3, p4, p5, p6, p7, p8};
+        dataPanels = new JPanel[] {p0, p1, p2, p3, p4, p5, p6, p7};
 
     }	// End makeDataPanels
 
@@ -1068,7 +1066,7 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
 		           	// DOUBLE-CLICK - if column=0, change ManagePerson focus to this Person
 	           			if (colClicked == 0) {
 			        		// change ManagePerson focus
-		           			pointPersonHandler.initiateManagePerson(pointOpenProject, personTablePID, "50600");
+		           			pointPersonHandler.initiateManagePerson(pointOpenProject, personTablePID, "50600"); //$NON-NLS-1$
 		           		} else {
 		           	// DOUBLE-CLICK other columns open Person VP for this Person
 		           			errorCode = pointViewpointHandler.initiatePersonVP(pointOpenProject, personTablePID);
@@ -1222,16 +1220,6 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
         return p7;
     }	// End peopleFlags
 
-// Define panel P8 for Notepads - to be fully created later
-    private JPanel peopleNotes() {
-    	JPanel p8 = new JPanel(new GridLayout(1, 1, 1, 1));
-        JTextArea text80 = new JTextArea(3, 10);
-        text80.setLineWrap(true);
-        text80.setText("Notepads not yet implemented");        //$NON-NLS-1$
-        p8.add(new JScrollPane(text80));
-        return p8;
-    }	// End peopleNotes
-
 /**
  * makePersonPanel - assembles the Action & Data Panels together into the total PersonPanel
  * @return	the assembled personPanel (a JSplitPane with 2 MigLayouts)
@@ -1254,8 +1242,8 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
             dataPanels[j].setVisible(false);	// set dataPanels 1 - 4 hidden initially
         	}
 
-        // Setup the right Splitpane from dataPanels p5-8
-       	JPanel perRight = new JPanel(new MigLayout("insets 0, gap 1, fillx, hidemode 2", "[]", "[][][][][][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        // Setup the right Splitpane from dataPanels p5-7
+       	JPanel perRight = new JPanel(new MigLayout("insets 0, gap 1, fillx, hidemode 2", "[]", "[][][][][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         // First, add panel p5, no title, centred
         perRight.add(dataPanels[5], "cell 0 0, center");		 //$NON-NLS-1$
         // Then add panels 6 - 8 action & data panels
@@ -1263,10 +1251,8 @@ public class HG0530ViewPeople extends HG0451SuperIntFrame implements MouseListen
     	perRight.add(dataPanels[6], "cell 0 2, growx"); //$NON-NLS-1$
        	perRight.add(actPanels[7], "cell 0 3, growx"); //$NON-NLS-1$
     	perRight.add(dataPanels[7], "cell 0 4, growx"); //$NON-NLS-1$
-       	perRight.add(actPanels[8], "cell 0 5, growx"); //$NON-NLS-1$
-    	perRight.add(dataPanels[8], "cell 0 6, growx"); //$NON-NLS-1$
         for(int j = 6; j < dataPanels.length; j++) {
-            dataPanels[j].setVisible(false);	// set dataPanels 6 - 8 hidden initially
+            dataPanels[j].setVisible(false);	// set dataPanels 6 - 7 hidden initially
         	}
 
         // Define splitpane personPanel's parameters

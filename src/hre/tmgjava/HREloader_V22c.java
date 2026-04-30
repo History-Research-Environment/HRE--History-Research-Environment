@@ -36,6 +36,8 @@ package hre.tmgjava;
  *			  2025-10-21 - Delete T737 content when importing user project (N. Tolleshaug)
  *			  2025-12-15 - Indexed T735 and T736 for persormance get source list (N. Tolleshaug)
  * 			  2026-01-15 - Log catch block msgs (D Ferguson)
+ * v0.05.0033 2026-04-06 - Added focusperson in T126 (N. Tolleshaug)
+ * 			  2026-04-23 - ALTER TABLE T460_EVNT_DEFN ALTER COLUMN EVNT_HINT VARCHAR(5000)  (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -75,9 +77,15 @@ public class HREloader_V22c {
 
 	// Update table T126 - IS_IMPORTED
 			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");
+			
+	// Add FOCUS_PER_RPID to T126		
+			alterColumnInTable("T126_PROJECTS","FOCUS_PER_PID","BIGINT");
 
 	// Set boolean IS_OWNER in T131
 			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
+			
+	// Update table T460_EVNT_DEFN
+			updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE","ALTER COLUMN EVNT_HINT VARCHAR(5000)");
 
 	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");

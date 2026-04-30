@@ -79,7 +79,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 	// Update event memo
 	// Disable memoText listener first
 		memoText.getDocument().removeDocumentListener(memoTextChange);
-		String memoString = pointWhereWhenHandler.readFromGUIMemo(eventPID);
+		String memoString = pointWhereWhenHandler.readEventMemo(eventPID);
 		memoText.append(memoString);
 		memoText.setCaretPosition(0);	// set scrollbar to top
 	// and enable it again
@@ -153,7 +153,7 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 
 					// update memo text if edited
 						if (memoEdited)
-							pointWhereWhenHandler.updateFromGUIMemo(memoText.getText());
+							pointWhereWhenHandler.updateEventMemo(memoText.getText());
 
 					// Update name element table T403
 						if (locationChanged) {

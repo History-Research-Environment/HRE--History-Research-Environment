@@ -40,6 +40,8 @@ package hre.tmgjava;
  * 			  2023-08-15 - Fix if project contains TMG default flags dupl. (N. Tolleshaug)
  * v0.03.0031 2024-09-29 - Updated with this version in Build31 and Master 31 (N. Tolleshaug)
  * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
+ * v0.05.0033 2026-04-07 - Updated setting of focusperson T126 (N. Tolleshaug)
+ * 
  ***************************************************************************************
  * NOTE 01 - 	Insert updates only the database
  * 				To see the inserted rows in ResultSet
@@ -72,11 +74,15 @@ public class TMGpass_Support {
 
 	TMGtableData  tmgSTtable = null;
 	TMGtableData  tmgCtable = null;
-	ResultSet tableT160 = null, tableT162 = null, tableT204 = null, tableT251 = null;
+	
+	ResultSet tableT126 = null, tableT160 = null, tableT162 = null, tableT204 = null, tableT251 = null;
 	int index = 0;
 	int flagIdent = 0;
 	String[] flagFields;
 	String translatedFlag = "T204_FLAG_TRAN";
+	String projectTable = "T126_PROJECTS";
+	String selectString;
+	
 	boolean updateFlags = TMGglobal.CONVERT_ALL_FLAG;
 
 // Temp solution to identify preloaded flag definitions
@@ -958,6 +964,37 @@ public class TMGpass_Support {
 			throw new HCException("TMGPass_Support - T204_FLAG_TRAN: " + sqle.getMessage());
 		}
    }
+/**
+ * public void updateProject(HREdatabaseHandler pointHREbase, String focusPersonValue)   
+ * @param pointHREbase
+ * @param focusPersonValue
+ * @throws HCException
+ */
+   public void updateProject(HREdatabaseHandler pointHREbase, String focusPersonValue) throws HCException {
+		selectString = pointHREbase.setSelectSQL("*", projectTable, "");
+		tableT126 = pointHREbase.requestTabledata(translatedFlag, selectString);
+		int focusPersonNumber = 0;
+		long projectOffset, focusPersonPID;
+		if (focusPersonValue.startsWith("RelateFocus")) {
+			focusPersonNumber = Integer.parseInt(focusPersonValue.
+				substring(focusPersonValue.indexOf('=') + 1, focusPersonValue.length()));
+			//System.out.println(" Focus person index: " + focusPersonNumber);
+			try {
+				tableT126.first();
+				projectOffset = tableT126.getLong("PROJECT_OFFSET");
+				if (focusPersonNumber == 0) {
+					if (HGlobal.writeLogs) 
+						HB0711Logging.logWrite("WARNING: in TMGpassSupport update T126 -  focus person not set!");
+					System.out.println(" WARNING: in TMGpassSupport update T126 - focus person not set!");
+					focusPersonPID = null_RPID;
+				} else focusPersonPID = focusPersonNumber + projectOffset;
+				tableT126.updateLong("FOCUS_PER_PID", focusPersonPID);
+				tableT126.updateRow();
+			} catch (SQLException sqle) {
+				throw new HCException(" updateProject error: " + sqle.getMessage());
+			}
+		}
+   }
 } // End TMGpass_Support
 
 class NameStyleStat {
@@ -992,5 +1029,6 @@ class NameStyleStat {
 	public void addUsedStyles() {
 		nameStyleUse++;
 	}
+	
 } // End nameStyleStat
 

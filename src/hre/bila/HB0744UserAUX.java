@@ -39,6 +39,7 @@ package hre.bila;
  *			  2024-11-15 add save/restore of 'prompt Marr Name' User option (D Ferguson)
  *			  2024-11-24 improve log messages written by this code (D Ferguson)
  * v0.03.0031 2025-05-12 Complete IS_OWNER update code (D Ferguson)
+ * v0.05.0033 2026-04-07 Add an image file entry to /files/ (D Ferguson)
  ************************************************************************************************************
  * Structure of HB0744UserAUX consists of 3 methods, namely:
  * 	(i)  initUserAUXfile: if the /username/HRE/ folder doesn't exist, this
@@ -72,7 +73,7 @@ import hre.gui.HGlobalCode;
 /**
  * UserAUX file handling
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.05.0033
  * @since 2019-05-17
  */
 
@@ -279,6 +280,10 @@ public class HB0744UserAUX {
 	         			Element extHRE = doc.createElement("hreextback");
 	         			extHRE.appendChild(doc.createTextNode(HGlobal.pathExtbackups));
 	         			files.appendChild(extHRE);
+	         			// create default HRE media files location element
+	         			Element mediaHRE = doc.createElement("hremedia");
+	         			mediaHRE.appendChild(doc.createTextNode(HGlobal.pathMedia));
+	         			files.appendChild(mediaHRE);
 
 		         	// create miscellaneous elements
 		         	Element misc = doc.createElement("misc");
@@ -579,6 +584,11 @@ public class HB0744UserAUX {
 				HGlobal.pathExtbackups = doc.getElementsByTagName("hreextback").item(0).getTextContent();
 				}
 				else HGlobal.pathExtbackups = HGlobal.pathHRElocation;		// ensure field not left empty
+
+			if (doc.getElementsByTagName("hremedia").getLength() > 0) {
+				HGlobal.pathMedia = doc.getElementsByTagName("hremedia").item(0).getTextContent();
+				}
+				else HGlobal.pathMedia = HGlobal.pathHRElocation;		// ensure field not left empty
 
 		    // Now get the Accents section and store them
 	        NodeList accentList = doc.getElementsByTagName("accent");

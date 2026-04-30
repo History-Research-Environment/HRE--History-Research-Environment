@@ -126,7 +126,7 @@ public class HG0547AddEvent extends HG0547EditEvent {
 
 					//if update memo text
 						if (memoEdited)
-							pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
+							pointWhereWhenHandler.createEventMemo(memoText.getText());
 
 					// Create a new set of HDATE records
 						if (startDateOK)

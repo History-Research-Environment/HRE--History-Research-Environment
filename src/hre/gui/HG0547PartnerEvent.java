@@ -88,7 +88,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited) {
 					//if update memo text
 						if (memoEdited)
-							pointWhereWhenHandler.createFromGUIMemo(memoText.getText());
+							pointWhereWhenHandler.createEventMemo(memoText.getText());
 
 					// Create new event
 						newEventRecordPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);

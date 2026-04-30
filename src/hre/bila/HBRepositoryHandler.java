@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import hre.gui.HG0566EditSource;
 import hre.gui.HG0569ManageRepos;
 import hre.gui.HG0570EditRepository;
-import hre.tmgjava.HCException;
+//import hre.tmgjava.HCException;
 
 public class HBRepositoryHandler extends HBBusinessLayer {
 
@@ -37,7 +37,6 @@ public class HBRepositoryHandler extends HBBusinessLayer {
 	HG0570EditRepository pointCopyRepository;
 	public HG0566EditSource pointEditSource;
 	public HG0569ManageRepos pointManageRepos;
-	HREmemo pointHREmemo;
 	int dataBaseIndex = -1;
 
 	String selectString;

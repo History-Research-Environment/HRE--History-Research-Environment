@@ -15,6 +15,7 @@ package hre.bila;
  * v0.05.0033 2026-02-22 Get Project name correctly for the log record (D Ferguson)
  * 			  2026-03-08 On first call to logWrite, set Java stderr to go to log file ( D Ferguson)
  * 			  2026-03-09 APPEND stderr to HRE logfile; add identifiable start record (D Ferguson)
+ * 			  2026-04-11 Process Java exceptions into std HRE log format (D Ferguson)
  *******************************************************************************
 * For documentation on the OpenCSV functions used here, see:
 * https://sourceforge.net/projects/opencsv/
@@ -149,6 +150,15 @@ public class HB0711Logging {
 	   	}  catch (Exception ex) {
 	   		HGlobalCode.logErrorMessage(3, ex.getMessage());	// Read error
 	   		}
+		// Process allLogEntries to move any Java Exceptions into the HRE log entry area
+		// We can recognise these as the allLogEntries[] has only 1 element, so we
+		// create a new row with this element moved down to col 4 (HRE log entry area)
+		for (int i = 0; i < allLogEntries.size(); i++) {
+			if (allLogEntries.get(i).length == 1) {
+				String[] updateRow = new String[]{"", "", "", "", allLogEntries.get(i)[0]};
+				allLogEntries.set(i, updateRow);
+			}
+		}
 	}	// End of logRead
 
 /**

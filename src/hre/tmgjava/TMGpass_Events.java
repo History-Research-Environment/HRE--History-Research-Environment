@@ -71,9 +71,11 @@ package hre.tmgjava;
  * 			  2025-08-02 - Extract Primary roles; remove adding 'Subject' role (D Ferguson)
  * 			  2026-01-13 - Setting up SENTENCE_SET_RPID in T461 role table (N. Tolleshaug)
  * 			  2026-01-17 - Log all catch blocks (D Ferguson)
- * 			  2026-03-18 - Error handling of Issue 32.47 (N. Tolleshaug)
+ * v0.05.0033 2026-03-18 - Error handling of Issue 32.47 (N. Tolleshaug)
  * 			  2026-03-19 - Error handling of Issue 32.52 (N. Tolleshaug)
  * 			  2026-03-23 - Small correction in message text (N. Tolleshaug)
+ * 			  2026-04-21 - Error fix for reminder -Issue 33.04 (N. Tolleshaug)
+ * 			  2026-04-23 - Reminder - increased from 2000 to 5000 (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -430,13 +432,12 @@ class TMGpass_Events  {
 
 		// Insert row
 			hreTable.insertRow();
-		} catch (HCException hce) {	
-			if (hce.getMessage().startsWith("###")) {
-				if (HGlobal.writeLogs) {
-					HB0711Logging.logWrite("WARNING: in addToT450_EVNT TMG E table recno: " + recNr + " excluded");
-					System.out.println(" WARNING: in addToT450_EVNT TMG E table recno: " + recNr + " excluded");
-				}
-			} else throw new HCException(hce.getMessage());
+		} catch (HCException hce) {
+			if (!hce.getMessage().startsWith("###")) throw new HCException(hce.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("WARNING: in addToT450_EVNT TMG E table recno: " + recNr + " excluded");
+				System.out.println(" WARNING: in addToT450_EVNT TMG E table recno: " + recNr + " excluded");
+			}
 		} catch (SQLException sqle) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR:: in TMGpassEvents addToT450 " + sqle.getMessage());
@@ -789,8 +790,8 @@ class TMGpass_Events  {
 					} else {
 						System.out.print(" WARNING: Incomplete sentence for Event: " + etypeName
 							+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
-						if (HGlobal.writeLogs) 
-							HB0711Logging.logWrite(" WARNING: Incomplete sentence for Event: " + etypeName 
+						if (HGlobal.writeLogs)
+							HB0711Logging.logWrite(" WARNING: Incomplete sentence for Event: " + etypeName
 									+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
 					}
 			}
@@ -898,19 +899,19 @@ class TMGpass_Events  {
  */
 	public String getReminderText(String langText, String reminder) {
 		String text = ""; String langCode = null;
-		String[] reminderText = reminder.split("L=");
+		String[] reminderText = reminder.split("\\[L=");
 		//System.out.println(" Number of language codes: " + reminderText.length + " - "  + reminder);
 		for (int i = 1; i < reminderText.length; i++) {
+			if (reminderText[i].indexOf(']') == -1) continue;
 			langCode = getLangCode(reminderText[i].substring(0, reminderText[i].indexOf(']')));
 			//System.out.println("Line " + i + " Lang code: " + langCode + " Text: " + reminderText[i]);
 			if (langCode.equals(langText)) {
 				text = reminderText[i].substring(reminderText[i].indexOf(']') + 1);
-				text = text.replace('[', ' ').trim();
 				//System.out.println(" Code = " + langCode + " / Reminder: " + text + "\n");
 				return text;
 			}
 		}
-		return  " ";
+		return  "";
 	}
 
 /**
@@ -1034,31 +1035,33 @@ class TMGpass_Events  {
 		if (TMGglobal.DEBUG)
 				System.out.println("** addTo T460_EVENT_DEFN PID: " + (primaryIndex + proOffset + 1));
 
-		// Abbrev too long?
+	// Abbrev too long?
 		if (abbrev.length() > 10) {
-			System.out.println(" WARNUNG: addTo_T460_EVNT_DEFN - EVNT_ABBREV: " + abbrev + " - Length: "
+			System.out.println(" WARNING: addTo_T460_EVNT_DEFN - EVNT_ABBREV: " + abbrev + " - Length: "
 					+ abbrev.length() + "/10");
-			if (HGlobal.writeLogs) 
-				HB0711Logging.logWrite("WARNUNG: addTo_T460_EVNT_DEF - EVNT_ABBREV: " 
-					+ abbrev + " - Length: " + abbrev.length() + "/10");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_ABBREV - Length: " 
+						+ abbrev.length() + "/10 - " + abbrev + "\n");
 			abbrev = abbrev.substring(0,10);
 		}
+		
 	// Reminder too long?
-		if (reminder.length() > 2000) {
-			System.out.println(" WARNUNG: addTo_T460_EVNT_DEF - EVNT_HINT - Length: "
-					+ reminder.length() + "/2000");
-			if (HGlobal.writeLogs) 
-				HB0711Logging.logWrite("WARNUNG: addTo_T460_EVNT_DEF - EVNT_HINT: " 
-					+ reminder + " - Length: " + reminder.length() + "/2000");
-			reminder = reminder.substring(0,2000);
+		if (reminder.length() > 5000) {
+			System.out.println(" WARNING: addTo_T460_EVNT_DEF - EVNT_HINT - Length: "
+					+ reminder.length() + "/5000");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_HINT - Length: "
+						+ reminder.length() + "/5000 - " +  reminder + "\n");
+			reminder = reminder.substring(0,5000);
 		}
+		
 	// Pasttense too long?
 		if (pasttense.length() > 30) {
-			System.out.println(" WARNUNG: addTo_T460_EVNT_DEF - EVNT_PAST - Length: "
+			System.out.println(" WARNING: addTo_T460_EVNT_DEF - EVNT_PAST - Length: "
 					+ pasttense.length() + "/30");
-			if (HGlobal.writeLogs) 
-				HB0711Logging.logWrite("WARNUNG: addTo_T460_EVNT_DEF - EVNT_PAST: " 
-					+ pasttense + " - Length: " + pasttense.length() + "/30");
+			if (HGlobal.writeLogs)
+				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_PAST - Length: " 
+						+ pasttense.length() + "/30 - " + pasttense + "\n");
 			pasttense = pasttense.substring(0,30);
 		}
 

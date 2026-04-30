@@ -24,6 +24,8 @@ package hre.gui;
  * 			  2025-05-12 Modified Object[] userCred = {"","","","", false} (D Ferguson)
  * v0.05.0033 2026-02-21 Added new field focusPerson (D Ferguson)
  * 			  2026-02-23 Set pluginEnabled=false as default (D Ferguson)
+ * 			  2026-04-07 Add default Media filepath (D Ferguson)
+ * 			  2026-04-07 Removed public static String focusPerson (N. Tolleshaug)
  ************************************************************************/
 
 import java.awt.Color;
@@ -36,11 +38,11 @@ import hre.bila.HBProjectOpenData;
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author D Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version Build 0.05.3326.0327
+ * @version Build 0.05.3326.0425
  */
 public class HGlobal {
-	public static String buildNo = "0.05.3326.0327";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "27 Mar 2026";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.05.3326.0425";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "25 Apr 2026";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "v22c";		    // Set Database DDL version //$NON-NLS-1$
 
@@ -62,7 +64,7 @@ public class HGlobal {
 	public static String thisComputer;						// computer HRE is running on
 	public static String defDatabaseEngine = "H2";	        // standard database engine //$NON-NLS-1$
 	public static String userID = "";						// UserID as known by the OS, copied to userCred[0] //$NON-NLS-1$
-	public static String focusPerson = "Focus Person";		// default focus person name
+	//public static String focusPerson = "Focus Person";		// default focus person name
 
 	public static String passWord = "";						// Store used password remote login //$NON-NLS-1$
 	public static String remoteID = "";						// Store used remote user login  //$NON-NLS-1$
@@ -145,6 +147,7 @@ public class HGlobal {
 	public static String pathHREreports = "";				// default HRE report output location //$NON-NLS-1$
 	public static String pathHREbackups = "";				// default HRE backups location //$NON-NLS-1$
 	public static String pathExtbackups = "";				// default HRE external backup file location //$NON-NLS-1$
+	public static String pathMedia = "";					// default HRE media file location //$NON-NLS-1$
 
 	// Following are miscellaneous other items
 	public static String pathProjectFolder = null;			// Path to last selected folder

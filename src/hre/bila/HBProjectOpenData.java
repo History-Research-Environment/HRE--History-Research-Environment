@@ -69,6 +69,8 @@ package hre.bila;
  * 			  2026-01-01 - Added code for create HBEventRoleManager (N. Tolleshaug)
  * 			  2026-01-18 - Added code to support extract of HRE table to CSV file (D Ferguson)
  * 			  2026-01-27 - Updated code for database index setting for handlers(N.Tolleshaug)
+ * v0.05.0033 2026-04-06 - Added method getFocusPersonPID (N. Tolleshaug)
+ * 			  2026-04-09 - Added methods to update tFocusPersonPID (N. Tolleshaug)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -145,6 +147,7 @@ public class HBProjectOpenData {
     private int selectedRow, selectedVisibleIDX = 1;
     private String selectedPersonName;
     private long selectedPersonPID = null_RPID;
+    private long focusPersonPID = null_RPID;
     // Stores the selected name display index for Person Select
     private int selectNameDisplayIndex = 0;
 	// If true, use display-type Name Styles; else use standard (translated) Texts
@@ -406,6 +409,15 @@ public class HBProjectOpenData {
     public long getSelectedPersonPID() {
     	return selectedPersonPID;
     }
+    
+    public long getFocusPersonPID() {
+    	return focusPersonPID;
+    }
+    
+    public void setFocusPersonPID(long focusPersonPID) throws HBException {
+    	this.focusPersonPID = focusPersonPID;
+    	updateFocusPersonT126(focusPersonPID);
+    }
 
 /**
  * getPersonPIDfromVisID(int visibleID) - find PID from visibleID
@@ -470,6 +482,7 @@ public class HBProjectOpenData {
     public void setSelectedPersonPID(long personPID) {
     	selectedPersonPID = personPID;
     }
+    
 
  /**
   * getReloadPersonSelectData()
@@ -605,6 +618,9 @@ public class HBProjectOpenData {
  */
 	public void initiateManagersOpenProject() throws HBException {
 		//System.out.println(" initiateManagersOpenProject() called!");
+		
+	// Set up memo handler	
+		pointHREmemo = new HREmemo(pointProjectHandler.pointDBlayer, dataBaseIndex);
 
 	// Set up citation - source handler
 		pointCitationSourceHandler  = new HBCitationSourceHandler(this);
@@ -633,9 +649,6 @@ public class HBProjectOpenData {
 	// Set up Report handler
 		pointReportHandler  = new HBReportHandler(this);
 		pointReportHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
-		
-	// Set up memo handler	
-		pointHREmemo = new HREmemo(pointProjectHandler.pointDBlayer, dataBaseIndex);
 		
 	// Set up HBPersonHandler
 		pointPersonHandler = new HBPersonHandler(this);
@@ -731,9 +744,6 @@ public class HBProjectOpenData {
  */
 	public int openProject(boolean remote, int proIndex, String[] logonData) throws HBException   {
 
-		// Reset pointers to VP data - only one project at a time
-			//getViewPointHandler().resetVPdata();
-
 		try {
 			this.projectData = pointProjectHandler.getUserProjectByIndex(proIndex);
 
@@ -796,6 +806,7 @@ public class HBProjectOpenData {
 				projectTableRS.first();
 				projectDatabaseName = projectTableRS.getString("PROJECT_NAME");
 				importedProject = projectTableRS.getBoolean("IS_IMPORTED");
+				focusPersonPID = projectTableRS.getLong("FOCUS_PER_PID");
 				projectTableRS.close();
 			} catch (SQLException sqle) {
 				if (HGlobal.DEBUG) {
@@ -803,6 +814,10 @@ public class HBProjectOpenData {
 				}
 				importedProject = true;
 			}
+			
+		// Print focus person PID
+			if (HGlobal.DEBUG) 
+				System.out.println (" *** Focus person PID (getFocusPersonPID()) = " + getFocusPersonPID());
 
 		    if (HGlobal.DEBUG) {
 				System.out.println(" Opened DB created from: "
@@ -1189,6 +1204,25 @@ public class HBProjectOpenData {
 	    if (HGlobal.DEBUG) {
 			System.out.println("OpenProject: " + projectName + " - table row: " + selectedRow + " - "
 	    		+ "User ID: " + selectedVisibleIDX + " PID: " + personTablePID + " Name: " + selectedPersonName);
+		}
+	}
+	
+/**
+ * private void updateFocusPersonT126(long focusPersonPID)
+ * @param focusPersonPID
+ * @throws HBException 
+ */
+	private void updateFocusPersonT126(long focusPersonPID) throws HBException {
+		selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
+		projectTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+		try {
+			projectTableRS.first();
+			projectTableRS.updateLong("FOCUS_PER_PID", focusPersonPID);
+			projectTableRS.updateRow();
+			projectTableRS.close();
+		} catch (SQLException sqle) {	
+			System.out.println(" ERROR: Update focus person" + sqle.getMessage());
+			throw new HBException(" table T126_PROJECTS - error update T126 tabel focus person" + sqle.getMessage());
 		}
 	}
 

@@ -18,20 +18,18 @@ package hre.gui;
  * 			  2024-12-09 Updated location name TAB handling (D Ferguson)
  * 			  2024-12-09 Location name change list update line 680 (N. Tolleshaug)
  * v0.04.0032 2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
- ********************************************************************************
- * NB: cannot execute 'externalize strings' check without temporarily commenting
- *     out the statement: txt_Text = new JTextArea("\""+listText+" ...\"");
- ********************************************************************************
- * NOTES for incomplete functionality:
- * NOTE01 - need to handle Notepads eventually
- *******************************************************************************
- */
+ * V0.05.0033 2026-04-02 Add display area for T552 Memo (comment) (D Ferguson)
+ * 			  2026-04-03 Read and update T552 Memo record (comment) (N. Tolleshaug)
+ *			  2026-04-04 Remove Notepads card (D Ferguson)
+ ********************************************************************************/
 
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -69,11 +67,14 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
@@ -83,12 +84,13 @@ import hre.bila.HBWhereWhenHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG0508Msgs;
+//import hre.bila.HREmemo;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Manage Location
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.05.0033
  * @since 2022-06-20
  */
 public class HG0508ManageLocation extends HG0450SuperDialog {
@@ -100,9 +102,9 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	private JPanel contents;
 	boolean showHiddenClicked = false;
 	boolean locationChanged = false;
-	boolean dateChanged = false;
-	boolean startDateOK = false;
-	boolean endDateOK = false;
+
+	boolean startDateChangeOK = false;
+	boolean endDateChangeOK = false;
 
 	HG0590EditDate editStartDate;
 	long startMainYear = 0L;
@@ -123,6 +125,12 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	long endHDatePID;
 
 	JTextField dateStart, dateEnd;
+
+	long memoTextPID;
+	JTextArea memoTextArea;
+	String memoText = "";	//$NON-NLS-1$
+	boolean memoChanged = false;
+	DocumentListener memoListen;
 
     static focusPolicy newPolicy;
 
@@ -149,7 +157,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
     }
 
 /**
- * Create the dialog
+ * HG0508ManageLocation constructor
  * @throws HBException
  */
 	public HG0508ManageLocation(HBWhereWhenHandler pointWhereWhenHandler
@@ -170,17 +178,22 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
     	int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
     	String selectString =
     			pointWhereWhenHandler.setSelectSQL("*", pointWhereWhenHandler.locationNameTable,"PID = " + locationTablePID); //$NON-NLS-1$ //$NON-NLS-2$
-    	ResultSet personNameTable = pointWhereWhenHandler.requestTableData(selectString, dataBaseIndex);
+    	ResultSet locationNameTableRS = pointWhereWhenHandler.requestTableData(selectString, dataBaseIndex);
 		try {
-			personNameTable.first();
-			startHDatePID = personNameTable.getLong("START_HDATE_RPID");	//$NON-NLS-1$
-			endHDatePID = personNameTable.getLong("END_HDATE_RPID");		//$NON-NLS-1$
+			locationNameTableRS.first();
+			startHDatePID = locationNameTableRS.getLong("START_HDATE_RPID");	//$NON-NLS-1$
+			endHDatePID = locationNameTableRS.getLong("END_HDATE_RPID");		//$NON-NLS-1$
+			memoTextPID = locationNameTableRS.getLong("MEMO_RPID");				//$NON-NLS-1$
 		} catch (SQLException sqle) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0508 loading personName table " + sqle.getMessage()); //$NON-NLS-1$
 				HB0711Logging.printStackTraceToFile(sqle);
 			}
 		}
+
+	// Load Memo text and set font
+		memoText = pointWhereWhenHandler.readLocationNameMemo(locationTablePID);
+	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 
 	// Collect start date Hdate
     	startHREDate = pointWhereWhenHandler.pointLibraryResultSet.dateIputHdate(startHDatePID, dataBaseIndex);
@@ -230,7 +243,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		JPanel leftPanel = new JPanel();
 		leftPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(leftPanel, "cell 0 0, growx, aligny top");	//$NON-NLS-1$
-		leftPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		leftPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_EditType = new JLabel(HG0508Msgs.Text_1);	// Edit Category
 		leftPanel.add(lbl_EditType, "cell 0 0, alignx center");	//$NON-NLS-1$
@@ -242,13 +255,9 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		JRadioButton radio_Media = new JRadioButton(HG0508Msgs.Text_3);	// Media
 		leftPanel.add(radio_Media, "cell 0 2, alignx left");		//$NON-NLS-1$
 
-		JRadioButton radio_Note = new JRadioButton(HG0508Msgs.Text_4);	// Notepads
-		leftPanel.add(radio_Note, "cell 0 3, alignx left");		//$NON-NLS-1$
-
 		ButtonGroup radioGroup = new ButtonGroup();
 		radioGroup.add(radio_Locn);
 		radioGroup.add(radio_Media);
-		radioGroup.add(radio_Note);
 
 /***************************************************
  * Setup rightPanel and a CardLayout of Panels in it
@@ -258,14 +267,11 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		contents.add(rightPanel, "cell 1 0, grow");	//$NON-NLS-1$
 		// Define cards of the CardLayout, each card-Panel with its own layout manager
 		JPanel cardLocn = new JPanel();
-		cardLocn.setLayout(new MigLayout("", "[]10[grow]", "[]10[]10[]10[grow]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		cardLocn.setLayout(new MigLayout("", "[]10[grow]", "[]10[]10[]10[grow]10[]10[][grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardLocn, "LOCATION");	//$NON-NLS-1$
 		JPanel cardMedia = new JPanel();
 		cardMedia.setLayout(new MigLayout("", "[]", "[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardMedia, "MEDIA");	//$NON-NLS-1$
-		JPanel cardNotepads = new JPanel();
-		cardNotepads.setLayout(new MigLayout("", "[grow]", "[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		rightPanel.add(cardNotepads, "NOTEPADS");	//$NON-NLS-1$
 
 /**********************************
  * Setup bottom row for Save/Close
@@ -279,20 +285,19 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		btn_SaveStyle.setEnabled(false);
 		contents.add(btn_SaveStyle, "cell 0 1 2, alignx right, gapx 20, tag ok");		//$NON-NLS-1$
 
-		JButton btn_SaveNameDate = new JButton(HG0508Msgs.Text_7);		// Save Name/Date Changes
-		btn_SaveNameDate.setFocusTraversalKeysEnabled(false);
-		btn_SaveNameDate.setEnabled(false);
-		contents.add(btn_SaveNameDate, "cell 0 1 2, alignx right, gapx 20, tag ok");		//$NON-NLS-1$
+		JButton btn_SaveLocnDateMemo = new JButton(HG0508Msgs.Text_7);		// Save Location/Date/Memo Changes
+		btn_SaveLocnDateMemo.setFocusTraversalKeysEnabled(false);
+		btn_SaveLocnDateMemo.setEnabled(false);
+		contents.add(btn_SaveLocnDateMemo, "cell 0 1 2, alignx right, gapx 20, tag ok");		//$NON-NLS-1$
 
 /****************************************************
-* cardLocn - load data into the Location card
-*****************************************************/
+ * cardLocn - load data into the Location card
+ *****************************************************/
 		JLabel lbl_Instruction = new JLabel(HG0508Msgs.Text_8);		// You may change Location Style and/or edit its Element parts and Dates.
 		cardLocn.add(lbl_Instruction, "cell 0 0 2 1");				//$NON-NLS-1$
 
 		JLabel lbl_Style = new JLabel(HG0508Msgs.Text_9);			// Stored Location Style:
 		cardLocn.add(lbl_Style, "cell 0 1, alignx right");			//$NON-NLS-1$
-
 		JLabel lbl_CurrStyle = new JLabel(nameData[0]);
 		cardLocn.add(lbl_CurrStyle, "cell 1 1");	//$NON-NLS-1$
 
@@ -301,9 +306,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 
 		DefaultComboBoxModel<String> comboNStyles =
 				new DefaultComboBoxModel<>(pointWhereWhenHandler.getAvailableStyles());
-
 		JComboBox<String> locnStyles = new JComboBox<>(comboNStyles);
-
 		// Load all styles available
 		locnStyles.setSelectedIndex(pointWhereWhenHandler.getDefaultIndex());
 		cardLocn.add(locnStyles, "cell 1 2");	//$NON-NLS-1$
@@ -330,7 +333,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 				    boolean result = super.editCellAt(row, col, e);
 				    final Component editor = getEditorComponent();
 				    if (e != null && e instanceof MouseEvent) {
-				        btn_SaveNameDate.setEnabled(true);	// turn on Save button as soon as edit starts
+				        btn_SaveLocnDateMemo.setEnabled(true);	// turn on Save button as soon as edit starts
 				        ((JTextField)editor).requestFocus();
 				        ((JTextField)editor).getCaret().setVisible(true);
 				    }
@@ -384,7 +387,6 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		tableLocation.getColumnModel().getColumn(0).setPreferredWidth(120);
 		tableLocation.getColumnModel().getColumn(1).setMinWidth(80);
 		tableLocation.getColumnModel().getColumn(1).setPreferredWidth(310);
-		tableLocation.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		tableLocation.setAutoCreateColumnsFromModel(false);	// preserve column setup
 		tableLocation.setIntercellSpacing(new Dimension(7,0));
 	// Set header format
@@ -406,30 +408,50 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		cardLocn.add(locnScrollPane, "cell 0 3 2, grow");	//$NON-NLS-1$
 
 		JLabel lbl_DateStart = new JLabel(HG0508Msgs.Text_12);	// Start Date:
-		cardLocn.add(lbl_DateStart, "cell 0 4, align right");	//$NON-NLS-1$
+		cardLocn.add(lbl_DateStart, "cell 0 4 2, alignx left");	//$NON-NLS-1$
 		dateStart = new JTextField(nameData[1]);
 		dateStart.setColumns(22);
 		dateStart.setEditable(false);		// ensure field cannot be edited from keyboard
 		dateStart.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
-		cardLocn.add(dateStart, "cell 1 4");	//$NON-NLS-1$
+		cardLocn.add(dateStart, "cell 0 4 2");	//$NON-NLS-1$
 		dateStart.setText(" " + pointWhereWhenHandler.formatDateSelector(startMainYear, startMainDetails,  //$NON-NLS-1$
 				startExtraYear, startExtraDetails).trim());
 
 		JLabel lbl_DateEnd = new JLabel(HG0508Msgs.Text_13);	// End Date:
-		cardLocn.add(lbl_DateEnd, "cell 0 5, align right");		//$NON-NLS-1$
+		cardLocn.add(lbl_DateEnd, "cell 0 4 2, gapx 20");		//$NON-NLS-1$
 		dateEnd = new JTextField(nameData[2]);
 		dateEnd.setColumns(22);
 		dateEnd.setEditable(false);		// ensure field cannot be edited from keyboard
 		dateEnd.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
-		cardLocn.add(dateEnd, "cell 1 5");	//$NON-NLS-1$
+		cardLocn.add(dateEnd, "cell 0 4 2");	//$NON-NLS-1$
 		dateEnd.setText(" " + pointWhereWhenHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$
 				endExtraYear, endExtraDetails).trim());
+
+		JLabel lbl_Memo = new JLabel(HG0508Msgs.Text_18);	// Memo:
+		cardLocn.add(lbl_Memo, "cell 0 5, alignx left");	//$NON-NLS-1$
+		memoTextArea = new JTextArea();
+		memoTextArea.append(memoText);
+		memoTextArea.setWrapStyleWord(true);
+		memoTextArea.setLineWrap(true);
+		memoTextArea.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
+		memoTextArea.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
+		((DefaultCaret)memoTextArea.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+		memoTextArea.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
+		memoTextArea.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
+		memoTextArea.setBorder(new JTable().getBorder());		// match Table border
+		JScrollPane memoTextAreaScroll = new JScrollPane(memoTextArea);
+		memoTextAreaScroll.setPreferredSize(new Dimension(400, 50));
+		memoTextAreaScroll.getViewport().setOpaque(false);
+		memoTextAreaScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
+		memoTextArea.setCaretPosition(0);	// set scrollbar to top
+		cardLocn.add(memoTextAreaScroll, "cell 0 6 2, alignx left, aligny top, growx");	//$NON-NLS-1$
 
 	// Setup Order of components for Focus Policy
         Vector<Component> focusOrder = new Vector<>();
         focusOrder.add(tableLocation);
         focusOrder.add(dateStart);
         focusOrder.add(dateEnd);
+        focusOrder.add(memoTextArea);
         contents.setFocusCycleRoot(true);
         contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
        	// Set initial focus of screen
@@ -572,14 +594,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 	 // Finally add the mediaScrolling pane to the mediaCard
 		cardMedia.add(mediaScrollPane);
 
-/*************************************************************
- * cardNotepads - put comment into the Notepads card
- *************************************************************/
-	// NOTE01 - real code to be done later
-		JLabel lbl_Notepads = new JLabel(HG0508Msgs.Text_18);	// Notepads to be able to be loaded and edited here eventually
-		cardNotepads.add(lbl_Notepads);
-
-    // Display the screen
+     // And display the screen
 		setVisible(true);
 		pack();
 
@@ -599,7 +614,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				// If NOT in Save mode, just Close the screen
-				if (!btn_SaveNameDate.isEnabled() & !btn_SaveStyle.isEnabled()) {
+				if (!btn_SaveLocnDateMemo.isEnabled() & !btn_SaveStyle.isEnabled()) {
 					if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0508ManageLocation");	//$NON-NLS-1$
 					closeActions();
 					dispose();
@@ -638,8 +653,8 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for SaveName/Date button
-		btn_SaveNameDate.addActionListener(new ActionListener() {
+		// Listener for SaveLocnDateMemo button
+		btn_SaveLocnDateMemo.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				new TableModelEvent(tableLocation.getModel());
@@ -650,20 +665,30 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 						locationChanged = false;
 					}
 				// Save Start/End Dates if they changed
-					if (startDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "START_HDATE_RPID", startHREDate); //$NON-NLS-1$
-					if (endDateOK) pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "END_HDATE_RPID", endHREDate);		 //$NON-NLS-1$
-
+					if (startDateChangeOK) {
+						pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "START_HDATE_RPID", startHREDate); //$NON-NLS-1$
+						startDateChangeOK = false;
+					}
+					if (endDateChangeOK) {
+						pointWhereWhenHandler.createLocationNameDates(true, locationTablePID, "END_HDATE_RPID", endHREDate);		 //$NON-NLS-1$
+						endDateChangeOK = false;
+					}
+				// Save memo if changed
+					if (memoChanged) {
+						pointWhereWhenHandler.updateLocationNameMemo(memoTextArea.getText());
+						memoChanged = false;
+					}
 				} catch (HBException hbe) {
 					if (HGlobal.writeLogs) {
-						HB0711Logging.logWrite("ERROR: in HG0508 saving date " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.logWrite("ERROR: in HG0508ManageLocation - saving data " + hbe.getMessage()); //$NON-NLS-1$
 						HB0711Logging.printStackTraceToFile(hbe);
 					}
-					JOptionPane.showMessageDialog(btn_SaveNameDate, HG0508Msgs.Text_23 +  hbe.getMessage(), 	// Date format error: \n
+					JOptionPane.showMessageDialog(btn_SaveLocnDateMemo, HG0508Msgs.Text_23 +  hbe.getMessage(), 	// Date format error: \n
 											HG0508Msgs.Text_24, JOptionPane.ERROR_MESSAGE);			// Date input checker
 				}
 			// Set reset location data
 				pointWhereWhenHandler.resetLocationSelect(pointOpenProject);
-				btn_SaveNameDate.setEnabled(false);
+				btn_SaveLocnDateMemo.setEnabled(false);
 			}
 		});
 
@@ -683,7 +708,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 						if (nameElementData != null) {
 							pointWhereWhenHandler.addToNameChangeList(row, nameElementData);
 							locationChanged = true;
-							btn_SaveNameDate.setEnabled(true);
+							btn_SaveLocnDateMemo.setEnabled(true);
 						}
                     }
 				}
@@ -695,7 +720,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		dateStart.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e){
-				btn_SaveNameDate.setEnabled(true);
+				btn_SaveLocnDateMemo.setEnabled(true);
           // Initiate edit date window and preload
             	if (editStartDate != null)
             		editStartDate.convertFromHDate(startMainYear, startMainDetails, startExtraYear, startExtraDetails);
@@ -717,7 +742,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		dateEnd.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				btn_SaveNameDate.setEnabled(true);
+				btn_SaveLocnDateMemo.setEnabled(true);
                 // Initiate edit date window and preload
             	if (editEndDate != null)
             		editEndDate.convertFromHDate(endMainYear, endMainDetails, endExtraYear, endExtraDetails);
@@ -734,6 +759,21 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
     			editEndDate.setVisible(true);
             }
         });
+
+		// Listener forMemo textarea
+		memoListen = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {updateFieldState();}
+            @Override
+            public void removeUpdate(DocumentEvent e) {updateFieldState();}
+            @Override
+            public void changedUpdate(DocumentEvent e) {updateFieldState();}
+            protected void updateFieldState() {
+            	memoChanged = true;
+            	btn_SaveLocnDateMemo.setEnabled(true);
+            }
+        };
+        memoTextArea.getDocument().addDocumentListener(memoListen);
 
 		// Listener for 'Show Hidden' button
 		btn_Hidden.addActionListener(new ActionListener() {
@@ -821,17 +861,9 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		    	  cl.show(rightPanel, "MEDIA");	//$NON-NLS-1$
 		      }
 		    };
-		 ActionListener actionRadioNote = new ActionListener() {
-		      @Override
-			public void actionPerformed(ActionEvent actionEvent) {
-		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
-		    	  cl.show(rightPanel, "NOTEPADS");	//$NON-NLS-1$
-		      }
-		    };
 		// Link the listeners above to the radio buttons
 		radio_Locn.addActionListener(actionRadioLocn );
 		radio_Media.addActionListener(actionRadioMedia);
-		radio_Note.addActionListener(actionRadioNote);
 
 	}	// End HG0508ManageLocation constructor
 
@@ -853,7 +885,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		startHREDate[2] = startExtraYear;
 		startHREDate[3] = startExtraDetails;
 		startHREDate[4] = startSortCode;
-		startDateOK = true;
+		startDateChangeOK = true;
 	}
 
 	@Override
@@ -874,7 +906,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 		endHREDate[2] = endExtraYear;
 		endHREDate[3] = endExtraDetails;
 		endHREDate[4] = endSortCode;
-		endDateOK = true;
+		endDateChangeOK = true;
 	}
 
 /**

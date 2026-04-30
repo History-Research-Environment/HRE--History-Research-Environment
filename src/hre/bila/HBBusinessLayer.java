@@ -49,7 +49,7 @@ import hre.dbla.HDDatabaseLayer;
 import hre.dbla.HDException;
 import hre.gui.HG0401HREMain;
 import hre.gui.HGlobal;
-import hre.tmgjava.HCException;
+//import hre.tmgjava.HCException;
 
 
 /**
@@ -87,7 +87,7 @@ public class HBBusinessLayer  {
 				  eventAssocTable, eventDefnTable, eventRoleTable;
 
 	public String sourceDataTable, citationTable, sourceTable, sourceDefnTable, sourceElmntTable,
-				repoTable, sourceLinkTable;
+				  repoTable, sourceLinkTable;
 
 	public String digtalExhibitTable, digtalNameTable;
 

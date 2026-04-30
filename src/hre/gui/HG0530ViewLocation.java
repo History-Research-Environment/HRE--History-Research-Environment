@@ -27,6 +27,7 @@ package hre.gui;
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  *			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-05 Log catch block and DEBUG actions (D Ferguson)
+ * v0.05.0033 2026-04-04 Remove Notepads sub-panel (D Ferguson)
  *************** ***********************************************************************************/
 
 import java.awt.Color;
@@ -90,7 +91,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for Location with collapsing panels for Location Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0032
+ * @version v0.05.0033
  * @since 2020-05-10
  */
 
@@ -275,10 +276,9 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
        	String personTitle = HG05303Msgs.Text_18 + " (" + pointViewpointHandler.getNumberPersons(locationVPindex) + ")";   // Associates (#) //$NON-NLS-1$ //$NON-NLS-2$
     	String imagesTitle = HG05303Msgs.Text_20 + " (" + pointViewpointHandler.getLocationNumberOfImages(locationVPindex) + ")"; 	// Images (0) //$NON-NLS-1$ //$NON-NLS-2$
     	String flagsTitle = HG05303Msgs.Text_21 + " (" + "0" + ")";  	// Flags (0)      //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-    	String notepadTitle = HG05303Msgs.Text_22 + " (" + "0" + ")";   // Notepads (0)   //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     	String[] titles = { "not used",  //$NON-NLS-1$
 				eventsTitle, superTitle, personTitle,
-				imagesTitle, flagsTitle, notepadTitle};
+				imagesTitle, flagsTitle};
         actPanels = new ActionLPanel[titles.length];
         for(int j = 0; j < actPanels.length; j++)
             actPanels[j] = new ActionLPanel(titles[j], this);
@@ -295,8 +295,7 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
         JPanel p3 = locnPeople();
         JPanel p4 = locnImages();
         JPanel p5 = locnFlags();
-        JPanel p6 = locnNotes();
-        dataPanels = new JPanel[] {p0, p1, p2, p3, p4, p5, p6};
+        dataPanels = new JPanel[] {p0, p1, p2, p3, p4, p5};
         p00.setSize(250, p0.getHeight());		// set pad-panel p00 for top of right splitpane
     }	// End makeDataPanels
 
@@ -784,16 +783,6 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
         return p5;
     }	// End locnFlags
 
-// Define panel for Notepads - to be fully created later
-    private JPanel locnNotes() {
-        JPanel p6 = new JPanel(new GridLayout(1, 1, 1, 1));
-        JTextArea text60 = new JTextArea(3, 14);
-        text60.setLineWrap(true);
-        text60.setText("Notepads not implemented yet");       //$NON-NLS-1$
-        p6.add(new JScrollPane(text60));
-        return p6;
-    }	// End locnNotes
-
 /**
  * makeLocationPanel - assembles the Action & Data Panels together into the total LocationPanel
  * @return	the assembled locationPanel (a JSplitPane with 2 MigLayouts)
@@ -814,8 +803,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
             dataPanels[j].setVisible(false);	// set dataPanels 1 - 3 hidden initially
         	}
 
-        // Setup the right Splitpane from padding panel p00 and dataPanels p4-6
-       	JPanel locRight = new JPanel(new MigLayout("insets 0, gap 1, fillx, hidemode 2", "[]", "[][][][][][][]"));  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        // Setup the right Splitpane from padding panel p00 and dataPanels p4-5
+       	JPanel locRight = new JPanel(new MigLayout("insets 0, gap 1, fillx, hidemode 2", "[]", "[][][][][][]"));  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         // First, add in padding panel p00
         locRight.add(p00, "cell 0 0, growx"); //$NON-NLS-1$
         // Then add panels 4 - 6 action & data panels
@@ -823,10 +812,8 @@ public class HG0530ViewLocation extends HG0451SuperIntFrame implements MouseList
     	locRight.add(dataPanels[4], "cell 0 2, growx"); //$NON-NLS-1$
         locRight.add(actPanels[5], "cell 0 3, growx"); //$NON-NLS-1$
      	locRight.add(dataPanels[5], "cell 0 4, growx"); //$NON-NLS-1$
-        locRight.add(actPanels[6], "cell 0 5, growx"); //$NON-NLS-1$
-     	locRight.add(dataPanels[6], "cell 0 6, growx"); //$NON-NLS-1$
         for(int j = 4; j < actPanels.length; j++) {
-            dataPanels[j].setVisible(false);	// set dataPanels 4 - 6 hidden initially
+            dataPanels[j].setVisible(false);	// set dataPanels 4 - 5 hidden initially
         	}
 
 		// Define splitpane locationPanel's parameters

@@ -21,6 +21,7 @@ package hre.bila;
  *  		  2023-02-04 - Added code for truncation of new style name (N. Tolleshaug)
  * v0.03.0030 2021-10-06 - Truncate Output name style copy if > 30 chars (D Ferguson)
  * v0.03.0032 2026-01-27 - Updated (N. Tolleshaug)
+ * v0.05.0033 2026-04-09 - Updated line 154 - pointLibraryResultSet.getNameStyles (N. Tolleshaug)
  **********************************************************************************************
  */
 import java.sql.ResultSet;
@@ -150,7 +151,7 @@ public class HBNameStyleManager extends HBBusinessLayer {
 	public void setNameStyleTable(String nameType) throws HBException {
 		int index = 0;
 		try {
-			nameStyleTable = pointLibraryResultSet.getNameStylesTable(nameStyleTableName,
+			nameStyleTable = pointLibraryResultSet.getNameStylesTable(nameStyles,
 																	  nameType,
 																	  dataBaseIndex);
 			nameStyleTable.last();

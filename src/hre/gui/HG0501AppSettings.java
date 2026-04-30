@@ -51,10 +51,20 @@ package hre.gui;
  * v0.04.0032 2025-09-21 Do pack() after font change as size may require it (D Ferguson)
  * 			  2025-12-31 Remove data2language display (but leave code) (D Ferguson)
  * 			  2026-01-03 Logged catch block actions (D Ferguson)
- ***********************************************************************************/
+ * v0.05.0033 2026-04-07 Add default media location in File Locations (D Ferguson)
+ * 			  2026-04-09 Add Relationships display to User Options (D Ferguson)
+ * 			  2026-04-12 Added activation of Relation Calcualtion (D Ferguson)
+ * 			  2026-04-14 NLS update (D Ferguson)
+ *			  2026-04-15 Update of PersonManager after FocusPerson update (N Tolleshaug)
+ *			  2026-04-20 Focus panel not visible if no project open (N Tolleshaug)
+ *			  2026-04-30 Add confirmation of Relate settings and Clear Relationships button (D Ferguson)
+ ************************************************************************************/
+
+// NOTE02: requires code to zero out relationships data in T401 and T126
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
@@ -112,8 +122,10 @@ import com.jtattoo.plaf.AbstractLookAndFeel;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HB0744UserAUX;
+import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBReportHandler;
 import hre.bila.HBToolHandler;
 import hre.nls.HG0501Msgs;
 import net.miginfocom.swing.MigLayout;
@@ -121,7 +133,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Application Settings
  * @author D Ferguson
- * @version v0.03.0032
+ * @version v0.05.0033
  * @since 2019-05-17
  */
 
@@ -131,9 +143,11 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 	private String screenID = "50100";  //$NON-NLS-1$
 	public HG0401HREMain mainPanel;		// needed for GUI language reset
 	private HBPersonHandler pointPersonHandler;
+	private HBReportHandler pointHBReportHandler;
 	private JPanel contents;
 
-	private boolean changedPathLocation, changedPathReports, changedPathBackups, changedPathExtBackups = false;
+	private boolean changedPathLocation, changedPathReports,
+					changedPathBackups, changedPathExtBackups, changedPathMedia = false;
 	private boolean tcpModeChanged = false;
 	private boolean dateFormatChanged = false;
 	private String dataLang = HGlobal.dataLanguage,
@@ -268,15 +282,18 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 	private JTable tableAccentRules;
 	private boolean isMovingRows = false;
 
+	private String focusPersonName = ""; //$NON-NLS-1$
+
 /**
  * Create the dialog
 ***/
-	public HG0501AppSettings(HBProjectOpenData openProject, HBToolHandler pointToolHand) {
+	public HG0501AppSettings(HBProjectOpenData pointOpenProject, HBToolHandler pointToolHand) {
 		// Setup references for HG0450
+		this.pointOpenProject = pointOpenProject;
 		windowID = screenID;
 		helpName = "settings"; //$NON-NLS-1$
 
-		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0501 App Settings");}	 //$NON-NLS-1$
+		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0501AppSettings");}	 //$NON-NLS-1$
 		setResizable(false);
 		setTitle(HG0501Msgs.Text_16);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -470,49 +487,120 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         JPanel panelOpt = new JPanel();
         tabPane.addTab(HG0501Msgs.Text_85, null, panelOpt);
         tabPane.setMnemonicAt(3, KeyEvent.VK_U);
-        panelOpt.setLayout(new MigLayout("insets 10", "20[]10[]20[]10[]", "15[]15[]15[]15[]15[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        panelOpt.setLayout(new MigLayout("insets 10", "20[]20[]", "15[]15[]15[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JCheckBox chkbx_Welcome = new JCheckBox(HG0501Msgs.Text_86);
+        // Setup a Display options sub-panel
+	    JPanel panelDisplayOpt = new JPanel();
+	    panelDisplayOpt.setBorder(UIManager.getBorder("TitledBorder.border"));      //$NON-NLS-1$
+	    panelDisplayOpt.setLayout(new MigLayout("insets 5", "[]", "[]5[]10[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelOpt.add(panelDisplayOpt, "cell 0 0, alignx left, aligny top");			//$NON-NLS-1$
+
+	    JLabel lbl_display = new JLabel(HG0501Msgs.Text_156);		// Display Options
+	    lbl_display.setHorizontalAlignment(SwingConstants.LEFT);
+	    panelDisplayOpt.add(lbl_display, "cell 0 0"); //$NON-NLS-1$
+
+		JCheckBox chkbx_Welcome = new JCheckBox(HG0501Msgs.Text_86);		// Show Welcome screen at HRE startup
 		chkbx_Welcome.setHorizontalTextPosition(SwingConstants.LEFT);
 		chkbx_Welcome.setHorizontalAlignment(SwingConstants.TRAILING);
 		chkbx_Welcome.setToolTipText(HG0501Msgs.Text_87);
-        panelOpt.add(chkbx_Welcome, "cell 0 0,alignx right"); //$NON-NLS-1$
+        panelDisplayOpt.add(chkbx_Welcome, "cell 0 1,alignx right"); //$NON-NLS-1$
 
-		JCheckBox chkbx_CancelMsgs = new JCheckBox(HG0501Msgs.Text_88);
+		JCheckBox chkbx_CancelMsgs = new JCheckBox(HG0501Msgs.Text_88);		// Show Cancel confirmation messages
 		chkbx_CancelMsgs.setToolTipText(HG0501Msgs.Text_89);
 		chkbx_CancelMsgs.setHorizontalTextPosition(SwingConstants.LEFT);
 		chkbx_CancelMsgs.setHorizontalAlignment(SwingConstants.TRAILING);
-		panelOpt.add(chkbx_CancelMsgs, "cell 0 1,alignx right"); //$NON-NLS-1$
-
-		JCheckBox chkbx_OpenLastProj = new JCheckBox(HG0501Msgs.Text_90);
-		chkbx_OpenLastProj.setToolTipText(HG0501Msgs.Text_91);
-		chkbx_OpenLastProj.setHorizontalTextPosition(SwingConstants.LEFT);
-		chkbx_OpenLastProj.setHorizontalAlignment(SwingConstants.TRAILING);
-		panelOpt.add(chkbx_OpenLastProj, "cell 0 2,alignx right"); //$NON-NLS-1$
-
-		JCheckBox chkbx_BkupActProj = new JCheckBox(HG0501Msgs.Text_92);
-		chkbx_BkupActProj.setToolTipText(HG0501Msgs.Text_93);
-		chkbx_BkupActProj.setHorizontalTextPosition(SwingConstants.LEFT);
-		chkbx_BkupActProj.setHorizontalAlignment(SwingConstants.TRAILING);
-		panelOpt.add(chkbx_BkupActProj, "cell 0 3,alignx right"); //$NON-NLS-1$
-
-		JCheckBox chkbx_EnablePlugins = new JCheckBox(HG0501Msgs.Text_145);
-		chkbx_EnablePlugins.setToolTipText(HG0501Msgs.Text_146);
-		chkbx_EnablePlugins.setHorizontalTextPosition(SwingConstants.LEFT);
-		chkbx_EnablePlugins.setHorizontalAlignment(SwingConstants.TRAILING);
-		panelOpt.add(chkbx_EnablePlugins, "cell 0 4,alignx right"); //$NON-NLS-1$
+		panelDisplayOpt.add(chkbx_CancelMsgs, "cell 0 2,alignx right"); //$NON-NLS-1$
 
 		JCheckBox chkbx_reloadPS = new JCheckBox(HG0501Msgs.Text_152);	// Always reload Person Selector
 		chkbx_reloadPS.setToolTipText(HG0501Msgs.Text_153);				// If set, Person Selector always reloads from database
 		chkbx_reloadPS.setHorizontalTextPosition(SwingConstants.LEFT);
 		chkbx_reloadPS.setHorizontalAlignment(SwingConstants.TRAILING);
-		panelOpt.add(chkbx_reloadPS, "cell 0 5,alignx right"); //$NON-NLS-1$
+		panelDisplayOpt.add(chkbx_reloadPS, "cell 0 3,alignx right"); //$NON-NLS-1$
 
 		JCheckBox chkbx_promptMarried = new JCheckBox(HG0501Msgs.Text_154);	// Prompt for Married Name
 		chkbx_promptMarried.setToolTipText(HG0501Msgs.Text_155);			// If set, Prompt for a Married Name when saving a Marriage event
 		chkbx_promptMarried.setHorizontalTextPosition(SwingConstants.LEFT);
 		chkbx_promptMarried.setHorizontalAlignment(SwingConstants.TRAILING);
-		panelOpt.add(chkbx_promptMarried, "cell 0 6,alignx right"); //$NON-NLS-1$
+		panelDisplayOpt.add(chkbx_promptMarried, "cell 0 4,alignx right"); //$NON-NLS-1$
+
+        // Setup a Projects options sub-panel
+	    JPanel panelProjectOpt = new JPanel();
+	    panelProjectOpt.setBorder(UIManager.getBorder("TitledBorder.border"));      //$NON-NLS-1$
+	    panelProjectOpt.setLayout(new MigLayout("insets 5", "[]", "[]5[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelOpt.add(panelProjectOpt, "cell 1 0, alignx left, aligny top, growy");	 //$NON-NLS-1$
+
+	    JLabel lbl_project = new JLabel(HG0501Msgs.Text_157);		// Project Options
+	    lbl_project.setHorizontalAlignment(SwingConstants.LEFT);
+	    panelProjectOpt.add(lbl_project, "cell 0 0,alignx left"); //$NON-NLS-1$
+
+		JCheckBox chkbx_OpenLastProj = new JCheckBox(HG0501Msgs.Text_90);	// Open last closed Project at HRE start
+		chkbx_OpenLastProj.setToolTipText(HG0501Msgs.Text_91);
+		chkbx_OpenLastProj.setHorizontalTextPosition(SwingConstants.LEFT);
+		chkbx_OpenLastProj.setHorizontalAlignment(SwingConstants.TRAILING);
+		panelProjectOpt.add(chkbx_OpenLastProj, "cell 0 1,alignx right"); //$NON-NLS-1$
+
+		JCheckBox chkbx_BkupActProj = new JCheckBox(HG0501Msgs.Text_92);		// Backup Project on Close
+		chkbx_BkupActProj.setToolTipText(HG0501Msgs.Text_93);
+		chkbx_BkupActProj.setHorizontalTextPosition(SwingConstants.LEFT);
+		chkbx_BkupActProj.setHorizontalAlignment(SwingConstants.TRAILING);
+		panelProjectOpt.add(chkbx_BkupActProj, "cell 0 2,alignx right"); //$NON-NLS-1$
+
+		JCheckBox chkbx_EnablePlugins = new JCheckBox(HG0501Msgs.Text_145);		// Enable Plugin Processing
+		chkbx_EnablePlugins.setToolTipText(HG0501Msgs.Text_146);
+		chkbx_EnablePlugins.setHorizontalTextPosition(SwingConstants.LEFT);
+		chkbx_EnablePlugins.setHorizontalAlignment(SwingConstants.TRAILING);
+		panelProjectOpt.add(chkbx_EnablePlugins, "cell 0 3,alignx right"); //$NON-NLS-1$
+
+		// Setup a Relationship sub-panel
+	    JPanel panelRelateOpt = new JPanel();
+	    panelRelateOpt.setBorder(UIManager.getBorder("TitledBorder.border"));      //$NON-NLS-1$
+	    panelRelateOpt.setLayout(new MigLayout("insets 5, hidemode 3", "[]20[]", "[]5[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		panelOpt.add(panelRelateOpt, "cell 0 1 2, alignx left, aligny top");		//$NON-NLS-1$
+
+       JLabel lbl_Relate = new JLabel(HG0501Msgs.Text_158);		// Focus Person for Relationships:
+        lbl_Relate.setHorizontalAlignment(SwingConstants.LEFT);
+        panelRelateOpt.add(lbl_Relate, "cell 0 0,alignx left"); //$NON-NLS-1$
+
+        JButton btn_RelatePerson =new JButton(HG0501Msgs.Text_159);		// Select Person
+        panelRelateOpt.add(btn_RelatePerson, "cell 1 0,alignx center"); //$NON-NLS-1$
+
+        JButton btn_ClearRelate =new JButton("Clear Relationships");		// Clear Relationships
+        btn_ClearRelate.setVisible(false);
+        panelRelateOpt.add(btn_ClearRelate, "cell 1 0, gapx 20"); //$NON-NLS-1$
+
+        JTextField txt_Relate = new JTextField();
+        txt_Relate.setColumns(50);
+        txt_Relate.setEditable(false);
+        txt_Relate.setText("");		//$NON-NLS-1$
+        panelRelateOpt.add(txt_Relate, "cell 0 1 2"); //$NON-NLS-1$
+
+     // Set Relationship sub-panel validity - do not show if no project open
+        if (HGlobal.numOpenProjects == 0 || pointOpenProject == null) panelRelateOpt.setVisible(false);
+        else {
+        	panelRelateOpt.setVisible(true);
+
+        // now check if a focusPerson is set - only display a name if it exists
+        	pointPersonHandler = pointOpenProject.getPersonHandler();
+        	long focusPersonPID = pointOpenProject.getFocusPersonPID();
+
+			try {
+				focusPersonName = pointPersonHandler.getPersonName(focusPersonPID);
+			} catch (HBException e) {
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0501 loading focusPerson " + e.getMessage());	//$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(e);
+			}
+		}
+
+		// Name may be ' No name found' or ' No name pointer' if focusPerson not set, so display nothing
+        	if (focusPersonName.contains("No name")) txt_Relate.setVisible(false);	//$NON-NLS-1$
+        	else {
+        		txt_Relate.setText(focusPersonName);
+        		txt_Relate.setVisible(true);
+        		btn_RelatePerson.setText("Reset Relationships");	// Reset Relationships
+        		btn_ClearRelate.setVisible(true);
+        	}
+        }
 
      // *********** Define Accent Colour settings panel ***********
         JPanel panelAccent = new JPanel();
@@ -693,7 +781,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         JPanel panelFiles = new JPanel();
         tabPane.addTab(HG0501Msgs.Text_114, null, panelFiles);
         tabPane.setMnemonicAt(5, KeyEvent.VK_F);
-        panelFiles.setLayout(new MigLayout("insets 10", "20[]10[]", "15[]15[]15[]15[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        panelFiles.setLayout(new MigLayout("insets 10", "20[]10[]", "15[]15[]15[]15[]15[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
         JLabel lbl_HREloc = new JLabel(HG0501Msgs.Text_115);
         lbl_HREloc.setToolTipText(HG0501Msgs.Text_116);
@@ -711,6 +799,10 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         lbl_HREbackExt.setToolTipText(HG0501Msgs.Text_122);
 		panelFiles.add(lbl_HREbackExt, "cell 0 3, alignx right"); //$NON-NLS-1$
 
+        JLabel lbl_HREmedia = new JLabel(HG0501Msgs.Text_160);	// For media files:
+        lbl_HREmedia.setToolTipText(HG0501Msgs.Text_161);
+		panelFiles.add(lbl_HREmedia, "cell 0 4, alignx right"); //$NON-NLS-1$
+
 		JTextField txt_HREloc = new JTextField(HGlobal.pathHRElocation);
 		txt_HREloc.setColumns(50);
 		panelFiles.add(txt_HREloc, "cell 1 0");		 //$NON-NLS-1$
@@ -726,6 +818,10 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		JTextField txt_HREbackExt = new JTextField(HGlobal.pathExtbackups);
 		txt_HREbackExt.setColumns(50);
 		panelFiles.add(txt_HREbackExt, "cell 1 3"); //$NON-NLS-1$
+
+		JTextField txt_HREmedia = new JTextField(HGlobal.pathMedia);
+		txt_HREmedia.setColumns(50);
+		panelFiles.add(txt_HREmedia, "cell 1 4"); //$NON-NLS-1$
 
       // *********** Define Debug settings panel ***********
         JPanel panelDebug = new JPanel();
@@ -1015,6 +1111,64 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent e) {
 		        if (chkbx_promptMarried.isSelected()) {HGlobal.promptMarrName = true; }
 		        	else {HGlobal.promptMarrName = false;}
+		      }
+		    });
+
+		// Listener for 'Select Person' button
+		btn_RelatePerson.addActionListener(new ActionListener() {
+		     @Override
+			public void actionPerformed(ActionEvent e) {
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				HG0507SelectPerson personSelectScreen;
+				try {
+					pointHBReportHandler = pointOpenProject.getReportHandler();
+					pointPersonHandler = pointOpenProject.getPersonHandler();
+				// Display SelectPerson screen to select new focus person
+					personSelectScreen = pointPersonHandler.activateSelectFocusPerson(pointOpenProject);
+					personSelectScreen.setModalityType(ModalityType.TOOLKIT_MODAL);
+					Point xyShow = panelOpt.getLocationOnScreen();
+					personSelectScreen.setLocation(xyShow.x+100, xyShow.y);
+					personSelectScreen.setVisible(true);
+				// Put selection into Relationships panel and display it
+					txt_Relate.setText(pointPersonHandler.getPersonName(pointOpenProject.getFocusPersonPID()));
+					txt_Relate.setVisible(true);
+					revalidate();
+				// Re-calculate all relationships based on this new focusPerson
+					pointHBReportHandler.activateRelationCalc(pointOpenProject.getFocusPersonPID());
+				// Update ResultSet T401
+					pointOpenProject.reloadT401Persons();
+					pointPersonHandler.resetPersonManager();
+				} catch (HBException hbe) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0501 relationship calc " + hbe.getMessage());	//$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
+				}
+			     setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+	        	JOptionPane.showMessageDialog(btn_RelatePerson,
+	        				"Relationships have been created",
+							"Create Relationships",
+							JOptionPane.INFORMATION_MESSAGE);
+	        	btn_ClearRelate.setVisible(true);
+	        	btn_RelatePerson.setText("Reset Relationships");	// Reset Relationships
+		      }
+		    });
+
+		// Listener for 'Clear Relate' button
+		btn_ClearRelate.addActionListener(new ActionListener() {
+		     @Override
+			public void actionPerformed(ActionEvent e) {
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+			//NOTE02 add code hehere to run throughT401 and zero all RELATE fields
+			//  and also remove focus person PID from T126
+
+			     setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+			     // Reset Relate panel buttons
+			     btn_ClearRelate.setVisible(false);
+			     btn_RelatePerson.setText(HG0501Msgs.Text_159);		// Select Person
+			     txt_Relate.setVisible(false);
 		      }
 		    });
 
@@ -1377,6 +1531,25 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		};
         txt_HREbackExt.getDocument().addDocumentListener(extListen);
 
+		// Listener for entering data in HRE media location field
+		DocumentListener mediaListen = new DocumentListener() {
+		    @Override
+		    public void insertUpdate(DocumentEvent e) { updateFieldState(); }
+		    public void removeUpdate(DocumentEvent e) { updateFieldState(); }
+		    public void changedUpdate(DocumentEvent e) { updateFieldState(); }
+		    protected void updateFieldState() {
+		         String newHREmedia = txt_HREmedia.getText().trim();    // remove any leading/trailing blanks
+            	 if (isValidPath(newHREmedia) ) {
+            		 	HGlobal.pathMedia = newHREmedia;
+            		 	changedPathMedia = true;
+            		 	txt_HREmedia.setForeground(UIManager.getColor("TextField.foreground")); //$NON-NLS-1$
+            		 	txt_HREmedia.setBackground(UIManager.getColor("TextField.background")); //$NON-NLS-1$
+            			}
+            	 else txt_HREmedia.setBackground(Color.YELLOW);
+		    }
+		};
+        txt_HREmedia.getDocument().addDocumentListener(mediaListen);
+
 	 // *********** Server on/off button listeners ***********
 		serverOn.addActionListener(new ActionListener() {
 			@Override
@@ -1444,6 +1617,15 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		    					}
 			    	}
 				}
+				if (changedPathMedia) {
+			    	if (!doesFolderExist(HGlobal.pathMedia)) {
+			    		tabPane.setSelectedIndex(5);
+		    			if (!confirmNewFolder(HGlobal.pathMedia)) {
+		    					txt_HREmedia.setBackground(Color.YELLOW);
+		    					return;
+		    					}
+			    	}
+				}
 
 			// Set data/report language codes for GUI, data, data2, rept
 		    	String [] usedLangCodes = {HGlobal.nativeLanguage, dataLang, data2Lang, reptLang};
@@ -1453,25 +1635,25 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 
 		        if (dataLangChanged) {
 		        // Set boolean reload personSelect data
-		        	if (openProject != null) openProject.setReloadPersonSelectData(true);
+		        	if (pointOpenProject != null) pointOpenProject.setReloadPersonSelectData(true);
 		        	dataLangChanged = true;
-		        	if (openProject != null) openProject.setSelectedLanguage(usedLangCodes);
+		        	if (pointOpenProject != null) pointOpenProject.setSelectedLanguage(usedLangCodes);
 		        }
 
 		        if (data2LangChanged) {
 		        	data2LangChanged = true;
-		        	if (openProject != null) openProject.setSelectedLanguage(usedLangCodes);
+		        	if (pointOpenProject != null) pointOpenProject.setSelectedLanguage(usedLangCodes);
 		        }
 		        if (reptLangChanged) {
 		        	reptLangChanged= true;
-		        	if (openProject != null) openProject.setSelectedLanguage(usedLangCodes);
+		        	if (pointOpenProject != null) pointOpenProject.setSelectedLanguage(usedLangCodes);
 		        }
 
 		   // If Date format changed
 		        if (dateFormatChanged) {
 					HGlobal.dateFormat = (String) combo_DateFormat.getSelectedItem(); // change global setting to selected format
-					if (openProject != null) {
-						pointPersonHandler = openProject.getPersonHandler();
+					if (pointOpenProject != null) {
+						pointPersonHandler = pointOpenProject.getPersonHandler();
 						pointPersonHandler.newDateFormatSelected();
 						pointPersonHandler.resetPersonManager();
 						//pointPersonHandler.resetPersonSelect();
@@ -1502,7 +1684,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 
 		     // Writelogs
 		        if (HGlobal.writeLogs)
-		        	HB0711Logging.logWrite("Action: saving changes and exiting HG0501 App Settings"); //$NON-NLS-1$
+		        	HB0711Logging.logWrite("Action: saving changes and exiting HG0501AppSettings"); //$NON-NLS-1$
 
 		     // Write out all of UserAUX file and exit
 				HB0744UserAUX.writeUserAUXfile();
@@ -1519,7 +1701,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 					if (JOptionPane.showConfirmDialog(btn_Cancel, HG0501Msgs.Text_14, HG0501Msgs.Text_1,
 						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 							if (HGlobal.writeLogs)
-								HB0711Logging.logWrite("Action: cancelling changes in HG0501 App Settings"); //$NON-NLS-1$
+								HB0711Logging.logWrite("Action: cancelling changes in HG0501Ap Settings"); //$NON-NLS-1$
 							HB0744UserAUX.readUserAUXfile("OPT");	// yes option - reload (Options only) to wipe out changes and return to main menu //$NON-NLS-1$
 							// User may have cancelled out of changing LAF/theme/font, so
 							// we need to set the current GUI back to HGlobal values
@@ -1537,7 +1719,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 							 if (reminderDisplay != null) reminderDisplay.dispose();
 							dispose();										 }
 					} else {
-						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling changes in HG0501 App Settings"); //$NON-NLS-1$
+						if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling changes in HG0501AppSettings"); //$NON-NLS-1$
 							HB0744UserAUX.readUserAUXfile("OPT"); //$NON-NLS-1$
 				// close reminder display
 					  if (reminderDisplay != null) reminderDisplay.dispose();

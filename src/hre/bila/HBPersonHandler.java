@@ -124,6 +124,9 @@ package hre.bila;
   *            2026-01-27 - line 234 - pointEventRoleManager =
   *            				pointOpenProject.getEventRoleManager(); (N.Tolleshaug)
   * v0.05.0033 2026-02-20 - Provide API to get person's relationship data (D Ferguson)
+  * 		   2026-04-07 - Added handling of focus person name (N. Tolleshaug)
+  * 		   2026-04-09 - Added activateSelectFocusPerson() - (N. Tolleshaug)
+  * 		   2026-04-09 - Added getPersonName(long selectedPersonPID) - (N. Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -265,6 +268,10 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public void enableUpdateMonitor(boolean state) {
 		updateMonitor = state;
 	}
+	
+	public PersonSelectData getPersonSeletData(long personPID) {
+		return  personDataIndex.get(personPID);
+	}
 
 /**
  * API Methods for Person Manager
@@ -272,6 +279,10 @@ public class HBPersonHandler extends HBBusinessLayer {
  */
 	public String getManagedPersonName() {
 		return pointManagePersonData.getPersonName();
+	}
+	
+	public String getFocusPersonName() {
+		return pointManagePersonData.getFocusPersonName();
 	}
 
 	public Object[] getParentTableData(int indexInTable) {
@@ -394,7 +405,11 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public boolean getPrimaryName() {
 		return pointManagePersonNameData.getPrimaryName();
 	}
-
+/*	
+	public String getFocusPersonname() {
+		return focusPersonName;
+	}
+*/
 	public void setNameEventType(int nameEventType) {
 		pointManagePersonNameData.setNameEventType(nameEventType);
 	}
@@ -870,9 +885,28 @@ public class HBPersonHandler extends HBBusinessLayer {
 			} catch (HBException hbe) {
 				if (HGlobal.DEBUG)
 					System.out.println("HBPersonHandler - finalActionT302: " + hbe.getMessage());
-
 					hbe.printStackTrace();
 			}
+	}
+
+/**
+ * public String getPersonName(long selectedPersonPID)
+ * @param selectedPersonPID
+ * @return
+ * @throws HBException
+ */
+	public String getPersonName(long selectedPersonPID) throws HBException {
+		HBNameStyleManager pointPersonNameStyleData;
+		String personName; 
+		long nameStyleRPID;
+		String[] selectedNameStyle;
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		pointPersonNameStyleData =  new HBNameStyleManager(pointDBlayer, dataBaseIndex, "Person ");
+		pointPersonNameStyleData.setNameStyleTable("N");
+		nameStyleRPID = pointPersonNameStyleData.getNameStylePID(pointPersonNameStyleData.getDefaultStyleIndex());
+		selectedNameStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStyleRPID, "N", dataBaseIndex);
+		personName = pointLibraryResultSet.exstractPersonName(selectedPersonPID, selectedNameStyle, dataBaseIndex);
+		return personName;
 	}
 
 /**
@@ -1715,6 +1749,25 @@ public class HBPersonHandler extends HBBusinessLayer {
 		}
 		return null;
 	}
+	
+/**
+ * activateAssociateAdd(HBProjectOpenData pointOpenProject)
+ * @param pointOpenProject
+ * @return HG0507PersonSelectMin
+ * @throws HBException
+ */
+	public HG0507SelectPerson activateSelectFocusPerson(HBProjectOpenData pointOpenProject) throws HBException {
+		HG0507SelectPerson pointSelectPerson = null;
+		try {	
+			pointSelectPerson = new HG0507SelectPerson(this, pointOpenProject,false);
+			pointSelectPerson.additionalPanel = false;
+			return pointSelectPerson;
+		} catch (HBException hbe) {
+			System.out.println("HBPersonHandler - select focus: " + hbe.getMessage());
+			hbe.printStackTrace();
+			throw new HBException(" Associate add error!" + hbe.getMessage());
+		}
+	}	
 
 /**
  * activateAssociateAdd(HBProjectOpenData pointOpenProject)
@@ -2516,7 +2569,7 @@ class ManagePersonData extends HBBusinessLayer {
 	long nameStyleRPID;
 	long selectedPersonPID; // Stores the selected person PID
 
-	String personName = " Person name";
+	String personName = " Person name", focusPersonName = "Focus oerson";
 	int dataBaseIndex = 0;
 	int nrRows = 0, row = 0, nameRows = 0, eventRows = 0, partnerRows = 0,
 		associateRows = 0, children = 0, marriages = 0;
@@ -2643,6 +2696,10 @@ class ManagePersonData extends HBBusinessLayer {
 	public String getPersonName() {
 		return personName;
 	}
+	
+	public String getFocusPersonName() {
+		return focusPersonName;
+	}
 
 	public String getPersonReference() {
 		return reference;
@@ -2719,7 +2776,7 @@ class ManagePersonData extends HBBusinessLayer {
 		String 	fatherName = "",
 				motherName = "";
 		String selectString = null;
-		long personNamePID;
+		long personNamePID, focusPersonPID;
 		long birthFatherPID, birthMotherPID;
 		ResultSet personSelected;
 		setUpDateTranslation();
@@ -2729,12 +2786,14 @@ class ManagePersonData extends HBBusinessLayer {
 			personSelected = requestTableData(selectString, dataBaseIndex);
 			personSelected.first();
 			personNamePID = personSelected.getLong(bestNameField);
+			focusPersonPID = pointOpenProject.getFocusPersonPID();
 			reference = personSelected.getString("REFERENCE");
 
 		// Find style name and start and end data
 			styleNameAndDates = updateStyleAndDates(personNamePID);
 			personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStyleRPID, "N", dataBaseIndex);
 			personName = pointLibraryResultSet.exstractPersonName(selectPersonPID, personStyle, dataBaseIndex);
+			focusPersonName = pointLibraryResultSet.exstractPersonName(focusPersonPID, personStyle, dataBaseIndex);
 
 	   // Person
 			birthFatherPID = personSelected.getLong(personFatherField);

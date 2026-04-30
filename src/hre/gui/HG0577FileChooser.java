@@ -2,10 +2,11 @@ package hre.gui;
 /****************************************************************************
  * File Chooser - Specification 05.77 GUI_FileChooser 2019-04-13
  * v0.00.0007 2019-04-13 initial code (D Ferguson)
- * v0.00.0016 2019-12-14 increased with of window (N.Tolleshaug)
- * v0.00.0016 2019-12-20 implemented alternative constructor (N.Tolleshaug)
+ * v0.00.0016 2019-12-14 increased width of window (N.Tolleshaug)
+ * 			  2019-12-20 implemented alternative constructor (N.Tolleshaug)
  * v0.01.0025 2021-01-29 fix file separator issue (D Ferguson)
- * v0.03.0031 2024-10-01 organize imports (D Ferguson)
+ * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
+ * v0.05.0033 2026-04-10 If no startFolder defined, default to Documents (D Ferguson)
  *****************************************************************************/
 
 import java.awt.BorderLayout;
@@ -32,7 +33,7 @@ import hre.nls.HG0577Msgs;
 /**
  * File Chooser
  * @author D Ferguson
- * @version v0.01.0025
+ * @version v0.05.0033
  * @since 2019-04-13
  */
 
@@ -57,7 +58,7 @@ public class HG0577FileChooser extends JDialog {
  * @param fileType		the file filter literal
  * @param fileExt		the file filter extension (e.g .db, .hrep, .zip, etc)
  * @param fileName		if a default required (e.g, for New Project)
- * @param folderStart	folder to start search in (default to User Home directory)
+ * @param folderStart	folder to start search in (default to Documents directory)
  * @param mode			1=FILES_ONLY, 2=DIRECTORIES_ONLY
  */
 	public HG0577FileChooser (String dialogType, String fileType, String fileExt, String fileName, String folderStart, int mode) {
@@ -76,9 +77,10 @@ public class HG0577FileChooser extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 
 		// File chooser construct
-		// Set start folder, if passed in parameter-5, else default to user's home directory, plus /hre/
-		if (folderStart == null) { userDir = System.getProperty("user.home") + File.separator + "hre" + File.separator; } //$NON-NLS-1$ //$NON-NLS-2$
-			else { userDir = folderStart; }
+		// Set start folder, if passed in parameter-5, else default to user's home directory, plus /Documents/
+		if (folderStart == null || folderStart == "") 				//$NON-NLS-1$
+		    userDir = System.getProperty("user.home") + File.separator + "Documents" + File.separator; //$NON-NLS-1$ //$NON-NLS-2$
+		else { userDir = folderStart; }
 		JFileChooser fileChooser = new JFileChooser(userDir);
 		fileChooser.putClientProperty("FileChooser.useShellFolder", Boolean.FALSE);   //$NON-NLS-1$
 		// Set default filename, if passed as parameter-4
@@ -145,7 +147,7 @@ public class HG0577FileChooser extends JDialog {
 		addWindowListener(new WindowAdapter() {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
-		    	if (fileExt == "zip") {                            // special case of call from HG0406 //$NON-NLS-1$
+		    	if (fileExt == "zip") {                // special case of call from HG0406 //$NON-NLS-1$
 			    	   HGlobal.fromExtFile = "";       //$NON-NLS-1$
 			    	   HGlobal.fromExtFolder = "";    //$NON-NLS-1$
 			    	}

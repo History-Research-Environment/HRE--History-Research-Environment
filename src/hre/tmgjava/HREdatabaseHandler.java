@@ -215,6 +215,7 @@ public class HREdatabaseHandler {
     	try {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
+	    	System.out.println(" alterColumnInBase SQL: " + sqlRequest);
 		} catch(SQLException exc) {
 			if (HGlobal.writeLogs)
 				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
@@ -233,6 +234,7 @@ public class HREdatabaseHandler {
     	try {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);
+	    	System.out.println(" createTableInBase SQL: " + sqlRequest);
 		} catch(SQLException exc) {
 			if (HGlobal.writeLogs)
 				HB0711Logging.logWrite("ERROR: in HREdatabaseHandler Database request " + exc.getMessage());
@@ -262,6 +264,7 @@ public class HREdatabaseHandler {
 		if (condition.length() > 0)
 		sqlRequest = sqlCommand + " " + tableName + " " + condition;
 		else sqlRequest = sqlCommand + " " + tableName;
+		System.out.println(" updateTableInBase SQL: " + sqlRequest);
     	try {
 			Statement stmt = dataH2conn.createStatement();
 	    	stmt.executeUpdate(sqlRequest);

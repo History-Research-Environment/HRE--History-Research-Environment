@@ -49,6 +49,7 @@ package hre.tmgjava;
  * 			   2026-03-19 - Error handling of Issue 32.52 (N. Tolleshaug)
  * 			   2026-03-21 - Handle TMG escape char when extracting Element names (D Ferguson)
  * 			   2026-03-23 - Handle TMG escape char when converting Element name to number (D Ferguson)
+ * 			   2026-04-23 - Fix 33.05 identify preloaded [REPOSITORY items correctly (D Ferguson)
  **********************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -354,8 +355,12 @@ public class TMGpass_Source {
 					}
 					// ignore blank names like the UK sample one
 					if (elementName.isEmpty()) ignore= true;
-					// Ignore Names starting with '[REPOSITORY' as these are preloaded special cases
-					if (elementName.startsWith("[REPOSITORY")) ignore= true;
+					// Ignore the following '[REPOSITORY' names as these are preloaded special cases
+					if (elementName.startsWith("[REPOSITORY MEMO")) ignore= true;
+					if (elementName.equals("[REPOSITORY]")) ignore= true;
+					if (elementName.equals("[REPOSITORY INFO]")) ignore= true;
+					if (elementName.equals("[REPOSITORY ADDRESS]")) ignore= true;
+					if (elementName.equals("[REPOSITORY REFERENCE]")) ignore= true;
 					// If Group number > 27 check if Name is known in Base List.
 					// If so, ignore it, as is a known special case.
 					// If its not knowm, create a T738, but number it as a TMG-added 'special'.
@@ -1301,20 +1306,20 @@ public class TMGpass_Source {
  */
 	private String getT738Number(String elementName, String elmntLocation) throws HCException  {
 		// Get the T738 element number of the parameter elementName.
-		String correctedName = elementName;
 		String sourceElementNumber = "";
-		if (numberIndexT738.containsKey(correctedName))
-			sourceElementNumber = numberIndexT738.get(correctedName.trim());
+		if (numberIndexT738.containsKey(elementName.trim()))
+			sourceElementNumber = numberIndexT738.get(elementName.trim());
 		else //if (TMGglobal.TRACE)
-			System.out.println(" ERROR: TMGpassSource in getT738Number - not found key: " + correctedName + " in " + elmntLocation);
+			System.out.println(" ERROR: TMGpassSource in getT738Number - not found key in numberIndexT738: "
+						+ elementName + " in " + elmntLocation);
 	// Test for valid element number returned
 		if (sourceElementNumber.length() < 5) {
 			if (TMGglobal.TRACE)
-				System.out.println(" ERROR: in TMGpassSource getT738Number illegal Element name: "
-										+ elementName + " in " + elmntLocation);
+				System.out.println(" ERROR: in TMGpassSource getT738Number illegal mumber for element name: "
+						+ elementName + " in " + elmntLocation);
 			if (HGlobal.writeLogs)
-				HB0711Logging.logWrite("ERROR: in TMGpassSource getT738Number illegal Element name: " + elementName
-													+ " in " + elmntLocation);
+				HB0711Logging.logWrite("ERROR: in TMGpassSource getT738Number illegal mumber for element name: "
+						+ elementName + " in " + elmntLocation);
 		}
 		return sourceElementNumber;
 	}

@@ -24,7 +24,15 @@ package hre.gui;
  * 			  2024-11-04 Fix +/- buttons failing if screen maximised (D Ferguson)
  * 			  2024-12-01 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-05 Log catch block and DEBUG actions (D Ferguson)
+ * v0.05.0033 2026-04-04 Remove Notepads sub-panel (D Ferguson)
  ***************************************************************************************************/
+
+/*************************************************************************
+ * Removal of Notepads from HG0530s made following calls redundant:
+ * 				pointViewpointHandler.gettextImageList(eventVPindex)
+ * 				pointViewpointHandler.getEventNumberOfTexts(eventVPindex)
+ * and NLS text HG05306Msgs.Text_22, HG05303Msgs.Text_22, HG05300Msgs.Text_27
+ *************************************************************************/
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -84,7 +92,7 @@ import net.miginfocom.swing.MigLayout;
  * Viewpoint for Events with collapsing panels for Event Viewpoint structure
  * @author originally bbrita on Sun Java forums c.2006; modified extensively since
  * @author for this version D Ferguson
- * @version v0.03.0032
+ * @version v0.05.0033
  * @since 2020-05-29
  */
 
@@ -259,9 +267,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
     			+ " (" + pointViewpointHandler.getEventNumberOfImages(eventVPindex) + ")"; 	//$NON-NLS-1$ //$NON-NLS-2$
     	String flagsTitle = HG05306Msgs.Text_21
     			+ " (" + "0" + ")"; // Flags (0)      //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-    	String notepadTitle = HG05306Msgs.Text_22
-    			+ " (" + pointViewpointHandler.getEventNumberOfTexts(eventVPindex) + ")";   //$NON-NLS-1$ //$NON-NLS-2$
-    	String[] titles = { "not used", associateTitle, imagesTitle, flagsTitle, notepadTitle}; //$NON-NLS-1$
+    	String[] titles = { "not used", associateTitle, imagesTitle, flagsTitle}; //$NON-NLS-1$
 
         actPanels = new ActionEPanel[titles.length];
         for(int j = 0; j < actPanels.length; j++)
@@ -277,8 +283,7 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         JPanel p1 = eventAssocs();
         JPanel p2 = eventImages();
         JPanel p3 = eventFlags();
-        JPanel p4 = eventNotes();
-        dataPanels = new JPanel[] {p0, p1, p2, p3, p4};
+        dataPanels = new JPanel[] {p0, p1, p2, p3};
     }	// End makeDataPanels
 
 // Define panel for the initial Event data display
@@ -545,20 +550,6 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         return p3;
     }	// End eventFlags
 
-// Define panel P4 for Notepads
-    private JPanel eventNotes() {
-    	JPanel p4 = new JPanel(new GridLayout(1, 1, 1, 1));
-        JTextArea text4 = new JTextArea(3, 10);
-        text4.setLineWrap(true);
-        ArrayList<String> exhibitTextList = pointViewpointHandler.gettextImageList(eventVPindex);
-        if (exhibitTextList.size() > 0)
-        	for (int i = 0; i < exhibitTextList.size(); i++)
-        	text4.setText(exhibitTextList.get(i) + "\n");	//$NON-NLS-1$
-        else text4.setText("Notepads not yet implemented"); //$NON-NLS-1$
-        p4.add(new JScrollPane(text4));
-        return p4;
-    }	// End eventNotes
-
 /**
  * makeEventPanel - assembles the Action & Data Panels together into the total EventPanel
  * @return	the assembled eventPanel (a JSplitPane with 2 MigLayouts)
@@ -573,17 +564,15 @@ public class HG0530ViewEvent extends HG0451SuperIntFrame implements MouseListene
         eveLeft.add(dataPanels[1], "cell 0 2, growx"); //$NON-NLS-1$
         dataPanels[1].setVisible(false);	// set dataPanel 1 hidden initially
 
-        // Setup the right Splitpane from padding panel p00 and dataPanels p2-4
-        JPanel eveRight = new JPanel(new MigLayout("insets 0, gap 1, fillx, hidemode 2", "[]", "[][][][][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        // Setup the right Splitpane from padding panel p00 and dataPanels p2-3
+        JPanel eveRight = new JPanel(new MigLayout("insets 0, gap 1, fillx, hidemode 2", "[]", "[][][][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         // Then add panels 2 - 4 action & data panels
        	eveRight.add(actPanels[2], "cell 0 0, growx"); //$NON-NLS-1$
     	eveRight.add(dataPanels[2], "cell 0 1, growx"); //$NON-NLS-1$
       	eveRight.add(actPanels[3], "cell 0 2, growx"); //$NON-NLS-1$
     	eveRight.add(dataPanels[3], "cell 0 3, growx"); //$NON-NLS-1$
-      	eveRight.add(actPanels[4], "cell 0 4, growx"); //$NON-NLS-1$
-    	eveRight.add(dataPanels[4], "cell 0 5, growx"); //$NON-NLS-1$
         for(int j = 2; j < actPanels.length; j++) {
-            dataPanels[j].setVisible(false);	// set dataPanels 2 - 4 hidden initially
+            dataPanels[j].setVisible(false);	// set dataPanels 2 - 3 hidden initially
         	}
 
 		UIManager.put("SplitPane.centerOneTouchButtons", false);	// ensure buttons are at divider top, not centre //$NON-NLS-1$

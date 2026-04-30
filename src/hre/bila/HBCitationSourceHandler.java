@@ -53,6 +53,7 @@ package hre.bila;
  *		      2025-12-22 - Add, edit and copy source type implemented (N. Tolleshaug)
  *			  2026-01-27 - Updated constructor for multiple projects (N. Tolleshaug)
  *			  2026-02-18 - Fix for 32.21 - Source element table add new source (N. Tolleshaug)
+ *v0.05.0033  2026-04-09 - New line 197 - if (pointEditSource != null) - Fix fot App setting (N. Tolleshaug)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -194,8 +195,8 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		if (textFieldSelection == 1) sourceAuthorPID = personTablePID;
 		else if (textFieldSelection == 2) sourceEditorPID = personTablePID;
 		else if (textFieldSelection == 3) sourceCompilerPID = personTablePID;
-
-		pointEditSource.resetNames(sourceAuthorPID, sourceEditorPID, sourceCompilerPID);
+		if (pointEditSource != null)
+			pointEditSource.resetNames(sourceAuthorPID, sourceEditorPID, sourceCompilerPID);
 	}
 
 	public void updateTextFieldSelection(HG0566EditSource pointEditSource, int textFieldSelection) {

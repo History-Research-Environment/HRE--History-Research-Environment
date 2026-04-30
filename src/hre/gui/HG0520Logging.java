@@ -12,6 +12,8 @@ package hre.gui;
  * 			  2021-04-05 NLS; allow resizing to handle a log file with long log entries (D Ferguson)
  * v0.01.0026 2021-05-05 stop NPE caused by null or corrupt data (D Ferguson)
  * v0.05.0033 2026-03-27 Add ability to filter on 3 log entry types (D Ferguson)
+ * 			  2026-04-11 Ensure ERROR selection also gets Java Exceptions (D Ferguson)
+ * 			  2026-04-20 Fix 33.03 ensure FileChooser opens correct HRE folder (D Ferguson)
  **************************************************************************************/
 
 import java.awt.Component;
@@ -22,6 +24,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -244,7 +247,9 @@ public class HG0520Logging extends HG0450SuperDialog {
 				chk_Message.setSelected(false);
 				btn_Browse.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				// Enable FileChooser for hrel files
-				HG0577FileChooser chooseFile=new HG0577FileChooser("Open", "HRE Log files (*.hrel)", "hrel", null, null, 1);	 //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				HG0577FileChooser chooseFile =
+						new HG0577FileChooser("Open", "HRE Log files (*.hrel)", "hrel", null,
+								System.getProperty("user.home") + File.separator + "HRE" + File.separator, 1);	 //$NON-NLS-1$ //$NON-NLS-2$
 				chooseFile.setModalityType(ModalityType.APPLICATION_MODAL);
 				Point xy = btn_Browse.getLocationOnScreen();         // Gets Browse button location on screen
 				chooseFile.setLocation(xy.x, xy.y);     		     // Sets screen top-left corner relative to that
@@ -343,7 +348,7 @@ public class HG0520Logging extends HG0450SuperDialog {
 	}	// End HG0520Logging constructor
 
 /**
- * applyFilters - handle checkboxes to display only ERROR/WARNING/MESSAGE log entries
+ * applyFilters - handle checkboxes to display only ERROR (+Exception)/WARNING/MESSAGE log entries
  */
 	private void applyFilters() {
 	    TableRowSorter<?> sorter = (TableRowSorter<?>) table_LogEntries.getRowSorter();
@@ -359,11 +364,22 @@ public class HG0520Logging extends HG0450SuperDialog {
 	    sorter.setRowFilter(new RowFilter<Object,Object>() {
 	        @Override
 	        public boolean include(Entry<?, ?> entry) {
-	            String value = entry.getStringValue(4); 	// column 4 = log entry text
-	            if (value == null) return false;
-	            if (showError   && value.contains("ERROR"))   return true;	//$NON-NLS-1$
-	            if (showWarning && value.contains("WARNING")) return true;	//$NON-NLS-1$
-	            if (showMessage && value.contains("MESSAGE")) return true;	//$NON-NLS-1$
+	            String col0 = entry.getStringValue(0); // Java message text
+	            String col4 = entry.getStringValue(4); // HRE message text
+	            if (col0 == null) col0 = "";		//$NON-NLS-1$
+	            if (col4 == null) col4 = "";		//$NON-NLS-1$
+	            // ERROR logic
+	            if (showError) {
+	                if (col4.contains("ERROR")) return true;		//$NON-NLS-1$
+	                if (col4.contains("Error")) return true;		//$NON-NLS-1$
+	                if (col4.startsWith("Exception")) return true;	//$NON-NLS-1$
+	                if (col4.startsWith("	at ")) return true;		//$NON-NLS-1$ //NB this is string  "(tab)at "
+	                if (col0.contains("Exception ")) return true;   //$NON-NLS-1$ // just in case!
+	            }
+	            // WARNING logic
+	            if (showWarning && col4.contains("WARNING")) return true;	//$NON-NLS-1$
+	            // MESSAGE logic
+	            if (showMessage && col4.contains("MESSAGE")) return true;	//$NON-NLS-1$
 	            return false;
 	        }
 	    });

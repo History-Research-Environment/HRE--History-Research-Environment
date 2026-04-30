@@ -43,17 +43,18 @@ package hre.gui;
  *            2025-05-11 Update remove only added assocs and citations if close (N. Tolleshaug)
  *            2025-05-16 Put all action buttons on bottom row (D Ferguson)
  *            2025-05-17 Updated partner event roles (N. Tolleshaug)
-  * 		  2025-05-24 Changes to show key people & roles in screen top panel (D Ferguson)
-  * 		  2025-05-25 Get EvntKeyAssocMin and pass to HG0555EditCitations (D Ferguson)
-  * 		  2025-06-15 Changed from string sep with "/" to String[] (N. Tolleshaug)
-  * 		  2025-06-24 Load editSentence GUI via btn_Sentence (D Ferguson)
-  * 		  2025-07-06 Pass roleName to HG0548EditSentence (D Ferguson)
-  * 		  2025-07-13 Pass sexCode to HG0548EditSentence (D Ferguson
-  * 		  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
-  * 		  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
-  * 		  2026-01-20 Log all catch blocks and other msgs (D Ferguson)
-  * 		  2026-02-17 Added get methods for sentence building (N. Tolleshaug)
-  * 		  2026-02-18 Allow Memo/Citation panels to expand in sync (D Ferguson)
+ * 		  	  2025-05-24 Changes to show key people & roles in screen top panel (D Ferguson)
+ * 		  	  2025-05-25 Get EvntKeyAssocMin and pass to HG0555EditCitations (D Ferguson)
+ * 		  	  2025-06-15 Changed from string sep with "/" to String[] (N. Tolleshaug)
+ * 		  	  2025-06-24 Load editSentence GUI via btn_Sentence (D Ferguson)
+ * 		  	  2025-07-06 Pass roleName to HG0548EditSentence (D Ferguson)
+ * 		  	  2025-07-13 Pass sexCode to HG0548EditSentence (D Ferguson
+ * 		  	  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
+ * 		  	  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
+ * 		  	  2026-01-20 Log all catch blocks and other msgs (D Ferguson)
+ * 		  	  2026-02-17 Added get methods for sentence building (N. Tolleshaug)
+ * 		  	  2026-02-18 Allow Memo/Citation panels to expand in sync (D Ferguson)
+ * v0.05.0033 2026-04-24 Ensure memo textarea handles large text block (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -131,7 +132,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Events
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2022-04-07
  */
 
@@ -255,7 +256,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     public long getEventTablePID() {
     	return eventPID;
     }
-    
+
     public String getPersonName() {
     	return eventPersonName.trim();
     }
@@ -634,7 +635,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		lbl_Memo.setFont(lbl_Memo.getFont().deriveFont(lbl_Memo.getFont().getStyle() | Font.BOLD));
 		botmLeftEvntPanel.add(lbl_Memo, "cell 0 0, align left");	//$NON-NLS-1$
 
-		memoText = new JTextArea();
+		memoText = new JTextArea(6, 40);		// force a row size so that adding a text block still computes properly
 		memoText.setWrapStyleWord(true);
 		memoText.setLineWrap(true);
 		memoText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area

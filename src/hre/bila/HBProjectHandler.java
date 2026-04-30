@@ -49,6 +49,9 @@ package hre.bila;
  *			  2025-05-12 Complete IS_OWNER update code (D Ferguson)
  *			  2025-08-25 Update T168 table to add missing new fields (D Ferguson)
  *			  2025-09-18 Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
+ * v0.05.0033 2026-04-07 Added and updated FOCUS_PER_PID for T126  (N. Tolleshaug)
+ * 			  2026-04-25 ALTER TABLE T460_EVNT_DEFN ALTER COLUMN EVNT_HINT VARCHAR(5000) (N. Tolleshaug)
+ * 
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -497,14 +500,20 @@ public class HBProjectHandler extends HBBusinessLayer {
         HBProjectOpenData pointOpenProject = HG0401HREMain.mainFrame.getSelectedOpenProject();
         HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 
-     // Modify columns T404_PARTNER
         int databaseIndex = pointOpenProject.getOpenDatabaseIndex();
+        
+    // Add FOCUS_PER_PID to T126   
+        alterColumnInTable("T126_PROJECTS","FOCUS_PER_PID","BIGINT", databaseIndex);
+        updateTableInBase("T126_PROJECTS", "UPDATE", "SET FOCUS_PER_PID = " + null_RPID + " WHERE PID = 1000000000000001", databaseIndex);
 
 	// Set IS_IMPORTED = FALSE in T126_PROJECTS
 		updateTableData("UPDATE T126_PROJECTS SET IS_IMPORTED = FALSE WHERE PROJECT_CODE = 1", databaseIndex);
 
 	// Set boolean IS_OWNER in T131
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
+		
+	// Update table T460_EVNT_DEFN
+		updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE", "ALTER COLUMN EVNT_HINT VARCHAR(5000)" , databaseIndex);
 
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
 

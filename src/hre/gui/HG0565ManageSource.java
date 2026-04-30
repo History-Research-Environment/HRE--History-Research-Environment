@@ -27,6 +27,7 @@ package hre.gui;
  *			  2026-01-07 Log catch block msgs (D Ferguson)
  * v0.05.0033 2026-03-19 Add confirmation prompt to delete Source action (D Ferguson)
  * 						 Ensure selected Source Type is retained after Save/Copy (D Ferguson)
+ * 			  2026-04-05 Add a Find by ID# facility (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -40,6 +41,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +49,7 @@ import java.util.Map;
 
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -74,6 +77,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.text.DefaultCaret;
+import javax.swing.text.DefaultFormatter;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
@@ -112,6 +116,8 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	DefaultTableModel srcTableModel = null;
 	JTable tableSource;
 	String tableHeadsMiddleColumn; // Temp store the translated text from T204
+
+//	JTextField findText;
 
 	JTextArea fullFootText, shortFootText, biblioText;
 	String templateText = "";	//$NON-NLS-1$
@@ -179,7 +185,7 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 	// Define panel for Action buttons
 		JPanel actionPanel = new JPanel();
 		actionPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		actionPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		actionPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]10[][]10[][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		JButton btn_Add = new JButton(HG0565Msgs.Text_2);		// Add
 		btn_Add.setEnabled(true);
 		actionPanel.add(btn_Add, "cell 0 0, alignx center, grow"); //$NON-NLS-1$
@@ -195,11 +201,21 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		btn_Inactive = new JButton(HG0565Msgs.Text_27);		// Show Inactive
 		btn_Inactive.setEnabled(true);
 		actionPanel.add(btn_Inactive, "cell 0 4, alignx center, grow"); //$NON-NLS-1$
-		JLabel find = new JLabel(HG0565Msgs.Text_7);		// Find:
+		JLabel find = new JLabel(HG0565Msgs.Text_7);		// Find in Name:
 		actionPanel.add(find, "cell 0 5, alignx center"); //$NON-NLS-1$
 		JTextField findText = new JTextField();
 		findText.setColumns(10);
-		actionPanel.add(findText, "cell 0 6, alignx left"); //$NON-NLS-1$
+		actionPanel.add(findText, "cell 0 6, alignx center"); //$NON-NLS-1$
+		JLabel findNum = new JLabel(HG0565Msgs.Text_8);		// Find by ID#
+		actionPanel.add(findNum, "cell 0 7, alignx center"); //$NON-NLS-1$
+		NumberFormat integerFormat = NumberFormat.getIntegerInstance();
+		JFormattedTextField findNumber = new JFormattedTextField(integerFormat);
+		DefaultFormatter formatter = (DefaultFormatter) findNumber.getFormatter();
+		formatter.setCommitsOnValidEdit(true);
+		formatter.setAllowsInvalid(false);
+		findNumber.setColumns(6);
+		findNumber.setValue(null);
+		actionPanel.add(findNumber, "cell 0 8, alignx center"); //$NON-NLS-1$
 
 		contents.add(actionPanel, "cell 0 0, aligny top"); //$NON-NLS-1$
 
@@ -585,28 +601,53 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		findText.getDocument().addDocumentListener(new DocumentListener() {
 	          @Override
 	          public void insertUpdate(DocumentEvent e) {
-	              findTheText();
+	        	  if (!findText.getText().equals("")) findTheText();
 	          }
 	          @Override
 	          public void removeUpdate(DocumentEvent e) {
-	        	  findTheText();
+	        	  if (!findText.getText().equals("")) findTheText();
 	          }
 	          @Override
 	          public void changedUpdate(DocumentEvent e) {
-	        	  findTheText();
+	        	  if (!findText.getText().equals("")) findTheText();
 	          }
 	          private void findTheText() {
+	  			// Clear the other find field
+	  			  findNumber.setValue(null);
+	  			 // Process this input, searching on the Source name (col 1)
 	        	  String text = findText.getText();
-		            for (int row = 0; row <= tableSource.getRowCount() - 1; row++) {
+		          for (int row = 0; row <= tableSource.getRowCount() - 1; row++) {
 	            		String tableValue = (String) tableSource.getValueAt(row, 1);
-   	                    if (tableValue.toLowerCase().contains(text.toLowerCase())) {
-   	                    	tableSource.scrollRectToVisible(tableSource.getCellRect(row, 1, true));
-   	                    // set the 'found' row as selected
-   	                    	tableSource.changeSelection(row, 0, false, false);
-   	                    	return;
-   	                    }
+	                    if (tableValue.toLowerCase().contains(text.toLowerCase())) {
+	                    	tableSource.scrollRectToVisible(tableSource.getCellRect(row, 1, true));
+	                    // set the 'found' row as selected
+	                    	tableSource.changeSelection(row, 0, false, false);
+	                    	return;
+	                    }
 	            }
 	          }
+		});
+
+		// Listener for an entry in findNumber
+		findNumber.addPropertyChangeListener("value", evt -> {
+			if (evt.getNewValue() == null) return;
+			if (evt.getNewValue().equals("")) return;
+			// Clear the other find field
+			findText.setText("");		//$NON-NLS-1$
+			// Get the input value and process it, searching on the ID# (col 0)
+		    Object newValue = evt.getNewValue();
+		    if (newValue instanceof Number) {
+		    	int searchInt = ((Number) newValue).intValue();
+			    for (int row = 0; row <= tableSource.getRowCount() - 1; row++) {
+	        		int tableValue = (int) tableSource.getValueAt(row, 0);
+	                   if (tableValue ==searchInt) {
+	                   	tableSource.scrollRectToVisible(tableSource.getCellRect(row, 0, true));
+	                   // set the 'found' row as selected
+	                   	tableSource.changeSelection(row, 0, false, false);
+	                   	return;
+	                   }
+			    }
+			}
 		});
 
 	}	// End HG0565ManageSource constructor

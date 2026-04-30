@@ -73,12 +73,16 @@ package hre.gui;
  * 			  2026-02-18 Fix 32.13 - Parent table grows when shouldn't (D Ferguson)
  * v0.05.0033 2026-02-21 Show relationship panel (if valid) (D Ferguson)
  * 			  2026-03-01 If goto # invalid, clear entry box (D Ferguson)
+ * 			  2026-04-04 Remove Notepads card (D Ferguson)
+ * 			  2026-04-07 Added foicus person name (N. Tolleshaug)
+ * 			  2026-04-24 Collapse gt-gt-gt-gt-etc relationships to nth-gt for Eng (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
- * NOTE06 need listener and code for handling Notepads
  * NOTE07 need listener and code for handling DNA data
  * NOTE09 need to load new audio/video media or delete existing
  * NOTE15 need copy/renumber actions added
+ *
+ * NLS: Text_15 no longer used
  *********************************************************************************************/
 
 import java.awt.CardLayout;
@@ -437,7 +441,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		JPanel controlPanel = new JPanel();
 		controlPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(controlPanel, "cell 0 1 1 2, aligny top");	//$NON-NLS-1$
-		controlPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		controlPanel.setLayout(new MigLayout("insets 5", "[]", "[]10[]10[]10[]10[]10[]10[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lbl_EditType = new JLabel(HG0506Msgs.Text_9);		// Edit Category
 		controlPanel.add(lbl_EditType, "cell 0 0, alignx center");	//$NON-NLS-1$
@@ -461,11 +465,8 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		JRadioButton radio_Media = new JRadioButton(HG0506Msgs.Text_14);		// Media
 		controlPanel.add(radio_Media, "cell 0 6, alignx left");		//$NON-NLS-1$
 
-		JRadioButton radio_Note = new JRadioButton(HG0506Msgs.Text_15);		// Notepads
-		controlPanel.add(radio_Note, "cell 0 7, alignx left");		//$NON-NLS-1$
-
 		JRadioButton radio_DNA = new JRadioButton("DNA");			//$NON-NLS-1$
-		controlPanel.add(radio_DNA, "cell 0 8, alignx left");		//$NON-NLS-1$
+		controlPanel.add(radio_DNA, "cell 0 7, alignx left");		//$NON-NLS-1$
 
 		ButtonGroup radioGroup = new ButtonGroup();
 		radioGroup.add(radio_Event);
@@ -474,7 +475,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		radioGroup.add(radio_Names);
 		radioGroup.add(radio_Flag);
 		radioGroup.add(radio_Media);
-		radioGroup.add(radio_Note);
 		radioGroup.add(radio_DNA);
 
 /**************************************
@@ -533,10 +533,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		cardMedia.setPreferredSize(new Dimension(700, 400));
 		cardMedia.setLayout(new MigLayout("", "[grow]", "[]20[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		rightPanel.add(cardMedia, "MEDIA");	//$NON-NLS-1$
-		JPanel cardNotepads = new JPanel();
-		cardNotepads.setPreferredSize(new Dimension(700, 40));
-		cardNotepads.setLayout(new MigLayout("", "[grow]", "[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		rightPanel.add(cardNotepads, "NOTEPADS");	//$NON-NLS-1$
 		JPanel cardDNA = new JPanel();
 		cardDNA.setPreferredSize(new Dimension(700, 400));
 		cardDNA.setLayout(new MigLayout("", "[grow]", "[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -1056,12 +1052,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	 // Finally add the mediaScrolling pane to the mediaCard
 		cardMedia.add(mediaScrollPane, "cell 0 1");		//$NON-NLS-1$
 
-/**************
- * cardNotepads - put comment into the Notepads card
- *************/
-		// NOTE06 - real code to be done later
-		JLabel lbl_Notepads = new JLabel("Notepads to be able to be loaded and edited here eventually");	//$NON-NLS-1$ (temporary code)
-		cardNotepads.add(lbl_Notepads);
 /***********
  * cardDNA - put comment into the DNA card
  **********/
@@ -1092,7 +1082,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		String relateText1 = "", relateText2 = "";	//$NON-NLS-1$ //$NON-NLS-2$
 
 		// Get focus person's name
-		String focusPersonName = HGlobal.focusPerson;
+		String focusPersonName = pointPersonHandler.getFocusPersonName();
 
 		// Check the sexCode - if not M or F we can't calculate a relationship, so ignore relationship lookup
 		if (sexCode.equals("M") || sexCode.equals("F")) {		//$NON-NLS-1$ //$NON-NLS-2$
@@ -1340,13 +1330,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		    	  cl.show(rightPanel, "MEDIA");	//$NON-NLS-1$
 		      }
 		    };
-		 ActionListener actionRadioNote = new ActionListener() {
-		      @Override
-			public void actionPerformed(ActionEvent actionEvent) {
-		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
-		    	  cl.show(rightPanel, "NOTEPADS");	//$NON-NLS-1$
-		      }
-		    };
 		 ActionListener actionRadioDNA = new ActionListener() {
 		      @Override
 			public void actionPerformed(ActionEvent actionEvent) {
@@ -1361,7 +1344,6 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		radio_Names.addActionListener(actionRadioNames);
 		radio_Flag.addActionListener(actionRadioFlag);
 		radio_Media.addActionListener(actionRadioMedia);
-		radio_Note.addActionListener(actionRadioNote);
 		radio_DNA.addActionListener(actionRadioDNA);
 
 		// Define ActionListeners for Events table right-click popupMenu
@@ -2288,23 +2270,42 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
             };
         }
         private String ancestor(int up, String sex) {
-            if (up == 1) return sex == "M" ? "father" : "mother";
-            if (up == 2) return sex == "M" ? "grandfather" : "grandmother";
-            return "great-".repeat(up - 2) + (sex == "M" ? "grandfather" : "grandmother");
+            String base = sex.equals("M") ? "grandfather" : "grandmother";
+            if (up == 1) return sex.equals("M") ? "father" : "mother";
+            if (up == 2) return base;
+            int greats = up - 2;
+            // Use full "great-great-" only for 1–2 greats
+            if (greats <= 2)
+                return "great-".repeat(greats) + base;
+            // Compact form: "4th-gt grandfather"
+            return ordinal(greats) + "-gt " + base;
         }
         private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "son" : "daughter";
-            if (down == 2) return sex == "M" ? "grandson" : "granddaughter";
-            return "great-".repeat(down - 2) + (sex == "M" ? "grandson" : "granddaughter");
+            String base = sex.equals("M") ? "grandson" : "granddaughter";
+            if (down == 1) return sex.equals("M") ? "son" : "daughter";
+            if (down == 2) return base;
+            int greats = down - 2;
+            if (greats <= 2)
+                return "great-".repeat(greats) + base;
+            return ordinal(greats) + "-gt " + base;
         }
         private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "nephew" : "niece";
-            return "great-".repeat(down - 1) + (sex == "M" ? "nephew" : "niece");
+            String base = sex.equals("M") ? "nephew" : "niece";
+            if (down == 1) return base;
+            int greats = down - 1;
+            if (greats <= 2)
+                return "great-".repeat(greats) + base;
+            return ordinal(greats) + "-gt " + base;
         }
         private String pibling(int up, String sex) {
-            if (up == 1) return sex == "M" ? "uncle" : "aunt";
-            return "great-".repeat(up - 1) + (sex == "M" ? "uncle" : "aunt");
+            String base = sex.equals("M") ? "uncle" : "aunt";
+            if (up == 1) return base;
+            int greats = up - 1;
+            if (greats <= 2)
+                return "great-".repeat(greats) + base;
+            return ordinal(greats) + "-gt " + base;
         }
+
         private String cousin(int degree, int removal) {
             int n = degree; // 1→1st, 2→2nd, 3→3rd
             String base = ordinal(n) + " cousin";
