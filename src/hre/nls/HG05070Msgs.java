@@ -8,7 +8,7 @@ public class HG05070Msgs extends NLS {
 	public static String Text_11;
 	public static String Text_16;
 	public static String Text_18;
-	public static String Text_19;	
+	public static String Text_19;
 	public static String Text_20;
 	public static String Text_21;
 	public static String Text_22;
@@ -28,9 +28,9 @@ public class HG05070Msgs extends NLS {
 
 	public static String Text_47;
 	public static String Text_49;
-	public static String Text_50;	
+	public static String Text_50;
 	public static String Text_51;
-	
+
 	public static String Text_54;
 	public static String Text_58;
 	public static String Text_59;
@@ -53,16 +53,16 @@ public class HG05070Msgs extends NLS {
 	public static String Text_93;
 	public static String Text_94;
 	public static String Text_98;
-	
+
 	public static String Text_101;
-	public static String Text_102;	
-	public static String Text_103;	
-	public static String Text_104;	
+	public static String Text_102;
+	public static String Text_103;
+	public static String Text_104;
 	public static String Text_105;
 	public static String Text_106;
 	public static String Text_107;
 	public static String Text_108;
-	public static String Text_109;	
+	public static String Text_109;
 	public static String Text_110;
 	public static String Text_111;
 	public static String Text_112;
@@ -72,8 +72,8 @@ public class HG05070Msgs extends NLS {
 	public static String Text_116;
 	public static String Text_117;
 	public static String Text_118;
-	public static String Text_119;	
-	
+	public static String Text_119;
+
 	public static String Text_120;
 	public static String Text_121;
 	public static String Text_122;
@@ -97,7 +97,7 @@ public class HG05070Msgs extends NLS {
 	public static String Text_144;
 	public static String Text_145;
 	public static String Text_146;
-	
+
 	// Used by HG0507SelectAssociate, -Parent, -Partner
 	public static String Text_150;
 	public static String Text_151;
@@ -106,8 +106,9 @@ public class HG05070Msgs extends NLS {
 	public static String Text_154;
 	public static String Text_155;
 	public static String Text_156;
-	public static String Text_157;	
-	
+	public static String Text_157;
+	public static String Text_158;
+	public static String Text_159;
 	// Used by HG0507SelectParent
 	public static String Text_160;
 	public static String Text_161;
@@ -116,7 +117,7 @@ public class HG05070Msgs extends NLS {
 	public static String Text_164;
 	public static String Text_165;
 	public static String Text_166;
-	
+
 	// Used by HG0507SelectPartner
 	public static String Text_170;
 	public static String Text_171;
@@ -125,7 +126,7 @@ public class HG05070Msgs extends NLS {
 	public static String Text_174;
 	public static String Text_175;
 	public static String Text_176;
-	
+
 	public HG05070Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG05070-" + guiLanguage;	//$NON-NLS-1$

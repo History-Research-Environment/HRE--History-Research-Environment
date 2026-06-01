@@ -43,6 +43,8 @@ package hre.gui;
  *			  2026-02-20 Sort SorcDefntable before loading to combobox (D Ferguson)
  *			  2026-02-27 Test -  if (uniqueElementNums.size() > 0) (N. Tolleshaug)
  *			  2026-03-03 Line 1491 fixed error in  loadElementValueTable (N. Tolleshaug)
+ * v0.05.0033 2026-05-19 Fix 33.17 save/display T734 data for unCited Elements (D Ferguson)
+ * 			  2026-05-22 Add focus policy code (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -63,6 +65,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -109,13 +112,14 @@ import hre.bila.HBProjectOpenData;
 import hre.bila.HBReportHandler;
 import hre.bila.HBRepositoryHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
+import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG0566Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Edit Source
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2025-02-07
  */
 
@@ -143,6 +147,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			btn_shortPreview, btn_fullPreview;
 	DefaultTableCellRenderer centerLabelRenderer;
 	JComboBox <String> comboSourceTypes, comboFidelity;
+	ActionListener comboSrcTypeChange = null;
 	JTable tableRepo, tableSrcSrc, tableSrcElmntValues;
 	JTextField abbrevText, authorName, editorName, compilerName;
 	JTextArea titleText;
@@ -158,6 +163,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
     Map<String, String> textToCodeMap;
 	String[][] tableSourceElmntDataValues;
 	List<String> uniqueElementNums, uniqueElementNames, uniqueElementValues;
+	List<String> unCitedElementNums, unCitedElementNames, unCitedElementValues;
 
 	// For Source of Source handling
 	String[] tableSrcSrcColHeads = null;
@@ -244,10 +250,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			tableRepoColHeads =
 					pointPersonHandler.setTranslatedData("56600", "3", false); // ID, Repository, Abbrev  //$NON-NLS-1$ //$NON-NLS-2$
 
-	// Focus Policy still to be setup!
-
 		}	// End HG0566EditSource constructor
-
 
 /**
  * Setup the screen layouts
@@ -357,9 +360,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		// Show the table
 		tableSrcElmntValues.setMaximumSize(new Dimension(32767, 32767));
 		tableSrcElmntValues.setFillsViewportHeight(true);
-		// Setup tabbing within table against all rows but only column 0-1
-		if (tableSrcElmntValues.getRowCount() > 0)
-					JTableCellTabbing.setTabMapping(tableSrcElmntValues, 0, tableSrcElmntValues.getRowCount(), 0, 1);
 	// scrollPane contains the Source Element picklist
 		JScrollPane scrollSrcElmntTable = new JScrollPane();
 		scrollSrcElmntTable.setPreferredSize(new Dimension(400, 320));
@@ -383,6 +383,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		fullFootText = new JTextArea();
 		fullFootText.setLineWrap(true);
 		fullFootText.setWrapStyleWord(true);
+		fullFootText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
+		fullFootText.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
 		fullFootText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		fullFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		fullFootText.setBorder(new JTable().getBorder());		// match Table border
@@ -401,6 +403,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		shortFootText = new JTextArea();
 		shortFootText.setLineWrap(true);
 		shortFootText.setWrapStyleWord(true);
+		shortFootText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
+		shortFootText.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
 		shortFootText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		shortFootText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		shortFootText.setBorder(new JTable().getBorder());		// match Table border
@@ -419,6 +423,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		biblioText = new JTextArea();
 		biblioText.setLineWrap(true);
 		biblioText.setWrapStyleWord(true);
+		biblioText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
+		biblioText.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
 		biblioText.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		biblioText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		biblioText.setBorder(new JTable().getBorder());		// match Table border
@@ -668,7 +674,19 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		btn_Save.setEnabled(false);
 		contents.add(btn_Save, "cell 0 1, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
-	// End of Screen Definitions
+	// Setup Order of components for Focus Policy (on 1st tab only)
+        Vector<Component> focusOrder = new Vector<>();
+        focusOrder.add(titleText);
+        focusOrder.add(abbrevText);
+        focusOrder.add(comboSourceTypes);
+        focusOrder.add(tableSrcElmntValues);
+        focusOrder.add(fullFootText);
+        focusOrder.add(shortFootText);
+        focusOrder.add(biblioText);
+        contents.setFocusCycleRoot(true);
+        contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
+       	// Set initial focus of screen
+    	titleText.requestFocusInWindow();
 		pack();
 
 	// Now define a JTextPane and scrollpane for use by Source Template Preview buttons.
@@ -719,12 +737,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		Arrays.sort(sorcDefnTable, (row1, row2) -> ((String) row1[0]).compareTo((String) row2[0]));
 		// Then load the comboSourceTypes combobox
 		long compare = sourceDefnPID;
+		// But disable the listener while we set it
+		comboSourceTypes.removeActionListener(comboSrcTypeChange);
 		for (int j = 0; j < sorcDefnTable.length; j++) {
 			comboSourceTypes.addItem((String) sorcDefnTable[j][0]);
 			if (compare == (long)sorcDefnTable[j][1]) {
 				comboSourceTypes.setSelectedIndex(j);
 			}
 		}
+		// and re-emable the listener
+		comboSourceTypes.addActionListener(comboSrcTypeChange);
 
 	// Set the active checkbox
 		if ((boolean)sourceEditData[4] == true) activChkBox.setSelected(true);
@@ -752,7 +774,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		shortFootNumberedTemplate = (String)sourceEditData[7];		// get Source short footer
 		biblioNumberedTemplate = (String)sourceEditData[8];			// get Source bibliography
 		createAndDisplayTextTemplates();
-		
+
 		//System.out.println("Templates name: " + fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate );
 		//System.out.println("Template numbers: " + fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate );
 
@@ -766,7 +788,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		if (pointEditSource instanceof HG0566UpdateSource) loadElementValueTable(false);
 		if (pointEditSource instanceof HG0566AddSource)	loadElementDefinitionTable();
 		if (pointEditSource instanceof HG0566CopySource) loadElementValueTable(true);
-
+	// Now that data is loaded , set tabbing within table against column 1
+		if (tableSrcElmntValues.getRowCount() > 0)
+			JTableCellTabbing.setTabMapping(tableSrcElmntValues, 0, tableSrcElmntValues.getRowCount(), 1, 1);
 	// Load Author, Editor, Compiler names (if present)
 		sourceAuthorPID = (long) sourceEditData[12];
 		sourceEditorPID = (long) sourceEditData[13];
@@ -1125,7 +1149,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
         });
 
 	// Source Types combo-box listener
-		comboSourceTypes.addActionListener (new ActionListener() {
+		comboSrcTypeChange = new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 			// Get the PID of the newly selected Source Defn (Type)
@@ -1153,7 +1177,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					biblioNumberedTemplate = "";	//$NON-NLS-1$
 				}
 				createAndDisplayTextTemplates();
-				
+
 				//System.out.println("Templates name: " + fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate );
 				//System.out.println("Template numbers: " + fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate );
 
@@ -1167,9 +1191,13 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				if (pointEditSource instanceof HG0566UpdateSource) loadElementValueTable(false);
 				if (pointEditSource instanceof HG0566AddSource)	loadElementDefinitionTable();
 				if (pointEditSource instanceof HG0566CopySource) loadElementValueTable(true);
+			// Now that data is loaded , set tabbing within table against column 1
+				if (tableSrcElmntValues.getRowCount() > 0)
+					JTableCellTabbing.setTabMapping(tableSrcElmntValues, 0, tableSrcElmntValues.getRowCount(), 1, 1);
 				btn_Save.setEnabled(true);
 			}
-		});
+		};
+		comboSourceTypes.addActionListener(comboSrcTypeChange);
 
 		// Source Fidelity combo-box listener
 		comboFidelity.addActionListener (new ActionListener() {
@@ -1397,7 +1425,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	}
 
 /*
- * extractUniqueElementNums
+ * createAndDisplayTextTemplates
  */
 	public void createAndDisplayTextTemplates() {
 		// Get this Source's templates; if empty, use the template from the SourceDefn templates,
@@ -1456,16 +1484,16 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	public void loadElementDefinitionTable() {
 		int nrOfRows = 0, index = 0;
 		uniqueElementValues = new ArrayList<String>();
-		
+
 	// Reload tableSrcElmntValueData
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
-		
+
 		if (uniqueElementNums.size() > 0) {
 			for (int i = 0; i < uniqueElementNames.size(); i++)
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) nrOfRows++;
-			} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: " 
+			} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: "
 																	+ uniqueElementNums.size());
-		
+
 		tableSrcElmntValueData = new String[nrOfRows][3];
 		if (uniqueElementNums.size() > 0)
 			for (int i = 0; i < uniqueElementNames.size(); i++) {
@@ -1498,34 +1526,35 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		// But ignore Elements with numbers > 40000 (which were TMG Grp 28-32) as they do not have T734 values
 		int nrOfRows = 0, index = 0;
 		int uniqueElementSize;
-		int numValues = tableSourceElmntDataValues.length;
 		uniqueElementValues = new ArrayList<String>();
 		boolean matched = false;
 		for (int i = 0; i < uniqueElementNums.size(); i++) {
 			matched = false;
-			for (int j = 0; j < numValues; j++) {
+			for (int j = 0; j < tableSourceElmntDataValues.length; j++) {
 				if (uniqueElementNums.get(i).equals(tableSourceElmntDataValues[j][0])) {
 							uniqueElementValues.add(tableSourceElmntDataValues[j][1]);
 							matched = true;
 				}
 			}
-	// If no match for this Element Name, add a blank Value to the Value List
+	// If no match for this Element Number, add a blank Value to the Value List
 			if (matched == false) uniqueElementValues.add("");		//$NON-NLS-1$
 		}
-		
+	// We now have 2 lists - uniqueElmtNums & uniqueElmntValues hopefully of same size
+
 		if (uniqueElementNums.size() != uniqueElementNames.size()) {
 			uniqueElementSize = uniqueElementNums.size();
-			System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: " 
+			System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: "
 							+ uniqueElementNames.size() + "/" + uniqueElementNums.size());
-			if (HGlobal.writeLogs) HB0711Logging.logWrite(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: " 
+			if (HGlobal.writeLogs) HB0711Logging.logWrite(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: "
 					+ uniqueElementNames.size() + "/" + uniqueElementNums.size());
 		} else uniqueElementSize = uniqueElementNames.size();
 
 	// (Re)load tableSrcElmntValueData
 		if (uniqueElementSize > 0) {
 			for (int i = 0; i < uniqueElementSize; i++)
-				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) nrOfRows++;
-		} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: " 
+				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000)
+									nrOfRows++;
+		} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: "
 					 												+ uniqueElementSize);
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
 		tableSrcElmntValueData = new String[nrOfRows][3];
@@ -1537,7 +1566,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					tableSrcElmntValueData[index][1] = uniqueElementValues.get(i).trim();
 					tableSrcElmntValueData[index][2] = uniqueElementNums.get(i);
 					srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
-	
+
 			// If copy source add changes to ElementDataChangeList to create source element copy
 					if (addNewElementRecords)
 						pointCitationSourceHandler.updateElementDataChangeList(
@@ -1547,6 +1576,82 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					index++;
 				}
 			}
+
+		//  UNCITED FIELD TESTS
+		// There may be more element Values in tableSourceElmntDataValues (as loaded from
+		// T734), which belong to Elements no longer cited in the footnotes.
+		// These need to be identified and loaded to tableSrcElmntValueData to be visible.
+		// To do this we need 3 more lists of unCitedNames/Numbers/Values.
+		// First - run through tableSourceElmntDataValues' number items and find
+		// those entries NOT already in uniqueElementNums, then extract their
+		// Numbers and Values into the new unCited Lists (and exit if there are none).
+		// Second, lookup these numbers in tableSrcElmntData (from T738) to get the Element Names.
+		// Third, load all these items as extra rows in the srcElmntValueModel.
+		unCitedElementNames = new ArrayList<String>();
+		unCitedElementNums = new ArrayList<String>();
+		unCitedElementValues = new ArrayList<String>();
+		// First, search tableSourceElmntDataValues for element Numbers not used
+		for (int i = 0; i < tableSourceElmntDataValues.length; i++) {
+			boolean unCited = true;
+			for (int j = 0; j < uniqueElementNums.size(); j++) {
+				if (tableSourceElmntDataValues[i][0].equals(uniqueElementNums.get(j)))   //test the element number
+					unCited = false;
+			}
+			if (unCited) {
+					unCitedElementNums.add(tableSourceElmntDataValues[i][0]);		// save element number
+					unCitedElementValues.add(tableSourceElmntDataValues[i][1]);		// save element value
+			}
+		}
+		// If no unCited elements found, we're done
+		if (unCitedElementNums.size() == 0) return;
+
+		// Second, match these unCited Nums with Element Names
+		for (int i = 0; i < unCitedElementNums.size(); i++) {
+			for (int j = 0; j < tableSrcElmntData.length; j++) {
+				if (unCitedElementNums.get(i).equals(tableSrcElmntData[j][1])) {
+						unCitedElementNames.add(tableSrcElmntData[j][0]);		// save element name
+						break;
+				}
+			}
+		}
+
+		// Third, add these Names/alues to the srcElmntValueModel for display
+		// To do this we need to save the existing tableSrcElmntValueData data in tableWork,
+		// then build a new tableSrcElmntValueData containing tableWork data AND new unCited data.
+		int oldRowCount = tableSrcElmntValueData.length;
+		int newRowCount = oldRowCount + unCitedElementNames.size();
+		String[][] tableWork = new String[oldRowCount][3];
+		// Now copy all of tableSrcElmntValueData to tableWork
+		for (int i = 0; i < tableSrcElmntValueData.length; i++) {
+			System.arraycopy(tableSrcElmntValueData[i], 0, tableWork[i], 0, tableSrcElmntValueData[0].length);
+		}
+		// Now redefinetableSrcElmntValueData and srcElmntValueModel
+		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
+		tableSrcElmntValueData = new String[newRowCount][3];
+		index = 0;
+		// Copy tableWork back into new tableSrcElmntValueData, loading the model as we go
+		for (int i = 0; i < tableWork.length; i++) {
+			System.arraycopy(tableWork[i], 0, tableSrcElmntValueData[i], 0, tableWork[0].length);
+			srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+			index++;
+		}
+		// Copy in new unCited values and load srcElmntValueModel
+		for (int i = 0; i < unCitedElementNames.size(); i++) {
+			tableSrcElmntValueData[index][0] = unCitedElementNames.get(i).trim();
+			tableSrcElmntValueData[index][1] = unCitedElementValues.get(i).trim();
+			tableSrcElmntValueData[index][2] = unCitedElementNums.get(i);
+			srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+			index++;
+		}
+		// Finally, for a Source copy, add unCited to ElementDataChangeList to create source element copy
+		if (addNewElementRecords)
+			for (int i = 0; i < unCitedElementNames.size(); i++) {
+				pointCitationSourceHandler.updateElementDataChangeList(
+							unCitedElementNames.get(i),
+							unCitedElementNums.get(i),
+							unCitedElementValues.get(i));
+			}
+
 	}	// End loadElementValueTable
 
 /*

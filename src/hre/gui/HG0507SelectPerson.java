@@ -1,4 +1,4 @@
-package hre.gui;
+																package hre.gui;
 /**************************************************************************************
  * SelectPerson - Original Specs 05.07 GUI_EntitySelect 2019-09-16
  * ***********************************************************************************
@@ -21,14 +21,15 @@ package hre.gui;
  * 			  2025-06-05 Partial fix to layout issues with large fonts (D Ferguson)
  * 			  2025-11-28 Modified for use with HG0566EditSource (N.Tolleshaug)
 * 			  2026-01-06 Log catch block msgs (D Ferguson)
-* v0.05.0033  2026-04-09 Modified for use for select focus person (N.Tolleshaug)
+* v0.05.0033  2026-04-09 Modified for select of Relationship focus person (N.Tolleshaug)
+* 			  2026-05-25 Add tab/focus policy (D Ferguson)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
  * NOTE04 need to pass in the initial person (focusPersIDX)	as a new parameter
- * NOTE06 need to get memo data and enable edit/save
  ************************************************************************************/
 
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -45,13 +46,19 @@ import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Vector;
 import java.util.regex.PatternSyntaxException;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -60,6 +67,7 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.RowFilter;
 import javax.swing.RowSorter;
@@ -87,13 +95,14 @@ import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.gui.HGlobalCode.JTableCellTabbing;
+import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG05070Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Select Person
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2024-03-10
  */
 
@@ -523,15 +532,50 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		JLabel pheaderLabel = (JLabel) prendererFromHeader;
 		pheaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-		// Set row selection action - allow multiple selections
-		ListSelectionModel rowSelectionModel = tablePersons.getSelectionModel();
-		rowSelectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+		// Set row selection action - over-ride normal table AB action
+		tablePersons.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, Collections.emptySet());
+		tablePersons.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, Collections.emptySet());
+		InputMap im = tablePersons.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+		im.put(KeyStroke.getKeyStroke("TAB"), "none");
+		im.put(KeyStroke.getKeyStroke("shift TAB"), "none");
+		ActionMap am = tablePersons.getActionMap();
+		// Bind TAB to “select next row” (but preserve current 1st row setting)
+		im.put(KeyStroke.getKeyStroke("TAB"), "selectNextRow");
+		am.put("selectNextRow", new AbstractAction() {
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        int row = tablePersons.getSelectedRow();
+		        if (row == -1) {
+		            Rectangle r = tablePersons.getVisibleRect();
+		            int top = tablePersons.rowAtPoint(new Point(r.x, r.y));
+		            if (top != -1) {
+		                tablePersons.setRowSelectionInterval(top, top);
+		                tablePersons.scrollRectToVisible(tablePersons.getCellRect(top, 0, true));
+		            }
+		            return;
+		        }
+		        if (row < tablePersons.getRowCount() - 1) {
+		            int next = row + 1;
+		            tablePersons.setRowSelectionInterval(next, next);
+		            tablePersons.scrollRectToVisible(tablePersons.getCellRect(next, 0, true));
+		        }
+		    }
+		});  // and repeat for Shift+Tab
+		im.put(KeyStroke.getKeyStroke("shift TAB"), "selectPrevRow");
+		am.put("selectPrevRow", new AbstractAction() {
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        int row = tablePersons.getSelectedRow();
+		        if (row > 0) {
+		            tablePersons.setRowSelectionInterval(row - 1, row - 1);
+		            tablePersons.scrollRectToVisible(tablePersons.getCellRect(row - 1, 0, true));
+		        }
+		    }
+		});
 
 		// Show the table
 		scrollTable.setViewportView(tablePersons);
-
-		// Now set the sorted table view to start at the required focus person
-		tablePersons.setRowSelectionAllowed(true);
+		// Now set the sorted table view to start at the required person
 		for(int i = 0; i < tablePersons.getRowCount(); i++){
 			if(tablePersons.getValueAt(i, 0).equals(focusPersIDX)) {		// NOTE04
 		        	tablePersons.changeSelection(i, 0, true, true);
@@ -543,7 +587,19 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		// Set the dialog visible with normal cursor
 		setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
-		// Focus Policy still to be setup!
+//*******************
+// Setup Focus Policy
+//*******************
+        Vector<Component> focusOrder = new Vector<>();
+        focusOrder.add(searchField);
+        focusOrder.add(filterTextField);
+        focusOrder.add(chkbox_Filter);
+        focusOrder.add(comboBox_Subset);
+        focusOrder.add(tablePersons);
+        contents.setFocusCycleRoot(true);
+        contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
+	// Set initial focus of screen
+       searchField.requestFocusInWindow();
 
 		pack();
 
@@ -792,7 +848,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
 					//System.out.println(" Selected Person PID: " + personPID);
 					dispose();
-				// Temp solution to avoid setting of focusPerson	
+				// Temp solution to avoid setting of focusPerson
 					if (!addRelation)
 						try {
 							pointOpenProject.setFocusPersonPID(personPID);

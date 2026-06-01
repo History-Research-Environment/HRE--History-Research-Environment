@@ -55,6 +55,7 @@ package hre.gui;
  * 		  	  2026-02-17 Added get methods for sentence building (N. Tolleshaug)
  * 		  	  2026-02-18 Allow Memo/Citation panels to expand in sync (D Ferguson)
  * v0.05.0033 2026-04-24 Ensure memo textarea handles large text block (D Ferguson)
+ * 			  2026-05-19 Fix 33.21 stop screen resizing after citation delete (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -1166,7 +1167,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
            		try {
 					pointCitationSourceHandler.deleteCitationRecord((long)objCiteDataToEdit[3]);
 					resetCitationTable(null_RPID);
-					pack();
 				} catch (HBException hbe) {
 					if (HGlobal.writeLogs) {
 						HB0711Logging.logWrite("ERROR: in HG0547Edit delete citation: " + hbe.getMessage()); //$NON-NLS-1$

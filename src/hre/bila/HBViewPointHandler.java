@@ -80,9 +80,10 @@ package hre.bila;
  *			  2024-10-21 - In addPartnerAssocToAssoc() removed self assoc (N. Tolleshaug)
  *			  2024-10-24 - Added more tests for self assocs Person VP (N. Tolleshaug)
  *			  2024-11-05 - Change literal " for" in Event info to ":" (D Ferguson)
- *			  2024-12-06 - line 3689 - if (isResultSetEmpty(partnerRelationRS)) (N. Tolleshaug);
+ *			  2024-12-06 - line 3689 - if (isResultSetEmpty(partnerRelationRS)) (N. Tolleshaug)
  *			  2024-12-10 - Updated name table for Person VP (N. Tolleshaug)
  * v0.05.0033 2026-03-09 - Translation of 'No recorded Father/mother' (D Ferguson)
+ * 			  2026-05-12 - Line 2707 to fix Issue 33.08 duplicate events (N. Tolleshaug)
  *********************************************************************************
  * NOTE 1 - Not implemented handling of missing birth date line 1023
  * NOTE 2 - line 2996 findLocationWithImage() always return false???
@@ -2243,12 +2244,7 @@ class ViewPeopleData extends HBBusinessLayer {
 		rowCount = rowCount + addEventToEvents(selectPersonPID, eventList);
 	// Include witness events
 		if (includeWitnessEvents)
-		 {
 			rowCount = rowCount + addWitnesToEvents(selectPersonPID, eventList);
-//	Include list of child's
-			//if (includeCildrenEvents) rowCount = rowCount + addChildsToTable(selectPersonPID, eventList);
-		}
-
 		nrRows = rowCount;
 	// Set number of events for GUI
 		eventRows = rowCount;
@@ -2636,11 +2632,10 @@ class ViewPeopleData extends HBBusinessLayer {
 					//System.out.println(" Event list: " + selectPersonPID + "/" + eventPID + "/" + eventRole);
 					events = new Object[7];
 					bestImageRPID = eventSelected.getLong("BEST_IMAGE_RPID");
-					if (bestImageRPID != null_RPID) {
-						image = "*";
-					} else {
-						image = "";
-					}
+			// Mark events with image		
+					if (bestImageRPID != null_RPID) image = "*";
+					else image = "";
+					
 					locationName_RPID = eventSelected.getLong("EVNT_LOCN_RPID");
 					eventNumber = eventSelected.getInt("EVNT_TYPE");
 					eventRole = eventSelected.getInt("PRIM_ASSOC_ROLE_NUM");
@@ -2709,7 +2704,10 @@ class ViewPeopleData extends HBBusinessLayer {
 				int eventCount = 0;
 				events = new String[7];
 				while (eventSelected.next()) {
-					if (!eventDuplicateList.contains(eventSelected.getLong("PID"))) {
+	// 12.5.2026 to fix Issue 33.08 duplicate events in event list
+					long selectedPID = eventSelected.getLong("PID");
+					if (!eventDuplicateList.contains(selectedPID)) {
+						eventDuplicateList.add(selectedPID);
 						events = new Object[7];
 						locationName_RPID = eventSelected.getLong("EVNT_LOCN_RPID");
 						bestImageRPID = eventSelected.getLong("BEST_IMAGE_RPID");
@@ -2732,7 +2730,8 @@ class ViewPeopleData extends HBBusinessLayer {
 						events[4] = "" + pointLibraryResultSet.calculateAge(eventHDatePID,
 												selectPersonPID, dataBaseIndex);
 						events[5] = pointLibraryResultSet.exstractSortString(sortHDatePID, dataBaseIndex);
-						// record event PID table indexed by table position.
+						
+				// record event PID table indexed by table position.
 						events[6] = eventSelected.getLong("PID");
 						eventCount++;
 						index++;

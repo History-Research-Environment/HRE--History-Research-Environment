@@ -427,6 +427,8 @@ public class HBLibraryResultSet {
 			pointResultSet.updateString("OUT_NAME_STYLE", userData[1]);
 			pointResultSet.updateString("OUT_NAME_STYLE_DESC", userData[2]);
 			pointResultSet.updateString("OUT_ELEMNT_CODES", userData[3]);
+			//System.out.println(" Update Out Style Owner: " + ownerPID 
+			//		+ " Stype: " + userData[1] + " Type: " + userData[0] + " Codes: " + userData[3]);
 			pointResultSet.updateRow();
 			pointResultSet.beforeFirst();
 		} catch (SQLException sqle) {
@@ -727,7 +729,7 @@ public class HBLibraryResultSet {
 		         Reader readClob = clobMemo.getCharacterStream();
 		         StringBuffer buffer = new StringBuffer();
 		         int ch;
-		         while ((ch = readClob.read())!=-1) buffer.append(""+(char)ch);
+		         while ((ch = readClob.read())!=-1) buffer.append("" + (char)ch);
 		         sentence = buffer.toString();
 			} else sentence = sentenceSet.getString("SHORT_SENT");
 			return langPrefix + sentence;

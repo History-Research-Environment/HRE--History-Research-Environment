@@ -49,9 +49,10 @@ package hre.gui;
  * 			  2025-03-17 Adjust Citation table column sizes (D Ferguson)
  * 			  2025-03-24 Remove all Citation tables (D Ferguson)
  * 			  2026-02-02 Log all catch block and DEBUG msgs (D Ferguson)
+ * v0.05.0033 2026-05-21 Revise focus policy (D Ferguson)
  ********************************************************************************
  * NOTES on incomplete functionality:
- * NOTE02 need Sentence Editor function eventually
+ * NOTE02 need Sentence Editor function
  ********************************************************************************/
 
 import java.awt.CardLayout;
@@ -117,7 +118,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Add Person
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2022-03-18
  */
 
@@ -609,7 +610,14 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 					if (col == 1) return true;
 					return false;
 				}
-
+				public Component prepareRenderer(TableCellRenderer renderer, int row, int col)  {
+					Component cell = super.prepareRenderer(renderer, row, col);
+					// For the Selected cell we let the editor take over with no highlights
+					if (col == 1) cell.setCursor(Cursor.getDefaultCursor());
+					cell.setBackground((Color) UIManager.get("Table.background"));		//$NON-NLS-1$
+					cell.setForeground((Color) UIManager.get("Table.foreground"));		//$NON-NLS-1$
+					return cell;
+				}
 				// Now change the Flag Settings to comboboxes of the Flag Values, so user can reset flags
 				public TableCellEditor getCellEditor(int row, int col) {
 	                if (col != 1)
@@ -1587,7 +1595,7 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		contents.add(btn_Save, "cell 0 2 2, alignx right, gapx 20, tag ok");	//$NON-NLS-1$
 
 //*******************
-// Setup Focus Policy			--- still needs work!
+// Setup Focus Policy
 //*******************
         Vector<Component> focusOrder = new Vector<>();
         // Name panel

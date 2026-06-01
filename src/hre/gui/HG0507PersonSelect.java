@@ -70,6 +70,7 @@ package hre.gui;
  * 			  2024-10-29 Modified public static final String screenID = "50700" (N. Tolleshaug)
  * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
+ * v0.05.0033 2026-05-29 Change default double-click to ManagePerson, not VP (D Ferguson)
  ***************************************************************************************
  * NOTES for incomplete functionality
  * NOTE02 No code for importing saved filters
@@ -146,7 +147,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Person Select
  * @author D Ferguson
- * @version v0.03.0031
+ * @version v0.05.0033
  * @since 2019-09-16
  */
 
@@ -986,10 +987,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		            	if (me.getClickCount() == 2 && table_Entity.getSelectedRow() != -1) {
 		            		selectedRow = table_Entity.getSelectedRow();
 		            		int rowInTable = table_Entity.convertRowIndexToModel(selectedRow);
-							tablePersonPID = pointPersonHandler.getPersonTablePID(rowInTable);
-						// Open Viewpoint for selected person
-							errorCode = pointViewPointHandler.initiatePersonVP(pointOpenProject, tablePersonPID);
-							if (errorCode > 0)
+		            		tablePersonPID = pointPersonHandler.getPersonTablePID(rowInTable);
+		            		pointOpenProject.pointGuiData.setTableViewPointPID("50600", tablePersonPID); //$NON-NLS-1$
+							errorCode = pointPersonHandler.initiateManagePerson(pointOpenProject, tablePersonPID, "50600" ); //$NON-NLS-1$
+							if (errorCode > 1)
 								userInfoInitVP(errorCode);
 		                }
 		                // if right-click

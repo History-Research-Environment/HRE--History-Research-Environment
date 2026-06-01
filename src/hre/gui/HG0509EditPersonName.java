@@ -104,7 +104,7 @@ public class HG0509EditPersonName extends HG0509ManagePersonName {
 					pointPersonHandler.createNameDates(true, personNameTablePID, "START_HDATE_RPID", startHREDate);	//$NON-NLS-1$
 
 				if (endDateOK)
-					pointPersonHandler.createNameDates(true, personNameTablePID, "END_HDATE_RPID", endHREDate);			//$NON-NLS-1$
+					pointPersonHandler.createNameDates(true, personNameTablePID, "SORT_HDATE_RPID", sortHREDate);			//$NON-NLS-1$
 
 				if (nameChanged || eventTypeChanged || memoChanged || citationOrderChanged) {
 					if (nameChanged || eventTypeChanged) {

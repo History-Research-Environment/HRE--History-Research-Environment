@@ -76,6 +76,11 @@ package hre.gui;
  * 			  2026-04-04 Remove Notepads card (D Ferguson)
  * 			  2026-04-07 Added foicus person name (N. Tolleshaug)
  * 			  2026-04-24 Collapse gt-gt-gt-gt-etc relationships to nth-gt for Eng (D Ferguson)
+ * 			  2026-05-02 Corrected chars ��� in class NorwegianNamer
+ * 			  2026-05-15 Corrected Dutch ancestor (aprent) naming (D Ferguson)
+* 			  2026-05-20 Corrected other Dutch realtionship names (D Ferguson)
+* 			  2026-06-25 Fix 33.22 cancel editing/delete/copy in parent event table (N. Tolleshaug)
+* 			  2026-05-28 Update NLS (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 need listener and code for handling DNA data
@@ -1441,7 +1446,18 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        	long eventPID;
 	        	ResultSet eventTableRS;
 	        	dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-	        	rowInTable = tableEvents.getSelectedRow();
+	        	rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
+	        	if (rowInTable == -1) return;
+        		String eventClassClicked = (String) objEventData[rowInTable][5];
+        		if (HGlobal.DEBUG)
+        			System.out.println(" Type of event clicked at row: " + rowInTable + " - " + eventClassClicked); //$NON-NLS-1$ //$NON-NLS-2$
+
+        	// Fix 24.5.2026 - Avoid delete of a father recorded in Person Manager event table
+        		if (eventClassClicked.equals("C")) {	//$NON-NLS-1$
+        			JOptionPane.showMessageDialog(personManagerFrame, HG0506Msgs.Text_61);  // Edit of parent/child relationship is invalid
+        			return;
+        		}
+
 	        	eventPID = pointPersonHandler.getEventPID(rowInTable);
 	        	if (rowInTable < 0) return;
 
@@ -1457,11 +1473,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 								   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 						return;
 					}
+
 		       		eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 		       		if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
 						pointPersonHandler.deletePartnerEvent(eventPID);
 					} else pointOpenProject.getWhereWhenHandler().deleteSingleEvent(eventPID);
+
 					pointOpenProject.getPersonHandler().resetPersonManager();
+
 				} catch (HBException | SQLException hbe) {
 					if (HGlobal.writeLogs) {
 						HB0711Logging.logWrite("ERROR: in HG0506 in delete event: " + hbe.getMessage()); //$NON-NLS-1$
@@ -1477,7 +1496,18 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    ActionListener popAL6 = new ActionListener() {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
-	        	JOptionPane.showMessageDialog(tableEvents, "Copy event not yet implemented");  // NOTE02  //$NON-NLS-1$ (temporary code)
+	        	int rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
+	        	if (rowInTable == -1) return;
+        		String eventClassClicked = (String) objEventData[rowInTable][5];
+        		if (HGlobal.DEBUG)
+        			System.out.println(" Type of event clicked at row: " + rowInTable + " - " + eventClassClicked); //$NON-NLS-1$ //$NON-NLS-2$
+
+        	// Fix 24.5.2026 - Avoid delete of a father recorded in Person Manager event table
+        		if (eventClassClicked.equals("C")) {	//$NON-NLS-1$
+        			JOptionPane.showMessageDialog(personManagerFrame, HG0506Msgs.Text_61);  // Edit of parent/child relationship is invalid
+        			return;
+        		}
+				JOptionPane.showMessageDialog(personManagerFrame, "COPY event not implemented");  // NOTE02  //$NON-NLS-1$ (temporary code)
 	        }
 	      };
 
@@ -1487,15 +1517,33 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent e) {
 	        // The right-clicked (or double-clicked) row is passed here in rowClicked
         		int rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
+        		if (rowInTable == -1) return;
+        		String eventClassClicked = (String) objEventData[rowInTable][5];
+        		if (HGlobal.DEBUG)
+        			System.out.println(" Type of event clicked at row: " + rowInTable + " - " + eventClassClicked); //$NON-NLS-1$ //$NON-NLS-2$
+        	// Fix 24.5.2026 - Avoid editing of a father recorded in Person Manager event table
+        		if (eventClassClicked.equals("C")) {	//$NON-NLS-1$
+        			JOptionPane.showMessageDialog(personManagerFrame, HG0506Msgs.Text_61);	// Edit of parent/child relationship is invalid
+        			return;
+        		}
 	        	HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0547EditEvent editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable,
-																							  true, sexCode);
-				if (editEventScreen != null) {
-					editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-					Point xyShow = persName.getLocationOnScreen();
-					editEventScreen.setLocation(xyShow.x, xyShow.y);
-					editEventScreen.setVisible(true);
+				HG0547EditEvent editEventScreen = null;
+				try {
+					editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable, true, sexCode);
+					if (editEventScreen != null) {
+						editEventScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+						Point xyShow = persName.getLocationOnScreen();
+						editEventScreen.setLocation(xyShow.x, xyShow.y);
+						editEventScreen.setVisible(true);
+					}
+				} catch (HBException hbe) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0506 in edit event: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
+					hbe.printStackTrace();
 				}
+
 	        }
 	      };
 
@@ -2439,38 +2487,90 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
     public static class DutchNamer implements RelationshipNamer {
         @Override
         public String name(RelationshipDescriptor d) {
+        	String[] dutchGreats = {"", "",			// for up = 0, 1
+        							"groot",		// for up or down = 2, etc
+        							"overgroot",
+        							"betovergroot",
+        							"oud",
+        							"oudgroot",
+        							"oudovergroot",
+        							"oudbetovergroot",
+        							"stam",
+        							"stamgroot",			// 10
+        							"stamovergroot",
+        							"stambetovergroot",
+        							"stamoud",
+        							"stamoudgroot",
+        							"stamoudovergroot",
+        							"stamoudbetovergroot",
+        							"edel",
+        							"edelgroot",
+        							"edelovergroot",
+        							"edelbetovergroot",			// 20
+        							"edeloud",
+        							"edeloudgroot",
+        							"edeloudovergroot",
+        							"edeloudbetovergroot",
+        							"edelstam",
+        							"edelstamgroot",
+        							"edelstamovergroot",
+        							"edelstambeovergroot",
+        							"edelstamoud",
+        							"edelstamoudgroot",			// 30
+        							"edelstamoudovergroot",
+        							"edelstamoudbetovergroot",
+        							"voor",
+           							"voorgroot",
+        							"voorovergroot",
+        							"voorbetovergroot",
+           							"vooroudgroot",
+        							"vooroudovergroot",
+        							"vooroudbetovergroot",
+        							"voorstamgroot"  };			// 40
             return switch (d.type) {
                 case SELF -> "zelf";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
+                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode, dutchGreats);
                 case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
                 case SIBLING -> d.sexCode == "M" ? "broer" : "zus";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
+                case NIBLING -> nibling(d.generationsDown, d.sexCode, dutchGreats);
+                case PIBLING -> pibling(d.generationsUp, d.sexCode, dutchGreats);
                 case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
             };
         }
-        private String ancestor(int up, String sex) {
+        private String ancestor(int up, String sex, String[] greats) {
             if (up == 1) return sex == "M" ? "vader" : "moeder";
-            if (up == 2) return sex == "M" ? "grootvader" : "grootmoeder";
-            return "over-".repeat(up - 2) + (sex == "M" ? "grootvader" : "grootmoeder");
+            if (up < 41) return greats[up] + (sex == "M" ? "vader" : "moeder");
+            // Hopefully never get as far as this!
+            return String.valueOf(up - 2) + (sex == "M" ? "-overgrootvader" : "-overgrootmoeder");
         }
         private String descendant(int down, String sex) {
             if (down == 1) return sex == "M" ? "zoon" : "dochter";
             if (down == 2) return sex == "M" ? "kleinzoon" : "kleindochter";
-            return "achter-".repeat(down - 2) + (sex == "M" ? "kleinzoon" : "kleindochter");
+            if (down == 3) return sex == "M" ? "achterkleinzoon" : "achterkleindochter";
+            if (down == 4) return sex == "M" ? "achterachterkleinzoon" : "achterachterkleindochter";
+            return String.valueOf(down - 2) + (sex == "M" ? "-achterkleinzoon" : "-achterkleindochter");
         }
-        private String nibling(int down, String sex) {
+        private String nibling(int down, String sex, String[] greats) {
             if (down == 1) return sex == "M" ? "neef" : "nicht";
-            return "achterneef/achternicht";
+            if (down < 41) return greats[down] + (sex == "M" ? "neef" : "nicht");
+            // Hopefully never get as far as this!
+            return String.valueOf(down - 2) + (sex == "M" ? "-overgrootneef" : "-overgrootnicht");
         }
-        private String pibling(int up, String sex) {
+        private String pibling(int up, String sex, String[] greats) {
             if (up == 1) return sex == "M" ? "oom" : "tante";
-            return "oudoom/oudtante";
+            if (up < 41) return greats[up] + (sex == "M" ? "oom" : "tante");
+            // Hopefully never get as far as this!
+            return String.valueOf(up - 2) + (sex == "M" ? "-overgrootoom" : "-overgroottante");
         }
         private String cousin(int degree, int removal, String sex) {
-            String base = degree + "e graad " + (sex == "M" ? "neef" : "nicht");
+        	String cousinNum ="", cousinRem ="";
+        	if (degree == 1 || degree > 20) cousinNum = degree + "st ";
+        	else cousinNum = degree + "de";
+        	if (removal == 1 || removal > 20) cousinRem = " " + removal + "st graad";
+        	else cousinRem = " " + removal + "de graad";
+            String base = cousinNum + (sex == "M" ? "neven" : "nichten");
             if (removal == 0) return base;
-            return base + ", " + removal + " keer verwijderd";
+            return base + cousinRem;
         }
     }		// End DutchNamer
  // ---------------- ITALIAN ----------------

@@ -14,6 +14,7 @@ package hre.gui;
  *			  2025-12-29 NLS all code to this point (D Ferguson)
  *			  2025-12-31 Updated language setting for add source definition (N. Tolleshaug)
  *			  2026-01-06 Log catch block msgs (D Ferguson)
+ * v0.05.0033 2026-05-13 Fix 33.20 Stop Reminder text load blowing textarea size (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -55,7 +56,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit SourceType
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2025-01-31
  */
 
@@ -193,7 +194,7 @@ public class HG0568EditSourceType extends HG0450SuperDialog {
 
 		JLabel remind = new JLabel(HG0567Msgs.Text_24);		// Reminder
 		contents.add(remind, "cell 0 4, alignx right");	//$NON-NLS-1$
-		remindText = new JTextArea();
+		remindText = new JTextArea(6, 40); // force row size so adding a text block computes properly
 		remindText.setWrapStyleWord(true);
 		remindText.setLineWrap(true);
 		remindText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area

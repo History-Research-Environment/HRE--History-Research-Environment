@@ -35,6 +35,10 @@ package hre.gui;
  * 			  2025-10-18 Corrected table content if add name ore edit name (N. Tolleshaug)
  * 			  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
  * 			  2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
+ * v0.05.0033 2026-05-14 Change endHDatePID = personNameTable.getLong("SORT_HDATE_RPID") (N. Tolleshaug)
+ * 			  2026-05-17 Update NLS for Sort date (D Ferguson)
+ * 			  2026-05-17 Changed from end date to sort date variable name (N. Tolleshaug)
+ * 			  2026-05-21 Revise focusPolicy (D Ferguson)
  ******************************************************************************
  * Notes on functions not yet enabled
  * NOTE04 Sentence edit function
@@ -45,6 +49,7 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -101,7 +106,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage PersonName by Style
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2022-09-23
  */
 
@@ -148,15 +153,15 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	long startHDatePID;
 
 	HG0590EditDate editEndDate;
-	long endMainYear = 0L;
-	String endMainDetails = "";		//$NON-NLS-1$
-	long endExtraYear = 0L;
-	String endExtraDetails = "";	//$NON-NLS-1$
-	String endSortCode = "";		//$NON-NLS-1$
-	Object[] endHREDate;
-	long endHDatePID, personNameTablePID;
+	long sortMainYear = 0L;
+	String sortMainDetails = "";		//$NON-NLS-1$
+	long sortExtraYear = 0L;
+	String sortExtraDetails = "";	//$NON-NLS-1$
+	String sortSortCode = "";		//$NON-NLS-1$
+	Object[] sortHREDate;
+	long sortHDatePID, personNameTablePID;
 
-	JTextField dateStart, dateEnd;
+	JTextField dateStart, dateSort;
 	JTextArea memoNameText;
 	DocumentListener textListen;
 
@@ -214,8 +219,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			try {
 				personNameTable.first();
 				startHDatePID = personNameTable.getLong("START_HDATE_RPID");	//$NON-NLS-1$
-				endHDatePID = personNameTable.getLong("END_HDATE_RPID");		//$NON-NLS-1$
-
+				sortHDatePID = personNameTable.getLong("SORT_HDATE_RPID");		//$NON-NLS-1$
 			} catch (SQLException sqle) {
 				if (HGlobal.writeLogs) {
 					HB0711Logging.logWrite("ERROR: in HG0509ManagePerName loading personName table " + sqle.getMessage()); //$NON-NLS-1$
@@ -233,14 +237,14 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 				startSortCode = (String) startHREDate[4];
 	    	}
 	    // Collect end date Hdate
-	    	endHREDate = pointPersonHandler.pointLibraryResultSet.
-	    			dateIputHdate(endHDatePID, dataBaseIndex);
-	    	if (endHREDate != null) {
-				endMainYear = (long) endHREDate[0];
-				endMainDetails = (String) endHREDate[1];
-				endExtraYear = (long) endHREDate[2];
-				endExtraDetails = (String) endHREDate[3];
-				endSortCode = (String) endHREDate[4];
+	    	sortHREDate = pointPersonHandler.pointLibraryResultSet.
+	    			dateIputHdate(sortHDatePID, dataBaseIndex);
+	    	if (sortHREDate != null) {
+				sortMainYear = (long) sortHREDate[0];
+				sortMainDetails = (String) sortHREDate[1];
+				sortExtraYear = (long) sortHREDate[2];
+				sortExtraDetails = (String) sortHREDate[3];
+				sortSortCode = (String) sortHREDate[4];
 	    	}
 	    }
 
@@ -501,15 +505,15 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		dateStart.setText(" " + pointPersonHandler.formatDateSelector(startMainYear, startMainDetails,  //$NON-NLS-1$
 				startExtraYear, startExtraDetails).trim());
 
-		JLabel lbl_DateEnd = new JLabel(HG0509Msgs.Text_6);		// End Date:
-		contents.add(lbl_DateEnd, "cell 0 7, align right");		//$NON-NLS-1$
-		dateEnd = new JTextField(nameData[2]);
-		dateEnd.setColumns(20);
-		dateEnd.setEditable(false);		// ensure field cannot be edited from keyboard
-		dateEnd.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
-		contents.add(dateEnd, "cell 1 7");	//$NON-NLS-1$
-		dateEnd.setText(" " + pointPersonHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$
-				endExtraYear, endExtraDetails).trim());
+		JLabel lbl_dateSort = new JLabel(HG0509Msgs.Text_6);		// Sort Date:
+		contents.add(lbl_dateSort, "cell 0 7, align right");		//$NON-NLS-1$
+		dateSort = new JTextField(nameData[2]);
+		dateSort.setColumns(20);
+		dateSort.setEditable(false);		// ensure field cannot be edited from keyboard
+		dateSort.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
+		contents.add(dateSort, "cell 1 7");	//$NON-NLS-1$
+		dateSort.setText(" " + pointPersonHandler.formatDateSelector(sortMainYear, sortMainDetails,	//$NON-NLS-1$
+				sortExtraYear, sortExtraDetails).trim());
 
 	// Setup memo text area (scrollable) in col 2
 		JLabel lbl_Memo = new JLabel(HG0509Msgs.Text_8);	// Memo:
@@ -517,6 +521,8 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		memoNameText = new JTextArea();
 		memoNameText.setWrapStyleWord(true);
 		memoNameText.setLineWrap(true);
+		memoNameText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
+		memoNameText.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
 		((DefaultCaret)memoNameText.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 	    Font font = UIManager.getFont("TextArea.font");		//$NON-NLS-1$
 	    memoNameText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
@@ -546,15 +552,17 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 
 	// Setup Order of components for Focus Policy
         Vector<Component> focusOrder = new Vector<>();
+        focusOrder.add(comboEvents);
+        focusOrder.add(comboStyles);
         focusOrder.add(tablePerson);
         focusOrder.add(dateStart);
-        focusOrder.add(dateEnd);
+        focusOrder.add(dateSort);
         focusOrder.add(tableNameCite);
         focusOrder.add(memoNameText);
         contents.setFocusCycleRoot(true);
         contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
        	// Set initial focus of screen
-    	tablePerson.requestFocusInWindow();
+    	comboEvents.requestFocusInWindow();
         pack();
 
 /**************************************************************
@@ -871,22 +879,22 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
         });
 
 	// Listener to End date to enable save button
-		dateEnd.addMouseListener(new MouseAdapter(){
+		dateSort.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
             	btn_Save.setEnabled(true);
                 // Initiate edit date window and preload
             	if (editEndDate != null)
-            		editEndDate.convertFromHDate(endMainYear, endMainDetails, endExtraYear, endExtraDetails);
+            		editEndDate.convertFromHDate(sortMainYear, sortMainDetails, sortExtraYear, sortExtraDetails);
             	else {
             		editEndDate = new HG0590EditDate(pointOpenDisplay, false, false, false, true);
             		editEndDate.dateType = 2;  // set end date
-            		if (endHREDate != null)
-            			editEndDate.convertFromHDate(endMainYear, endMainDetails, endExtraYear, endExtraDetails);
+            		if (sortHREDate != null)
+            			editEndDate.convertFromHDate(sortMainYear, sortMainDetails, sortExtraYear, sortExtraDetails);
             	}
            // 	Set positin and set visible
     			editEndDate.setModalityType(ModalityType.APPLICATION_MODAL);
-    			Point xyDate = dateEnd.getLocationOnScreen();
+    			Point xyDate = dateSort.getLocationOnScreen();
     			editEndDate.setLocation(xyDate.x, xyDate.y-100);
     			editEndDate.setVisible(true);
             }
@@ -931,21 +939,21 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	@Override
 	public void saveEndDate() {
 		if (editEndDate != null) {
-			endMainYear = editEndDate.returnYearToGUI();
-			endMainDetails = editEndDate.returnDetailToGUI().trim();
-			endExtraYear = editEndDate.returnYear2ToGUI();
-			endExtraDetails = editEndDate.returnDetail2ToGUI().trim();
-			endSortCode = editEndDate.returnSortString().trim();
+			sortMainYear = editEndDate.returnYearToGUI();
+			sortMainDetails = editEndDate.returnDetailToGUI().trim();
+			sortExtraYear = editEndDate.returnYear2ToGUI();
+			sortExtraDetails = editEndDate.returnDetail2ToGUI().trim();
+			sortSortCode = editEndDate.returnSortString().trim();
 			pointPersonHandler.setUpDateTranslation();
-			dateEnd.setText(" " + pointPersonHandler.formatDateSelector(endMainYear, endMainDetails,	//$NON-NLS-1$
-					endExtraYear, endExtraDetails).trim());
+			dateSort.setText(" " + pointPersonHandler.formatDateSelector(sortMainYear, sortMainDetails,	//$NON-NLS-1$
+					sortExtraYear, sortExtraDetails).trim());
 		}
-		if (endHREDate == null) endHREDate = new Object[5];
-		endHREDate[0] = endMainYear;
-		endHREDate[1] = endMainDetails;
-		endHREDate[2] = endExtraYear;
-		endHREDate[3] = endExtraDetails;
-		endHREDate[4] = endSortCode;
+		if (sortHREDate == null) sortHREDate = new Object[5];
+		sortHREDate[0] = sortMainYear;
+		sortHREDate[1] = sortMainDetails;
+		sortHREDate[2] = sortExtraYear;
+		sortHREDate[3] = sortExtraDetails;
+		sortHREDate[4] = sortSortCode;
 		endDateOK = true;
 	}
 

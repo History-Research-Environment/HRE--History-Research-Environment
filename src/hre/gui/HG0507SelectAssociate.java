@@ -12,6 +12,8 @@ package hre.gui;
  * 			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
  *       	  2026-01-01 Updated code for pointer to HBEventRoleManager (N. Tolleshaug)
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
+ * v0.05.0033 2026-05-11 Handling duplicate associate roles (N. Tolleshaug)
+ * 			  2026-05-15 Update NLS (D Ferguson)
  **************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -19,6 +21,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBEventRoleManager;
@@ -31,7 +34,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectAssociate
  * @author N Tolleshaug
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2024-04-05
  */
 
@@ -138,16 +141,33 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 					if (pointEditEvent != null)
 						pointEditEvent.resetAssociateTable(assocTablePID);
 					else if (HGlobal.writeLogs)
-						HB0711Logging.logWrite("Status: in HG0507SelAssoc pointEditEvent == null");
+						HB0711Logging.logWrite("Status: in HG0507SelAssoc pointEditEvent == null");  //$NON-NLS-1$
 
 					persRolePanel.setVisible(false);
 					persRolePanel.remove(pointSelectAssociate);
 
 				} catch (HBException hbe) {
-					if (HGlobal.writeLogs) {
-						HB0711Logging.logWrite("ERROR: in HG0507SelAssoc save: " + hbe.getMessage()); //$NON-NLS-1$
-						HB0711Logging.printStackTraceToFile(hbe);
-					}
+					if (hbe.getMessage().startsWith("###")) {		//$NON-NLS-1$
+						try {
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("WARNING Duplicate role for "+ pointPersonHandler.getPersonName(personPID)); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
+							JOptionPane.showMessageDialog(persRolePanel,
+									HG05070Msgs.Text_158 + pointPersonHandler.getPersonName(personPID), // Role already exists for
+									HG05070Msgs.Text_159,		// Duplicate role error
+									JOptionPane.ERROR_MESSAGE);
+						} catch (HBException hbee) {
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0507SelAssoc - pointPersonHandler.getPersonName " + hbee.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbee);
+							}
+						}
+					} else
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0507SelAssoc save: " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 				}
 			}
 		});
@@ -188,4 +208,5 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 	// setting model with new data
 	    jCombo.setModel(model);
 	}
+
 }

@@ -51,6 +51,7 @@ package hre.bila;
  *			  2025-09-18 Remove T168 updates and T73x additions (now in Seed)(D Ferguson)
  * v0.05.0033 2026-04-07 Added and updated FOCUS_PER_PID for T126  (N. Tolleshaug)
  * 			  2026-04-25 ALTER TABLE T460_EVNT_DEFN ALTER COLUMN EVNT_HINT VARCHAR(5000) (N. Tolleshaug)
+ * 			  2026-05-15 T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID (N. Tolleshaug)
  * 
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
@@ -511,6 +512,9 @@ public class HBProjectHandler extends HBBusinessLayer {
 
 	// Set boolean IS_OWNER in T131
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
+		
+	// Update table T402_PERS_NAME
+		updateTableInBase("T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID" , databaseIndex);
 		
 	// Update table T460_EVNT_DEFN
 		updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE", "ALTER COLUMN EVNT_HINT VARCHAR(5000)" , databaseIndex);

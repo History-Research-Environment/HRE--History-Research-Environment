@@ -35,6 +35,7 @@ package hre.gui;
  *			  2025-11-02 Fix source template scrollpane size/pack issues (D Ferguson)
  * 			  2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
  * 			  2026-02-16 Fix src # entry formatter to disallow commma (D Ferguson)
+ * v0.05.0033 2026-05-25 Setup focus policy (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -51,6 +52,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.NumberFormat;
+import java.util.Vector;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -87,13 +89,14 @@ import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBReportHandler;
 import hre.bila.HBRepositoryHandler;
+import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG0555Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Edit Citation
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2025-01-17
  */
 
@@ -499,7 +502,24 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 
 	// End of Panel Definitions
 
-		// Focus Policy still to be setup!
+//*******************
+// Setup Focus Policy
+//*******************
+        Vector<Component> focusOrder = new Vector<>();
+        if (srcNum.isEnabled()) focusOrder.add(srcNum);
+        else focusOrder.add(citeDetailText);
+        focusOrder.add(citeMemoText);
+        focusOrder.add(refText);
+        focusOrder.add(acc1);
+        if (acc2.isEnabled()) focusOrder.add(acc2);
+        focusOrder.add(accD);
+        focusOrder.add(accP);
+        focusOrder.add(accM);
+      contents.setFocusCycleRoot(true);
+        contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
+	// Set initial focus of screen
+        if (srcNum.isEnabled()) srcNum.requestFocusInWindow();
+        else citeDetailText.requestFocusInWindow();
 
 		pack();
 

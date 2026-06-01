@@ -11,6 +11,7 @@ package hre.tmgjava;
  * 			  2024-07-16 - Updated TMG to Hdate according to HRE (N. Tolleshaug)
  * v0.04.0032 2026-01-14 - Log catch block and other msgs (D Ferguson)
  * v0.05.0033 2026-03-28 - Test/Correct number of chars in TMG hdate (N. Tolleshaug)
+ * 			  2026-05-26 - Hanndle Number Format error in TMG date hdate (N. Tolleshaug)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -59,7 +60,16 @@ public class HREhdate {
  * @throws HCException
  */
 	public static long addToT170_22a_HDATES(ResultSet hreTable, String hdate) throws HCException {
-		return addToT170_21c_HDATES(hreTable, hdate);
+		try {
+			return addToT170_21c_HDATES(hreTable, hdate);
+		} catch (HCException hce) {
+			System.out.println(" Warning:" + hce.getMessage());
+			if (hce.getMessage().startsWith("###")) {
+				if (HGlobal.writeLogs) 
+					HB0711Logging.logWrite("WARNING: from HREhdate: " + hce.getMessage());
+				return null_RPID;
+			} else throw new HCException(hce.getMessage());
+		}
 	}
 
 /**
@@ -195,8 +205,9 @@ public class HREhdate {
  * START--- TMG Date to HRE Hdate Conversion method
  * Called first to set up HDate variables
  * @param tmg_date
+ * @throws HCException 
  */
-	static public void tmgToT170hdate(String tmg_date) {
+	static public void tmgToT170hdate(String tmg_date) throws HCException {
 
 		String main_days, main_months, main_hours, main_minutes, main_seconds,
 			main_milliseconds,main_offset_units, main_offset_value;
@@ -215,182 +226,186 @@ public class HREhdate {
 		String calendar_type = "CE";
 		char question_mark_detail = 'N';
 		char question_mark_sort = '0';
-
-	// Classify the the type of date entry
-		char first_char = tmg_date.charAt(0);
-	// has leading "0"
-		if (first_char == '0') {
-	// irregular date
-			if(tmg_date.length() == 1) {
-				// irregular date with no text desription
-				// EXTRA CODE NEEDED HERE ///
-				System.out.println("Irregular date no content = " + tmg_date);
-			} else {
-				nrIrrDates++;
-				if (!irrDates.contains(tmg_date)) {
-					irrDates.add(tmg_date);
-					if(TMGglobal.TRHDATE) System.out.println("Irrnr: " + nrIrrDates + " New irregular: " + tmg_date);
-				}
-				String irregular_text = tmg_date.substring(1);
-				main_years = 0;
-				main_details =	"I";
-				extra_years =	0;
-
-			// Irregular date can be up o 29 chars
-				if (irregular_text.length() > 24) {
-					System.out.println(" @@ Long Irregular date (max 24) , text = " + irregular_text + " / length: "
-							+ irregular_text.length());
-					irregular_text = irregular_text.substring(0,24);
-				}
-			// Temp solution - Irregular text in extra_details
-				extra_details =	irregular_text;
-				sort_date_code = "3";
-				if (TMGglobal.DEBUG) System.out.println("@@ Irregular date value = " + irregular_text);
-			}
-		} else {
-	// output regular date and return
-			char old_style = tmg_date.charAt(9);
-	// has old style
-			if (old_style == '1') {
-				nrOldStyles++;
-				if (!oldStyles.contains(tmg_date)) {
-					oldStyles.add(tmg_date);
-					if (TMGglobal.TRHDATE) System.out.println("OS nr: " + nrOldStyles + " New old style: " + tmg_date);
-				}
-				calendar_type = "CO";
-				if (TMGglobal.DEBUG) System.out.println("@@ TMG old style date  = " + tmg_date);
-			} else calendar_type = "CE";
-
-			start_details = "" + date_origin + calendar_type;
-
-		// question mark
-			if (tmg_date.charAt(20) =='1') {
-				nrQestionMarks++;
-				if (!qestionMarks.contains(tmg_date)) {
-					qestionMarks.add(tmg_date);
-					if(TMGglobal.TRHDATE)
-						System.out.println("Qm nr: " + nrQestionMarks + " New question mark: " + tmg_date);
-				}
-				if (TMGglobal.DEBUG) System.out.println("@@ TMG question mark date  = " + tmg_date);
-				question_mark_detail = 'Y';
-				question_mark_sort = '1';
-			}
-
-		// Main Date Data
-			main_years = Long. parseLong(tmg_date.substring( 1, 5));
-			main_months = tmg_date.substring( 5, 7);
-			if (main_months.equals("00")) main_months = "%%";
-			main_days = tmg_date.substring( 7, 9);
-			if (main_days.equals("00")) main_days = "%%";
-			main_hours = "%%";
-			main_minutes = "%%";
-			main_seconds = "%%";
-			main_milliseconds = "%%%";
-			main_offset_units = "__";
-			main_offset_value = "000";
-
-			//char sort_code = '0';
-			char qualifier_code = '%';
-
-		// TMG qualifier settings
-			char qualifier = tmg_date.charAt(10);
-			switch(qualifier) {
-				case '0':
-					qualifier_code = 'B';	// ELEMENT_CODE "Before"
-					sort_qualifier_code = '1';
-					break;
-				case '1':
-					qualifier_code = 'S';	// ELEMENT_CODE "Say"
-					sort_qualifier_code = '2';
-					break;
-				case '2':
-					qualifier_code = 'C';	// ELEMENT_CODE "Circa"
-					sort_qualifier_code = '3';
-					break;
-				case '3':
-					qualifier_code = 'X';	// ELEMENT_CODE "Exact"
-					sort_qualifier_code = '4';
-					break;
-				case '4':
-					qualifier_code = 'A';	// ELEMENT_CODE "After"
-					sort_qualifier_code = '5';
-					break;
-				case '5':
-					qualifier_code = 'W';	// ELEMENT_CODE "Between / And"
-					sort_qualifier_code = '6';
-					dates_required = 2;
-					break;
-				case '6':
-					qualifier_code = 'O';	//  ELEMENT_CODE "Either / Or"
-					sort_qualifier_code = '7';
-					dates_required = 2;
-					break;
-				case '7':
-					qualifier_code = 'F';	// ELEMENT_CODE "From / To"
-					sort_qualifier_code = '8';
-					dates_required = 2;
-					break;
-
-				default: System.out.println("Unknown Main Qualifier = " + tmg_date);
-			}
-
-			start_details = "" + date_origin + calendar_type;
-			main_details = start_details + main_months + main_days + main_hours;
-			main_details = main_details	+ main_minutes + main_seconds + main_milliseconds;
-			main_details = main_details	+ qualifier_code + question_mark_detail
-							+ main_offset_units + main_offset_value;
-/**
- * 	Check for 2 time point cases
- *	single date point case - set extra_years and extra_details as null
- *	extra date exists
- */
-			if (dates_required == 2) {
-				extra_years = Long. parseLong(tmg_date.substring( 11, 15));
-				//if (extra_years == 0) extra_years = years_not_set;
-				extra_months = tmg_date.substring( 15, 17);
-				if(extra_months.equals("00")) extra_months = "%%";
-				extra_days = tmg_date.substring( 17, 19);
-				if (extra_days.equals("00")) extra_days = "%%";
-				extra_hours = "%%";
-				extra_minutes = "%%";
-				extra_seconds = "%%";
-				extra_milliseconds = "%%%";
-				extra_offset_units = "__";
-				extra_offset_value = "000";
-				extra_details = start_details + extra_months + extra_days + extra_hours;
-				extra_details = extra_details + extra_minutes + extra_seconds + extra_milliseconds;
-				extra_details = extra_details + qualifier_code + question_mark_detail
-								+ extra_offset_units + extra_offset_value;
-
-			} else {
-				extra_years = 0;
-				extra_details = "0";
-			}
-
-/**
- * Prepare 	sort_date_code
- */
-			// now start the SORT_DATE_CODE
-				sort_date_code = sort_date_start + year_header;
-			// Add date repeated
-			for(int m = 1; m <= 8; m++) {
-				char data_char = tmg_date.charAt(m);
-				sort_date_code = sort_date_code + data_char;
-				if (dates_required == 1) {
-					// repeat main year, month, day data
-					sort_date_code = sort_date_code + data_char;
+		try {
+		// Classify the the type of date entry
+			char first_char = tmg_date.charAt(0);
+		// has leading "0"
+			if (first_char == '0') {
+		// irregular date
+				if(tmg_date.length() == 1) {
+					// irregular date with no text desription
+					// EXTRA CODE NEEDED HERE ///
+					System.out.println("Irregular date no content = " + tmg_date);
 				} else {
-					// use extra year, months, years data
-					sort_date_code = sort_date_code + tmg_date.charAt(m + 10);
+					nrIrrDates++;
+					if (!irrDates.contains(tmg_date)) {
+						irrDates.add(tmg_date);
+						if(TMGglobal.TRHDATE) System.out.println("Irrnr: " + nrIrrDates + " New irregular: " + tmg_date);
+					}
+					String irregular_text = tmg_date.substring(1);
+					main_years = 0;
+					main_details =	"I";
+					extra_years =	0;
+	
+				// Irregular date can be up o 29 chars
+					if (irregular_text.length() > 24) {
+						System.out.println(" @@ Long Irregular date (max 24) , text = " + irregular_text + " / length: "
+								+ irregular_text.length());
+						irregular_text = irregular_text.substring(0,24);
+					}
+				// Temp solution - Irregular text in extra_details
+					extra_details =	irregular_text;
+					sort_date_code = "3";
+					if (TMGglobal.DEBUG) System.out.println("@@ Irregular date value = " + irregular_text);
 				}
+			} else {
+		// output regular date and return
+				char old_style = tmg_date.charAt(9);
+		// has old style
+				if (old_style == '1') {
+					nrOldStyles++;
+					if (!oldStyles.contains(tmg_date)) {
+						oldStyles.add(tmg_date);
+						if (TMGglobal.TRHDATE) System.out.println("OS nr: " + nrOldStyles + " New old style: " + tmg_date);
+					}
+					calendar_type = "CO";
+					if (TMGglobal.DEBUG) System.out.println("@@ TMG old style date  = " + tmg_date);
+				} else calendar_type = "CE";
+	
+				start_details = "" + date_origin + calendar_type;
+	
+			// question mark
+				if (tmg_date.charAt(20) =='1') {
+					nrQestionMarks++;
+					if (!qestionMarks.contains(tmg_date)) {
+						qestionMarks.add(tmg_date);
+						if(TMGglobal.TRHDATE)
+							System.out.println("Qm nr: " + nrQestionMarks + " New question mark: " + tmg_date);
+					}
+					if (TMGglobal.DEBUG) System.out.println("@@ TMG question mark date  = " + tmg_date);
+					question_mark_detail = 'Y';
+					question_mark_sort = '1';
+				}
+				
+			// Main Date Data
+				main_years = Long. parseLong(tmg_date.substring( 1, 5));
+	
+				main_months = tmg_date.substring( 5, 7);
+				if (main_months.equals("00")) main_months = "%%";
+				main_days = tmg_date.substring( 7, 9);
+				if (main_days.equals("00")) main_days = "%%";
+				main_hours = "%%";
+				main_minutes = "%%";
+				main_seconds = "%%";
+				main_milliseconds = "%%%";
+				main_offset_units = "__";
+				main_offset_value = "000";
+	
+				//char sort_code = '0';
+				char qualifier_code = '%';
+	
+			// TMG qualifier settings
+				char qualifier = tmg_date.charAt(10);
+				switch(qualifier) {
+					case '0':
+						qualifier_code = 'B';	// ELEMENT_CODE "Before"
+						sort_qualifier_code = '1';
+						break;
+					case '1':
+						qualifier_code = 'S';	// ELEMENT_CODE "Say"
+						sort_qualifier_code = '2';
+						break;
+					case '2':
+						qualifier_code = 'C';	// ELEMENT_CODE "Circa"
+						sort_qualifier_code = '3';
+						break;
+					case '3':
+						qualifier_code = 'X';	// ELEMENT_CODE "Exact"
+						sort_qualifier_code = '4';
+						break;
+					case '4':
+						qualifier_code = 'A';	// ELEMENT_CODE "After"
+						sort_qualifier_code = '5';
+						break;
+					case '5':
+						qualifier_code = 'W';	// ELEMENT_CODE "Between / And"
+						sort_qualifier_code = '6';
+						dates_required = 2;
+						break;
+					case '6':
+						qualifier_code = 'O';	//  ELEMENT_CODE "Either / Or"
+						sort_qualifier_code = '7';
+						dates_required = 2;
+						break;
+					case '7':
+						qualifier_code = 'F';	// ELEMENT_CODE "From / To"
+						sort_qualifier_code = '8';
+						dates_required = 2;
+						break;
+	
+					default: System.out.println("Unknown Main Qualifier = " + tmg_date);
+				}
+	
+				start_details = "" + date_origin + calendar_type;
+				main_details = start_details + main_months + main_days + main_hours;
+				main_details = main_details	+ main_minutes + main_seconds + main_milliseconds;
+				main_details = main_details	+ qualifier_code + question_mark_detail
+								+ main_offset_units + main_offset_value;
+	/**
+	 * 	Check for 2 time point cases
+	 *	single date point case - set extra_years and extra_details as null
+	 *	extra date exists
+	 */
+				if (dates_required == 2) {
+					extra_years = Long. parseLong(tmg_date.substring( 11, 15));
+					//if (extra_years == 0) extra_years = years_not_set;
+					extra_months = tmg_date.substring( 15, 17);
+					if(extra_months.equals("00")) extra_months = "%%";
+					extra_days = tmg_date.substring( 17, 19);
+					if (extra_days.equals("00")) extra_days = "%%";
+					extra_hours = "%%";
+					extra_minutes = "%%";
+					extra_seconds = "%%";
+					extra_milliseconds = "%%%";
+					extra_offset_units = "__";
+					extra_offset_value = "000";
+					extra_details = start_details + extra_months + extra_days + extra_hours;
+					extra_details = extra_details + extra_minutes + extra_seconds + extra_milliseconds;
+					extra_details = extra_details + qualifier_code + question_mark_detail
+									+ extra_offset_units + extra_offset_value;
+	
+				} else {
+					extra_years = 0;
+					extra_details = "0";
+				}
+	
+	/**
+	 * Prepare 	sort_date_code
+	 */
+				// now start the SORT_DATE_CODE
+					sort_date_code = sort_date_start + year_header;
+				// Add date repeated
+				for(int m = 1; m <= 8; m++) {
+					char data_char = tmg_date.charAt(m);
+					sort_date_code = sort_date_code + data_char;
+					if (dates_required == 1) {
+						// repeat main year, month, day data
+						sort_date_code = sort_date_code + data_char;
+					} else {
+						// use extra year, months, years data
+						sort_date_code = sort_date_code + tmg_date.charAt(m + 10);
+					}
+				}
+	
+				// allow for addition of hours(2), minutes(2), seconds(2), milliseconds(3)
+				sort_date_code = sort_date_code + "0000" + "0000" + "0000" + "000000";
+	
+				// now include qualifier values
+				sort_date_code = sort_date_code + sort_qualifier_code + question_mark_sort;
+				sort_date_code = sort_date_code + "000000000000";
 			}
-
-			// allow for addition of hours(2), minutes(2), seconds(2), milliseconds(3)
-			sort_date_code = sort_date_code + "0000" + "0000" + "0000" + "000000";
-
-			// now include qualifier values
-			sort_date_code = sort_date_code + sort_qualifier_code + question_mark_sort;
-			sort_date_code = sort_date_code + "000000000000";
+		} catch (NumberFormatException nfe) {
+			throw new HCException("### Number format error year: " + nfe.getMessage());
 		}
 	}
 /**

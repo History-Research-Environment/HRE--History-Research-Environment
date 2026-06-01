@@ -33,13 +33,12 @@ import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "15.03.2026";			// Set Build number
-	public static String releaseDate = "28 Mar.. 2026";		// and release date
+	public static String buildNo = "14.05.2026";			// Set Build number
+	public static String releaseDate = "14 May.. 2026";		// and release date
 
 	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
 	public static String databaseVersion = "v22c 2025-09-18";	// Database version DDL
 
-	//public static String databaseBuild = "v22c 2024-11-01"; // Updated T20X tables
 	//public static String databaseBuild = "v22c 2024-11-01"; // Updated for v22c / v22c 2024-11-01
 	public static String databaseBuild = "v22c 2025-09-18"; // Updated for v22c / SQL: DDL v22c 2025-09-18
 

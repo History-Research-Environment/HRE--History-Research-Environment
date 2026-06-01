@@ -83,7 +83,7 @@ public class HG0509AddPersonName extends HG0509ManagePersonName {
 						pointPersonHandler.createNameDates(false, personNameTablePID, "START_HDATE_RPID", startHREDate);   //$NON-NLS-1$
 
 					if (endDateOK)
-						pointPersonHandler.createNameDates(false, personNameTablePID, "END_HDATE_RPID", endHREDate);//$NON-NLS-1$
+						pointPersonHandler.createNameDates(false, personNameTablePID, "SORT_HDATE_RPID", sortHREDate);//$NON-NLS-1$
 
 					if (nameChanged) {
 					// Update best name in T401

@@ -21,6 +21,7 @@ package hre.gui;
  * V0.05.0033 2026-04-02 Add display area for T552 Memo (comment) (D Ferguson)
  * 			  2026-04-03 Read and update T552 Memo record (comment) (N. Tolleshaug)
  *			  2026-04-04 Remove Notepads card (D Ferguson)
+ *			  2026-05-21 Revise focusPolicy (D Ferguson)
  ********************************************************************************/
 
 import java.awt.CardLayout;
@@ -84,7 +85,6 @@ import hre.bila.HBWhereWhenHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG0508Msgs;
-//import hre.bila.HREmemo;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -448,6 +448,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
 
 	// Setup Order of components for Focus Policy
         Vector<Component> focusOrder = new Vector<>();
+        focusOrder.add(locnStyles);
         focusOrder.add(tableLocation);
         focusOrder.add(dateStart);
         focusOrder.add(dateEnd);
@@ -455,7 +456,7 @@ public class HG0508ManageLocation extends HG0450SuperDialog {
         contents.setFocusCycleRoot(true);
         contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
        	// Set initial focus of screen
-    	tableLocation.requestFocusInWindow();
+        locnStyles.requestFocusInWindow();
 
 /*********************************************************************
  * cardMedia - load data into a scrollpane on the Media card

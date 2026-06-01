@@ -84,6 +84,9 @@ public class HREloader_V22c {
 	// Set boolean IS_OWNER in T131
 			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
 			
+	//ALTER TABLE table_name  RENAME COLUMN old_name to new_name;
+			updateTableInBase("T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID");
+			
 	// Update table T460_EVNT_DEFN
 			updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE","ALTER COLUMN EVNT_HINT VARCHAR(5000)");
 

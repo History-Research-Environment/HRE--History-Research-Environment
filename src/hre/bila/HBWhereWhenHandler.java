@@ -89,6 +89,8 @@ package hre.bila;
   *			   2026-01-27 - Updated code for constructor (N. Tolleshaug)
   *			   2026-02-21	Line 3230 - removed memo text "no memo found"
   *	v0.05.0033 2026-04-03 - Read and update T552 Memo record (comment) (N. Tolleshaug)
+  * 		   2026-05-11 - Handling duplicate associate roles (N. Tolleshaug)
+  * 		   2026-06-24 - Fix for HRE-33 33.22 editing of a father recording (N. Tolleshaug)
   *****************************************************************************************/
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -1062,9 +1064,10 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @param updateEvent
  * @param sexCode
  * @return
+ * @throws HBException 
  */
 	public HG0547EditEvent activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow,
-												boolean updateEvent, String sexCode) {
+												boolean updateEvent, String sexCode) throws HBException {
 		ResultSet selectedEventTable, partnerTableRS;
 		long priPartnerPID, secPartnerPID, primAssocPID = null_RPID, locationTablePID, locationNamePID, eventTablePID, hdateDate, hdateSort;
 		int priRoleNum, secRoleNum;
@@ -1086,6 +1089,11 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
 			selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
 			selectedEventTable = requestTableData(selectString, dataBaseIndex);
+			
+		// Fix 23.5.2026 - NTo to avoid editing of a father recoding in Person Mnager even table
+			if (isResultSetEmpty(selectedEventTable)) 
+				throw new HBException(" No rexord in event table for the edited row!");
+			
 		// Collect the event record
 			selectedEventTable.first();
 			eventNumber = selectedEventTable.getInt("EVNT_TYPE");
@@ -1150,11 +1158,10 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			}
 
 			return pointEditEvent;
-		} catch (HBException | SQLException hbe) {
-			System.out.println(" HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
-			hbe.printStackTrace();
+		} catch (SQLException hbe) {
+			//System.out.println(" HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
+			throw new HBException(" HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
 		}
-		return null;
 	}
 
 /**
@@ -3519,9 +3526,9 @@ class EditEventRecord extends HBBusinessLayer {
 	private void updateDateRecord(Object[] nameDateData, long nameHdatePID) throws HBException {
 		String selectString;
 		ResultSet hreDateResultSet;
-		if (HGlobal.DEBUG) {
+		if (HGlobal.DEBUG) 
 			System.out.println(" HBWhereWhenHandler - updateDateRecord: " + nameDateData[0]);
-		}
+		
 
 		selectString = setSelectSQL("*", dateTable, "PID = " + nameHdatePID);
 		hreDateResultSet = requestTableData(selectString, dataBaseIndex);
@@ -3612,8 +3619,6 @@ class EditEventRecord extends HBBusinessLayer {
 		int assocRows = 0, eventNumber = 0, eventRoleCode;
 		long eventPID, assocPersonPID, assocTablePID;
 
-		Vector<Long> assocPersonDuplicateList = new Vector<>(100,10);
-
 		try {
 		// Get associate persons with the events in list
 			selectString = setSelectSQL("*", eventAssocTable, "EVNT_RPID = " + selectedEventPID);
@@ -3625,10 +3630,6 @@ class EditEventRecord extends HBBusinessLayer {
 				eventPID = eventAssocSelected.getLong("EVNT_RPID");
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
 				eventRoleCode = eventAssocSelected.getInt("ROLE_NUM");
-
-			// Test for duplicate assoc person - 5-11-2024
-				if (assocPersonDuplicateList.contains(assocPersonPID)) continue;
-				assocPersonDuplicateList.add(assocPersonPID);
 
 			// The focus person can also be a witness to another event
 			// if edit vitnessed event check primary assoc from event table
@@ -3684,6 +3685,20 @@ class EditEventRecord extends HBBusinessLayer {
 		ResultSet assocTableRS = null;
 		String selectString;
 		long nextAssocTablePID = lastRowPID(eventAssocTable, dataBaseIndex) + 1;
+	// Check if duplicate associte persom hav duplicate role
+		
+		selectString = setSelectSQL("*", eventAssocTable, " ROLE_NUM = " + roleNumber 
+				+ " AND ASSOC_RPID = " + personPID + " AND EVNT_RPID = " + eventTablePID);
+		assocTableRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			if (!isResultSetEmpty(assocTableRS)) throw new HBException("### Duplicate person role!");			
+		} catch (SQLException sqle) {
+			System.out.println(" createAssocTableRow - isResultSetEmpty error!");
+			sqle.printStackTrace();
+			throw new HBException(" createAssocTableRow - isResultSetEmpty error!");
+		}
+		
+	// Add associate table row
 		selectString = setSelectSQL("*", eventAssocTable, "");
 		assocTableRS = requestTableData(selectString, dataBaseIndex);
 		assocPersonPID = personPID;

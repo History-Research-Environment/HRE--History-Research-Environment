@@ -46,6 +46,7 @@ package hre.tmgjava;
  *			  2026-02-24 - line 765  modified to if (HGlobal.writeLogs) ... (N. Tolleshaug)
  *		      2026-02-26 - Modified Writelog message to "WARNING" (N. Tolleshaug)
  *			  2026-03-28 - Modified some Writelog WARNING message to "MESSAGE:" (N. Tolleshaug)
+ *			  2026-04-14 - Changed from ENG_HDATE_RPID to SORT_HDATE_RPIG in T402 (N. Tolleshaug)
  ****************************************************************************************/
 
 import java.sql.ResultSet;
@@ -535,9 +536,9 @@ public class TMGpass_Persons {
 			if (tmgDate.length() == 0 || tmgDate.equals(nullDate)) hreTable.updateLong("START_HDATE_RPID", null_RPID);
 			else hreTable.updateLong("START_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
 
-			tmgDate = tmgNtable.getValueString(rowPID,"PDEATH");
-			if (tmgDate.length() == 0 || tmgDate.equals(nullDate)) hreTable.updateLong("END_HDATE_RPID", null_RPID);
-			else hreTable.updateLong("END_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
+			tmgDate = tmgNtable.getValueString(rowPID,"SRTDATE");
+			if (tmgDate.length() == 0 || tmgDate.equals(nullDate)) hreTable.updateLong("SORT_HDATE_RPID", null_RPID);
+			else hreTable.updateLong("SORT_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
 
 			hreTable.updateLong("THEME_RPID", null_RPID);
 			hreTable.updateLong("MEMO_RPID", null_RPID);

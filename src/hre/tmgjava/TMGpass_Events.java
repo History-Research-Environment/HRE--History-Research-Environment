@@ -76,6 +76,7 @@ package hre.tmgjava;
  * 			  2026-03-23 - Small correction in message text (N. Tolleshaug)
  * 			  2026-04-21 - Error fix for reminder -Issue 33.04 (N. Tolleshaug)
  * 			  2026-04-23 - Reminder - increased from 2000 to 5000 (N. Tolleshaug)
+ *			  2026-05-14 - Added flag to mark assoc already added (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -791,7 +792,7 @@ class TMGpass_Events  {
 						System.out.print(" WARNING: Incomplete sentence for Event: " + etypeName
 							+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
 						if (HGlobal.writeLogs)
-							HB0711Logging.logWrite(" WARNING: Incomplete sentence for Event: " + etypeName
+							HB0711Logging.logWrite("WARNING: Incomplete sentence for Event: " + etypeName
 									+ " Evnr: " + eventTypeNr + " Sentence: " + stringLine);
 					}
 			}
@@ -1195,7 +1196,7 @@ class TMGpass_Events  {
 	public void addEventsAssocTable(TMGHREconverter tmgHreConverter) throws HCException {
 		int currentRow = 0, progress;
 		long eventAssocPID = proOffset;
-		//boolean noRole = false;
+		boolean assocAdded = false;
 		int excludedWitness = 0, addedAssoc = 0, partnerEvent = 0, eventsBirths = 0, primaryRoleFound = 0, edbferror = 0;
 		int per2assocs = 0;
 		int nrOftmgERows = tmgEtable.getNrOfRows();
@@ -1293,6 +1294,8 @@ class TMGpass_Events  {
 							partnerEvent++;
 						}
 					}
+				
+					assocAdded = false; // Flag to mark assoc already added
 
 					 if (eper != per1 && per1 != 0 && per2 != 0) // Test 11.11.2024 exclude only PER2 set
 					 //if (eper != per1 && per2 != 0) // The master B31
@@ -1315,30 +1318,34 @@ class TMGpass_Events  {
 						addedAssoc++;
 						eventAssocPID++;
 						addToT451_EVNT_ASSOC(indexE_ROW, eventAssocPID, tableT451);
+						assocAdded = true; // Mark assoc already added
 					}
 
-			// Exclude self associate if per1 same as person and per2 not set and not primary
-				if (primary || eper == per1) { // Exclude primary or principal PER1 recordings
-					excludedWitness++;
-					if (TMGglobal.TRACE)
-						//if (admin != 6 && per1 != 0 && per2 != 0)
-							System.out.println(" Excluded from T451 " + " Event: " + gnumIndex
-									+ " E-EPER: " + eper
-									+ " G-PER1: " + per1
-									+ " G-PER2: " + per2
-									+ " PRIMARY: " + primary
-									+ " Event: " + etype
-									+ " Admin: " + admin
-									+ " Role: " + role
-									+ " Sentence: " + sentence
-									+ " Namerec: " + namerec
-									+ " Witmemo: " + witmemo
-									+ " Sequen: " + seq);
-				} else {
-						addedAssoc++;
-						eventAssocPID++;
-						addToT451_EVNT_ASSOC(indexE_ROW, eventAssocPID, tableT451);
-				}
+/**			Exclude self associate if per1 same as person and per2 not set and not primary
+ * 			If assoc already added, drop next assoc processing
+ */
+				if (!assocAdded)
+					if (primary || eper == per1) { // Exclude primary or principal PER1 recordings
+						excludedWitness++;
+						if (TMGglobal.TRACE)
+							//if (admin != 6 && per1 != 0 && per2 != 0)
+								System.out.println(" Excluded from T451 " + " Event: " + gnumIndex
+										+ " E-EPER: " + eper
+										+ " G-PER1: " + per1
+										+ " G-PER2: " + per2
+										+ " PRIMARY: " + primary
+										+ " Event: " + etype
+										+ " Admin: " + admin
+										+ " Role: " + role
+										+ " Sentence: " + sentence
+										+ " Namerec: " + namerec
+										+ " Witmemo: " + witmemo
+										+ " Sequen: " + seq);
+					} else {
+							addedAssoc++;
+							eventAssocPID++;
+							addToT451_EVNT_ASSOC(indexE_ROW, eventAssocPID, tableT451);
+					}
 			}
 		}
 

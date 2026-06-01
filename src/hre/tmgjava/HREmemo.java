@@ -10,6 +10,8 @@ package hre.tmgjava;
  * 			  2026-01-14 - Log catch block and other msgs (D Ferguson)
  * v0.05.0033 2026-04-22 - Updated String returnStringContent(String content) (N. Tolleshaug)
  * 			  2026-04-23 - Updated to return "" when the [B@ entries are found (N. Tolleshaug)
+ * 			  2026-05-28 - Activated printout for string.length = 64 (N. Tolleshaug)
+ * 			  2026-05-30 - Only reported once if the [B@ entries are found (N. Tolleshaug)
  *****************************************************************************************/
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,12 +31,13 @@ public class HREmemo {
 	static long null_RPID  = 1999999999999999L;
 	static long memoPID  = proOffset;
 	HREdatabaseHandler pointHREbase;
+	static boolean printToStringError;
 
 	String memoTable = "T167_MEMO_SET";
 
 	public HREmemo(HREdatabaseHandler pointHREbase) {
 		this.pointHREbase = pointHREbase;
-
+		printToStringError = true;
 		try {
 			memoPID = pointHREbase.lastRowPID(memoTable);
 			if (TMGglobal.DEBUG)
@@ -150,24 +153,25 @@ public class HREmemo {
  * @return
  */
 	public static String returnStringContent(String content) {
-		String returned = "";
-		if (content != null) returned = new String(content);
-		else return "";
+		if (content == null) return "";	
 	// This seems to be a strange output from javadbf when table contains an empty string
-	// Seems to and "array".toString result
+	// Seems to and "array".toString string output
 		if (content.startsWith("[B@")) {
-			System.out.println(" HREmemo - returned string: " + content);
-			if (HGlobal.writeLogs) 
-				HB0711Logging.logWrite("WARNING: HREmemo in returnStringContent: " + content); //$NON-NLS-1$
+			if (printToStringError) {
+				System.out.println(" WARNING: HREmemo - strange returned string from javadbf: " + content);
+				if (HGlobal.writeLogs) 
+					HB0711Logging.logWrite("WARNING: HREmemo strange returnStringContent: " + content); //$NON-NLS-1$
+				printToStringError = false;
+			}
 			return "";
 		}
 		if (content.length() == 64) {
 			if (content.trim().length() == 0) {
-				//System.out.println(" HREmemo - 64 char returned form javadbj: " + "/" + content + "/");
-				return "";
+				System.out.println(" HREmemo - TMG 64 char returned from javadbj: " + "/" + content + "/");
+				return content.trim();
 			}
 		} 
-		return returned;
+		return content;
 	}
 
 /**

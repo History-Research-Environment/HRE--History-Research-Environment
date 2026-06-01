@@ -11,6 +11,7 @@ package hre.gui;
  * v0.03.0031 2024-11-11 Fix enable/disable of header/footer and sizing (D Ferguson)
  * v0.04.0032 2025-06-24 Change output to write PDF file or print the tree (D Ferguson)
  * 			  2026-01-04 Log catch block error msgs (D Ferguson)
+ * v0.05.0033 2026-05-29 Fix 33.38 stop HG0660 blocking filechooser dialog (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Container;
@@ -57,7 +58,7 @@ import net.miginfocom.swing.MigLayout;
 
 /**
  * Class HG0660AncestorDescendant
- * @version 0.04.0032
+ * @version 0.05.0033
  * @since 2020-09-02
  */
 public class HG0660AncestorDescendant extends HG0450SuperDialog implements ActionListener {
@@ -281,7 +282,8 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 						= new HG0577FileChooser(HG0660Msgs.Text_61, 		// Select
 								"PDF files (*.pdf)",									//$NON-NLS-1$
 								"pdf", HG0660Msgs.Text_62, HGlobal.pathHREreports, 1); //$NON-NLS-1$
-				chooseFile.setModalityType(ModalityType.APPLICATION_MODAL);
+				chooseFile.setModalityType(ModalityType.MODELESS);
+				chooseFile.setAlwaysOnTop(true);
 				Point xy = leftTitle.getLocationOnScreen();      // Gets leftTitle location on screen
 				chooseFile.setLocation(xy.x, xy.y);     		 // Sets chooser screen top-left corner relative to that
 				chooseFile.setVisible(true);

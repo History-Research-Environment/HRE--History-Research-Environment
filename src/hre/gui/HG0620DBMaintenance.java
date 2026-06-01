@@ -15,10 +15,12 @@ package hre.gui;
  * 			  2026-02-08 Fix BIGINT formatter; Fix buttongroup and screen layout (D Ferguson)
  * 			  2026-02-09 Allow cancel from TMG file dump; fix radio button selection (D Ferguson)
  * 			  2026-02-11 Use Integer formatters (except BIGINT); add sep=^ Update NLS (D Ferguson)
+ * v0.05.0033 2026-05-01 Remove Refresh Relationships button (D Ferguson)
+ *
  ***********************************************************************************************/
 // NOTES on incomplete code
 // No validation
-// No Relationship reset code
+// NLS Text_11 no longer used
 // ******************************
 
 import java.awt.HeadlessException;
@@ -65,7 +67,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project DB Maintenance
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2021-02-12
  */
 
@@ -111,27 +113,23 @@ public class HG0620DBMaintenance extends HG0450SuperDialog {
 
 		// Button group for radio buttons
 		String reset = HG0620Msgs.Text_9;		// Perform reset of all screen configuration data
-		String relation = HG0620Msgs.Text_11;	// Refresh Relationship settings
 		String validate = HG0620Msgs.Text_10;	// Perform validation of all data in project database
 		String hreTableDump = HG0620Msgs.Text_12;	// Extract an HRE table to a CSV file
 		String tmgTableDump = HG0620Msgs.Text_30;	// Extract a TMG table to a CSV file
 
 		JRadioButton buttonA = new JRadioButton(reset);
-		JRadioButton buttonB = new JRadioButton(relation);
-		JRadioButton buttonC = new JRadioButton(validate);
-		JRadioButton buttonD = new JRadioButton(hreTableDump);
-		JRadioButton buttonE = new JRadioButton(tmgTableDump);
+		JRadioButton buttonB = new JRadioButton(validate);
+		JRadioButton buttonC = new JRadioButton(hreTableDump);
+		JRadioButton buttonD = new JRadioButton(tmgTableDump);
 		ButtonGroup buttonGroup = new ButtonGroup();
 		buttonGroup.add(buttonA);
 		buttonGroup.add(buttonB);
 		buttonGroup.add(buttonC);
 		buttonGroup.add(buttonD);
-		buttonGroup.add(buttonE);
 		contents.add(buttonA, "cell 0 1"); //$NON-NLS-1$
 		contents.add(buttonB, "cell 0 2"); //$NON-NLS-1$
 		contents.add(buttonC, "cell 0 3"); //$NON-NLS-1$
 		contents.add(buttonD, "cell 0 4"); //$NON-NLS-1$
-		contents.add(buttonE, "cell 0 5"); //$NON-NLS-1$
 
 		JButton btn_Cancel = new JButton(HG0620Msgs.Text_13);	// Cancel
 		contents.add(btn_Cancel, "cell 0 6, align right, gapx 15, tag cancel"); //$NON-NLS-1$
@@ -203,11 +201,6 @@ public class HG0620DBMaintenance extends HG0450SuperDialog {
             	btn_Execute.setEnabled(true);
             }
         });
-		buttonE.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            	btn_Execute.setEnabled(true);
-            }
-        });
 
 		// Listener for Execute button
 		btn_Execute.addActionListener(new ActionListener() {
@@ -240,8 +233,8 @@ public class HG0620DBMaintenance extends HG0450SuperDialog {
 							}
 
 			        	}
-			        // Validate H2 database OR Reset relationship data
-						if (selected.equals(validate) || selected.equals(relation)) {
+			        // Validate H2 database
+						if (selected.equals(validate)) {
 							JOptionPane.showMessageDialog(btn_Execute, HG0620Msgs.Text_26, // Action not yet available
 																	   HG0620Msgs.Text_20, // Maintenance
 																	   JOptionPane.INFORMATION_MESSAGE);
@@ -357,30 +350,23 @@ public class HG0620DBMaintenance extends HG0450SuperDialog {
 	        	selected = ae.getActionCommand();
 	        }
 	    });
-		// Listener for buttonB (relation)
+		// Listener for buttonB (Validate)
 		buttonB.addActionListener(new ActionListener() {
 	        @Override
 	        public void actionPerformed(ActionEvent ae) {
 	        	selected = ae.getActionCommand();
 	        }
 	    });
-		// Listener for buttonC (Validate)
+		// Listener for buttonC (hreTableDump)
 		buttonC.addActionListener(new ActionListener() {
 	        @Override
 	        public void actionPerformed(ActionEvent ae) {
 	        	selected = ae.getActionCommand();
 	        }
 	    });
-		// Listener for buttonD (hreTableDump)
-		buttonD.addActionListener(new ActionListener() {
-	        @Override
-	        public void actionPerformed(ActionEvent ae) {
-	        	selected = ae.getActionCommand();
-	        }
-	    });
 
-		// Listener for buttonE (tmgTableDump)
-		buttonE.addActionListener(new ActionListener() {
+		// Listener for buttonD (tmgTableDump)
+		buttonD.addActionListener(new ActionListener() {
 	        @Override
 	        public void actionPerformed(ActionEvent ae) {
 	        	selected = ae.getActionCommand();

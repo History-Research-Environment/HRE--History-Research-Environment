@@ -12,6 +12,7 @@ package hre.gui;
  *			  2025-12-05 Code for copy repositories (N.Tolleshaug)
  *			  2026-01-04 Log catch block errors (D Ferguson)
  *			  2026-01-27 Upfated for more than one project (N.Tolleshaug)
+ *			  2026-05-21 Setup focus policy (D Ferguson)
  ********************************************************************************/
 
 import java.awt.Color;
@@ -69,7 +70,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Repository
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2025-02-01
  */
 
@@ -370,13 +371,15 @@ public class HG0570EditRepository extends HG0450SuperDialog {
 // Setup Focus Policy
 //*******************
         Vector<Component> focusOrder = new Vector<>();
-
-        focusOrder.add(memoText);
-
+        focusOrder.add(repoAbbrev);
+        focusOrder.add(fullNameText);
+        focusOrder.add(locationNameStyles);
+        focusOrder.add(tableLocation);
+       focusOrder.add(memoText);
         contents.setFocusCycleRoot(true);
         contents.setFocusTraversalPolicy(new focusPolicy(focusOrder));
 	// Set initial focus of screen
-
+        repoAbbrev.requestFocusInWindow();
 	// Display the screen
 		pack();
 

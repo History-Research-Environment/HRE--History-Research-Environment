@@ -58,9 +58,8 @@ package hre.gui;
  *			  2026-04-15 Update of PersonManager after FocusPerson update (N Tolleshaug)
  *			  2026-04-20 Focus panel not visible if no project open (N Tolleshaug)
  *			  2026-04-30 Add confirmation of Relate settings and Clear Relationships button (D Ferguson)
+ *			  2026-05-04 NLS update (D Ferguson)
  ************************************************************************************/
-
-// NOTE02: requires code to zero out relationships data in T401 and T126
 
 import java.awt.Color;
 import java.awt.Component;
@@ -564,7 +563,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         JButton btn_RelatePerson =new JButton(HG0501Msgs.Text_159);		// Select Person
         panelRelateOpt.add(btn_RelatePerson, "cell 1 0,alignx center"); //$NON-NLS-1$
 
-        JButton btn_ClearRelate =new JButton("Clear Relationships");		// Clear Relationships
+        JButton btn_ClearRelate =new JButton(HG0501Msgs.Text_165);		// Clear Relationships
         btn_ClearRelate.setVisible(false);
         panelRelateOpt.add(btn_ClearRelate, "cell 1 0, gapx 20"); //$NON-NLS-1$
 
@@ -597,7 +596,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
         	else {
         		txt_Relate.setText(focusPersonName);
         		txt_Relate.setVisible(true);
-        		btn_RelatePerson.setText("Reset Relationships");	// Reset Relationships
+        		btn_RelatePerson.setText(HG0501Msgs.Text_164);	// Refresh Relationships
         		btn_ClearRelate.setVisible(true);
         	}
         }
@@ -1146,11 +1145,11 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 				}
 			     setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 	        	JOptionPane.showMessageDialog(btn_RelatePerson,
-	        				"Relationships have been created",
-							"Create Relationships",
+	        				HG0501Msgs.Text_163,		// Relationships have been created
+	        				HG0501Msgs.Text_162,			// Create Relationships
 							JOptionPane.INFORMATION_MESSAGE);
 	        	btn_ClearRelate.setVisible(true);
-	        	btn_RelatePerson.setText("Reset Relationships");	// Reset Relationships
+	        	btn_RelatePerson.setText(HG0501Msgs.Text_164);	// Refresh Relationships
 		      }
 		    });
 
@@ -1159,13 +1158,20 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 		     @Override
 			public void actionPerformed(ActionEvent e) {
 				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-			//NOTE02 add code hehere to run throughT401 and zero all RELATE fields
-			//  and also remove focus person PID from T126
-
-			     setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-			     // Reset Relate panel buttons
+				pointHBReportHandler = pointOpenProject.getReportHandler();
+			// Code to run throughT401 and zero all RELATE fields and also remove focus person PID from T126
+				try {
+					pointHBReportHandler.clearRelationParameters();
+				} catch (HBException hbe) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0501 clear relationship " + hbe.getMessage());	//$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
+				}
+			    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			// Update ResultSet T401
+				pointOpenProject.reloadT401Persons();
+			// Reset Relate panel buttons
 			     btn_ClearRelate.setVisible(false);
 			     btn_RelatePerson.setText(HG0501Msgs.Text_159);		// Select Person
 			     txt_Relate.setVisible(false);

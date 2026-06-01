@@ -21,18 +21,23 @@ package hre.bila;
  * 			  2026-04-12 - Updated sentence variable processing and Javadoc output (N. Tolleshaug)
  * 			  2026-04-17 - Improved T401 recalculation and table update (N. Tolleshaug)
  * 			  2026-04-18 - Relationship code calculation completed (D Ferguson/N. Tolleshaug)
- * 			  2026-04-20 - Added code for clear rellation/update person relation (N. Tolleshaug)
+ * 			  2026-04-20 - Added code for clear relation and focus person (N. Tolleshaug)
+ * 			  2026-05-01 - Updated findRelationships to return 2 relate code pairs (D Ferguson)
+ * 			  2026-05-03 - Completed code for clear all T401 relation and focus person (N. Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,6 +55,7 @@ public class HBReportHandler extends HBBusinessLayer {
 	HBNameStyleManager pointLocationStyleData;
 	HBReportHandler pointReportHandler = this;
 	RelationCalculation pointRelationCalculation;
+	HREmemo pointHREmemo;
 	public ReportEventTMG pointReportEventTMG;
 	int dataBaseIndex = -1;
 
@@ -677,6 +683,16 @@ public class HBReportHandler extends HBBusinessLayer {
 					pointRelationCalculation = new	RelationCalculation(pointOpenProject);
 		pointRelationCalculation.recalcRelationsT401(focusPersonPID);
 	}
+	
+/**
+ * Clear all relation parameters in T401 and focusperson in t126	
+ * @throws HBException
+ */
+	public void clearRelationParameters() throws HBException {
+		if (pointRelationCalculation == null)
+			pointRelationCalculation = new	RelationCalculation(pointOpenProject);
+		pointRelationCalculation.clearRelationDataInT401();
+	}
 
 /**
  * String runTMGparcer(String roleSentence)
@@ -962,7 +978,7 @@ public class HBReportHandler extends HBBusinessLayer {
 		HBPersonHandler pointPersonHandler;
 		HBWhereWhenHandler pointWhereWhenHandler;
 		HBLibraryResultSet pointLibraryResultSet;
-		//HREmemo pointHREmemo;
+		HREmemo pointHREmemo;
 		long eventTablePID, memoRPID;
 		String selectString, eventDate, locationName, eventPersonName, eventPersonNamePri, eventPersonNameSec ;
 		ResultSet eventTableRS, personTableRS, assocTableRS, partnerTableRS;
@@ -1447,7 +1463,7 @@ class RelationCalculation extends HBBusinessLayer {
 /************************************************************************************************
  * Class  RelationCalculation
  * Processes data for recalcukation of relationship code pairs
- * As created by ChatGPT to Create relationship codes
+ * As created by CoPilot and replaced by ChatGPT to Create relationship codes
  * Sends requests to database over Database Layer API
  ************************************************************************************************
  * v0.05.0033 2026-04-10 - First draft (D Ferguson)
@@ -1456,79 +1472,37 @@ class RelationCalculation extends HBBusinessLayer {
  * 			  2026-04-14 - Remove invalid codes for no blood relationships (D Ferguson)
  * 			  2026-04-16 - Handle aunts/cousins greater than 4 generations (D Ferguson)
  * 			  2026-04-18 - Use ChatGPT code to fix all problems (D Ferguson)
- * 			  2026-04-19 - Rvised the code to java standard (N. Tolleshaug)
+ * 			  2026-05-01 - Used ChatGPT to extend to 2 relationships (D Ferguson)
  ************************************************************************************************/
 
-    protected ResultSet pointT401_PERSONS, selectedPersonRS;
-    private  HBProjectOpenData pointOpenProject;
-    private HBPersonHandler pointPersonHandler;
-    private int dataBaseIndex;
-    static HashMap<Long,Object[]> parentMap = new HashMap<Long,Object[]>();
+	    protected ResultSet pointT401_PERSONS;
+	    HBProjectOpenData pointOpenProject;
+	    HBPersonHandler pointPersonHandler;
+	    static HashMap<Long,Object[]> parentMap = new HashMap<Long,Object[]>();
 
 /**
  * Constructor RelationCalculation(HBProjectOpenData pointOpenProject)
  * @param pointOpenProject
  */
 	  public RelationCalculation(HBProjectOpenData pointOpenProject)  {
-			  this.pointOpenProject = pointOpenProject;
-			  long personTablePID;
-			  dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-			  pointDBlayer = pointOpenProject.getPointDBlayer();
-			  pointPersonHandler = pointOpenProject.getPersonHandler();
-			  pointT401_PERSONS =  pointOpenProject.getT401Persons();
-			  try {
-				  pointT401_PERSONS.beforeFirst();
-				  while (pointT401_PERSONS.next()) {
-					  Object[] parents = new Object[2];
-					  parents[0] = pointT401_PERSONS.getLong("SPERM_PROVIDER_RPID");
-					  parents[1] = pointT401_PERSONS.getLong("EGG_PROVIDER_RPID");
-					  personTablePID = pointT401_PERSONS.getLong("PID");
-					  parentMap.put(personTablePID, parents);
-				  }
-			} catch (SQLException sqle) {
-				System.out.println(" ERROR in  RelationCalculation: " + sqle.getMessage());
-				sqle.printStackTrace();
-			}
-	  }
-	  
-/**
- * Updaye relation for a single person in T401	  
- * @param focusPersonPID - PID for project focus person
- * @param personTablePID - PID to the person to update
- * @throws HBException
- */
-	  public void updatePersonRelations(long focusPersonPID, long personTablePID) throws HBException {
-		  ResultSet selectedPersonRS;
-		  Relationship relation;
-		  String selecStringSQL;
-		  int T401_RELATE1, T401_RELATE2, T401_RELATE3, T401_RELATE4;
-			if (personTablePID != null_RPID) {
-				selecStringSQL = setSelectSQL("*", personTable,"PID = " + personTablePID);
-				try {
-					selectedPersonRS= requestTableData(selecStringSQL, dataBaseIndex);
-					selectedPersonRS.last();
-					if (selectedPersonRS.getRow() == 0) 
-						throw new HBException(" updatePersonRelations - No data found");
-					
-					relation = findRelationships(focusPersonPID, personTablePID );
-				// following code to update relations
-					T401_RELATE1 = relation.primary.x;
-					T401_RELATE2 = relation.primary.y;
-					T401_RELATE3 = relation.secondary.x;
-					T401_RELATE4 = relation.secondary.y;
-					
-					selectedPersonRS.first();
-					selectedPersonRS.updateInt("RELATE1", T401_RELATE1);
-					selectedPersonRS.updateInt("RELATE2", T401_RELATE2);
-					selectedPersonRS.updateInt("RELATE3", T401_RELATE3);
-					selectedPersonRS.updateInt("RELATE4", T401_RELATE4);
-					selectedPersonRS.updateRow();
-				} catch (SQLException sqle) {
-					System.out.println(" ERROR in  updatePersonRelations: " + sqle.getMessage());
-					sqle.printStackTrace();
-					throw new HBException("ERROR in  updatePersonRelations: " + sqle.getMessage());
-				}
-			} else throw new HBException(" updatePersonRelations - No data found");
+		  this.pointOpenProject = pointOpenProject;
+		  long personTablePID;
+		  pointDBlayer = pointOpenProject.getPointDBlayer();
+		  pointPersonHandler = pointOpenProject.getPersonHandler();
+		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
+		  try {
+			  pointT401_PERSONS.beforeFirst();
+			  while (pointT401_PERSONS.next()) {
+				  Object[] parents = new Object[2];
+				  parents[0] = pointT401_PERSONS.getLong("SPERM_PROVIDER_RPID");
+				  parents[1] = pointT401_PERSONS.getLong("EGG_PROVIDER_RPID");
+				  personTablePID = pointT401_PERSONS.getLong("PID");
+				  parentMap.put(personTablePID, parents);
+			  }
+		} catch (SQLException sqle) {
+			System.out.println(" ERROR in  RelationCalculation: " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
 	  }
 
 /**
@@ -1539,87 +1513,99 @@ class RelationCalculation extends HBBusinessLayer {
  */
 	  public void recalcRelationsT401(long focusPersonPID) throws HBException {
 		  long personTablePID;
-		  Relationship relation;
-		  int numberOfPerson = 0, errorIndex = 0;
 		  int T401_RELATE1, T401_RELATE2, T401_RELATE3, T401_RELATE4;
-		  int RELATE1, RELATE2;
-		  boolean consoleT401 = false; // Controls testout of T401
+//		  int RELATE1, RELATE2;
+		  int numberOfPerson = 0;
+		  boolean updateT401 = true; // Controls update of T401
 		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
 		  int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		  if (consoleT401) System.out.println(" Start test relations!");
-		// Start transaction
+		  System.out.println(" Start test relations!");
+		  // Start transaction
 		  updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
 		  try {
 			  pointT401_PERSONS.beforeFirst();
 			  while (pointT401_PERSONS.next()) {
 				  personTablePID = pointT401_PERSONS.getLong("PID");
-				  RELATE1 = pointT401_PERSONS.getInt("RELATE1");
+				  Relationship relations = findRelationships(focusPersonPID, personTablePID );
+			 // following updates relations
+				  T401_RELATE1 = relations.primary.x;
+				  T401_RELATE2 = relations.primary.y;
+				  T401_RELATE3 = relations.secondary.x;
+				  T401_RELATE4 = relations.secondary.y;
+
+			 // Debugging code
+/*				  RELATE1 = pointT401_PERSONS.getInt("RELATE1");
 				  RELATE2 = pointT401_PERSONS.getInt("RELATE2");
-				  relation = findRelationships(focusPersonPID, personTablePID );
-				// following code to update relations
-				  T401_RELATE1 = relation.primary.x;
-				  T401_RELATE2 = relation.primary.y;
-				  T401_RELATE3 = relation.secondary.x;
-				  T401_RELATE4 = relation.secondary.y;
-				  if (consoleT401) 
-					  if (RELATE1 != T401_RELATE1 || RELATE2 != T401_RELATE2) {
-						  errorIndex++;
-						  System.out.println(" " + errorIndex + " - " + pointPersonHandler.getPersonName(personTablePID)
-					  			+ " - PID: "+ personTablePID + " TMG: (" + RELATE1 + "," + RELATE2 + ") HRE: "
-							    + "(" + T401_RELATE1 + " , " + T401_RELATE2 + ")");
-					  }
-				  
-				  pointT401_PERSONS.updateInt("RELATE1", T401_RELATE1);
-				  pointT401_PERSONS.updateInt("RELATE2", T401_RELATE2);
-				  pointT401_PERSONS.updateInt("RELATE3", T401_RELATE3);
-				  pointT401_PERSONS.updateInt("RELATE4", T401_RELATE4);
-				  pointT401_PERSONS.updateRow();
-				  numberOfPerson++;
+				  if (RELATE1 != T401_RELATE1 || RELATE2 != T401_RELATE2) {
+					  errorIndex++;
+					  System.out.println(" " + errorIndex + " - " + pointPersonHandler.getPersonName(personTablePID)
+					  + " - PID: "+ personTablePID + " TMG: (" + RELATE1 + "," + RELATE2 + ") HRE: "
+					  + "(" + T401_RELATE1 + "," + T401_RELATE2 + ")");
+				  } */
+				  if ((T401_RELATE3 != 0) || (T401_RELATE4 != 0)) {
+					  System.out.println(pointPersonHandler.getPersonName(personTablePID)
+							  + " - PID: "+ personTablePID 
+							  +" primar: " + "(" + T401_RELATE1 + "," + T401_RELATE2 + ")"
+							  +" second: " + "(" + T401_RELATE3 + "," + T401_RELATE4 + ")");
+				  		numberOfPerson++;
+				  }
+
+			 // T401 update code
+				  if (updateT401) {
+					  pointT401_PERSONS.updateInt("RELATE1", T401_RELATE1);
+					  pointT401_PERSONS.updateInt("RELATE2", T401_RELATE2);
+					  pointT401_PERSONS.updateInt("RELATE3", T401_RELATE3);
+					  pointT401_PERSONS.updateInt("RELATE4", T401_RELATE4);
+					  pointT401_PERSONS.updateRow();
+				  }
 			  }
-			  if (consoleT401) System.out.println( " Deviations: " + errorIndex + " Total tested: " + numberOfPerson);
+			  //System.out.println( " Deviations: " + errorIndex + " Total tested: " + numberOfPerson);
+			  System.out.println( " Total with REL-3 or REL-4 != 0: " + numberOfPerson);
+
 		// End transaction
 			  updateTableData("COMMIT", dataBaseIndex);
 		  } catch (SQLException sqle) {
-		// Roll back transaction
-				updateTableData("ROLLBACK", dataBaseIndex);
-				if (HGlobal.writeLogs) {
-					HB0711Logging.logWrite("ERROR: in recalcRelationsT401 " + sqle.getMessage());	//$NON-NLS-1$
-					HB0711Logging.printStackTraceToFile(sqle);
-				}
-		  }
-	  }
-	  
-/**
- * Clear the relation varibales in T401	  
- * @throws HBException
- */
-	  public void clearRelationDataInT401() throws HBException {	 
-		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
-		  int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		// Start transaction
-		  updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
-		  try {
-			  pointT401_PERSONS.beforeFirst();
-			  while (pointT401_PERSONS.next()) {			  
-				  pointT401_PERSONS.updateInt("RELATE1", 0);
-				  pointT401_PERSONS.updateInt("RELATE2", 0);
-				  pointT401_PERSONS.updateInt("RELATE3", 0);
-				  pointT401_PERSONS.updateInt("RELATE4", 0);
-				  pointT401_PERSONS.updateRow();
+		 // Roll back transaction
+			  updateTableData("ROLLBACK", dataBaseIndex);
+			  if (HGlobal.writeLogs) {
+				  HB0711Logging.logWrite("ERROR: in recalcRelationsT401 " + sqle.getMessage());	//$NON-NLS-1$
+				  HB0711Logging.printStackTraceToFile(sqle);
 			  }
-			 
-		// End transaction
-			  updateTableData("COMMIT", dataBaseIndex);
-		  } catch (SQLException sqle) {
-		// Roll back transaction
-				updateTableData("ROLLBACK", dataBaseIndex);
-				if (HGlobal.writeLogs) {
-					HB0711Logging.logWrite("ERROR: in recalcRelationsT401 " + sqle.getMessage());	//$NON-NLS-1$
-					HB0711Logging.printStackTraceToFile(sqle);
-				}
 		  }
-	  
 	  }
+	  
+  /**
+   * Clear the relation varibales in T401	  
+   * @throws HBException
+   */
+  	  public void clearRelationDataInT401() throws HBException {	 
+  		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
+  		  int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+  	// Start transaction
+  		  updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+  	// Set focus person in T126 to null_RPID
+  		  pointOpenProject.setFocusPersonPID(null_RPID);
+  		  try {
+  			  pointT401_PERSONS.beforeFirst();
+  			  while (pointT401_PERSONS.next()) {			  
+  				  pointT401_PERSONS.updateInt("RELATE1", 0);
+  				  pointT401_PERSONS.updateInt("RELATE2", 0);
+  				  pointT401_PERSONS.updateInt("RELATE3", 0);
+  				  pointT401_PERSONS.updateInt("RELATE4", 0);
+  				  pointT401_PERSONS.updateRow();
+  			  }
+  			 
+  		// End transaction
+  			  updateTableData("COMMIT", dataBaseIndex);
+  		  } catch (SQLException sqle) {
+  		// Roll back transaction
+  				updateTableData("ROLLBACK", dataBaseIndex);
+  				if (HGlobal.writeLogs) {
+  					HB0711Logging.logWrite("ERROR: in recalcRelationsT401 " + sqle.getMessage());	//$NON-NLS-1$
+  					HB0711Logging.printStackTraceToFile(sqle);
+  				}
+  		  }
+  	  }
 
 /**
  * Return parents of a given PID
@@ -1627,34 +1613,30 @@ class RelationCalculation extends HBBusinessLayer {
  * @param personTablePID
  * @return
  */
-    public static Object[] getParentsPID(long personTablePID) {
-    	if (parentMap.containsKey(personTablePID))
-    		return parentMap.get(personTablePID);
-		return null;
-    }
+	    public static Object[] getParentsPID(long personTablePID) {
+	    	if (parentMap.containsKey(personTablePID))
+	    		return parentMap.get(personTablePID);
+			return null;
+	    }
 
 /**
- * Class Relationship (x,y) pair
+ * Construct a Relationship (x,y) pair
  */
-    public static class Relationship {
-        public CodePair primary;
-        public CodePair secondary;
-        public Relationship(CodePair p1, CodePair p2) {
-            this.primary = p1;
-            this.secondary = p2;
-        }
-    }
-    
-/**
- * public static class CodePair to store code pairs
- */
-    public static class CodePair {
-        public int x, y;
-        public CodePair(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
+	    public static class Relationship {
+	        public CodePair primary;
+	        public CodePair secondary;
+	        public Relationship(CodePair p1, CodePair p2) {
+	            this.primary = p1;
+	            this.secondary = p2;
+	        }
+	    }
+	    public static class CodePair {
+	        public int x, y;
+	        public CodePair(int x, int y) {
+	            this.x = x;
+	            this.y = y;
+	        }
+	    }
 
 /**
  * Build ancestor map: PID generations up from startPID
@@ -1663,146 +1645,231 @@ class RelationCalculation extends HBBusinessLayer {
  * @param startPID
  * @return
  */
-    @SuppressWarnings("unused")
-	private static Map<Long, List<Integer>> buildAncestorMap(
-            long pid,
-            long NULL_RPID,
-            int maxDepth ) {
+	    @SuppressWarnings("unused")
+		private static Map<Long, List<Integer>> buildAncestorMap(
+	            			long pid, long NULL_RPID, int maxDepth ) {
 
-        Map<Long, List<Integer>> map = new HashMap<>();
-        Queue<long[]> q = new LinkedList<>();
-        q.add(new long[]{pid, 0});
+	        Map<Long, List<Integer>> map = new HashMap<>();
+	        Queue<long[]> q = new LinkedList<>();
+	        q.add(new long[]{pid, 0});
 
-        while (!q.isEmpty()) {
-            long[] cur = q.poll();
-            long id = cur[0];
-            int depth = (int) cur[1];
-            if (depth > maxDepth) continue;
-            if (id == NULL_RPID) continue;
+	        while (!q.isEmpty()) {
+	            long[] cur = q.poll();
+	            long id = cur[0];
+	            int depth = (int) cur[1];
+	            if (depth > maxDepth) continue;
+	            if (id == NULL_RPID) continue;
 
-            map.computeIfAbsent(id, k -> new ArrayList<>()).add(depth);
-            Object[] parents = getParentsPID(id);
-            if (parents == null) continue;
-            for (Object p : parents) {
-                if (p == null) continue;
-                long parent = (Long) p;
-                if (parent == NULL_RPID) continue;
-                q.add(new long[]{parent, depth + 1});
-            }
-        }
-        return map;
-    }
+	            map.computeIfAbsent(id, k -> new ArrayList<>()).add(depth);
+	            Object[] parents = getParentsPID(id);
+	            if (parents == null) continue;
+	            for (Object p : parents) {
+	                if (p == null) continue;
+	                long parent = (Long) p;
+	                if (parent == NULL_RPID) continue;
+	                q.add(new long[]{parent, depth + 1});
+	            }
+	        }
+	        return map;
+	    }
+/***
+ * Further Helper methods for findRelationships
+ */
+	    static class LcaCandidate {
+	        long lcaPID;
+	        int df;
+	        int dt;
+	        CodePair code;
+	        int score;
+	        LcaCandidate(long lcaPID, int df, int dt, CodePair code) {
+	            this.lcaPID = lcaPID;
+	            this.df = df;
+	            this.dt = dt;
+	            this.code = code;
+	            this.score = score(code);
+	        }
+	    }
+	    static int score(CodePair c) {
+	        if (c.x==0 && c.y==0)
+	            return 9999;
+	        if (c.x==0 || c.y==0)
+	            return Math.abs(c.x)+Math.abs(c.y);
+	        return
+	           100 * Math.min(Math.abs(c.x),Math.abs(c.y))
+	          +10 * Math.abs(Math.abs(c.x)-Math.abs(c.y));
+	    }
+	    static String canonicalBand(CodePair c) {
+	        int a=Math.abs(c.x);
+	        int b=Math.abs(c.y);
+	        if (a>b) {
+	            int t=a;
+	            a=b;
+	            b=t;
+	        }
+	        return a + ":" + b;
+	    }
+	    static boolean dominates(LcaCandidate a, LcaCandidate b) {
+	        return
+	          a.df <= b.df &&
+	          a.dt <= b.dt &&
+	          (a.df < b.df || a.dt < b.dt);
+	    }
 
 /**
- * Find Relationship pairs between focus and target
+ * Find Relationship up to 2 relate pairs between focus and target
  * @param focusPID
  * @param targetPID
  * @return
  */
-    public static Relationship findRelationships(long focusPID, long targetPID) {
+	    public static Relationship findRelationships(long focusPID, long targetPID) {
 
-        final long NULL_RPID = 1999999999999999L;
-     // Assumed that no project will be deeper than 50 generations
-        final int MAX_DEPTH = 50;
+	    	final long NULL_RPID = 1999999999999999L;
+	    	// Assumed that no project will be deeper than 60 generations (about 2000 years)
+	    	final int MAX_DEPTH = 60;
 
-        if (focusPID == targetPID) 
-        	return new Relationship(new CodePair(0,0), new CodePair(0,0));
+	    	//List<Relationship> results = new ArrayList<>();
+	    	Relationship results;
+	    	// Focus person is not related to itself
+	    	if (focusPID == targetPID) {
+	    		results =  new Relationship(new CodePair(0,0), new CodePair(0,0));
+	    		return results;
+	    	}
 
-        Map<Long, List<Integer>> focusMap =
-                buildAncestorMap(focusPID, NULL_RPID, MAX_DEPTH);
-        Map<Long, List<Integer>> targetMap =
-                buildAncestorMap(targetPID, NULL_RPID, MAX_DEPTH);
+	    	Map<Long, List<Integer>> focusMap =
+	    			buildAncestorMap(focusPID, NULL_RPID, MAX_DEPTH);
+	    	Map<Long, List<Integer>> targetMap =
+	    			buildAncestorMap(targetPID, NULL_RPID, MAX_DEPTH);
 
-/*
- * STEP 1: find BEST common ancestor (single winner only)
- */
-        Long bestAncestor = null;
-        int bestScore = Integer.MAX_VALUE;
-        int bestDF = -1;
-        int bestDT = -1;
+	    	Set<Long> allLCAs = new HashSet<>(focusMap.keySet());
+	    	allLCAs.retainAll(targetMap.keySet());
 
-        for (Long id : focusMap.keySet()) {
-            if (!targetMap.containsKey(id)) continue;
+// Step 1
+	    	Map<String, LcaCandidate> bestPerBand = new HashMap<>();
 
-            for (int dF : focusMap.get(id)) {
-                for (int dT : targetMap.get(id)) {
-                	int min = Math.min(dF, dT);
-                	int max = Math.max(dF, dT);
-                	// strong priority order
-                	int score =
-                	        (min * 1000) +     // degree (most important)
-                	        (max * 10) +       // removal
-                	        (dF + dT);         // tie-break
-                    if (score < bestScore) {
-                        bestScore = score;
-                        bestAncestor = id;
-                        bestDF = dF;
-                        bestDT = dT;
-                    }
-                }
-            }
-        }
+	    	for (Long lcaId : focusMap.keySet()) {
+	    		if (!targetMap.containsKey(lcaId))
+	    			continue;
 
-/*
- * STEP 2: no relationship found
- */
-        if (bestAncestor == null) 
-        	return new Relationship(new CodePair(0,0), new CodePair(0,0));
-        
-/*
- * STEP 3: derive EXACT ONE relationship
- */
-        CodePair primary;
-/*
- * SELF
- */ 
-        if (bestDF == 0 && bestDT == 0)
-        	primary = new CodePair(0, 0);
+	    		List<Integer> fDepths = focusMap.get(lcaId);
+	    		List<Integer> tDepths = targetMap.get(lcaId);
+	    		int bestDF = Integer.MAX_VALUE;
+	    		int bestDT = Integer.MAX_VALUE;
+	    		int bestScore = Integer.MAX_VALUE;
 
-/*
- * LINEAL
- */
-        else if (bestDT == 0)
-        	primary = new CodePair(0, bestDF);
-        else if (bestDF == 0)
-        	primary = new CodePair(-bestDT, 0);
+	    		for (int dF : fDepths) {
+	    			for (int dT : tDepths) {
+	    				int score = dF + dT;
+	    				if (score < bestScore) {
+	    					bestScore = score;
+	    					bestDF = dF;
+	    					bestDT = dT;
+	    				}
+	    			}
+	    		}
 
-/*
- * SIBLINGS
- */
-        else if (bestDF == 1 && bestDT == 1)
-        	primary = new CodePair(-1, -1);
+	    		if (bestDF == Integer.MAX_VALUE)
+	    			continue;
 
-/*
- * COLLATERAL
- */
-        else if ((bestDF == 1 && bestDT == 2) || (bestDF == 2 && bestDT == 1)) {
-/*
- * CRITICAL RULE:
- * DO NOT interpret DF/DT as direction.
- * ONLY interpret which side is closer to LCA.
- */
-        	if (bestDF < bestDT) {
-        		// focus is closer to LCA → focus is younger branch
-        		primary = new CodePair(-2, -1); // niece/nephew
-        	} else {
-        		// target is closer → focus is older branch
-        		primary = new CodePair(-1, -2); // uncle/aunt
-        	}
-        }
+	    		// derive relationship
+	    		CodePair primary;
+	    		if (bestDF == 0 && bestDT == 0)
+	    			primary = new CodePair(0, 0);
+	    		else if (bestDT == 0)
+	    			primary = new CodePair(0, bestDF);
+	    		else if (bestDF == 0)
+	    			primary = new CodePair(-bestDT, 0);
+	    		else if (bestDF == 1 && bestDT == 1)
+	    			primary = new CodePair(-1, -1);
+	    		else if ((bestDF == 1 && bestDT == 2) || (bestDF == 2 && bestDT == 1)) {
+	    			if (bestDF < bestDT)
+	    				primary = new CodePair(-2, -1);
+	    			else
+	    				primary = new CodePair(-1, -2);
+	    		}
+	    		else {
+	    			int min = Math.min(bestDF, bestDT);
+	    			int max = Math.max(bestDF, bestDT);
+	    			int cousin = min - 1;
+	    			int removed = max - min;
+	    			primary = new CodePair(-(cousin + 1), -(cousin + 1 + removed));
+	    		}
 
-/*
- * COUSINS
- */
-        else {
-        	int min = Math.min(bestDF, bestDT);
-        	int max = Math.max(bestDF, bestDT);
-        	int cousin = min - 1;
-        	int removed = max - min;
-        	primary = new CodePair(
-        			-(cousin + 1),
-        			-(cousin + 1 + removed));
-        }
-        return new Relationship(primary, new CodePair(0,0));
-    }
-} // End class RelationCalculation
+	    		String band = canonicalBand(primary);
+
+	    		LcaCandidate existing = bestPerBand.get(band);
+	    		if (existing == null || score(primary) < score(existing.code)) {
+	    			bestPerBand.put(
+	    					band,
+	    					new LcaCandidate(lcaId, bestDF, bestDT, primary)
+	    					);
+	    		}
+	    	}
+	    	// convert map to list
+	    	List<LcaCandidate> candidates = new ArrayList<>(bestPerBand.values());
+
+// Step 2 - filter out higher candidate noise
+	    	int minSum = Integer.MAX_VALUE;
+	    	// find minimum depth
+	    	for (LcaCandidate c : candidates) {
+	    		int s = c.df + c.dt;
+	    		if (s < minSum) minSum = s;
+	    	}
+	    	// allow one extra level above
+	    	int maxAllowed = minSum + 1;
+	    	List<LcaCandidate> filtered = new ArrayList<>();
+	    	for (LcaCandidate c : candidates) {
+	    		int sum = c.df + c.dt;
+	    		if (sum <= maxAllowed)
+	    			filtered.add(c);
+	    	}
+	    	candidates = filtered;
+
+// Step 3 - sort
+	    	candidates.sort(Comparator.comparingInt(c -> c.score));
+
+// Step 4 - Pick 2 independent bands
+	    	LcaCandidate first = null;
+	    	LcaCandidate second = null;
+	    	Set<String> usedBands = new HashSet<>();
+	    	for (LcaCandidate c : candidates) {
+	    		String band = canonicalBand(c.code);
+	    		if (first == null) {
+	    			first = c;
+	    			usedBands.add(band);
+	    			continue;
+	    		}
+	    		if (usedBands.contains(band))
+	    			continue;
+	    		second = c;
+	    		break;
+	    	}
+
+// Step 5 Suppress bogus secondary if primary is parent/child
+	    	if (first != null && second != null) {
+	    	    boolean isParentChild =
+	    	        (first.code.x == 0 && Math.abs(first.code.y) == 1) ||
+	    	        (first.code.y == 0 && Math.abs(first.code.x) == 1);
+	    	    if (isParentChild)
+	    	    	second = null;
+	    	}
+
+// Step 6 - return
+	    	if (first == null) {
+	    	    results = new Relationship(
+	    	        new CodePair(0, 0),
+	    	        new CodePair(0, 0));
+	    	}
+	    	else if (second == null) {
+	    	    results = new Relationship(
+	    	        first.code,
+	    	        new CodePair(0, 0));
+	    	}
+	    	else {
+	    	    results = new Relationship(
+	    	        first.code,
+	    	        second.code);
+	    	}
+	    	return results;
+	    }
+
+} // End class RelationCalc

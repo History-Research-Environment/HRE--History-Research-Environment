@@ -127,6 +127,9 @@ package hre.bila;
   * 		   2026-04-07 - Added handling of focus person name (N. Tolleshaug)
   * 		   2026-04-09 - Added activateSelectFocusPerson() - (N. Tolleshaug)
   * 		   2026-04-09 - Added getPersonName(long selectedPersonPID) - (N. Tolleshaug)
+  * 		   2026-05-15 - Updated for name sort date handling - removed end date (N.Tolleshaug)
+  * 		   2026-05-17 - In ManagePersonNameData changed from end.. to sort... (N.Tolleshaug)
+  * 		   2026-05-27 - Corrected handling of popup delete parent - PersonManager (N.Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
   *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
@@ -206,7 +209,6 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public HBNameStyleManager pointStyleData;
 	public ManagePersonNameData pointManagePersonNameData;
 	public HG0507PersonSelect personSelectScreen = null;
-	//public HG0507SelectPerson pointSelectAssociate = null;
 	public HG0506ManagePerson managePersonScreen = null;
 	private HBProjectOpenData pointOpenProject;
 
@@ -2206,13 +2208,14 @@ public class HBPersonHandler extends HBBusinessLayer {
 		String selectString;
 		ResultSet personTableRS, parentTableRS;
 		Object[]  parentRelationData = null;
-		long personPID;
+		long personPID, parentTablePID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 
 	// Find parent in parent table
 		//long personPID = pointManagePersonData.getParentTablePID(selectedRowParentTable);
 		parentRelationData = pointManagePersonData.getParentTableData(selectedRowParentTable);
 		personPID = (long) parentRelationData[4];
+		parentTablePID = (long) parentRelationData[0];
 
 	// Start transaction Reset father bio and mother bio
 		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
@@ -2235,8 +2238,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 			personTableRS.close();
 
 		// Remove both parent and child relations
-			selectString = setSelectSQL("*", personParentTable,
-					"PARENT_RPID  = " + personPID + " OR PERSON_RPID = " + personPID);
+			selectString = setSelectSQL("*", personParentTable, "PID  = " + parentTablePID);
 			parentTableRS = requestTableData(selectString, dataBaseIndex);
 			parentTableRS.beforeFirst();
 			while (parentTableRS.next()) {
@@ -2354,7 +2356,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 		try {
 			nameTableRS.first();
 			startNamePID = nameTableRS.getLong("START_HDATE_RPID");
-			endNamePID = nameTableRS.getLong("END_HDATE_RPID");
+			endNamePID = nameTableRS.getLong("SORT_HDATE_RPID");
 			if (startNamePID != null_RPID) {
 				deleteHdate(startNamePID);
 			}
@@ -3413,8 +3415,6 @@ class ManagePersonData extends HBBusinessLayer {
 
 					if (HGlobal.DEBUG)
 						dumpEvents("Witness",events);
-
-
 				}
 				if (eventCount > 1) {
 					System.out.println("Multiple witness events :" + eventCount);
@@ -3442,7 +3442,7 @@ class ManagePersonData extends HBBusinessLayer {
 		String[] personNameStyle;
 		int index = 0;
 		ResultSet personNameSelected;
-		long nameHDatePID, personNamePID, nameStyleRPID;
+		long nameHDatePID, sortHDatePID, eventNameHDatePID, personNamePID, nameStyleRPID;
 		int nameType;
 		try {
 			selectString = setSelectSQL("*", personNameTable, "OWNER_RPID = " + selectPersonPID);
@@ -3452,19 +3452,27 @@ class ManagePersonData extends HBBusinessLayer {
 				if (!personNameSelected.getBoolean("NAME_PRIMARY")) {
 					nameType = personNameSelected.getInt("NAME_EVNT_TYPE");
 					nameStyleRPID = personNameSelected.getLong("NAME_STYLE_RPID");
-					//System.out.println(" Name list: " + selectPersonPID + "/" + nameType + "/" + nameStyleRPID);
+					
 					personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStyleRPID, "N", dataBaseIndex);
 					//events = new String[7];
 					personNamePID = personNameSelected.getLong("PID");
 					events = new Object[8];
+					
 					nameHDatePID = personNameSelected.getLong("START_HDATE_RPID");
+					sortHDatePID = personNameSelected.getLong("SORT_HDATE_RPID");
+					
+					//System.out.println(" Name list: " + selectPersonPID + "/" + nameType + "/" + nameStyleRPID 
+					//		+ " Name/SortPID: " + nameHDatePID + "/" + sortHDatePID);
+					
 					events[0] = pointLibraryResultSet.getEventName(nameType,langCode, dataBaseIndex).trim();
 					events[1] = pointLibraryResultSet.exstractDate(nameHDatePID, dataBaseIndex).trim();
 					events[2] = " ---- ";
+					if (nameHDatePID == null_RPID) eventNameHDatePID = sortHDatePID;  
+						else eventNameHDatePID = nameHDatePID;
 					events[3] = pointLibraryResultSet.selectPersonName(personNamePID, dataBaseIndex, personNameStyle).trim();
-					events[4] = "" + pointLibraryResultSet.calculateAge(nameHDatePID, selectPersonPID, dataBaseIndex);
+					events[4] = "" + pointLibraryResultSet.calculateAge(eventNameHDatePID, selectPersonPID, dataBaseIndex);
 					events[5] = "N";
-					events[6] = pointLibraryResultSet.exstractSortString(nameHDatePID, dataBaseIndex);
+					events[6] = pointLibraryResultSet.exstractSortString(eventNameHDatePID, dataBaseIndex);
 					events[7] = personNamePID;
 					index++;
 					eventList.add(events);
@@ -3772,9 +3780,7 @@ class ManagePersonData extends HBBusinessLayer {
 						if (parentType == 1079 || parentType == 1090) index++;
 						if (HGlobal.DEBUG)
 							dumpEvents("Child",events);
-
 					}
-
 				} else {
 			// No birth event recorded for child in parent relation
 					events = new Object[8];
@@ -4362,7 +4368,7 @@ class ManagePersonData extends HBBusinessLayer {
 			}
 			nameStyleTable.beforeFirst();
 			startRPID = personNameTable.getLong("START_HDATE_RPID");
-			endRPID = personNameTable.getLong("END_HDATE_RPID");
+			endRPID = personNameTable.getLong("SORT_HDATE_RPID");
 
 			if (startRPID != null_RPID) {
 				nameStyleAndDates[1] = pointLibraryResultSet.exstractDate(startRPID, dataBaseIndex);
@@ -4437,9 +4443,6 @@ class ManagePersonNameData extends HBBusinessLayer {
 	// Records the name element changes from HG0509ManagePersonName
 	HashMap<String,String> personNameChanges;
 
-	String startTMGdate = "", endTMGdate = "";
-	long startNameHdatePID = null_RPID, endNameHdatePID = null_RPID;
-
 /**
  * GUI methods
  */
@@ -4454,7 +4457,6 @@ class ManagePersonNameData extends HBBusinessLayer {
 
 	public String[] getAvailableStyles() {
 		return nameStyleNames;
-		//return pointPersonNameStyleData.getNameStyleList();
 	}
 
 	public Object[][] getNameElementTable() {
@@ -4801,7 +4803,7 @@ class ManagePersonNameData extends HBBusinessLayer {
  * @throws
  */
 	private void exstractStyleAndDates(long personNamePID) throws HBException {
-		long nameStyleRPID, startRPID, endRPID, ownerRPID, primaryNameRPID;
+		long nameStyleRPID, startRPID, sortRPID, ownerRPID, primaryNameRPID;
 		String selectString;
 		ResultSet  personNameTableRS, personTableRS;
 		selectString = setSelectSQL("*", personNameTable,"PID = " + personNamePID);
@@ -4828,14 +4830,14 @@ class ManagePersonNameData extends HBBusinessLayer {
 			//System.out.println(" Person name style PID: " + nameStyleRPID + "/" + nameStyleAndDates[0] + "/");
 			nameStyleTable.beforeFirst();
 			startRPID = personNameTableRS.getLong("START_HDATE_RPID");
-			endRPID = personNameTableRS.getLong("END_HDATE_RPID");
+			sortRPID = personNameTableRS.getLong("SORT_HDATE_RPID");
 			nameStyleAndDates[3] = "" + personNameTableRS.getInt("NAME_EVNT_TYPE");
 
 			if (startRPID != null_RPID) {
 				nameStyleAndDates[1] = pointLibraryResultSet.exstractDate(startRPID, dataBaseIndex);
 			}
-			if (endRPID != null_RPID) {
-				nameStyleAndDates[2] = pointLibraryResultSet.exstractDate(endRPID, dataBaseIndex);
+			if (sortRPID != null_RPID) {
+				nameStyleAndDates[2] = pointLibraryResultSet.exstractDate(sortRPID, dataBaseIndex);
 			}
 			ownerRPID = personNameTableRS.getLong("OWNER_RPID");
 			selectString = setSelectSQL("*", personTable, "PID = " + ownerRPID);
@@ -5048,9 +5050,9 @@ class ManagePersonNameData extends HBBusinessLayer {
 			personNameTableRS.updateRow();
 			personNameTableRS.close();
 		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHnadler - createNmaeDates(): " + sqle.getMessage());
+			System.out.println(" HBPersonHnadler - createNameDates(): " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HBException(" HBPersonHnadler - createNmaeDates(): " + sqle.getMessage());
+			throw new HBException(" HBPersonHnadler - createNmameDates(): " + sqle.getMessage());
 		}
 	}
 
@@ -5123,7 +5125,7 @@ class ManagePersonNameData extends HBBusinessLayer {
 	// Set name style RPID
 		hreTable.updateLong("NAME_STYLE_RPID", nameStyleRPID);
 		hreTable.updateLong("START_HDATE_RPID", null_RPID);
-		hreTable.updateLong("END_HDATE_RPID", null_RPID);
+		hreTable.updateLong("SORT_HDATE_RPID", null_RPID);
 		hreTable.updateLong("THEME_RPID", null_RPID);
 		hreTable.updateLong("MEMO_RPID", null_RPID);
 		hreTable.updateString("SURETY", "3");
@@ -6290,19 +6292,19 @@ class AddPersonRecord extends HBBusinessLayer {
 			System.out.println(" HBPersonHandler - addPerson - HBEexception: " + hbe.getMessage());
 			updateTableData("ROLLBACK", dataBaseIndex);
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("Error addPerson :  " + hbe.getMessage());
+				HB0711Logging.logWrite("ERROR HBPersonHandler - createPersonRecord :  " + hbe.getMessage());
 				HB0711Logging.printStackTraceToFile(hbe);
 			}
-			throw new HBException(" HBPersonHandler - addPerson - HBEexception: " + hbe.getMessage());
+			throw new HBException(" HBPersonHandler - createPersonRecord - HBEexception: " + hbe.getMessage());
 
 		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHandler - addPerson ROLLBACK: \n" + sqle.getMessage());
+			System.out.println(" HBPersonHandler - createPersonRecord ROLLBACK: \n" + sqle.getMessage());
 			updateTableData("ROLLBACK", dataBaseIndex);
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("Error addPerson - ROLLBACK:  " + sqle.getMessage());
+				HB0711Logging.logWrite("ERROR HBPersonHandler - createPersonRecord - ROLLBACK:  " + sqle.getMessage());
 				HB0711Logging.printStackTraceToFile(sqle);
 			}
-			throw new HBException(" HBPersonHandler - addPerson ROLLBACK: \n " + sqle.getMessage());
+			throw new HBException(" HBPersonHandler - createPersonRecord ROLLBACK: \n " + sqle.getMessage());
 		}
 	}
 
@@ -6555,7 +6557,7 @@ class AddPersonRecord extends HBBusinessLayer {
 	// Set name style RPID
 		hreTable.updateLong("NAME_STYLE_RPID", nameStyleRPID);
 		hreTable.updateLong("START_HDATE_RPID", null_RPID);
-		hreTable.updateLong("END_HDATE_RPID", null_RPID);
+		hreTable.updateLong("SORT_HDATE_RPID", null_RPID);
 		hreTable.updateLong("THEME_RPID", null_RPID);
 		hreTable.updateLong("MEMO_RPID", newHREMemoPID);
 		hreTable.updateString("SURETY", "3");
