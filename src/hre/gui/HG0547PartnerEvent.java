@@ -86,12 +86,14 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 				try {
 				// Check if data updated
 					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited) {
-					//if update memo text
-						if (memoEdited)
-							pointWhereWhenHandler.createEventMemo(memoText.getText());
 
 					// Create new event
 						newEventRecordPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
+						
+					//if update memo text
+						if (memoEdited)
+							pointWhereWhenHandler.createEventMemo(newEventRecordPID, memoText.getText());	
+						
 					// Create a new set of HDATE records
 						if (startDateOK)
 							pointWhereWhenHandler.createEventDates(true, newEventRecordPID,

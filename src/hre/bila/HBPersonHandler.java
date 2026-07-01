@@ -369,6 +369,10 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public void updateAllNameTable() throws HBException {
 		pointManagePersonData.updateAllNameTable();
 	}
+	
+	public void updateReferenceField(String reference) throws HBException {
+		pointManagePersonData.updateReferenceField(reference);
+	}
 
 
 /**
@@ -754,6 +758,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 			outputStyleTable.beforeFirst();
 			while (outputStyleTable.next()) {
 				if (outputStyleTable.getString("OUT_TYPE").equals("D")) {
+				//if (outputStyleTable.getString("OUT_TYPE").equals("R")) {
 					outputStyleNames[index] = outputStyleTable.getString("OUT_NAME_STYLE");
 					index++;
 				}
@@ -2237,7 +2242,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 			}
 			personTableRS.close();
 
-		// Remove both parent and child relations
+		// Remove parent and child relations
 			selectString = setSelectSQL("*", personParentTable, "PID  = " + parentTablePID);
 			parentTableRS = requestTableData(selectString, dataBaseIndex);
 			parentTableRS.beforeFirst();
@@ -3315,8 +3320,9 @@ class ManagePersonData extends HBBusinessLayer {
 				eventHDatePID = eventSelected.getLong("START_HDATE_RPID");
 				sortHDatePID = eventSelected.getLong("SORT_HDATE_RPID");
 
-				//System.out.println(" Event event list: " + selectPersonPID + "/" + eventPID + "/"
-				//		+ eventNumber + "/" + eventRole + "/" + locationName_RPID);
+				if (HGlobal.DEBUG) 
+					System.out.println(" Event event list: " + selectPersonPID + "/" + eventPID + "/"
+						+ eventNumber + "/" + eventRole + "/" + locationName_RPID);
 
 				events[0] = pointLibraryResultSet.getEventName(eventNumber, langCode, dataBaseIndex).trim();
 				events[1] = pointLibraryResultSet.exstractDate(eventHDatePID, dataBaseIndex).trim();
@@ -3744,7 +3750,7 @@ class ManagePersonData extends HBBusinessLayer {
 				eventRPID = personChildSelected.getLong("EVNT_RPID");
 				selectString = setSelectSQL("*", eventTable, "PID = " + eventRPID);
 				personBirthEvent = requestTableData(selectString, dataBaseIndex);
-
+				
 				int eventCount = 0;
 				if (!isResultSetEmpty(personBirthEvent)) {
 			// Birth event recorded for parent relation
@@ -3776,12 +3782,14 @@ class ManagePersonData extends HBBusinessLayer {
 						events[7] = eventPID;
 						eventCount++;
 						eventList.add(events);
+				
 						// Only add to child count if a bio relationship
 						if (parentType == 1079 || parentType == 1090) index++;
 						if (HGlobal.DEBUG)
 							dumpEvents("Child",events);
 					}
 				} else {
+					
 			// No birth event recorded for child in parent relation
 					events = new Object[8];
 					events[0] = pointLibraryResultSet.getEventName(parentType,
@@ -3798,6 +3806,7 @@ class ManagePersonData extends HBBusinessLayer {
 					eventList.add(events);
 					// Only add to child count if a bio relationship
 					if (parentType == 1079 || parentType == 1090) index++;
+
 				}
 				if (eventCount > 1)
 					System.out.println(" Number of added child birth events: " + eventCount);
@@ -3869,6 +3878,7 @@ class ManagePersonData extends HBBusinessLayer {
 				  			eventType,
 				  			langCode,
 				  			dataBaseIndex);
+					
 					personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
 
 					if (HGlobal.DEBUG)
@@ -3906,7 +3916,6 @@ class ManagePersonData extends HBBusinessLayer {
 		associateList = new ArrayList<>();
 		String personName = "", eventRole = "", eventName = "", eventDate = "--";
 		int witness = 0, eventNumber = 0, eventRoleCode, selfAssocCount = 0;
-		//int beforeAssocs;
 		long eventTablePID, eventPID, assocPersonPID, eventHDatePID;
 
 	// Test for duplicate assoc person - 9-11-2024
@@ -3915,8 +3924,8 @@ class ManagePersonData extends HBBusinessLayer {
 
 		associateRows = addPartnersToAssocs(selectedPersonPID, associateList); //
 		//System.out.println(" After addPartnersToAssocs - assocs found: " + associateRows);
+		
 	// addEventToAssociates add duplicates 9.11.2024
-		//beforeAssocs = associateRows;
 		associateRows = associateRows + addEventToAssociates(selectedPersonPID, associateList); // Def
 		//System.out.println(" After addEventToAssociates - assocs found: " + (associateRows - beforeAssocs));
 		assocEventDuplicatePIDList = new Vector<>(100,10);
@@ -3949,7 +3958,6 @@ class ManagePersonData extends HBBusinessLayer {
 				// Test for duplicate persons - 9-11-2024
 					if (assocPersonDuplicatePIDList.contains(assocPersonPID)) continue;
 					assocPersonDuplicatePIDList.add(assocPersonPID);
-
 					eventRoleCode = eventAssocSelected.getInt("ROLE_NUM");
 
 				// The focus person can also be a witness to another event
@@ -3969,11 +3977,13 @@ class ManagePersonData extends HBBusinessLayer {
 								  			eventNumber,
 								  			langCode,
 								  			dataBaseIndex);
+							
 							personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
+							
 							if (HGlobal.DEBUG)
 								System.out.println(" prepareAssociateTable: " + witness + " Event PID: " + eventPID + " Type: " + eventNumber
 													+ " Event: " + eventName + " Name: " + personName + " Role: " + eventRole);
-
+							
 							Object[] associates = new String[4];
 							associates[0] = " " + personName.trim();
 							associates[1] = " " + eventRole.trim();
@@ -3989,15 +3999,12 @@ class ManagePersonData extends HBBusinessLayer {
 														  + " Event PID: " + eventPID
 														  + " RoleCode: " + eventRoleCode
 														  + " Assoc per: " + assocPersonPID);
-
 					}
 				}
 			}
 			if (HGlobal.DEBUG)
 				if (selfAssocCount > 0)
 					System.out.println(" Number of self assocs: " + selfAssocCount);
-
-
 
 		// Set number of row in asscociate table
 			associateRows = associateRows + witness;
@@ -4380,6 +4387,26 @@ class ManagePersonData extends HBBusinessLayer {
 		} catch (SQLException hbe) {
 			throw new HBException("ManagePersonNameData - updateStyleAndDates: " + hbe.getMessage());
 		}
+	}
+	
+/**
+ * updateReferenceField(String reference)
+ * @param reference
+ * @throws HBException
+ */
+	public void updateReferenceField(String reference) throws HBException {
+		ResultSet personSelectedRS;
+		String selectString = setSelectSQL("*", personTable, "PID = " + selectPersonPID);
+		personSelectedRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			personSelectedRS.first();
+			personSelectedRS.updateString("REFERENCE", reference);
+			personSelectedRS.updateRow();
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			throw new HBException(" updateReferenceField error: " + sqle.getMessage());
+		}
+		
 	}
 } // End Class ManagePersonData
 
@@ -5909,7 +5936,7 @@ class AddPersonRecord extends HBBusinessLayer {
 			relationTable.first();
 			memoElementPID = relationTable.getLong("MEMO_RPID");
 			if (memoElementPID == null_RPID) {
-				return " No memo found";
+				return "";
 			}
 			if (HGlobal.DEBUG)
 				System.out.println(" MemoPID: " + memoElementPID);

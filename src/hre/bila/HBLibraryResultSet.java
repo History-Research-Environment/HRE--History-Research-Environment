@@ -47,6 +47,7 @@ package hre.bila;
  * 			  2025-07-02 - Added selectSentenceString for TMG sentences (N. Tolleshaug)
  * 			  2025-09-25 - Apply fix for Issue 32.08 (D Ferguson)
  * v0.05.0033 2026-03-08 - Added HashMap<String,String> selectPersonNameElements (N. Tolleshaug)
+ * 			  2026-06-12 - Added method for updating T168_SENTENCE_SET (N. Tolleshaug)
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -69,6 +70,7 @@ import javax.swing.table.DefaultTableModel;
 
 import hre.dbla.HDException;
 import hre.gui.HGlobal;
+
 
 /**
  * HBLibraryResultSet contains ResultSet processing methods
@@ -168,26 +170,30 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-	public String[] getNameStyleOutput(String tableName, long ownerRPID, String nameType, int selectNameStyleIndex, int dataBaseIndex) throws HBException {
+	public String[] getNameStyleOutput(String tableName, long ownerRPID, String nameType, String outType, int selectNameStyleIndex, int dataBaseIndex) throws HBException {
 		String selectString = pointBusinessLayer.
 
 				setSelectSQL("*", tableName,"OWNER_RECORD_RPID = '" + ownerRPID
 											+ "'AND NAME_TYPE = '" + nameType
-											+ "' AND OUT_TYPE = 'D'");
+											//+ "' AND OUT_TYPE = 'D'");
+											+ "' AND OUT_TYPE = '" + outType +"'");
 		ResultSet nameStyleOutputCodes;
 		try {
 			nameStyleOutputCodes = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(nameStyleOutputCodes)) {
+				System.out.println(" WARNING - nameStyleOutputCodes empty owner: " + ownerRPID + "/" +  nameType);
+				return null;
+			}
 		// Check if the stores absolute selectNameStyleIndex in absolute exceeds result set size
 			if (nameStyleOutputCodes.absolute(selectNameStyleIndex + 1)) {
 				nameStyleOutputCodes.absolute(selectNameStyleIndex + 1);
 			} else {
 				nameStyleOutputCodes.absolute(1);
 			}
-
 			String styleCodes = nameStyleOutputCodes.getString("OUT_ELEMNT_CODES");
-			if (HGlobal.DEBUG) {
-				System.out.println(" Name Style Codes: " + nameType + " / " + selectNameStyleIndex + " / " + styleCodes);
-			}
+			if (HGlobal.DEBUG) 
+				System.out.println(" Name Style Output RS: " + ownerRPID + "/" + nameType + "/" + selectNameStyleIndex + "/" + styleCodes);
+			
 			return styleCodes.split("\\|");
 		} catch (SQLException sqle) {
 			throw new HBException("LibraryResultSet - getNameStyleOutput: " + sqle.getMessage());
@@ -689,6 +695,169 @@ public class HBLibraryResultSet {
 	}
 
 /**
+ * public void storeLocalSentence( 
+ * @param eventTableRPID
+ * @param HREsentence
+ * @param eventType
+ * @param roleCode
+ * @param lang_code
+ * @param pointOpenProject
+ * @throws HBException
+ */
+	public int storeLocalSentence(long eventTableRPID, String HREsentence, int eventType, 
+					int roleCode, String lang_code, HBProjectOpenData pointOpenProject) throws HBException {
+		HREmemo pointHREmemo = pointOpenProject.getHREmemo();;
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();;
+		String selectString;
+		long primAssocSentenceRPID = null_RPID, primarySentencePID = null_RPID;
+		ResultSet eventTableRS, sentenceTableRS = null;
+		selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.eventTable, "PID = " + eventTableRPID);
+		eventTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+		try {
+			eventTableRS.first();
+			primAssocSentenceRPID = eventTableRS.getLong("PRIM_ASSOC_SENTENCE_RPID");
+			selectString = pointBusinessLayer.
+					setSelectSQL("*", pointBusinessLayer.sentenceSet,
+								"EVNT_TYPE = " + eventType
+								+ " AND EVNT_ROLE_NUM = " + roleCode);
+			sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			//if (sentenceTableRS.getRow() == 0 || primAssocSentenceRPID == null_RPID) {
+			if (primAssocSentenceRPID == null_RPID) {
+			// Find next PID for T168_SENTENCE_SET and crete new sentence
+				primarySentencePID = pointBusinessLayer.lastRowPID(pointBusinessLayer.sentenceSet, dataBaseIndex) + 1;
+				addToT168_SENTENCE_SET(sentenceTableRS, pointHREmemo, primarySentencePID, lang_code, eventType, roleCode, HREsentence);
+				eventTableRS.updateLong("PRIM_ASSOC_SENTENCE_RPID", primarySentencePID);
+				eventTableRS.updateRow();
+			} else {
+				// Update sentence table T168_SENTENCE_SET 
+				selectString = pointBusinessLayer.
+						setSelectSQL("*", pointBusinessLayer.sentenceSet, "PID = " + primAssocSentenceRPID);
+				sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+				if (pointBusinessLayer.isResultSetEmpty(sentenceTableRS)) return 1;
+				sentenceTableRS.first();
+				if (HREsentence.length() <= 500) {
+					sentenceTableRS.updateBoolean("IS_LONG", false);
+					sentenceTableRS.updateString("SHORT_SENT", HREsentence);
+				} else {
+					sentenceTableRS.updateBoolean("IS_LONG", true);
+					sentenceTableRS.updateClob("LONG_SENT", pointHREmemo.createNClob(HREsentence));
+				}
+				sentenceTableRS.updateRow();
+				eventTableRS.close();
+				sentenceTableRS.close();
+				return 0;
+			}
+		} catch (SQLException sqle) {
+			System.out.println(" HBLibraryResultSet - storeLocalSentence error: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException("HBLibraryResultSet - storeLocalSentence error: " + sqle.getMessage());
+		}
+		return 0;
+	}
+	
+/**
+ * storeDefaultSentence
+ * @param HREsentence
+ * @param eventType
+ * @param roleCode
+ * @param lang_code
+ * @param pointOpenProject
+ * @return
+ * @throws HBException
+ */
+	public int storeDefaultSentence(String HREsentence, int eventType, 
+			int roleCode, String lang_code, HBProjectOpenData pointOpenProject) throws HBException {
+		HREmemo pointHREmemo = pointOpenProject.getHREmemo();;
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();;
+		String selectString;
+		long standardSentencePID;
+		ResultSet sentenceTableRS = null;
+		//System.out.println(" storeDefaultSentence: " + HREsentence + " Role: " + roleCode);
+		HREsentence = HREsentence.replace("(en-US)","");
+		try {
+			selectString = pointBusinessLayer.
+					setSelectSQL("*", pointBusinessLayer.sentenceSet,
+								"EVNT_TYPE = " + eventType
+								+ " AND EVNT_ROLE_NUM = " + roleCode);
+			sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(sentenceTableRS)) {
+				System.out.println(" sentenceTableRS empty ");
+				return 1;
+			}
+			sentenceTableRS.beforeFirst();
+			while (sentenceTableRS.next()) {
+				//System.out.println(" Sentences: " + sentenceTableRS.getString("LANG_CODE"));
+				if (sentenceTableRS.getString("LANG_CODE").equals(lang_code)) break;
+			}
+			//System.out.println(" Selected - Sentences: " + sentenceTableRS.getString("LANG_CODE"));
+			if (sentenceTableRS.isAfterLast()) {
+			// Create new sentence T168_SENTENCE_SET for new language
+				standardSentencePID = pointBusinessLayer.lastRowPID(pointBusinessLayer.sentenceSet, 
+										dataBaseIndex) + 1;
+				//System.out.println(" Create- Sentences PID: " + standardSentencePID + "/" + HREsentence);
+				addToT168_SENTENCE_SET(sentenceTableRS, pointHREmemo, standardSentencePID, 
+									lang_code, eventType, roleCode, HREsentence);
+			} else {
+				//System.out.println(" Update- Sentences PID: " + sentenceTableRS.getLong("PID") + "/" + HREsentence);
+			// if lang sentence exist Update sentence table T168_SENTENCE_SET 
+				if (HREsentence.length() <= 500) {
+					sentenceTableRS.updateBoolean("IS_LONG", false);
+					sentenceTableRS.updateString("SHORT_SENT", HREsentence);
+				} else {
+					sentenceTableRS.updateBoolean("IS_LONG", true);
+					sentenceTableRS.updateClob("LONG_SENT", pointHREmemo.createNClob(HREsentence));
+				}
+				sentenceTableRS.updateRow();
+				sentenceTableRS.close();
+				return 0;
+			}
+		} catch (SQLException sqle) {
+			System.out.println(" HBLibraryResultSet - storeDefaultSentence error: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException("HBLibraryResultSet - storeDefaultSentence error: " + sqle.getMessage());
+		}
+		return 0;
+}	
+/**
+ * addToT168_SENTENCE_SET(	
+ * @param hreTable
+ * @param primaryPID
+ * @param lang_code
+ * @param etypeNumber
+ * @param roleNumber
+ * @param HREsentence
+ * @throws HBException
+ */
+	protected void addToT168_SENTENCE_SET(ResultSet hreTable, HREmemo pointHREmemo, long primaryPID, String lang_code, int etypeNumber,
+										int roleNumber, String HREsentence) throws HBException {											
+			try {
+			// moves cursor to the insert row
+				hreTable.moveToInsertRow();
+			// update
+				hreTable.updateLong("PID", primaryPID);
+				hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
+				hreTable.updateString("LANG_CODE", lang_code);
+				hreTable.updateInt("EVNT_TYPE", etypeNumber);
+				hreTable.updateInt("EVNT_ROLE_NUM", roleNumber);
+				if (HREsentence.length() <= 500) {
+					hreTable.updateBoolean("IS_LONG", false);
+					hreTable.updateString("SHORT_SENT", HREsentence);
+				} else {
+					hreTable.updateBoolean("IS_LONG", true);
+					hreTable.updateClob("LONG_SENT", pointHREmemo.createNClob(HREsentence));
+				}		
+			//Insert row
+				hreTable.insertRow();	
+			} catch (SQLException sqle) {
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in TMGpassEvents addToT168 " + sqle.getMessage());
+					HB0711Logging.printStackTraceToFile(sqle);
+		}
+			throw new HBException("TMGPass_events - addToT168_SENTENCE_SET - error: " + sqle.getMessage());
+		}
+	}	
+	
+/**
  * public String selectSentenceString(int eventType, int roleCode, String lang_code, int dataBaseIndex)
  * @param eventType
  * @param roleCode
@@ -697,33 +866,63 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-	public String selectSentenceString(int eventType, int roleCode, String lang_code, int dataBaseIndex) throws HBException {
+	public long selectSentenceSetPID(int eventType, int roleCode, String lang_code, int dataBaseIndex) throws HBException {
+		String selectString;
+		ResultSet sentenceSetRS;
+		try {
+			selectString = pointBusinessLayer.
+				setSelectSQL("*", pointBusinessLayer.sentenceSet,
+							"EVNT_TYPE = " + eventType
+							+ " AND EVNT_ROLE_NUM = " + roleCode);
+			sentenceSetRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			if (pointBusinessLayer.isResultSetEmpty(sentenceSetRS)) {
+				System.out.println(" Empty standard senetenceRS");
+				return null_RPID;
+			}
+			sentenceSetRS.beforeFirst();
+			while (sentenceSetRS.next()) {
+				if (sentenceSetRS.getString("LANG_CODE").equals(lang_code)) break;
+			}
+			
+		// if language not found
+			if (sentenceSetRS.isAfterLast()) {
+				sentenceSetRS.beforeFirst();
+				while (sentenceSetRS.next()) {
+					if (sentenceSetRS.getString("LANG_CODE").equals("en-US")) break;
+				}
+			} else return sentenceSetRS.getLong("PID");
+
+			if (sentenceSetRS.isAfterLast()) {
+				System.out.println(" Empty fallback senetenceRS");
+				return null_RPID;
+			} else  return sentenceSetRS.getLong("PID");
+			
+		} catch (SQLException sqle) {
+			System.out.println(" HBLibraryResultSet - electSentenceSetPID: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException(" HBLibraryResultSet - electSentenceSetPID: " + sqle.getMessage());
+		}
+	}
+
+/**
+ * getSentenceSetString(
+ * @param sentenseSetTablePID
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
+	public String getSentenceSetString(long sentenseSetTablePID, int dataBaseIndex) throws HBException {
 		String selectString , sentence = "";
 		ResultSet sentenceSet;
 		String langPrefix = "";
 		try {
 			selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.sentenceSet,
-							"EVNT_TYPE = " + eventType
-							+ " AND EVNT_ROLE_NUM = " + roleCode);
+							"PID = " + sentenseSetTablePID);
 			sentenceSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-			sentenceSet.last();
-			if (sentenceSet.getRow() == 0) return "NOSENTENCE";
-			sentenceSet.beforeFirst();
-			while (sentenceSet.next()) {
-				if (sentenceSet.getString("LANG_CODE").equals(lang_code)) break;
-			}
-		// if language not found
-			if (sentenceSet.isAfterLast()) {
-				langPrefix = "(en-US)";
-				sentenceSet.beforeFirst();
-				while (sentenceSet.next()) {
-					if (sentenceSet.getString("LANG_CODE").equals("en-US")) break;
-				}
-			}
-
-			if (sentenceSet.isAfterLast()) return "NOSENTENCE";
-
+			sentenceSet.first();
+			if (pointBusinessLayer.isResultSetEmpty(sentenceSet)) return "NOSENTENCE";
+			if (!sentenceSet.getString("LANG_CODE").equals(HGlobal.dataLanguage)) langPrefix = "(en-US)";
 			if (sentenceSet.getBoolean("IS_LONG"))  {
 				Clob clobMemo = sentenceSet.getClob("LONG_SENT");
 		         Reader readClob = clobMemo.getCharacterStream();
@@ -1770,22 +1969,22 @@ public class HBLibraryResultSet {
 			eventTagSet.last();
 			if (eventTagSet.getRow() > 0 ) {
 				eventTagSet.first();
+				//System.out.println(" Event name: " + eventTagSet.getString("EVNT_NAME"));
 				return eventTagSet.getString("EVNT_NAME");
 			}
-			// fall back to en-US translation
-						selectString = pointBusinessLayer.setSelectSQL("EVNT_NAME", pointBusinessLayer.eventDefnTable,
-								"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'");
-						eventTagSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-						eventTagSet.last();
-						if (eventTagSet.getRow() > 0 ) {
-							eventTagSet.first();
-							return "*" + eventTagSet.getString("EVNT_NAME");
-						}
-						System.out.println(" Missing fall back to en-US event nr: " + eventNumber + "/" + langCode);
-						throw new HBException(" Missing fall back event name for en-US event nr: " + eventNumber + "/" + langCode);
+		// fall back to en-US translation
+			selectString = pointBusinessLayer.setSelectSQL("EVNT_NAME", pointBusinessLayer.eventDefnTable,
+					"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = 'en-US'");
+			eventTagSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			eventTagSet.last();
+			if (eventTagSet.getRow() > 0 ) {
+				eventTagSet.first();
+				return "*" + eventTagSet.getString("EVNT_NAME");
+			}
+			System.out.println(" Missing fall back to en-US event type: " + eventNumber + "/" + langCode);
+			throw new HBException(" Missing fall back event name for en-US event type: " + eventNumber + "/" + langCode);
 		} catch (SQLException sqle) {
-			throw new HBException("SQL exception: " + sqle.getMessage()
-			+ "\nSQL string: " + selectString);
+			throw new HBException("SQL exception: " + sqle.getMessage() + "\nSQL string: " + selectString);
 		}
 	}
 
@@ -1868,39 +2067,5 @@ public class HBLibraryResultSet {
 			throw new HBException("SQL ResultSet Error: \n" + exc.getMessage());
 		}
 	}
-
-/*
-	public boolean setDatabaseProjectName(String dataBaseLoc) throws HBException {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-
-	public String[] getPlaceData(ResultSet eventTable) throws SQLException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	public HashMap<String, String[]> initiateT175data(ResultSet dataT175, ResultSet dataExstractT204) throws HBException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	public ResultSet getT204Resultset(String language, HBBusinessLayer pointBusinessLayer, int dataBaseIndex)
-			throws HBException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	protected String getRoleName(String eventRoleCode, int eventNumber, String langCode, int dataBaseIndex)
-			throws HBException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-*/
 
 } // End class HBResultSetLibrary

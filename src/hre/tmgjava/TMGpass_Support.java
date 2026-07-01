@@ -41,7 +41,8 @@ package hre.tmgjava;
  * v0.03.0031 2024-09-29 - Updated with this version in Build31 and Master 31 (N. Tolleshaug)
  * v0.04.0032 2026-01-16 - Log ccatch blocks (D Ferguson)
  * v0.05.0033 2026-04-07 - Updated setting of focusperson T126 (N. Tolleshaug)
- * 
+ * 			  2026-06-20 - Modify position of "Title" in D type output (N. Tolleshaug)
+ * 			  2026-06-23 - Modify position of "Suffix" in D type output (N. Tolleshaug)
  ***************************************************************************************
  * NOTE 01 - 	Insert updates only the database
  * 				To see the inserted rows in ResultSet
@@ -375,19 +376,30 @@ public class TMGpass_Support {
 							pidTableT162++;
 							outType = "D";
 							outStyleNameType = "GVNAMEDISP";
-							outputSurnameFirstString = tmgSTtable.getValueString(index,outStyleNameType);
+							outputSurnameFirstString = tmgSTtable.getValueString(index, outStyleNameType);
+							
+				// Modify position of "Title"	Fix 20.6.2026	
+							outputSurnameFirstString = outputSurnameFirstString.replace("[Title] ", "");
+							outputSurnameFirstString = outputSurnameFirstString.replace("[Suffix] ", "");
+							outputSurnameFirstString = "[Title] " + outputSurnameFirstString + " [Suffix]";
+							
 							genOutputStyle(index, pidTableT162, nameStylePID, outputSurnameFirstString, outStyleNameType);
 							if (TMGglobal.DEBUG)
-								System.out.println(" TMG DSID 0 - " +  outStyleNameType + " Group: " + styleGroup
+								System.out.println(" TMG OUT D-STYLE - " +  outStyleNameType + " Group: " + styleGroup
 										+ " = " + outputSurnameFirstString);
 
 							pidTableT162++;
 							outType = "D";
 							outStyleNameType = "SRNAMEDISP";
-							outputGivenFirstString = tmgSTtable.getValueString(index,outStyleNameType);
+							outputGivenFirstString = tmgSTtable.getValueString(index, outStyleNameType);
+							
+					// Modify position of "Title"	Fix 20.6.2026	
+							outputGivenFirstString = outputGivenFirstString.replace("([Title]) ", "");
+							outputGivenFirstString = "[Title] " + outputGivenFirstString;
+							
 							genOutputStyle(index, pidTableT162, nameStylePID, outputGivenFirstString, outStyleNameType);
 							if (TMGglobal.DEBUG)
-								System.out.println(" TMG DSID 0 - " +  outStyleNameType + " Group: " + styleGroup
+								System.out.println(" TMG OUT D-STYLE - " +  outStyleNameType + " Group: " + styleGroup
 										+ " = " + outputGivenFirstString);
 						}
 					}

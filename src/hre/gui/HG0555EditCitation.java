@@ -36,6 +36,7 @@ package hre.gui;
  * 			  2026-01-08 Log all catch block and DEBUG msgs (D Ferguson)
  * 			  2026-02-16 Fix src # entry formatter to disallow commma (D Ferguson)
  * v0.05.0033 2026-05-25 Setup focus policy (D Ferguson)
+ * 			  2026-06-07 Fix 33.64 Stop invalid source# msg on first use of Select Source (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -296,7 +297,8 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	    formatter.setMinimum(1);
 	    formatter.setMaximum(99999);
 	    srcNum = new JFormattedTextField(formatter);
-	    srcNum.setText("" + sourceREF); //$NON-NLS-1$
+	    if (sourceREF == 0) srcNum.setText("");		//$NON-NLS-1$
+	    else srcNum.setText("" + sourceREF); 		//$NON-NLS-1$
 	    srcNum.setColumns(5);
 	    srcNum.setHorizontalAlignment(SwingConstants.CENTER);
 	    citePanel.add(srcNum, "cell 1 0, alignx left");		//$NON-NLS-1$
@@ -609,7 +611,6 @@ public class HG0555EditCitation extends HG0450SuperDialog {
             	// Get whatever has been entered so far and process it
             	if (StringUtils.isNumeric(srcNum.getText()))
             					sourceNumberEntry(Integer.valueOf(srcNum.getText()));
-            	else sourceNumberEntry(0);		// else pass across 0 to force error msg
             }
         });
 
@@ -906,9 +907,13 @@ public class HG0555EditCitation extends HG0450SuperDialog {
     		}
     	}
 		// No source number matched
-		if (!haveSourceData) JOptionPane.showMessageDialog(srcNum,
+		if (!haveSourceData) {
+			JOptionPane.showMessageDialog(srcNum,
 									HG0555Msgs.Text_54 + enteredNum,	// No Source exists with number:
 									HG0555Msgs.Text_55, JOptionPane.ERROR_MESSAGE); // Select Source
+			srcNum.setText("");
+			sourceTitleText.setText("");
+			}
 		// reset for next time
 		haveSourceData = false;
 	}

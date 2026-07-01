@@ -23,6 +23,7 @@
 * 			  2026-01-06 Log catch block msgs (D Ferguson)
 * v0.05.0033  2026-04-09 Modified for select of Relationship focus person (N.Tolleshaug)
 * 			  2026-05-25 Add tab/focus policy (D Ferguson)
+* 			  2025-06-13 Fix for correct citation parent relation (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -137,7 +138,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private int focusPersIDX = 1;	// default start person	// see NOTE04
 	private int foundRow;
 	private int clickedRow, selectedRowInTable;
-	public long personPID;
+	public long personPID, personTablePID; // Mod 13.6.2026 NTo
 	private String idText, allColumnsText1, allColumnsText2;
 	String[] tablePersColHeads = null;
 
@@ -976,7 +977,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
  * @throws HBException
  */
 	public void resetCitationTable(String tableName) throws HBException {
-		objCiteData = pointCitationSourceHandler.getCitationSourceData(personPID, tableName);
+		objCiteData = pointCitationSourceHandler.getCitationSourceData(personTablePID, tableName);
 		Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
 		citeModel.setDataVector(objCiteData, tableCiteHeader);
 	}

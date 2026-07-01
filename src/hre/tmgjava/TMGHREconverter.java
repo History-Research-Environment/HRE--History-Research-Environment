@@ -64,6 +64,7 @@ package hre.tmgjava;
  *			  2026-03-19 - Revised WARNINGS and ERROR messages (N. Tolleshaug)
  *			  2026-03-28 - Edietd MESSAGE to MESSAGE: (N. Tolleshaug)
  *			  2026-04-06 - Updated setting of focusperson T126 (N. Tolleshaug)
+ *			  2026-06-02 - Completed list of closing TMG tables(N. Tolleshaug)
  ******************************************************************************************
  * NOTES
  ******************************************************************************************/
@@ -406,11 +407,14 @@ public class TMGHREconverter extends SwingWorker<String, String> {
  */
 	private void closeAllTMGtables(String message) {
 		if (TMGglobal.tmg_$_table != null) TMGglobal.tmg_$_table.closeTMGtable();
+		if (TMGglobal.tmg_A_table != null) TMGglobal.tmg_A_table.closeTMGtable();
+		if (TMGglobal.tmg_C_table != null) TMGglobal.tmg_C_table.closeTMGtable();
 		if (TMGglobal.tmg_D_table != null) TMGglobal.tmg_D_table.closeTMGtable();
 		if (TMGglobal.tmg_E_table != null) TMGglobal.tmg_E_table.closeTMGtable();
 		if (TMGglobal.tmg_F_table != null) TMGglobal.tmg_F_table.closeTMGtable();
 		if (TMGglobal.tmg_G_table != null) TMGglobal.tmg_G_table.closeTMGtable();
 		if (TMGglobal.tmg_I_table != null) TMGglobal.tmg_I_table.closeTMGtable();
+		if (TMGglobal.tmg_M_table != null) TMGglobal.tmg_M_table.closeTMGtable();
 		if (TMGglobal.tmg_N_table != null) TMGglobal.tmg_N_table.closeTMGtable();
 		if (TMGglobal.tmg_NPV_table != null) TMGglobal.tmg_NPV_table.closeTMGtable();
 		if (TMGglobal.tmg_NPT_table != null) TMGglobal.tmg_NPT_table.closeTMGtable();
@@ -419,13 +423,21 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		if (TMGglobal.tmg_PD_table != null) TMGglobal.tmg_PD_table.closeTMGtable();
 		if (TMGglobal.tmg_PPT_table != null) TMGglobal.tmg_PPT_table.closeTMGtable();
 		if (TMGglobal.tmg_PPV_table != null) TMGglobal.tmg_PPV_table.closeTMGtable();
+		if (TMGglobal.tmg_R_table != null) TMGglobal.tmg_R_table.closeTMGtable();
+		if (TMGglobal.tmg_S_table != null) TMGglobal.tmg_S_table.closeTMGtable();
 		if (TMGglobal.tmg_ST_table != null) TMGglobal.tmg_ST_table.closeTMGtable();
 		if (TMGglobal.tmg_T_table != null) TMGglobal.tmg_T_table.closeTMGtable();
+		if (TMGglobal.tmg_U_table != null) TMGglobal.tmg_U_table.closeTMGtable();
+		if (TMGglobal.tmg_W_table != null) TMGglobal.tmg_W_table.closeTMGtable();
 		TMGglobal.tmg_$_table = null;
+		TMGglobal.tmg_A_table = null;
+		TMGglobal.tmg_C_table = null;
+		TMGglobal.tmg_D_table = null;
 		TMGglobal.tmg_E_table = null;
 		TMGglobal.tmg_F_table = null;
 		TMGglobal.tmg_G_table = null;
 		TMGglobal.tmg_I_table = null;
+		TMGglobal.tmg_M_table = null;
 		TMGglobal.tmg_N_table = null;
 		TMGglobal.tmg_NPV_table = null;
 		TMGglobal.tmg_NPT_table = null;
@@ -434,8 +446,12 @@ public class TMGHREconverter extends SwingWorker<String, String> {
 		TMGglobal.tmg_PD_table = null;
 		TMGglobal.tmg_PPT_table = null;
 		TMGglobal.tmg_PPV_table = null;
+		TMGglobal.tmg_R_table = null;
+		TMGglobal.tmg_S_table = null;
 		TMGglobal.tmg_ST_table = null;
 		TMGglobal.tmg_T_table = null;
+		TMGglobal.tmg_U_table = null;
+		TMGglobal.tmg_W_table = null;
 		if (TMGglobal.DEBUG) System.out.println(" TMG " + message + " tables closed");
 		processMonitor.setContextOfAction("TMG " + message + " tables closed");
 	}

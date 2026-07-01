@@ -1034,19 +1034,19 @@ public class HBBusinessLayer  {
 											int dataBaseIndex) throws HBException {
 
 		int index = selectNameDisplayIndex;
+		if (HGlobal.DEBUG) 
+			System.out.println(" Default Name Style Type: " + nameType + " owner: " + ownerRPID
+				+ " NSindex: " + index);
 		if (nameType.equals("P")) {
 			index = 0;
+			return pointLibraryResultSet.getNameStyleOutput(nameStylesOutput, ownerRPID, nameType , "D", index, dataBaseIndex);
 		} else if (nameType.equals("N")) {
 			index = selectNameDisplayIndex;
+			return pointLibraryResultSet.getNameStyleOutput(nameStylesOutput, ownerRPID, nameType , "D" ,index, dataBaseIndex);
 		} else {
 			System.out.println(" getNameStyleOutputCodes - Unknown nameType: " + nameType );
 		}
-		if (HGlobal.DEBUG) {
-			System.out.println(" Default Name Style Type: " + nameType + " owner: " + ownerRPID
-				+ " NSindex: " + index);
-		}
-
-		return pointLibraryResultSet.getNameStyleOutput(nameStylesOutput, ownerRPID, nameType , index, dataBaseIndex);
+		return new String[1];
 	}
 
 /**

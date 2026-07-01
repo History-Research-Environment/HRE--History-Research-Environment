@@ -56,6 +56,8 @@ package hre.gui;
  * 		  	  2026-02-18 Allow Memo/Citation panels to expand in sync (D Ferguson)
  * v0.05.0033 2026-04-24 Ensure memo textarea handles large text block (D Ferguson)
  * 			  2026-05-19 Fix 33.21 stop screen resizing after citation delete (D Ferguson)
+ * 			  2026-06-17 Allow editing of Memo text in a large new panel (D Ferguson)
+ * 			  2026-06-22 Added event images to media card (N. Tolleshaug)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -79,6 +81,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventObject;
 import java.util.Vector;
@@ -91,6 +94,7 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -105,6 +109,7 @@ import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
@@ -122,6 +127,7 @@ import hre.bila.HB0711Logging;
 import hre.bila.HBCitationSourceHandler;
 import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
+import hre.bila.HBMediaHandler;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
 import hre.bila.HBWhereWhenHandler;
@@ -146,6 +152,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	public HBPersonHandler pointPersonHandler;
 	public HBCitationSourceHandler pointCitationSourceHandler;
 	HBEventRoleManager pointEventRoleManager;
+	HBMediaHandler pointMediaHandler;
 	HG0547EditEvent pointEditEvent = this;
 
 	public String screenID = "54700";	//$NON-NLS-1$
@@ -202,6 +209,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     Vector<Long> associatesAddedList = new Vector<>(100,10); // Stores added associate PID's
     Vector<Long> citationAddedList = new Vector<>(100,10); // Stores added citations PID's
 
+	ArrayList<ImageIcon> listImages;
+	ArrayList<String> listImagesCaptions;
+
     Object[][] tableLocationData;
     String [] nameData;
 
@@ -221,6 +231,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     public int selectedRoleNum;
 	private int rowClicked;
 	int keyAssocMin = 0;
+
 
 	HG0590EditDate editStartDate;
 	long startMainYear = 0L;
@@ -273,7 +284,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     public String getWitnessName() {
     	if (tableAssocsData.length > 0)
     		return (String) tableAssocsData[0][0];
-		return "";
+		return "";		//$NON-NLS-1$
     }
 
     public String getMemoText() {
@@ -316,6 +327,11 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    tableCiteHeader = pointPersonHandler.setTranslatedData("50500", "1", false); // Source#, Source, 1 2 D P M  //$NON-NLS-1$ //$NON-NLS-2$
 	    eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventNum, dataBaseIndex);
 	    keyAssocMin = pointPersonHandler.pointLibraryResultSet.getKeyAssocMin(eventNum, dataBaseIndex);
+
+	 // set up pictures
+		pointMediaHandler = pointOpenProject.getMediaHandler();
+		listImages = pointMediaHandler.getImageList();
+		listImagesCaptions = pointMediaHandler.getImageCaptionList();
 
 /***************************************
  * Initiate load of Name/Style/Date data
@@ -630,11 +646,11 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	// Setup Memo sub-panel
 		JPanel botmLeftEvntPanel = new JPanel();
 		botmLeftEvntPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		botmLeftEvntPanel.setLayout(new MigLayout("insets 5", "[grow, fill]", "[]5[grow, fill]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		botmLeftEvntPanel.setLayout(new MigLayout("insets 5", "[grow]", "[]5[grow, fill]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-		JLabel lbl_Memo = new JLabel(HG0547Msgs.Text_11);	// Memo:
-		lbl_Memo.setFont(lbl_Memo.getFont().deriveFont(lbl_Memo.getFont().getStyle() | Font.BOLD));
-		botmLeftEvntPanel.add(lbl_Memo, "cell 0 0, align left");	//$NON-NLS-1$
+		JButton btn_Memo = new JButton(HG0547Msgs.Text_11);	// Memo:
+		btn_Memo.setFont(btn_Memo.getFont().deriveFont(btn_Memo.getFont().getStyle() | Font.BOLD));
+		botmLeftEvntPanel.add(btn_Memo, "cell 0 0, align left");	//$NON-NLS-1$
 
 		memoText = new JTextArea(6, 40);		// force a row size so that adding a text block still computes properly
 		memoText.setWrapStyleWord(true);
@@ -653,7 +669,6 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		memoTextScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);  // Vert scroll if needed
 		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		memoText.setCaretPosition(0);	// set scrollbar to top
-
 		botmLeftEvntPanel.add(memoTextScroll, "cell 0 1, grow, push");		//$NON-NLS-1$
 
 		cardEvent.add(botmLeftEvntPanel, "cell 0 2, grow, push");			//$NON-NLS-1$
@@ -770,19 +785,52 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		JButton btn_Video = new JButton(HG0547Msgs.Text_22);		// Add Video	//NOTE07
 		cardMedia.add(btn_Video, "cell 0 0, gapx 20"); 		//$NON-NLS-1$
 
-	 // Add dummy entries for Image/text/Audio/video until MediaHandler can deliver them (NOTE07)
-    	JPanel imagePanel = new JPanel();
-		imagePanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		imagePanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-        JLabel image = new JLabel(peopleIcon);
-		imagePanel.add(image, "cell 0 0, alignx center");	//$NON-NLS-1$
-		JTextArea txt_Image = new JTextArea(HG0547Msgs.Text_23);		//   No Image files present
-		txt_Image.setLineWrap(true);
-		txt_Image.setWrapStyleWord(true);
-		txt_Image.setEditable(false);
-		txt_Image.setSize(150,22);
-   		imagePanel.add(txt_Image, "cell 0 1");		//$NON-NLS-1$
-		cardMedia.add(imagePanel, "cell 0 1");		//$NON-NLS-1$
+	 // Define a media panel
+    	JPanel mediaPanel = new JPanel();
+
+    	//System.out.println(" Number of listImages for event: " + listImages.size());
+		if (HGlobal.DEBUG && HGlobal.writeLogs)
+			HB0711Logging.logWrite("Status: in HG0547 number of Images: " + pointMediaHandler.getNumberOfImages());
+
+	// Add event images to mediaPanel
+        if (listImages.size() > 0) {
+            for (int i = 0; i < listImages.size(); i++) {
+	    		JPanel imagePanel = new JPanel();
+	    		imagePanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	    		imagePanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+	            JLabel image = new JLabel();
+	            ImageIcon exhibitImage = listImages.get(i);
+	        	if (exhibitImage != null) image = new JLabel(exhibitImage);
+	    		imagePanel.add(image, "cell 0 0, alignx center");	//$NON-NLS-1$
+
+	    	// Collect image captions
+	    		JTextArea txt_Image = new JTextArea(listImagesCaptions.get(i));
+	    		//System.out.println(" Caption: " + listImagesCaptions.get(i));
+	    		txt_Image.setLineWrap(true);
+	    		txt_Image.setWrapStyleWord(true);
+        		txt_Image.setEditable(false);
+	    		txt_Image.setSize(200,22);
+	    		int lines = txt_Image.getLineCount();
+	    		if (lines > 5) lines = 5;
+	    		JScrollPane captionPane = new JScrollPane(txt_Image);
+	    		captionPane.setPreferredSize(new Dimension(200, 22*lines));
+	    		imagePanel.add(captionPane, "cell 0 1");		//$NON-NLS-1$
+	    		mediaPanel.add(imagePanel, "cell 0 1");		//$NON-NLS-1$
+            }
+        } else {	// Add image icon with 'not present' msg
+			JPanel imagePanel = new JPanel();
+			imagePanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			imagePanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+	        JLabel image = new JLabel(peopleIcon);
+			imagePanel.add(image, "cell 0 0, alignx center");	//$NON-NLS-1$
+			JTextArea txt_Image = new JTextArea(HG0547Msgs.Text_23);		//   No Image files present
+			txt_Image.setLineWrap(true);
+			txt_Image.setWrapStyleWord(true);
+			txt_Image.setEditable(false);
+			txt_Image.setSize(150,22);
+	   		imagePanel.add(txt_Image, "cell 0 1");		//$NON-NLS-1$
+	   		mediaPanel.add(imagePanel, "cell 0 1");		//$NON-NLS-1$
+        }
 
 		// Add text icon with 'not present' msg
    		JPanel textPanel = new JPanel();
@@ -796,7 +844,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		txt_Text.setEditable(false);
 		txt_Text.setSize(150,22);
    		textPanel.add(txt_Text, "cell 0 1");		//$NON-NLS-1$
-		cardMedia.add(textPanel, "cell 0 1");		//$NON-NLS-1$
+   		mediaPanel.add(textPanel, "cell 0 1");		//$NON-NLS-1$
 
    		JPanel audioPanel = new JPanel();
 		audioPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -809,7 +857,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		txt_Audio.setEditable(false);
 		txt_Audio.setSize(150,22);
 		audioPanel.add(txt_Audio, "cell 0 1");		//$NON-NLS-1$
-		cardMedia.add(audioPanel, "cell 0 1");		//$NON-NLS-1$
+		mediaPanel.add(audioPanel, "cell 0 1");		//$NON-NLS-1$
 
    		JPanel videoPanel = new JPanel();
 		videoPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -822,7 +870,29 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		txt_Video.setEditable(false);
 		txt_Video.setSize(150,22);
 		videoPanel.add(txt_Video, "cell 0 1");		//$NON-NLS-1$
-		cardMedia.add(videoPanel, "cell 0 1");		//$NON-NLS-1$
+		mediaPanel.add(videoPanel, "cell 0 1");		//$NON-NLS-1$
+
+		// Define a scrollPane to hold the mediaPanel and size it
+		JScrollPane mediaScrollPane = new JScrollPane(mediaPanel) {
+			private static final long serialVersionUID = 001L;
+	        @Override
+	        public Dimension getPreferredSize() {
+	        	int pref_width = tableAssocs.getPreferredSize().width + tableLocation.getPreferredSize().width + 70;	// add room for insets
+	            setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+	            Dimension dim = new Dimension(pref_width, super.getPreferredSize().height + getHorizontalScrollBar().getSize().height);
+	            return dim;
+	        }
+	    };
+	 // Set the scrollPane to open at left (yes the only way to do this is via a runnable!)
+	    SwingUtilities.invokeLater(new Runnable() {
+	        @Override
+	        public void run() {
+	            mediaScrollPane.getViewport().setViewPosition(new Point(0, 0));
+	        }
+	    });
+
+	 // Finally add the mediaScrolling pane to the mediaCard
+		cardMedia.add(mediaScrollPane, "cell 0 1");		//$NON-NLS-1$
 
 /*******************************
  * Setup final control buttons
@@ -1339,6 +1409,15 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				}
 			}
 		});
+
+		// Listener for Memo button
+		btn_Memo.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				openBigMemoPanel();
+			}
+		});
+
 	}	// End HG0547EditEvent constructor
 
 /**
@@ -1488,5 +1567,107 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		sortHREDate[3] = sortExtraDetails;
 		sortHREDate[4] = sortSortCode;
 		sortDateOK = true;
-	}
+	}	// End saveSortDate
+
+//**
+// Display special big Memo edit panel
+//**
+	private void openBigMemoPanel() {
+		DocumentListener bigMemoTextChange;
+
+		JPanel bigMemoPanel = new JPanel();
+		bigMemoPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
+		bigMemoPanel.setLayout(new MigLayout("insets 5", "[grow]", "[grow,fill]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+		JTextArea bigMemoText = new JTextArea(6, 40);		// force a row size so that adding a text block still computes properly
+		bigMemoText.setWrapStyleWord(true);
+		bigMemoText.setLineWrap(true);
+		bigMemoText.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, null); //kill tabs in text area
+		bigMemoText.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, null);
+		((DefaultCaret)bigMemoText.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+	    bigMemoText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
+	    bigMemoText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
+	    bigMemoText.setBorder(new JTable().getBorder());		// match Table border
+	// Setup scrollpane with textarea and size
+		JScrollPane bigMemoTextScroll = new JScrollPane(bigMemoText);
+		bigMemoTextScroll.setPreferredSize(new Dimension(600, 600));
+
+		bigMemoTextScroll.getViewport().setOpaque(false);
+		bigMemoTextScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);  // Vert scroll if needed
+		bigMemoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		bigMemoText.setCaretPosition(0);	// set scrollbar to top
+		bigMemoPanel.add(bigMemoTextScroll, "cell 0 0, grow");		//$NON-NLS-1$
+
+		JButton btn_bigMemoSave = new JButton(HG0547Msgs.Text_27);	// Save
+		btn_bigMemoSave.setEnabled(false);
+		JButton btn_bigMemoCancel = new JButton(HG0547Msgs.Text_47);	// Cancel
+		bigMemoPanel.add(btn_bigMemoSave, "cell 0 1, align right, tag ok");	//$NON-NLS-1$
+		bigMemoPanel.add(btn_bigMemoCancel, "cell 0 1, align right, gapx 20, tag cancel");	//$NON-NLS-1$
+
+		JDialog dialog = new JDialog(this, HG0547Msgs.Text_48, true); // "Memo" dialog box ('true' makes it modal)
+		dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.getContentPane().add(bigMemoPanel);
+
+   // Listener fpr detecting dialog being closed by use of 'X'
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+            	btn_bigMemoCancel.doClick();
+            }
+        });
+
+    // Listener for edits of bigMemoText
+		bigMemoTextChange = new DocumentListener() {
+	        @Override
+	        public void removeUpdate(DocumentEvent e) {	btn_bigMemoSave.setEnabled(true); }
+	        @Override
+	        public void insertUpdate(DocumentEvent e) { btn_bigMemoSave.setEnabled(true); }
+	        @Override
+	        public void changedUpdate(DocumentEvent e) { btn_bigMemoSave.setEnabled(true); }
+	    };
+	    bigMemoText.getDocument().addDocumentListener(bigMemoTextChange);
+
+	// Listener for bigMemo Save button
+		btn_bigMemoSave.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+			// save the text back into the original Memo area and exit
+				memoText.setText(bigMemoText.getText());
+				dialog.setVisible(false);
+			}
+		});
+
+	// Listener for bigMemo Cancel button
+		btn_bigMemoCancel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// Test for unsaved changes
+				if (btn_bigMemoSave.isEnabled()) {
+					if (JOptionPane.showConfirmDialog(btn_bigMemoSave,
+							HG0547Msgs.Text_41		//There are unsaved changes. \n
+							+ HG0547Msgs.Text_42,	// Do you still wish to exit this screen?
+							HG0547Msgs.Text_48,		// Edit Memo
+							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+						// YES option
+						if (HGlobal.writeLogs)
+							HB0711Logging.logWrite("Action: cancelling out of HG0547EditEvent bigMemoSave"); //$NON-NLS-1$
+						dialog.setVisible(false);
+					}
+				}			// NO option - do nothing
+				else dialog.setVisible(false);  // exit as nothing has changed
+			}
+		});
+
+	// Temp remove doclistener, load text from the existing memo text area and reset doclistener
+		bigMemoText.getDocument().removeDocumentListener(bigMemoTextChange);
+		bigMemoText.setText(memoText.getText());
+		bigMemoText.getDocument().addDocumentListener(bigMemoTextChange);
+
+	// Create final panel and display it
+        dialog.pack(); // Sizes the window to fit the JPanel
+        dialog.setLocationRelativeTo(this); // Center it over the screen
+        dialog.setVisible(true); // open in front
+
+	}		// end openBigMemoPanel
+
 }  // End of HG0547EditEvent

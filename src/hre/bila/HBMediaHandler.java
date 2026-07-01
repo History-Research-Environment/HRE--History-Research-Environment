@@ -14,6 +14,7 @@ package hre.bila;
  * 			  2023-03-02 - exhibit text presented as String (N. Tolleshaug)
  * 			  2023-03-03 - exhibit text length > 100 truncated to length = 100 (N. Tolleshaug)
  * 			  2023-03-10 - Add Caption handling into media images (N. Tolleshaug)
+ * v0.05.0033 2026-06-23 - Fix to handle ownerTablePID == null_RPID (N. Tolleshaug)
  * ******************************************************************************************
  * Note content from T169 controlling exhibits
  * ******************************************************************************************
@@ -159,7 +160,7 @@ public class HBMediaHandler extends HBBusinessLayer {
  *
  */
 	protected int getAllExhibitImage(long ownerTablePID, int imageType, int dataBaseIndex) throws HBException {
-		long exhibitT676PID = proOffset, bestImagePID;
+		long exhibitT676PID = proOffset, bestImagePID = null_RPID;
 		ResultSet allExhibitsSelected, ownerSelected;
 		String allImageSQLString, bestImageOwnerSQLString, ownerTable = null;
 
@@ -181,12 +182,15 @@ public class HBMediaHandler extends HBBusinessLayer {
 		} else {
 			System.out.println(" getAllExhibitImage - Unknown image type: " + imageType);
 		}
-		bestImageOwnerSQLString = setSelectSQL("*", ownerTable, "PID = " + ownerTablePID);
 
 		try {
-			ownerSelected = requestTableData(bestImageOwnerSQLString, dataBaseIndex);
-			ownerSelected.first();
-			bestImagePID = ownerSelected.getLong("BEST_IMAGE_RPID");
+			if (ownerTablePID != null_RPID) {
+				bestImageOwnerSQLString = setSelectSQL("*", ownerTable, "PID = " + ownerTablePID);
+				ownerSelected = requestTableData(bestImageOwnerSQLString, dataBaseIndex);
+				ownerSelected.first();
+				//System.out.println(" getAllExhibitImage - Image type: " + imageType + "  PID = " + ownerTablePID);
+				bestImagePID = ownerSelected.getLong("BEST_IMAGE_RPID");
+			}
 
 			allExhibitsSelected = requestTableData(allImageSQLString, dataBaseIndex);
 

@@ -1147,7 +1147,6 @@ public class HBEventRoleManager extends HBBusinessLayer {
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectString = setSelectSQL("*", eventRoleTable, 
 				"EVNT_TYPE = " + eventTypeNumber );
-		System.out.println(" Deleted not used T461 records for event type nr: " + eventTypeNumber);
 		return deleteRoleAction();
 	}
 		

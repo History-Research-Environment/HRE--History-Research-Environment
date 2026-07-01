@@ -22,6 +22,7 @@ package hre.gui;
  * v0.05.0033 2026-03-19 Fix 'cannot delete' msg (remove '#') (D Ferguson)
  * 						 Add confirmation prompt to delete Source type action (D Ferguson)
  * 						 Ensure selected Source Type is retained after Save/Copy (D Ferguson)
+ * 			  2026-06-02 Make a copied source selected so as easier to find (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -502,8 +503,18 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				editSourcetypeScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				editSourcetypeScreen.setVisible(true);
-				// ensure copied row is still the selected one (as we don't know where the copied one is)
+				// ensure copied row is still selected
 				tableSourceType.setRowSelectionInterval(currentRow, currentRow);
+				// Try to make the COPY the selected row
+				for (int row = 0; row <= tableSourceType.getRowCount() - 1; row++) {
+					String tableValue = (String) tableSourceType.getValueAt(row, 0);
+					if (tableValue.contains(HG0567Msgs.Text_26.trim())) {			//  COPY -
+						tableSourceType.scrollRectToVisible(tableSourceType.getCellRect(row, 0, true));
+						// set the 'found' row as selected
+						tableSourceType.changeSelection(row, 0, false, false);
+						return;
+					}
+				}
 			}
 
 		});
@@ -553,30 +564,30 @@ public class HG0567ManageSourceType extends HG0450SuperDialog {
 
 		// Listener for an entry in findText
 		findText.getDocument().addDocumentListener(new DocumentListener() {
-	          @Override
-	          public void insertUpdate(DocumentEvent e) {
-	              findTheText();
-	          }
-	          @Override
-	          public void removeUpdate(DocumentEvent e) {
-	        	  findTheText();
-	          }
-	          @Override
-	          public void changedUpdate(DocumentEvent e) {
-	        	  findTheText();
-	          }
-	          private void findTheText() {
-	        	  String text = findText.getText();
-		            for (int row = 0; row <= tableSourceType.getRowCount() - 1; row++) {
-	            		String tableValue = (String) tableSourceType.getValueAt(row, 0);
-   	                    if (tableValue.toLowerCase().contains(text.toLowerCase())) {
-   	                    	tableSourceType.scrollRectToVisible(tableSourceType.getCellRect(row, 0, true));
-   	                    // set the 'found' row as selected
-   	                    	tableSourceType.changeSelection(row, 0, false, false);
-   	                    	return;
-   	                    }
-	            }
-	          }
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				findTheText();
+			}
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				findTheText();
+			}
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				findTheText();
+			}
+			private void findTheText() {
+				String text = findText.getText();
+				for (int row = 0; row <= tableSourceType.getRowCount() - 1; row++) {
+					String tableValue = (String) tableSourceType.getValueAt(row, 0);
+					if (tableValue.toLowerCase().contains(text.toLowerCase())) {
+						tableSourceType.scrollRectToVisible(tableSourceType.getCellRect(row, 0, true));
+						// set the 'found' row as selected
+						tableSourceType.changeSelection(row, 0, false, false);
+						return;
+					}
+				}
+			}
 		});
 
 	}	// End HG0567ManageSourceType constructor

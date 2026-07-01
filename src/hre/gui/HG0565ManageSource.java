@@ -28,6 +28,7 @@ package hre.gui;
  * v0.05.0033 2026-03-19 Add confirmation prompt to delete Source action (D Ferguson)
  * 						 Ensure selected Source Type is retained after Save/Copy (D Ferguson)
  * 			  2026-04-05 Add a Find by ID# facility (D Ferguson)
+ * 			  2026-06-02 Make a copied source selected so as easier to find (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -87,6 +88,7 @@ import hre.bila.HBProjectOpenData;
 import hre.bila.HBReportHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.nls.HG0565Msgs;
+import hre.nls.HG0566Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -512,8 +514,18 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 				Point xyEdit = btn_Add.getLocationOnScreen();
 				updateScreen.setLocation(xyEdit.x, xyEdit.y + 30);
 				updateScreen.setVisible(true);
-				// ensure copied row is still the selected one (as we don't know where the copied one is)
+				// ensure copied row is still selected
 				tableSource.setRowSelectionInterval(currentRow, currentRow);
+				// Try to make the COPY the selected row
+				for (int row = 0; row <= tableSource.getRowCount() - 1; row++) {
+					String tableValue = (String) tableSource.getValueAt(row, 1);
+					if (tableValue.contains(HG0566Msgs.Text_71.trim())) {			//  COPY -
+						tableSource.scrollRectToVisible(tableSource.getCellRect(row, 1, true));
+						// set the 'found' row as selected
+						tableSource.changeSelection(row, 0, false, false);
+						return;
+					}
+				}
 			}
 		});
 
@@ -601,15 +613,15 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		findText.getDocument().addDocumentListener(new DocumentListener() {
 	          @Override
 	          public void insertUpdate(DocumentEvent e) {
-	        	  if (!findText.getText().equals("")) findTheText();
+	        	  if (!findText.getText().equals("")) findTheText();	//$NON-NLS-1$
 	          }
 	          @Override
 	          public void removeUpdate(DocumentEvent e) {
-	        	  if (!findText.getText().equals("")) findTheText();
+	        	  if (!findText.getText().equals("")) findTheText();//$NON-NLS-1$
 	          }
 	          @Override
 	          public void changedUpdate(DocumentEvent e) {
-	        	  if (!findText.getText().equals("")) findTheText();
+	        	  if (!findText.getText().equals("")) findTheText();	//$NON-NLS-1$
 	          }
 	          private void findTheText() {
 	  			// Clear the other find field
@@ -629,9 +641,9 @@ public class HG0565ManageSource extends HG0450SuperDialog {
 		});
 
 		// Listener for an entry in findNumber
-		findNumber.addPropertyChangeListener("value", evt -> {
+		findNumber.addPropertyChangeListener("value", evt -> {		//$NON-NLS-1$
 			if (evt.getNewValue() == null) return;
-			if (evt.getNewValue().equals("")) return;
+			if (evt.getNewValue().equals("")) return;	//$NON-NLS-1$
 			// Clear the other find field
 			findText.setText("");		//$NON-NLS-1$
 			// Get the input value and process it, searching on the ID# (col 0)

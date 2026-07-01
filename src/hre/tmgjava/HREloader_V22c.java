@@ -38,6 +38,7 @@ package hre.tmgjava;
  * 			  2026-01-15 - Log catch block msgs (D Ferguson)
  * v0.05.0033 2026-04-06 - Added focusperson in T126 (N. Tolleshaug)
  * 			  2026-04-23 - ALTER TABLE T460_EVNT_DEFN ALTER COLUMN EVNT_HINT VARCHAR(5000)  (N. Tolleshaug)
+ * 			  2026-06-27 - Added field PRIMARY_NUM in T451_EVNT_ASSOC (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -86,6 +87,9 @@ public class HREloader_V22c {
 			
 	//ALTER TABLE table_name  RENAME COLUMN old_name to new_name;
 			updateTableInBase("T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID");
+			
+	// Add FRIMARY_NUM to T451		
+			alterColumnInTable("T451_EVNT_ASSOC","PRIMARY_NUM","SMALLINT");
 			
 	// Update table T460_EVNT_DEFN
 			updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE","ALTER COLUMN EVNT_HINT VARCHAR(5000)");

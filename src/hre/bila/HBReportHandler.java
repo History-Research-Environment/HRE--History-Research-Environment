@@ -24,6 +24,9 @@ package hre.bila;
  * 			  2026-04-20 - Added code for clear relation and focus person (N. Tolleshaug)
  * 			  2026-05-01 - Updated findRelationships to return 2 relate code pairs (D Ferguson)
  * 			  2026-05-03 - Completed code for clear all T401 relation and focus person (N. Tolleshaug)
+ * 			  2026-06-04 - Improving sentence parser (N. Tolleshaug)
+ * 			  2026-06-12 - Added findLocalSentenceSetPID(long eventTablePID) (N. Tolleshaug)
+ * 			  2026-06-27 - Added handling of P2 for associates (N. Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
@@ -65,25 +68,12 @@ public class HBReportHandler extends HBBusinessLayer {
 	String locationNameCodes = "0500|1100|3000|3100|3400|3500|3900|0100|4100|4300|";
 	String locationNameFields = "Addressee|Detail|City|County|State|Country|Postal|Phone|LatLong|Temple|";
 
-	//boolean EditEventCase = true;  //Switch on local eventEdit data or repor data
-	boolean EditEventCase = false;
-
-	public void turnOnReportHandling() {
-		EditEventCase = false;
-	}
-
-	public void turnOnEditEvent() {
-		EditEventCase = true;
-	}
-
 	public ReportEventTMG createReportEventData(long eventTablePID) {
 		try {
 		// Set up the element code arrays
 			personNameCodeArray = personNameCodes.split("\\|");
 			locationNameCodeArray = locationNameCodes.split("\\|");
 			pointReportEventTMG = new ReportEventTMG(pointOpenProject, eventTablePID);
-		// Set report handler mode
-			turnOnReportHandling();
 			return pointReportEventTMG;
 		} catch (HBException hbe) {
 			System.out.println(" HBReportHandler - ReportEventData. " + hbe.getMessage());
@@ -733,222 +723,145 @@ public class HBReportHandler extends HBBusinessLayer {
  * @throws HBException
  */
     public String sentenceParser(HG0547EditEvent pointEditEvent, String inputSentence) throws HBException {
-       // input = "[Per] ble fï¿½dt <[1990]><[Oslo]>. <Disse var ogsï¿½ med: [Kari og Knut].> <[Hjemmefï¿½dsel]>";
-
-        // Define the Regex pattern to identify content within square brackets
+/*   [P] was married <to [PO]> <[D]> <[L]>
+ *   (en-US)[R:Barn] was born <at [L2]> <in [L]> <[D]>. <[M]>
+ *   At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
+ *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
+ */
     	this.pointEditEvent = pointEditEvent;
     	String reportSentence = inputSentence, replaceString;
-    	String variableData, match;
-        String regexStandard = "\\[(.*?)\\]";
-        String regexRoles = "\\[R:\\d{5}\\]";
-
-        Pattern patternVariables = Pattern.compile(regexStandard);
-        Pattern patternRoles = Pattern.compile(regexRoles);
-        Matcher matcherVariables = patternVariables.matcher(inputSentence);
-        Matcher matcherRoles = patternRoles.matcher(inputSentence);
-        HashMap<String, String> sentenceElements = new HashMap<>();
-        int count = 0;
-        while (matcherVariables.find()) {
-        // matcher.group(1) extracts the content inside the []
-        	variableData = returnSentenceVariableData(matcherVariables.group(1));
-        	sentenceElements.put(matcherVariables.group(0).trim(), variableData);
-            count++;
-        }
-        if (HGlobal.DEBUG)
-        	System.out.println(" Number of variables: " + count);
-        count = 0;
-        matcherRoles = patternRoles.matcher(inputSentence);
-        while (matcherRoles.find()) {
-         // matcher.group(1) extracts the content inside the []
-        	match = matcherRoles.group();
-        	//System.out.println(" Match: " + match);
-        	match = match.replace("[","");
-        	match = match.replace("]","");
-        	variableData = returnSentenceVariableData(match);
-        	sentenceElements.put(matcherRoles.group(0).trim(), variableData);
-            count++;
-        }
-
-        if (HGlobal.DEBUG)
-        	System.out.println(" Number of roles: " + count);
-
-        matcherVariables = patternVariables .matcher(inputSentence);
-        while (matcherVariables.find()) {
-        	String sentenceMatch = matcherVariables.group(0).trim();
-        	//System.out.println(" Variable replace: " + sentenceMatch+ "/"
-        	//		+ sentenceElements.get(sentenceMatch));
-        	replaceString = sentenceElements.get(sentenceMatch);
-        	if (replaceString == null) replaceString = "";
-        	reportSentence = reportSentence.replace(sentenceMatch, replaceString);
-        }
-        matcherRoles = patternRoles .matcher(inputSentence);
-        while (matcherRoles.find()) {
-        	String sentenceMatch = matcherRoles.group(0).trim();
-        	//System.out.println(" Role replace: " + sentenceMatch+ "/"
-        	//		+ sentenceElements.get(sentenceMatch));
-
-        	replaceString = sentenceElements.get(sentenceMatch);
-        	if (replaceString == null) replaceString = "";
-        	reportSentence = reportSentence.replace(sentenceMatch, replaceString);
-        }
-
-        reportSentence = reportSentence.replace("<","");
-        reportSentence = reportSentence.replace(">","");
-        reportSentence = reportSentence.replace("(en-US)","");
-
-      // Output results
-        if (HGlobal.DEBUG) {
-        	sentenceElements.forEach((key, value) -> System.out.print(key + ":" + value + ","));
-        	System.out.println();
-        }
-        //if (!EditEventCase) System.out.println(" Report entence build: " + reportSentence);
+    	String variableData = "", sentenceMatch, sentenceVariable;
+        Pattern patternVariables, patternRoles, patternOptions, patternAlter;
+        Matcher matcherVariables, matcherRoles, matcherOption, matcherAlter;
+        
+    // Define the Regex pattern to identify content within the input string
+    	
+    	String regexOption = "<\\w+\\s+\\[(.*?)\\]>";  // <at [L2]> or <in [L]> 
+    	String regexAlter = "<\\[(.*?)\\]>";  // <[L2]> or <[L]> 
+        String regexStandard = "\\[(.*?)\\]"; // [P] was married <to [PO]> <[D]> <[L]>
+        String regexRoles = "\\[R:\\d{5}\\]"; // (en-US)[R:Barn] was born <at [L2]> <in [L]> <[D]>. <[M]>
+        if (HGlobal.DEBUG) System.out.println(" Input sentence: " + inputSentence);
+        
+        try {
+	        int count;
+	        patternVariables = Pattern.compile(regexStandard);
+	        patternRoles = Pattern.compile(regexRoles);
+	        patternOptions = Pattern.compile(regexOption);
+	        patternAlter = Pattern.compile(regexAlter);
+	        
+	        matcherOption = patternOptions.matcher(inputSentence);
+	         
+	        count = 0;
+	        while (matcherOption.find()) {
+	        	sentenceMatch = matcherOption.group(0);
+	        	sentenceVariable = matcherOption.group(1);
+	        	variableData = returnSentenceVariableData(sentenceVariable);
+	        	if (HGlobal.DEBUG) 
+	        		System.out.println(" Options found match group: " + matcherOption.group() 
+	        			+ " - Group 0: " + matcherOption.group(0) + " / "
+	        			+ " - Group 1: " + matcherOption.group(1) + " = "
+	        			+ variableData);
+	        	if (variableData == null) variableData = "";	
+	        	if (variableData.length() > 0) {
+	        		replaceString = sentenceMatch.replace("["+ sentenceVariable + "]", variableData);
+	        		reportSentence = reportSentence.replace(sentenceMatch, replaceString);	
+	        	} else reportSentence = reportSentence.replace(sentenceMatch, "");
+	        	count++;
+	        }
+	        if (HGlobal.DEBUG) System.out.println(" Number of options: " + count);
+	        
+	        count = 0;
+	        matcherAlter = patternAlter .matcher(reportSentence);
+	        while (matcherAlter.find()) {
+	        	sentenceMatch = matcherAlter.group(0);
+	        	sentenceVariable = matcherAlter.group(1);
+	        	variableData = returnSentenceVariableData(sentenceVariable);
+	        	if (HGlobal.DEBUG) 
+	        		System.out.println(" Alter found match group: " + matcherAlter.group() 
+	        			+ " - Group 0: " + matcherAlter.group(0) + " / "
+	        			+ " - Group 1: " + matcherAlter.group(1) + " = "
+	        			+ variableData);
+	        	if (variableData == null) variableData = "";	
+	        	if (variableData.length() > 0) 
+	        		reportSentence = reportSentence.replace(sentenceMatch, variableData);
+	        	count++; 
+	        }
+	        if (HGlobal.DEBUG) System.out.println(" Number of alters: " + count); 
+	        
+	        count = 0;
+	        matcherRoles = patternRoles .matcher(reportSentence);
+	        while (matcherRoles.find()) {
+	         //matcher.group() extracts the matched role
+	        	sentenceMatch = matcherRoles.group();
+	        	sentenceVariable = sentenceMatch.replace("[","");
+	        	sentenceVariable = sentenceVariable.replace("]","");
+	        	if (HGlobal.DEBUG) 
+	        		System.out.println(" Roles found match: " + sentenceMatch 
+								 + " - Variable: " + sentenceVariable + " = "
+								 + returnSentenceVariableData(sentenceVariable));
+	        	
+	        	variableData = returnSentenceVariableData(sentenceVariable);
+	        	if (variableData == null) variableData = "";
+	        	reportSentence = reportSentence.replace(sentenceMatch, variableData);
+	        	count++;
+	        }
+	        if (HGlobal.DEBUG) System.out.println(" Number of roles: " + count);
+	        
+	        count = 0;
+	        matcherVariables = patternVariables.matcher(reportSentence);
+	        while (matcherVariables.find()) {
+	        	sentenceMatch = matcherVariables.group(0);
+	        	sentenceVariable = matcherVariables.group(1);
+	        	if (HGlobal.DEBUG) 
+	        		System.out.println(" Variable replace: " + sentenceMatch 
+	        			+ " - Variable: " + sentenceVariable + " = "
+	        			+ returnSentenceVariableData(sentenceVariable));
+	        	
+	        	variableData = returnSentenceVariableData(sentenceVariable);
+	        	if (variableData == null) variableData = "";
+	        	reportSentence = reportSentence.replace(sentenceMatch, variableData);
+	        	count++;
+	        }
+	        if (HGlobal.DEBUG) System.out.println(" Number of patterns: " + count);   
+	            
+	        reportSentence = reportSentence.replace("<",""); // Temp removal of misplaced
+	        reportSentence = reportSentence.replace(">",""); // Temp removal of misplaced
+	        reportSentence = reportSentence.replace("(en-US)","");
+	        if (HGlobal.DEBUG) System.out.println(" Report sentence build: " + reportSentence);
+	        return reportSentence;
+		} catch (Exception exe) {
+			System.out.println(" HBReportHandler - sentenseParser " + exe.getMessage());
+			exe.printStackTrace();
+		}
         return reportSentence;
     }
 
-/*    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
- *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
- */
-
 /**
- * private String returnSentenceVariableData(String sentenceVariable)
- * @param sentenceVariable
+ * public String returnSentenceVariableData(String sentenceVariable)
  * @return
  * @throws HBException
  */
-    private String returnSentenceVariableData(String sentenceVariable) throws HBException {
-    	if (EditEventCase)
-    		return returnSentenceVariable(sentenceVariable);
+    public String returnSentenceVariableData(String sentenceVariable) throws HBException {
 		return pointReportEventTMG.returnSentenceVariable(sentenceVariable);
     }
-
-/*    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
- *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
- */
-
-    /**
-     * private String returnSentenceVariable(String sentenceVariable)
-     * @param sentenceVariable
-     * @return
-     * @throws HBException
-     */
-    		 public String returnSentenceVariable(String sentenceVariable) {
-    			int rows = 0;
-    			String roleNumber;
-    			try {
-    			// Proceess R - role variables
-    		    	if (sentenceVariable.startsWith("R")) {
-    		    		if (rows == 0)
-    		    			rows = pointReportEventTMG.inittAssociatePersonsLists();
-
-    		    		String[] roleData = sentenceVariable.split(":");
-    		    		if (roleData.length > 1) {
-    		    			roleNumber = roleData[1];
-    		    			//System.out.println(" Role number: " + roleNumber);
-    		    			if (pointReportEventTMG.isParnerEvent()) {
-    		    				if (roleNumber.equals("00004")) return pointReportEventTMG.findPersonName(pointReportEventTMG.priPartnerPID);
-    		    				if (roleNumber.equals("00003")) return pointReportEventTMG.findPersonName(pointReportEventTMG.secPartnerPID);
-    		    				//if (roleNumber.equals("00004")) return findPersonName(secPartnerPID);
-    		    			} else if (roleNumber.equals("00001") || roleNumber.equals("00003"))
-    		    						return pointReportEventTMG.getPersonName();
-    		    					else {
-    		    			// Select the associate with the rolenumber
-	    		    					if (rows == 0)
-	    		    						rows = pointReportEventTMG.inittAssociatePersonsLists();
-	    		    					return pointReportEventTMG.findPersonName(pointReportEventTMG.findAssociatePersonRole(roleNumber));
-    		    					}
-    		    		}
-    		    	}
-
-    		    // Process Px
-    		    	if (sentenceVariable.startsWith("P")) {
-
-    		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+"))
-    		    				return pointReportEventTMG.getPersonName();
-
-    		    		if (sentenceVariable.equals("PO")) return pointReportEventTMG.getPersonOptional();
-
-    		    		switch (sentenceVariable) {
-    		    			case "PG":  return pointReportEventTMG.getPersonNameElement(3);
-    		    			case "PF": return pointReportEventTMG.getPersonNameElement(3);
-    		    			case "PL":  return pointReportEventTMG.getPersonNameElement(5);
-    		    			case "PGS": return pointReportEventTMG.getPersonNameElement(3);
-    		    			case "PFS":  return pointReportEventTMG.getPersonNameElement(3);
-    		    			case "PLS":  return pointReportEventTMG.getPersonNameElement(5);
-    		    			default: return "";
-    		    		}
-    		    	}
-
-    		    // Process date
-    		    	if (sentenceVariable.startsWith("D")) {
-    		    		pointReportEventTMG.getEventDate();
-    		    		//return  eventDate;
-    		    	}
-
-    		    // process Lx variables
-    		    	if (sentenceVariable.startsWith("L")) {
-    				 	if (sentenceVariable.equals("L")) return pointReportEventTMG.getLocationName();
-    		    		switch (sentenceVariable) {
-    		    			case "L1":  return pointReportEventTMG.getLocationNameElement(1);
-    		    			case "L2":  return pointReportEventTMG.getLocationNameElement(2);
-    		    			case "L3":  return pointReportEventTMG.getLocationNameElement(3);
-    		    			case "L4":  return pointReportEventTMG.getLocationNameElement(4);
-    		    			case "L5":  return pointReportEventTMG.getLocationNameElement(5);
-    		    			case "L6":  return pointReportEventTMG.getLocationNameElement(6);
-    		    			case "L7":  return pointReportEventTMG.getLocationNameElement(7);
-    		    			case "L8":  return pointReportEventTMG.getLocationNameElement(8);
-    		    			case "L9":  return pointReportEventTMG.getLocationNameElement(9);
-    		    			case "L10":  return pointReportEventTMG.getLocationNameElement(10);
-    		    			default: return "";
-    		    		}
-    		    	 }
-    			    // process Sx variables
-    		    	if (sentenceVariable.startsWith("S")) {
-    		    		switch (sentenceVariable) {
-    		    			case "S": return  pointReportEventTMG.getPersonName();
-    		    			case "S+": return pointReportEventTMG.getPersonName();
-    		    			case "SS": return pointReportEventTMG.getPersonName();
-    		    			case "SG": return pointReportEventTMG.getPersonName();
-    		    			case "SF": return pointReportEventTMG.getPersonName();
-    		    			case "SL": return pointReportEventTMG.getPersonName();
-    		    			case "SA": return "";
-    		    			case "SE": return "";
-    		    			case "SP": return "He/She";
-    		    			case "SPP": return "";
-    		    			case "SM": return "";
-    		    			case "SGS": return "";
-    		    			case "SFS": return "";
-    		    			case "SLS": return "";
-    		    			default: return "";
-    		    		}
-    		    	}
-
-    		    // Process witness
-    		    	 if (sentenceVariable.startsWith("W")) {
-    		    		 rows = pointReportEventTMG.inittAssociatePersonsLists();
-    		    		 if (rows < 1) return "";
-    		    		 if (sentenceVariable.equals("W"))
-    		    			 return pointReportEventTMG.findAssociatePersonName(1);
-    					 if (sentenceVariable.equals("WO") && rows > 0)
-    		    			 return pointReportEventTMG.findAssociatePersonName(1);
-    					 if (sentenceVariable.equals("WO") && rows > 1)
-    		    			 return pointReportEventTMG.findAssociatePersonName(2);
-    					 if (sentenceVariable.equals("WM")) {
-    		        			 return "Witness memo";
-    		    		 }
-    		    	 }
-
-    		    // Process memo
-    		    	 if (sentenceVariable.startsWith("M")) {
-    						return pointReportEventTMG.getEventMemo();
-    		    	 }
-    		    	 return "";
-
-    			} catch (HBException hbe) {
-    				System.out.println(" ERROR in returnSentenceVariable: " + hbe.getMessage());
-    				hbe.printStackTrace();
-    			}
-    			return "";
-    	    }
+	 
+ /**
+  * indLocalSentenceSETPID()
+  * @return
+  * @throws HBException
+  */
+ 	public long findLocalSentenceSetPID(long eventTablePID) throws HBException {
+ 		ResultSet sentenceSetRS;
+ 		String selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
+ 		sentenceSetRS = requestTableData(selectString, dataBaseIndex);
+ 		try {
+ 			sentenceSetRS.first();
+ 			return sentenceSetRS.getLong("PRIM_ASSOC_SENTENCE_RPID");
+ 		} catch (SQLException sqle) {
+ 			System.out.println(" HBReportHandler - indLocalSentenceSetPID: " + sqle.getMessage());
+ 			throw new HBException("HBReportHandler - indLocalSentenceSetPID: \" + sqle.getMessage()");
+ 		}
+ 	}
 
     /**
 	T450_EVNT
@@ -983,10 +896,11 @@ public class HBReportHandler extends HBBusinessLayer {
 		String selectString, eventDate, locationName, eventPersonName, eventPersonNamePri, eventPersonNameSec ;
 		ResultSet eventTableRS, personTableRS, assocTableRS, partnerTableRS;
 		long personTablePID, nameStylePID, eventBestPersonNamePID, startHdate, eventLocationPID, priPartnerPID, secPartnerPID;
-		int dataBaseIndex, viibleIdent, eventType, eventGroup;
+		int dataBaseIndex, visbleIdent, eventType, eventGroup;
 		HashMap<String,String> personNameElements, locationNameElements;
 		long[] associatePID;
 		int[] associateRoles;
+		int[] primaryNumbers;
 		String[] partnerNames, nameStyleCodes;
 		boolean partnerEvent = false;
 		int rows = 0;
@@ -1014,7 +928,7 @@ public class HBReportHandler extends HBBusinessLayer {
 				personTableRS = requestTableData(selectString, dataBaseIndex);
 				personTableRS.first();
 				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
-				viibleIdent = personTableRS.getInt("VISIBLE_ID");
+				visbleIdent = personTableRS.getInt("VISIBLE_ID");
 				nameStyleCodes = getOuputReportStyleCodes(eventBestPersonNamePID);
 		// Collect date and event group
 				eventDate = pointPersonHandler.pointLibraryResultSet.exstractDate(startHdate, dataBaseIndex);
@@ -1027,9 +941,6 @@ public class HBReportHandler extends HBBusinessLayer {
 					partnerTableRS.first();
 					priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
 					secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
-					//priRoleNum = partnerTableRS.getInt("PRI_ROLE");
-					//secRoleNum = partnerTableRS.getInt("SEC_ROLE");
-					//eventType = partnerTableRS.getInt("PARTNER_TYPE");
 					partnerTableRS.close();
     	    	} else {
     				eventPersonNamePri = eventPersonName;
@@ -1069,7 +980,10 @@ public class HBReportHandler extends HBBusinessLayer {
 			int rows = 0;
 			String roleNumber;
 			try {
-			// Proceess R - role variables
+/* Proceess R - role variables
+ *    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
+ *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
+ */
 		    	if (sentenceVariable.startsWith("R")) {
 		    		if (rows == 0)
 		    			rows = collectAssociatePersons(eventTablePID);
@@ -1085,8 +999,8 @@ public class HBReportHandler extends HBBusinessLayer {
 		    				if (roleNumber.equals("00003")) return findPersonName(secPartnerPID);
 		    				//if (roleNumber.equals("00004")) return findPersonName(secPartnerPID);
 		    			} else if (roleNumber.equals("00001") || roleNumber.equals("00003"))
-		    					return getPersonName(personNameElements, viibleIdent);
-		    				else {
+		    					return getPersonName(personNameElements, visbleIdent);
+		    			else {
 		    			// Select the associate with the rolenumber
 		    					if (rows == 0)
 		    						rows = collectAssociatePersons(eventTablePID);
@@ -1094,29 +1008,30 @@ public class HBReportHandler extends HBBusinessLayer {
 		    					for (int index = 0; index < associatePID.length; index++)
 		    						if (roleInt == associateRoles[index])
 		    							return findPersonName(associatePID[index]);
-		    				return "";
+		    					return "";
 		    			}
 		    		}
 		    	}
 
-		    // Process Px
+		    
+		    /* Process Px
+		    	Summarising Px in sentence reference terms:
+
+		    	    [P1] -- produces the name of the person entered in the P1 slot in the event tag
+		    	    [P2] -- produces the name of the person entered in the P2 slot in the event tag
+		    	·   [P] -- produces the name of the subject of the sentence (who will be a P1 or a P2 person
+		    	    [PO] -- produces the name of the other principal (if there is one), the one who is not the subject.
+            */
 		    	if (sentenceVariable.startsWith("P")) {
 		    		if (personNameElements == null)
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
 		    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
-		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+"))
-		    				return getPersonName(personNameElements, viibleIdent);
+		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+") 
+		    										 || sentenceVariable.equals("P1"))
+		    				return getPersonName(personNameElements, visbleIdent);
 
-		    		if (sentenceVariable.equals("PO")) {
-		    			if (partnerEvent) {
-		    				if (personTablePID == secPartnerPID)
-		    					return findPersonName(priPartnerPID);
-							return findPersonName(secPartnerPID);
-		    			}
-						rows = collectAssociatePersons(eventTablePID);
-						if (rows < 1) return "";
-						return findPersonName(associatePID[0]);
-		    		}
+		    		if (sentenceVariable.equals("PO") || sentenceVariable.equals("P2") 
+		    										  || sentenceVariable.equals("POS")) return getPersonOptional();
 
 		    		switch (sentenceVariable) {
 		    			case "PG":  return personNameElements.get(personNameCodeArray[2]);
@@ -1153,12 +1068,12 @@ public class HBReportHandler extends HBBusinessLayer {
 			    // process Sx variables
 		    	if (sentenceVariable.startsWith("S")) {
 		    		switch (sentenceVariable) {
-		    			case "S": return getPersonName(personNameElements, viibleIdent);
-		    			case "S+": return getPersonName(personNameElements, viibleIdent);
-		    			case "SS": return getPersonName(personNameElements, viibleIdent);
-		    			case "SG": return getPersonName(personNameElements, viibleIdent);
-		    			case "SF": return getPersonName(personNameElements, viibleIdent);
-		    			case "SL": return getPersonName(personNameElements, viibleIdent);
+		    			case "S": return getPersonName(personNameElements, visbleIdent);
+		    			case "S+": return getPersonName(personNameElements, visbleIdent);
+		    			case "SS": return getPersonName(personNameElements, visbleIdent);
+		    			case "SG": return getPersonName(personNameElements, visbleIdent);
+		    			case "SF": return getPersonName(personNameElements, visbleIdent);
+		    			case "SL": return getPersonName(personNameElements, visbleIdent);
 		    			case "SA": return "";
 		    			case "SE": return "";
 		    			case "SP": return "He/She";
@@ -1179,9 +1094,9 @@ public class HBReportHandler extends HBBusinessLayer {
 		    		 if (sentenceVariable.equals("W"))
 		    			 return findPersonName(associatePID[0]);
 					 if (sentenceVariable.equals("WO") && rows > 0)
-		    			 return findPersonName(associatePID[0]);
-					 if (sentenceVariable.equals("WO") && rows > 1)
 		    			 return findPersonName(associatePID[1]);
+					 if (sentenceVariable.equals("WO") && rows > 1)
+		    			 return findPersonName(associatePID[2]);
 					 if (sentenceVariable.equals("WM")) {
 		        			 return "Witness memo";
 		    		 }
@@ -1248,8 +1163,11 @@ public class HBReportHandler extends HBBusinessLayer {
 					return findPersonName(priPartnerPID);
 				return findPersonName(secPartnerPID);
 			}
-			rows = collectAssociatePersons(eventTablePID);
+			if (rows == 0) rows = collectAssociatePersons(eventTablePID);
 			if (rows < 1) return "";
+		// Find the primary P2 name
+			for (int i = 0; i < primaryNumbers.length; i++)
+				if (primaryNumbers[i] == 2) return findPersonName(associatePID[i]);
 			return findPersonName(associatePID[0]);
 		}
 
@@ -1314,7 +1232,7 @@ public class HBReportHandler extends HBBusinessLayer {
     		if (personNameElements == null)
     			personNameElements =  pointPersonHandler.pointLibraryResultSet.
     				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
-			return getPersonName(personNameElements, viibleIdent);
+			return getPersonName(personNameElements, visbleIdent);
 		}
 
 		private String getPersonName(HashMap<String,String> personNameElements, int viibleIdent) {
@@ -1418,10 +1336,12 @@ public class HBReportHandler extends HBBusinessLayer {
 				nrOfRows = assocTableRS.getRow();
 				associatePID = new long[nrOfRows];
 				associateRoles = new int[nrOfRows];
+				primaryNumbers = new int[nrOfRows];
 				assocTableRS.beforeFirst();
 				while (assocTableRS.next()) {
 					associatePID[index] = assocTableRS.getLong("ASSOC_RPID");
 					associateRoles[index] = assocTableRS.getInt("ROLE_NUM");
+					primaryNumbers[index] = assocTableRS.getInt("PRIMARY_NUM");
 					//System.out.println(" Assocs: " + associatePID[index] + "/" + associateRoles[index]);
 					index++;
 				}

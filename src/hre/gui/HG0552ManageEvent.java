@@ -36,6 +36,7 @@ package hre.gui;
  * 			  2026-01-30 Make event double-click invoke Edit automatically (D Ferguson)
  * 			  2026-01-31 Reload Event List for correct event group after changes (D Ferguson)
  * 			  2026-02-02 Log all catch block msgs and do NLS update (D Ferguson)
+ * v0.05.0033 2026-06-09 Screen is resizable but nothing grews to fill it (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE05 code needed for Grouped Events, Enable/Disable Events
@@ -82,7 +83,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Events
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2022-04-07
  */
 
@@ -169,8 +170,8 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	// Setup references
 		windowID = screenID;
 		helpName = "manageevent";	//$NON-NLS-1$
-    	className = getClass().getSimpleName();
-    	this.setResizable(true);
+		className = getClass().getSimpleName();
+		this.setResizable(true);
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: entering HG0552ManageEvent");}	//$NON-NLS-1$
 	    setTitle(HG0552Msgs.Text_0);	// Manage Events
@@ -194,7 +195,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  ***********************************/
 		contents = new JPanel();
 		setContentPane(contents);
-		contents.setLayout(new MigLayout("insets 10", "[]10[]10[grow]10[grow]", "[grow]5[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		contents.setLayout(new MigLayout("insets 10, fill", "[grow 0]10[grow 0]10[grow 50]10[grow 50]", "[grow]5[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
     	JToolBar toolBar = new JToolBar();
     	toolBar.setFloatable(false);
@@ -361,8 +362,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  **************************************/
 		JPanel eventPanel = new JPanel();
 		eventPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(eventPanel, "cell 2 0 1 2, aligny top");	//$NON-NLS-1$
-		eventPanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		eventPanel.setLayout(new MigLayout("insets 5, fill", "[grow]", "[]5[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lblEventList = new JLabel(HG0552Msgs.Text_37);		// Events
 		eventPanel.add(lblEventList, "cell 0 0, alignx center");	//$NON-NLS-1$
@@ -370,18 +370,17 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	// Load the Event list
 		eventList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 	    eventList.setLayoutOrientation(JList.VERTICAL);
-	// But don't add the list to the scrollpane yet!
-	    JScrollPane eventScrollPane = new JScrollPane();
-		eventScrollPane.setMinimumSize(new Dimension(180, 300));
-		eventPanel.add(eventScrollPane, "cell 0 1");	//$NON-NLS-1$
+	    JScrollPane eventScrollPane = new JScrollPane(eventList);
+		eventScrollPane.setPreferredSize(new Dimension(180, 0));
+		eventPanel.add(eventScrollPane, "cell 0 1, grow, pushy");	//$NON-NLS-1$
+		contents.add(eventPanel, "cell 2 0, aligny top, grow");
 
 /************************************
  * Setup Role Panel and its contents
  ***********************************/
 		JPanel rolePanel = new JPanel();
 		rolePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		contents.add(rolePanel, "cell 3 0 1 2, aligny top");	//$NON-NLS-1$
-		rolePanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		rolePanel.setLayout(new MigLayout("insets 5, fill", "[grow]", "[]5[grow]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel lblRoles = new JLabel(HG0552Msgs.Text_38);	// Roles of the Event
 		rolePanel.add(lblRoles, "cell 0 0, alignx center");	//$NON-NLS-1$
@@ -389,10 +388,10 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		// Load the Role list
 		roleList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 	    roleList.setLayoutOrientation(JList.VERTICAL);
-	    // But don't add the list to the scrollpane yet!
-		JScrollPane roleScrollPane = new JScrollPane();
-		roleScrollPane.setMinimumSize(new Dimension(180, 300));
-		rolePanel.add(roleScrollPane, "cell 0 1");	//$NON-NLS-1$
+		JScrollPane roleScrollPane = new JScrollPane(roleList);
+		roleScrollPane.setPreferredSize(new Dimension(120, 0));
+		rolePanel.add(roleScrollPane, "cell 0 1, grow, pushy");	//$NON-NLS-1$
+		contents.add(rolePanel, "cell 3 0, aligny top, grow");	//$NON-NLS-1$
 
 /****************************************************
  * Setup control buttons at bottom and display screen
@@ -406,17 +405,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		btn_Cancel.setToolTipText(HG0552Msgs.Text_42);			// Close and Exit
 		contents.add(btn_Cancel, "cell 3 2, align right, gapx 20, tag cancel"); //$NON-NLS-1$
 
-	// Size the screen - pass #1
-		pack();
-	// Get the height of the secondPanel, less heading row and insets
-		int height = secondPanel.getHeight() - lblEventList.getHeight() - 20;
-	// Use it to resize the Event and Role scrollpanes
-		eventScrollPane.setPreferredSize(new Dimension(180, height));
-		roleScrollPane.setPreferredSize(new Dimension(180, height));
-	// Load the lists into their correctly sized scrollpanes
-		eventScrollPane.getViewport().setView(eventList);
-		roleScrollPane.getViewport().setView(roleList);
-	// Size the screen - pass #2, and display it
+	// Size the screen
 		pack();
 
 /******************

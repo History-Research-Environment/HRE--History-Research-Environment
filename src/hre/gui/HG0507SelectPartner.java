@@ -93,7 +93,8 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		if (partnerRelationData != null)
 			memoString = pointPersonHandler.readSelectGUIMemo((long)partnerRelationData[0],
 															pointPersonHandler.personPartnerTable);
-		else memoString = HG05070Msgs.Text_155;		//  No memo found
+		//else memoString = HG05070Msgs.Text_155;		//  No memo found
+		else memoString = "";		//  No memo found
 		memoText.append(memoString);
 	// and enable listener again
 		memoText.getDocument().addDocumentListener(memoTextChange);

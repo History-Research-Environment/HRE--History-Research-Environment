@@ -77,6 +77,9 @@ package hre.tmgjava;
  * 			  2026-04-21 - Error fix for reminder -Issue 33.04 (N. Tolleshaug)
  * 			  2026-04-23 - Reminder - increased from 2000 to 5000 (N. Tolleshaug)
  *			  2026-05-14 - Added flag to mark assoc already added (N. Tolleshaug)
+ *			  2026-06-03 - Fix for handling import of user event types (N. Tolleshaug)
+ *			  2026-06-11 - Modifications etype = etype + 2000; (N. Tolleshaug)
+ *			  2026-06-27 - Updated PRIMARY_NUM in T451_EVNTASSOC (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -262,19 +265,22 @@ class TMGpass_Events  {
 				// Updated for en-UK initiated projects with event type < 1000
 					int etypeNumber = tmgGtable.getValueInt(index_G_Table,"ETYPE");
 					int origtype = tmgTtable.findValueInt(etypeNumber,"ORIGETYPE");
+					int adminGroup = getAdminGroup(etypeNumber);
 
 				// Set etype to 2XXX for user-added events - Fix 31.02
 					if (origtype != 0) etypeNumber = origtype + 1000;
-					else etypeNumber = etypeNumber + 1000;
+					else etypeNumber = etypeNumber + 2000; // Fix - 3.6.2026
 
 				// Record the place RPID to set in T401
 					long personRPID;
-					if (etypeNumber == 1002) { // Born event
+					//if (etypeNumber == 1002) { // Born event
+					if (adminGroup == 4) { // Born event 3.6.2026
 						personRPID = tmgGtable.getValueInt(index_G_Table,"PER1") + proOffset;
 						personBornPlaceIndex.put(personRPID, locationTablePID);
 					}
 
-					if (etypeNumber == 1003) { // Death event
+					//if (etypeNumber == 1003) { // Death event
+					if (adminGroup == 5) { // Death event 3.6.2026
 						personRPID = tmgGtable.getValueInt(index_G_Table,"PER1") + proOffset;
 						personDeathPlaceIndex.put(personRPID, locationTablePID);
 					}
@@ -287,9 +293,9 @@ class TMGpass_Events  {
 					// ADD EVENTS with new LOCATION
 						addToT450_EVNT(index_G_Table, etypeNumber, locationTablePID, tableT450);
 
-					// Set up partner table
-						int eventTypeNr = tmgGtable.getValueInt(index_G_Table, "ETYPE");
-						int adminGroup = getAdminGroup(eventTypeNr);
+					// Set up partner table // 3.6.2026
+						//int eventTypeNr = tmgGtable.getValueInt(index_G_Table, "ETYPE");
+						//int adminGroup = getAdminGroup(eventTypeNr);
 
 				   // Only record marriages and divorces
 						if (adminGroup == marrGroup || adminGroup == divorceGroup) {
@@ -499,8 +505,8 @@ class TMGpass_Events  {
 
 		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types
 			if (origtype != 0) eventTypeNumber = origtype + 1000;
-			else eventTypeNumber = eventTypeNumber + 1000;
-			if (eventTypeNumber < 1000) eventTypeNumber = origtype + 1000;
+			else eventTypeNumber = eventTypeNumber + 2000; // Fix - 3.6.2026
+			if (eventTypeNumber < 1000) eventTypeNumber = origtype + 1000; //### Needed code 11.6.2026 - NTO ???
 
 			hreTable.updateInt("PARTNER_TYPE", 	eventTypeNumber);
 
@@ -585,7 +591,7 @@ class TMGpass_Events  {
 
 			// Set etype to 2XXX for user-added events - Fix 31.02
 				if (origeType != 0) eventTypeNr = origeType + 1000;
-				else eventTypeNr = eventTypeNr + 1000;
+				else eventTypeNr = eventTypeNr + 2000; // Fix 3.6.2026
 
 			// extract or update event tags - first, do system-defined
 				if (origeType > 0) { // Originally used code if (origeType > 0) test origeType > 1000
@@ -604,12 +610,10 @@ class TMGpass_Events  {
 				 }
 
 			// Get role sentences
-				//roleParamMap = extractRoleSentence(eventTypeNr, etypeName, tsentence);
-				extractRoleSentence(eventTypeNr, etypeName, tsentence);
+				 extractRoleSentence(eventTypeNr, etypeName, tsentence);
 
 			// Extract roles and get Primary roles
-				//extractRoles(eventTypeNr, tsentence, roleParamMap, properties, tableT461);
-				extractRoles(eventTypeNr, tsentence, properties, tableT461);
+				 extractRoles(eventTypeNr, tsentence, properties, tableT461);
 			}
 		}
 	}
@@ -1067,6 +1071,7 @@ class TMGpass_Events  {
 		}
 
 		try {
+			int eventGroup = tmgTtable.getValueInt(primaryIndex,"ADMIN");
 		// moves cursor to the insert row
 			hreTable.moveToInsertRow();
 		// update row
@@ -1076,7 +1081,7 @@ class TMGpass_Events  {
 			hreTable.updateBoolean("IS_SYSTEM", false);		// Fix 31.14: IS_SYSTEM=FALSE for user-added event
 			hreTable.updateBoolean("IS_ACTIVE", tmgTtable.getValueBoolean(primaryIndex,"ACTIVE"));
 			hreTable.updateInt("EVNT_TYPE", etypeNumber);
-			int eventGroup = tmgTtable.getValueInt(primaryIndex,"ADMIN");
+			//int eventGroup = tmgTtable.getValueInt(primaryIndex,"ADMIN");
 			hreTable.updateInt("EVNT_GROUP", eventGroup);
 			if (eventGroup == marrGroup || eventGroup == divorceGroup) hreTable.updateInt("EVNT_KEY_ASSOC_MIN", 2);
 			else hreTable.updateInt("EVNT_KEY_ASSOC_MIN", 1);
@@ -1256,12 +1261,13 @@ class TMGpass_Events  {
 		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types
 				int origtype = tmgTtable.findValueInt(etype,"ORIGETYPE");
 				if (origtype != 0) etype = origtype + 1000;
-				else etype = etype + 1000;
-				if (etype < 1000) etype = origtype + 1000;
+				else etype = etype + 2000; // Fix 11.6.2026 NTo
+				if (etype < 1000) etype = origtype + 1000; //### Needed code 11.6.2026 - NTO ???
 
 		// Extract the birth event PID for a person
 				if (eper == per1 && per2 == 0)
-					if (admin == birthGroup && etype == 1002) {
+					//if (admin == birthGroup && etype == 1002) {
+					if (admin == birthGroup) {  // 3.6.2026 NTo
 						birthEvents.put(eper + proOffset, gnumIndex +  proOffset);
 						eventsBirths++;
 						if (TMGglobal.TRACE)
@@ -1369,7 +1375,8 @@ class TMGpass_Events  {
  * @throws HCException
  */
     protected void addToT451_EVNT_ASSOC(int primaryIndex, long eventAssocPID, ResultSet hreTable) throws HCException {
-    	boolean principal;
+    	boolean principal = false;
+    	int primaryNumber = 0;
     	if (TMGglobal.DEBUG)
     		System.out.println("** addTo T451_EVNT_ASSOC PID: " + (primaryIndex + proOffset + 1));
 
@@ -1398,9 +1405,17 @@ class TMGpass_Events  {
 			int per1 = tmgGtable.findValueInt(gnumIndex,"PER1");
 			int per2 = tmgGtable.findValueInt(gnumIndex,"PER2");
 			int eper = tmgEtable.getValueInt(primaryIndex,"EPER");
-
-			if (eper == per1 || eper == per2) principal = true; else principal = false;
+			
+		// Update PX reference that is mark P2 in associate list
+			if (eper == per1 || eper == per2) {
+				principal = true; 
+				primaryNumber = 2;
+			} else {
+				principal = false;
+				primaryNumber = 0;
+			}
 			hreTable.updateBoolean("KEY_ASSOC", principal);
+			hreTable.updateInt("PRIMARY_NUM", primaryNumber);
 
 			String roleNumber = tmgEtable.getValueString(primaryIndex,"ROLE");
 

@@ -71,6 +71,7 @@ package hre.gui;
  * 			  2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
  * v0.05.0033 2026-05-29 Change default double-click to ManagePerson, not VP (D Ferguson)
+ * 			  2026-06-09 Make filter text change not require ID re-selection (D Ferguson)
  ***************************************************************************************
  * NOTES for incomplete functionality
  * NOTE02 No code for importing saved filters
@@ -776,7 +777,10 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 				filterTextField.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
-						// no action here
+						if (chkbox_Filter.isSelected()) {
+							selectString = comboBox_Subset.getSelectedItem().toString();
+							setTableFilter(selectString, filterTextField.getText());
+						}
 					}
 				});
 

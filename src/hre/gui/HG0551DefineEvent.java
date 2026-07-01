@@ -40,11 +40,8 @@ package hre.gui;
  *			  2026-02-03 Fixed sentence edit when moving up/down (N. Tolleshaug)
  *			  2026-02-03 Added test at save for duplicate event type name (N. Tolleshaug)
  *			  2026-02-05 Logged all catch block msgs and updated NLS (D Ferguson)
- ********************************************************************************
- * NOTES for incomplete functionality:
- *
- * Note also that the TMG Event tag fields for Past Tense, Abbreviation and type
- * are ignored for now and no place has been set on this screen yet.
+ * v0.05.0033 2026-06-28 Add a default Locn style setting to the General panel (D Ferguson)
+ *							(action on this combobox to be completed - see line 968)
  ********************************************************************************/
 
 import java.awt.Component;
@@ -67,6 +64,7 @@ import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -105,13 +103,14 @@ import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBWhereWhenHandler;
 import hre.nls.HG0551Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
  * Define Events
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0033
  * @since 2022-04-20
  */
 public class HG0551DefineEvent extends HG0450SuperDialog {
@@ -149,6 +148,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	HBEventRoleManager pointEventRoleManager;
 	HBPersonHandler pointPersonHandler;
+	HBWhereWhenHandler pointWhereWhenHandler;
 	HG0547EditEvent pointEditEvent;
 	HG0551DefineEvent pointDefineEvent = this;
 	int dataBaseIndex;
@@ -184,7 +184,8 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 	JTextArea text_MaleSent, text_FemaleSent, text_Hint;
 
 	DocumentListener roleTextListen, eventNameTextListen, eventTextListen, gedTextListen;
-	JComboBox<String> comboGroups, comboSex, comboLanguage;
+	JComboBox<String> comboGroups, comboSex, comboLanguage, comboStyles;
+    String[] locnStyles;
 	ActionListener comboSexListener;
 
 	String textAbbrev, textPastSentense, textEventHint, gedComTag, roleSex, roleSentence;
@@ -219,8 +220,8 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 	Object[] eventTypeDataSend; //= new Object[10]; // Array used to transfer date to HBEventRoleManager
 	Object[] eventRoleDataSend; //= new Object[10]; // Array used to transfer role to HBEventRoleManager
-	Object objTempRoleData[] = new Object[4];   // to temporarily hold a row of roles when moving rows up/down
 
+	Object objTempRoleData[] = new Object[4];   // to temporarily hold a row of roles when moving rows up/down
 	int origGUISeq, newGUISeq; // for use when moving roles up/down
 
     JButton btn_Save;
@@ -246,8 +247,9 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
     	selectedEventName = "";		//$NON-NLS-1$
     	this.pointOpenProject = pointOpenProject;
     	this.pointEventRoleManager = pointEventRoleManager;
-    	//this.pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+
     	pointPersonHandler = pointOpenProject.getPersonHandler();
+    	pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		addEventType = true;
 		copyEventType = false;
 		initiate = true;
@@ -270,6 +272,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		this.pointOpenProject = pointOpenProject;
 		this.pointEventRoleManager = pointEventRoleManager;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
+	   	pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		addEventType = false;
 		copyEventType = false;
 		initiate = true;
@@ -451,7 +454,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
  ***********************************************/
 		JPanel settingPanel = new JPanel();
 	    tabPane.addTab(HG0551Msgs.Text_9, null, settingPanel);	// General Event Settings
-		settingPanel.setLayout(new MigLayout("insets 5", "[]50[]", "10[]30[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		settingPanel.setLayout(new MigLayout("insets 5", "[]50[]", "10[]20[]20[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	// Setup sub-panel for Event Name, etc
 		JPanel namePanel = new JPanel();
@@ -550,6 +553,21 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		xtraPanel.add(text_tense, "cell 1 1");	//$NON-NLS-1$
 
 		settingPanel.add(xtraPanel, "cell 1 1");	//$NON-NLS-1$
+
+		// Setup sub-panel for default Place style
+		JPanel stylePanel = new JPanel();
+		stylePanel.setBorder(BorderFactory.createTitledBorder ("Default Location Style"));		// Default Location Style
+		stylePanel.setLayout(new MigLayout("insets 5", "[]", "[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+		if (initiate) {
+			DefaultComboBoxModel<String> comboLocnModel
+							= new DefaultComboBoxModel<>(pointWhereWhenHandler.getLocationStyles());
+			comboStyles = new JComboBox<String>(comboLocnModel);
+			comboStyles.setSelectedIndex(pointWhereWhenHandler.getDefaultLocationStyleIndex());
+		}
+		stylePanel.add(comboStyles, "cell 0 0");	//$NON-NLS-1$
+
+		settingPanel.add(stylePanel, "cell 0 2");	//$NON-NLS-1$
 
 /************************************************
  * Setup Role/Sentence Panel and 3 content panels
@@ -944,6 +962,20 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent e) {
 				eventChanged = true;
 				btn_Save.setEnabled(true);
+			}
+		});
+
+	// Location Style combo box listener
+		comboStyles.addActionListener (new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if (!(comboStyles.getSelectedIndex() == -1)) {
+
+
+				// do something here.....
+
+
+				}
 			}
 		});
 

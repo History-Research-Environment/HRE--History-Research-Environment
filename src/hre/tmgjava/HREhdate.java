@@ -209,10 +209,10 @@ public class HREhdate {
  */
 	static public void tmgToT170hdate(String tmg_date) throws HCException {
 
-		String main_days, main_months, main_hours, main_minutes, main_seconds,
+		String main_year, main_days, main_months, main_hours, main_minutes, main_seconds,
 			main_milliseconds,main_offset_units, main_offset_value;
 
-		String extra_days = "", extra_months = "", extra_hours = "", extra_minutes = "", extra_seconds = "",
+		String extra_year = "", extra_days = "", extra_months = "", extra_hours = "", extra_minutes = "", extra_seconds = "",
 			extra_milliseconds = "",extra_offset_units = "", extra_offset_value = "";
 
 	// DEFAULT SETTINGS
@@ -288,7 +288,13 @@ public class HREhdate {
 				}
 				
 			// Main Date Data
-				main_years = Long. parseLong(tmg_date.substring( 1, 5));
+				main_year = tmg_date.substring( 1, 5);
+				if (isInteger(main_year))
+					main_years = Long. parseLong(main_year);
+				else if (main_year.contains(".")) {
+					main_year = main_year.replace(".","");
+					main_years = Long. parseLong(main_year);
+				}
 	
 				main_months = tmg_date.substring( 5, 7);
 				if (main_months.equals("00")) main_months = "%%";
@@ -357,7 +363,13 @@ public class HREhdate {
 	 *	extra date exists
 	 */
 				if (dates_required == 2) {
-					extra_years = Long. parseLong(tmg_date.substring( 11, 15));
+					extra_year = tmg_date.substring( 11, 15);
+					if (isInteger(extra_year))
+						extra_years = Long. parseLong(extra_year);
+					else if (extra_year.contains(".")) {
+						extra_year = extra_year.replace(".","");
+						extra_years = Long. parseLong(main_year);
+					}
 					//if (extra_years == 0) extra_years = years_not_set;
 					extra_months = tmg_date.substring( 15, 17);
 					if(extra_months.equals("00")) extra_months = "%%";

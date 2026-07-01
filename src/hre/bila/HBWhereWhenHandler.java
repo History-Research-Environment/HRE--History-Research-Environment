@@ -90,7 +90,8 @@ package hre.bila;
   *			   2026-02-21	Line 3230 - removed memo text "no memo found"
   *	v0.05.0033 2026-04-03 - Read and update T552 Memo record (comment) (N. Tolleshaug)
   * 		   2026-05-11 - Handling duplicate associate roles (N. Tolleshaug)
-  * 		   2026-06-24 - Fix for HRE-33 33.22 editing of a father recording (N. Tolleshaug)
+  * 		   2026-05-24 - Fix for HRE-33 33.22 editing of a father recording (N. Tolleshaug)
+  * 		   2026-06-22 - Initiated image list in EditEventRecord (N. Tolleshaug)
   *****************************************************************************************/
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -317,8 +318,8 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		pointEditEventRecord.updateEventPartnerTable(partnerTablePID, newEventRecordPID);
 	}
 
-	public void createEventMemo(String memodata) throws HBException {
-		pointEditEventRecord.createEventMemo(memodata);
+	public void createEventMemo(long eventTablePID, String memodata) throws HBException {
+		pointEditEventRecord.createEventMemo(eventTablePID, memodata);
 	}
 
 	public String readEventMemo(long memoElementPID) throws HBException {
@@ -3204,6 +3205,8 @@ class EditEventRecord extends HBBusinessLayer {
 	Object [][] associateTable;
 	String [] personStyle;
 	long eventTablePID;
+	int errorCode = 0;
+	int eventImage = 6; // Image type event
 
 	String[] locationHeaderData;
 	HashMap<String,String> eventLocationChanges = new HashMap<String,String>();
@@ -3290,6 +3293,16 @@ class EditEventRecord extends HBBusinessLayer {
 
 		//Load assoc table
 		prepareAssociateTable(eventTablePID);
+		
+		HBMediaHandler pointMediaHandler = pointOpenProject.getMediaHandler();
+		if (HGlobal.DEBUG)
+			System.out.println(" Event Selected: " + eventTablePID + " DBindex: " + dataBaseIndex);
+
+		errorCode = pointMediaHandler.getAllExhibitImage(eventTablePID, eventImage, dataBaseIndex);
+
+		if (errorCode > 1) {
+			System.out.println(" HBWhereWhenHandler - exhibittable, Image error PID: " + eventTablePID);
+		}
 
 	}
 
@@ -3387,9 +3400,9 @@ class EditEventRecord extends HBBusinessLayer {
  * @param nextOwnerPID
  * @throws HBException
  */
-	public void createEventMemo(String memoElement) throws HBException {
+	public void createEventMemo(long eventTablePID, String memoElement) throws HBException {
 		this.memoElement = memoElement;
-
+		String selectString;
 	//	No memo element if textlength is zero
 		if (memoElement.length() == 0) {
 			return;
@@ -3399,17 +3412,27 @@ class EditEventRecord extends HBBusinessLayer {
 			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
 			HREmemo pointHREmemo = new HREmemo(pointDBlayer, dataBaseIndex);
 			nextHREMemoPID = pointHREmemo.addMemoRecord(memoElement);
-
+		// 6.6.2026 NTo		
+			if (isResultSetEmpty(eventResultSet)) {
+				selectString = setSelectSQL("*", eventTable, " PID = " + eventTablePID);
+				eventResultSet = requestTableData(selectString, dataBaseIndex);	
+				eventResultSet.first();
+			}
+		// Update the eventTable with new MemRoPID
+			eventResultSet.updateLong("MEMO_RPID", nextHREMemoPID); // 6.6.2026 NTo
+			eventResultSet.updateRow(); // 6.6.2026 NTo
+			
 		// Now commit all updated for memo
 			updateTableData("COMMIT", dataBaseIndex);
-		} catch (HBException hbe) {
+		} catch (HBException | SQLException hbe) {
 			updateTableData("ROLLBACK", dataBaseIndex);
-			System.out.println(" HBPersonHandler - updateFromGuiMemo error: " + hbe.getMessage());
+			//System.out.println(" EditEventRecord - createEventMemo error: " + hbe.getMessage()
+			//									+ " eventPID: " + eventTablePID);
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("Error addPersonEvent: :  " + hbe.getMessage());
+				HB0711Logging.logWrite("Error EditEventRecord - createEventMemo:  " + hbe.getMessage() +  " eventPID: " + eventTablePID );
 				HB0711Logging.printStackTraceToFile(hbe);
 			}
-			throw new HBException(" HBPersonHandler - updateFromGuiMemo error: " + hbe.getMessage());
+			throw new HBException(" EditEventRecord - createEventMemo error: " + hbe.getMessage());
 		}
 	}
 
@@ -3425,7 +3448,7 @@ class EditEventRecord extends HBBusinessLayer {
 			pointHREmemo.findT167_MEMOrecord(memoElement, memoElementPID);
 		} else {
 			updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
-			createEventMemo(memoElement);
+			createEventMemo(null_RPID, memoElement);
 			try {
 				eventResultSet.updateLong("MEMO_RPID", nextHREMemoPID);
 				eventResultSet.updateRow();
@@ -3616,7 +3639,7 @@ class EditEventRecord extends HBBusinessLayer {
 		assocDataHash = new HashMap<>();
 		asociateList = new ArrayList<>();
 		String personName = "", eventRole = "";
-		int assocRows = 0, eventNumber = 0, eventRoleCode;
+		int assocRows = 0, eventNumber = 0, eventRoleCode, primaryNum = 0;;
 		long eventPID, assocPersonPID, assocTablePID;
 
 		try {
@@ -3630,6 +3653,8 @@ class EditEventRecord extends HBBusinessLayer {
 				eventPID = eventAssocSelected.getLong("EVNT_RPID");
 				assocPersonPID = eventAssocSelected.getLong("ASSOC_RPID");
 				eventRoleCode = eventAssocSelected.getInt("ROLE_NUM");
+				
+				primaryNum = eventAssocSelected.getInt("PRIMARY_NUM");
 
 			// The focus person can also be a witness to another event
 			// if edit vitnessed event check primary assoc from event table
@@ -3648,9 +3673,11 @@ class EditEventRecord extends HBBusinessLayer {
 						  			langCode,
 						  			dataBaseIndex);
 					personName = pointLibraryResultSet.exstractPersonName(assocPersonPID, personStyle, dataBaseIndex);
-					//System.out.println(" Associate: " + assocTablePID + " Event PID: " + eventPID + " Type: " + eventNumber
-					//					+ " Name: " + personName + " Role: " + eventRole);
-
+					if (HGlobal.DEBUG)
+						System.out.println(" Associate: " + assocTablePID + " Event PID: " + eventPID + " Type: " + eventNumber
+										+ " Name: " + personName + " Role: " + eventRole);
+			   // Mark P2 in associate table
+					if (primaryNum > 1) eventRole = eventRole.trim() + "(P" + primaryNum + ")";
 					Object[] asociates = new String[2];
 					asociates[0] = " " + personName.trim();
 					asociates[1] = " " + eventRole.trim();
@@ -3827,8 +3854,6 @@ class EditEventRecord extends HBBusinessLayer {
 		} else {
 			pointCreateEventRecord.assocPersonRPID = null_RPID;
 		}
-		//newEventPID = pointCreateEventRecord.createEventRecord(selectedEventType, selectedRoleType, eventLocationChanges,
-		//										  eventHdatePID, sortHdatePID, nextHREMemoPID);
 
 		eventTablePID = pointCreateEventRecord.createEventRecord(selectedEventType, selectedRoleType, eventLocationChanges,
 				  eventHdatePID, sortHdatePID, nextHREMemoPID);

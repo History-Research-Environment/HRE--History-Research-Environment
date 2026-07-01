@@ -47,14 +47,18 @@ package hre.tmgjava;
  *		      2026-02-26 - Modified Writelog message to "WARNING" (N. Tolleshaug)
  *			  2026-03-28 - Modified some Writelog WARNING message to "MESSAGE:" (N. Tolleshaug)
  *			  2026-04-14 - Changed from ENG_HDATE_RPID to SORT_HDATE_RPIG in T402 (N. Tolleshaug)
+ *			  2026-06-01 - Modified findNameValue report index 0 error and continue(N. Tolleshaug)
+ *			  2026-06-03 - Fix for handling import of user event types (N. Tolleshaug)
+ *			  2026-06-10 - Fix for handling user defined name types (N. Tolleshaug)
+ *			  2026-06-14 - Added import of memo for name types N.dbf table (N. Tolleshaug)
+ *			  2026-06-18 - Remove inferred names from import to T403 (N. Tolleshaug)
+ *			  2026-06-21 - Remove sort names from T403 if equal name element (N. Tolleshaug/D Ferguson)
  ****************************************************************************************/
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import hre.bila.HB0711Logging;
 import hre.gui.HGlobal;
-
 
 /**
  * class TMGpass_Persons
@@ -269,13 +273,15 @@ public class TMGpass_Persons {
 	}
 
 /**
- *
+ * public void addNamesToHRE(TMGHREconverter tmgHreConverter)
  * @param tmgHreConverter
  * @throws HCException
  */
 	public void addNamesToHRE(TMGHREconverter tmgHreConverter) throws HCException {
+		this.tmgHreConverter = tmgHreConverter;
 		int currentRow = 0;
 		long nameElementPID = proOffset;
+		boolean inferredSurname, inferredGivenname;
 		try {
 		// Find start PID
 			T402.last();
@@ -314,8 +320,10 @@ public class TMGpass_Persons {
 				pointSupportPass.addUsedStyle(styleIndex);
 
 				if (tmgNtable.getValueInt(indexNPID,"NPER") > 0 )  {
+					inferredSurname = tmgNtable.getValueBoolean(indexNPID,"INFS");
+					inferredGivenname = tmgNtable.getValueBoolean(indexNPID,"INFG");
 
-					String[] nameValues = findNameValue(indexNPID);
+					String[] nameValues = findNameValue(indexNPID,inferredSurname, inferredGivenname);
 
 			// T402_LIFE_PERSON_NAMES
 					if(TMGglobal.dataSetID == tmgNtable.getValueInt(indexNPID,"DSID"))	{
@@ -359,6 +367,11 @@ public class TMGpass_Persons {
 		}
 	}
 
+/**
+ * addParentRelationToHRE(TMGHREconverter tmgHreConverter)
+ * @param tmgHreConverter
+ * @throws HCException
+ */
 	public void addParentRelationToHRE(TMGHREconverter tmgHreConverter) throws HCException {
 		this.tmgHreConverter = tmgHreConverter;
 		int currentRow = 0;
@@ -383,10 +396,10 @@ public class TMGpass_Persons {
 
 				if(TMGglobal.dataSetID == tmgFtable.getValueInt(indexFPID,"DSID"))	{
 		// Report progress in %
-				progress = (int)Math.round(((double)currentRow / (double)nrOftmgFRows) * 100);
-				tmgHreConverter.setStatusProgress(progress);
+					progress = (int)Math.round(((double)currentRow / (double)nrOftmgFRows) * 100);
+					tmgHreConverter.setStatusProgress(progress);
 
-				addToT405_PARENT_RELATION(indexFPID, T405);
+					addToT405_PARENT_RELATION(indexFPID, T405);
 
 				} else System.out.println("Not processed dataset tmgFtable: "
 						+ tmgFtable.getValueInt(indexFPID,"DSID"));
@@ -499,7 +512,7 @@ public class TMGpass_Persons {
  * @param hreTable
  * @throws HCException
  */
-	public void addToT402_PERS_NAME(int rowPID,ResultSet hreTable) throws HCException {
+	public void addToT402_PERS_NAME(int rowPID, ResultSet hreTable) throws HCException {
 		String tmgDate;
 		String nullDate = "100000000030000000000";
 
@@ -516,7 +529,7 @@ public class TMGpass_Persons {
 
 		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types
 			if (origtype != 0) etypeNumber = origtype + 1000;
-			else etypeNumber = etypeNumber + 1000;
+			else etypeNumber = etypeNumber + 2000;
 
 		// Update new row in database
 			hreTable.updateLong("PID", proOffset + tmgNtable.getValueInt(rowPID,"RECNO"));
@@ -541,7 +554,14 @@ public class TMGpass_Persons {
 			else hreTable.updateLong("SORT_HDATE_RPID", HREhdate.addToT170_22a_HDATES(T170, tmgDate));
 
 			hreTable.updateLong("THEME_RPID", null_RPID);
-			hreTable.updateLong("MEMO_RPID", null_RPID);
+		// Collect NNOTE
+			String nnote = HREmemo.
+					returnStringContent(tmgNtable.getValueString(rowPID,"NNOTE"));
+		// Processing memo to T167_MEMO_SET
+			if (nnote.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
+			else hreTable.updateLong("MEMO_RPID",
+					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(nnote));
+
 			hreTable.updateString("SURETY", "3");
 		//Insert row
 			hreTable.insertRow();
@@ -643,9 +663,9 @@ public class TMGpass_Persons {
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateBoolean("HAS_CITATIONS", false);
 			hreTable.updateLong("PERSON_RPID",
-					proOffset + tmgFtable.getValueInt(rowPID,"CHILD")); // Child PID);
+						proOffset + tmgFtable.getValueInt(rowPID,"CHILD")); // Child PID);
 			hreTable.updateLong("PARENT_RPID",
-					proOffset + tmgFtable.getValueInt(rowPID,"PARENT")); // Parent PID);
+						proOffset + tmgFtable.getValueInt(rowPID,"PARENT")); // Parent PID);
 			hreTable.updateLong("START_HDATE_RPID", null_RPID); // No dates available for import from TMG
 			hreTable.updateLong("END_HDATE_RPID", null_RPID); // No dates available for import from TMG
 
@@ -653,7 +673,7 @@ public class TMGpass_Persons {
 			int parentType = tmgFtable.getValueInt(rowPID,"PTYPE");
 			int origeType = tmgTtable.findValueInt(parentType,"ORIGETYPE");
 			if (origeType != 0) parentType = origeType + 1000;
-			else parentType = parentType + 1000; // Only if user defined parent type
+			else parentType = parentType + 2000; // Only if user defined parent type // 3.6.2026 NTo
 			hreTable.updateInt("PARENT_TYPE", parentType);
 
 		// Collect PNOTE
@@ -666,7 +686,7 @@ public class TMGpass_Persons {
 					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(pnote));
 
 			hreTable.updateString("SURETY", tmgFtable.getValueString(rowPID,"FSURE"));
-			hreTable.updateLong("EVNT_RPID", null_RPID);
+			hreTable.updateLong("EVNT_RPID", null_RPID); // Note: Set where?
 
 		//Insert row
 			hreTable.insertRow();
@@ -756,9 +776,9 @@ public class TMGpass_Persons {
  * @return
  * @throws HCException
  */
-	private String[] findNameValue(int indexNPID) throws HCException {
-		int vectorPartSize, nameNrInx, namePartInx, namePartValueInx;
-		String nameParts = "", namePartType, nameString = "";
+	private String[] findNameValue(int indexNPID, boolean inferredSurname, boolean inferredGivenname) throws HCException {
+		int vectorPartSize, nameNrInx, namePartInx, namePartValueInx = 0, nameValueIndex = 0;
+		String nameParts = "", namePartType, nameString = "", surName = "", givenName = "";
 		String[] personNameValue = new String[16];
 		for (int i = 0; i < personNameValue.length ; i++ ) personNameValue[i] = "";
 		try {
@@ -767,7 +787,7 @@ public class TMGpass_Persons {
 			if (vectorPartSize < 1) {
 				System.out.println(" MESSAGE: TMGpass_Person - Name element data missing row: " + namePartValueInx + "/" + vectorPartSize);
 				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("MESSAGE: TMGpass_Person - Name element data missing for person in N.dbf table row : " 
+					HB0711Logging.logWrite("MESSAGE: TMGpass_Person - Name element data missing for person in N.dbf table row : "
 							+ namePartValueInx);
 			}
 			for (int i = 0; i < vectorPartSize; i++ ) {
@@ -776,7 +796,23 @@ public class TMGpass_Persons {
 				namePartType = tmgNPTtable.findValueString(namePartInx,"VALUE");
 				nameString = tmgNDtable.findValueString(nameNrInx,"VALUE").trim();
 
-			// Convert surname to lowercas
+		// Updates 20.6.2026 NTo, upated 21.6 DF
+				if (namePartInx  == 3)		// given
+					if (inferredGivenname) continue;
+					else givenName = nameString;
+
+				if (namePartInx  == 5)		// surname
+					if (inferredSurname) continue;
+					else surName = nameString;
+
+				if (namePartInx  == 8 ) 	//sortsurname
+					if (inferredSurname || surName.equals(nameString)) continue;
+
+				if (namePartInx  == 9 ) 	// sortgiven
+					if (inferredGivenname || givenName.equals(nameString)) continue;
+
+				nameValueIndex++;
+			// Convert surname to lowercase
 				if (TMGglobal.LOWER_CASE)
 					if (namePartInx == 5 || namePartInx == 8) {
 						String nameLowerCase = "";
@@ -796,12 +832,18 @@ public class TMGpass_Persons {
 				nameParts = nameParts + "(" + namePartInx + ")" + namePartType
 						+ " : " + personNameValue[namePartInx-1] + " / ";
 			}
+			nameParts = " Elemts:" + nameValueIndex + " / " + nameParts;
+			//System.out.println("Name parts NPV: " + namePartValueInx + " / " + nameParts);
 		} catch (HCException hce) {
-			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in TMGpassPersons find Name value: " + hce.getMessage());
-				HB0711Logging.printStackTraceToFile(hce);
+			System.out.println("WARNING Name parts NPV: " + indexNPID + " / " + nameParts);
+			if (!hce.getMessage().startsWith("###")) {
+				if (HGlobal.writeLogs)
+					HB0711Logging.logWrite("ERROR: in TMGpassPersons find Name value: " + hce.getMessage());
+				throw new HCException("ERROR: TMGpassPersons find Name value: " + hce.getMessage());
 			}
-			throw new HCException("findNameValue error: " + hce.getMessage());
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("WARNING Name parts for: " + indexNPID + " / " + nameParts);
+			}
 		}
 		if (TMGglobal.DUMP)
 			if (indexNPID < maxNrPrint)

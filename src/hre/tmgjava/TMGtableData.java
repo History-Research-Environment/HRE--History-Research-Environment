@@ -23,6 +23,7 @@ package hre.tmgjava;
  * 			  2026-03-16 - Exception handling in public Vector<DBFRow> findVectorRows (N. Tolleshaug)
  * 			  2026-03-18 - Error handling of Issue 32.47 (N. Tolleshaug)
  * 			  2026-03-28 - Changed some header from ERROR: to WARNING: (N. Tolleshaug)
+ * 			  2026-06-01 - Added ### first in HCExption message (N. Tolleshaug)
  * ************************************************************************************
  * NOTE 1
  * The HashMap for access to PID_Number handles only the first occurrence of the ID_Numner
@@ -266,7 +267,7 @@ public class TMGtableData {
 				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("ERROR: in TMGtableData Arraylist Error Key: "
 							+ listIndex + ", FieldName: " + fieldName);
-				throw new HCException("TMGtableData/Arraylist Error Key: "
+				throw new HCException("### - TMGtableData/Arraylist Error Key: "
 							+ listIndex + ", FieldName: " + fieldName);
 			}
 			return PIDlist.get(listIndex).getString(fieldName);
@@ -292,7 +293,7 @@ public class TMGtableData {
 			if (PIDmap.get(PID) == null) {
 				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("WARNING in TMGtableData findValueString HashMap Error Key: " + PID + ", FieldName: " + fieldName);
-				throw new HCException("TMGtableData/findValueString HashMap Error Key: " + PID + ", FieldName: " + fieldName);
+				throw new HCException("### - TMGtableData/findValueString HashMap Error Key: " + PID + ", FieldName: " + fieldName);
 			}
 			return PIDmap.get(PID).getString(fieldName);
 		} catch (DBFException dbfe) {

@@ -81,13 +81,13 @@ package hre.gui;
 * 			  2026-05-20 Corrected other Dutch realtionship names (D Ferguson)
 * 			  2026-06-25 Fix 33.22 cancel editing/delete/copy in parent event table (N. Tolleshaug)
 * 			  2026-05-28 Update NLS (D Ferguson)
+* 			  2026-06-23 Add editor panel for Reference field edit and re-NLS (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 need listener and code for handling DNA data
  * NOTE09 need to load new audio/video media or delete existing
  * NOTE15 need copy/renumber actions added
  *
- * NLS: Text_15 no longer used
  *********************************************************************************************/
 
 import java.awt.CardLayout;
@@ -360,7 +360,12 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 
 		JLabel lbl_Reference = new JLabel(HG0506Msgs.Text_4);	// Reference:
 		nameParentPanel.add(lbl_Reference, "cell 0 1, align right");	//$NON-NLS-1$
-		JTextField reference = new JTextField(pointPersonHandler.getPersonReference());
+		JTextField reference = new JTextField(pointPersonHandler.getPersonReference()) {
+		    @Override
+		    protected void processKeyEvent(KeyEvent e) {
+		        // block all editing but allow double-click to still update this field
+		    }
+		};
 		reference.setColumns(25);
 		nameParentPanel.add(reference, "cell 1 1, growx");	//$NON-NLS-1$
 
@@ -952,8 +957,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    		imagePanel.add(captionPane, "cell 0 1");		//$NON-NLS-1$
 	    		mediaPanel.add(imagePanel);
             }
-        }
-        else {	// Add people icon with 'not present' msg
+        } else {	// Add people icon with 'not present' msg
         	JPanel imagePanel = new JPanel();
     		imagePanel.setLayout(new MigLayout("insets 5", "[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     		imagePanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
@@ -1593,7 +1597,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    popupMenuAny.add(popMenu13);
 	    popupMenuAny.add(popMenu14);
 
-	    // Listener for Events table mouse right-click
+	    // Listener for Events table mouse right/double-click
 	    tableEvents.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
@@ -1644,6 +1648,42 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
             		}
 	           		// Othewise, just do edit of the event
 	           		else popMenu7.doClick();
+	           	}
+            }
+        });
+
+
+	    // Listener for Reference field mouse double-click
+	    reference.addMouseListener(new MouseAdapter() {
+			@Override
+            public void mousePressed(MouseEvent me) {
+           		// Detect DOUBLE-CLICK - show editor panel for this field
+	           	if (me.getClickCount() == 2 ) {
+	           		JPanel refPanel = new JPanel();
+	                JTextField refField = new JTextField();
+	                refField.setColumns(25);
+	                refField.setText(reference.getText());
+	                refPanel.add(refField);
+	            // Show the confirmation dialog containing refPanel
+	                int result = JOptionPane.showConfirmDialog(reference,
+	                		refPanel,
+	                		HG0506Msgs.Text_15,		// Edit Reference
+	                         JOptionPane.OK_CANCEL_OPTION);
+	            // Extract value if the user clicked OK
+	                if (result == JOptionPane.OK_OPTION) {
+	                    String newReference = refField.getText();
+	            // Save the new reference value to database
+	                    try {
+							pointPersonHandler.updateReferenceField(newReference);
+				// If DB update succeeds, update the screen
+		                    reference.setText(newReference);
+						} catch (HBException hbe) {
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0506 in Update Reference Field: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
+						}
+	                }
 	           	}
             }
         });
@@ -1919,6 +1959,14 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
         		int rowInTable = tableNames.convertRowIndexToModel(rowClicked);
+				if (HGlobal.showCancelmsg) {
+					if (JOptionPane.showConfirmDialog(tableNames,
+							HG0506Msgs.Text_92,		// Are you sure you want to delete this Name?
+							HG0506Msgs.Text_93,		// Name Delete
+						JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+							return;
+						}	// else keep going
+				}
 	        	try {
 					pointPersonHandler.deleteNameForPerson(rowInTable);
 				} catch (HBException hbe) {

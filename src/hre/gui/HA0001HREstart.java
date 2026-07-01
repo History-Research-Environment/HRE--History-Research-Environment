@@ -35,12 +35,14 @@ package hre.gui;
  * 			  2025-01-21 Removed new HBPersonHandler(null) line 536 (N. Tolleshaug)
  * 			  2025-02-08 Add all missing GUI language NLS imports (D Ferguson)
  * 			  2025-12-16 Delete HG0568/HG0569Msgs, add HG0548Msgs in NLS list (D Ferguson)
- *
+ * v0.05.0033 2026-06-07 Stop HRE freezing if menu used before Welcome closed (D Ferguson)
+ * 			  2026-06-11 Remove 'Opening last project' msg as shows too briefly to be read (D Ferguson)
  **********************************************************************************************
  * NOTE - Special setting for user NTo for seed/sample files and help folders
  *********************************************************************************************/
 
 import java.awt.Color;
+import java.awt.Dialog.ModalityType;
 import java.awt.Font;
 import java.awt.Toolkit;
 import java.io.File;
@@ -51,7 +53,6 @@ import java.util.Locale;
 import java.util.Locale.Category;
 
 import javax.swing.JDesktopPane;
-import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -118,7 +119,7 @@ import hre.nls.HGlobalMsgs;
 /**
  * HRE start code to initiate HRE system in Java
  * @author Nils Tolleshaug
- * @version v0.03.0030
+ * @version v0.05.0033
  * @since 2019-10-15
  **/
 
@@ -401,7 +402,8 @@ public class HA0001HREstart {
         if (HGlobal.showWelcome)  {
         	new Thread(() -> {
 				HG0401HREWelcome welcome=new HG0401HREWelcome();
-				welcome.setLocationRelativeTo(mainPanel);
+				welcome.setModalityType(ModalityType.APPLICATION_MODAL);
+				welcome.setLocationRelativeTo(mainFrame);
 				welcome.setAlwaysOnTop(true);
 				welcome.setVisible(true);
 			}).start();
@@ -421,22 +423,12 @@ public class HA0001HREstart {
         }
 
 /**
- * Now show Wait msg and open last closed project on new thread to not hold up any other process
- * NB: only show/dispose the dialog if openLastProject is true
+ * Now open last closed project on new thread to not hold up any other process
  */
-        JOptionPane messagePane = new JOptionPane("Opening last project  \nPlease wait...",
-	            JOptionPane.INFORMATION_MESSAGE);
-	    JDialog dialogOpen = messagePane.createDialog("Open Project");
-		dialogOpen.setLocation(HGlobal.mainX + 50, HGlobal.mainY + 80);
-		dialogOpen.setModal(false);
-		dialogOpen.setAlwaysOnTop(true);
-		if (HGlobal.openLastProject) dialogOpen.setVisible(true);
-
 		SwingUtilities.invokeLater(new Runnable() {
 			    @Override
 			    public void run() {
 					frame.openLastClosed();
-					if (HGlobal.openLastProject) dialogOpen.dispose();
 					if (HGlobal.TIME) HGlobalCode.timeReport("complete creating all open windows");
 			    }
 		});

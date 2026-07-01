@@ -95,8 +95,8 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 		if (assocRelationData != null)
 			memoString = pointPersonHandler.readSelectGUIMemo((long)assocRelationData[0],
 							pointPersonHandler.eventAssocTable);
-		 else
-			memoString = HG05070Msgs.Text_155;		//  No memo found
+		 //else memoString = HG05070Msgs.Text_155;		//  No memo found
+		else memoString = "";		//  No memo found
 
 		memoText.append(memoString);
 	// and enable it again

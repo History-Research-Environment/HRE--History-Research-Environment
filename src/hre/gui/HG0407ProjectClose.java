@@ -38,6 +38,7 @@ package hre.gui;
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
  * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-02 Logged catch block actions (D Ferguson)
+ * v0.05.0033 2026-06-11 Remove Cancel confirmation msg (D Ferguson)
  **********************************************************************************************
  * NOTES for incomplete functionality
  ************************************************
@@ -86,7 +87,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Close
  * @author R Thompson
- * @version v0.03.0032
+ * @version v0.05.0033
  * @since 2019-02-25
  */
 
@@ -159,9 +160,9 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 		btn_Backup.setEnabled(false);
 		contents.add(btn_Backup, "cell 0 3, gapleft push"); //$NON-NLS-1$
 
-		JButton btn_Cancel = new JButton(HG0407Msgs.Text_21);
-		btn_Cancel.setToolTipText(HG0407Msgs.Text_22);
-		contents.add(btn_Cancel, "cell 0 3, gapleft push, tag cancel"); //$NON-NLS-1$
+		JButton btn_Close = new JButton(HG0407Msgs.Text_21);
+		btn_Close.setToolTipText(HG0407Msgs.Text_22);
+		contents.add(btn_Close, "cell 0 3, gapleft push, tag cancel"); //$NON-NLS-1$
 
 		JButton btn_CloseProject = new JButton(HG0407Msgs.Text_24);
 		btn_CloseProject.setEnabled(false);
@@ -261,28 +262,20 @@ public class HG0407ProjectClose extends HG0450SuperDialog {
 			}
 		});
 
-		btn_Cancel.addActionListener(new ActionListener() {
+		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				HGlobal.closeType = "N";	 //$NON-NLS-1$
-				if (HGlobal.showCancelmsg) {
-					if (JOptionPane.showConfirmDialog(btn_Cancel, HG0407Msgs.Text_34, HG0407Msgs.Text_35,
-						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-							if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling HG0407 Project Close");	 //$NON-NLS-1$
-							dispose();
-						}	// yes option - return to main menu
-				} else {
-					if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: cancelling HG0407 Project Close");}	 //$NON-NLS-1$
-					dispose();
-				}
+				if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: exiting HG0407ProjectClose");}	 //$NON-NLS-1$
+				dispose();
 			}
 		});
 
-		// Listener for clicking 'X on screen - make same as Cancel button
+		// Listener for clicking 'X on screen - make same as Close button
 		addWindowListener(new WindowAdapter() {
 		    @Override
 			public void windowClosing(WindowEvent e)  {
-		    	btn_Cancel.doClick();
+		    	btn_Close.doClick();
 		    }
 		});
 

@@ -11,6 +11,7 @@ package hre.gui;
  * 			  2025-04-25 Add Citation load and GUI seq reset code (D Ferguson)
  * v0.04.0032 2025-06-05 Address minor layout errors (D Ferguson)
  * 			  2026-01-06 Log catch block msgs (D Ferguson)
+ * v0.05.0033 2025-06-13 Fix for correct citation parent relation (N. Tolleshaug)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
@@ -47,6 +48,7 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 	final static int parentEventGroup = -1;
 	String memoString;
 	boolean addRelation;
+	
 
 /**
  * HG0507SelectParent constructor
@@ -91,7 +93,8 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 			memoString = pointPersonHandler.readSelectGUIMemo((long)parentRelationData[0],
 							pointPersonHandler.personParentTable);
 		} else
-			memoString = HG05070Msgs.Text_155;		//  No memo found
+			//memoString = HG05070Msgs.Text_155;		//  No memo found
+			memoString = "";		//  No memo found
 
 		memoText.append(memoString);
 	// and enable it again
@@ -100,7 +103,8 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 	// Get the citation data for this parentPID relationship
 		if (parentRelationData != null) {
 			personPID = (long)parentRelationData[4];
-			objCiteData = pointCitationSourceHandler.getCitationSourceData(personPID, citeTableName);  // T405
+			personTablePID = (long)parentRelationData[0]; // Mod 13.6.2026 NTo
+			objCiteData = pointCitationSourceHandler.getCitationSourceData(personTablePID, citeTableName);  // T405
 			// and sort it on GUI sequence
 			Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
 			// and ensure it is displayed

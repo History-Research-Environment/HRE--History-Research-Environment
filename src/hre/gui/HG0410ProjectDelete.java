@@ -27,6 +27,7 @@ package hre.gui;
  * v0.03.0031 2024-10-01 Organize imports (D Ferguson)
  * 			  2024-11-30 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-03 Logged catch block actions (D Ferguson)
+ * v0.05.0033 2026-06-11 Add a confirmation prompt before deletion (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -72,9 +73,9 @@ import hre.nls.HG0410Msgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
- * Project Open
+ * Project Delete
  * @author R Thompson
- * @version v0.03.0032
+ * @version v0.05.0033
  * @since 2019-02-22
  */
 
@@ -239,14 +240,14 @@ public class HG0410ProjectDelete extends HG0450SuperDialog {
 				if (HGlobal.showCancelmsg) {							// only show Cancel message if setting true
 					if (JOptionPane.showConfirmDialog(btn_Cancel, HG0410Msgs.Text_35, HG0410Msgs.Text_36,
 						JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-								if (HGlobal.writeLogs) {
-									HB0711Logging.logWrite("Action: cancelling HG0410 Project Delete"); //$NON-NLS-1$
-								}
+								if (HGlobal.writeLogs)
+									HB0711Logging.logWrite("Action: cancelling HG0410ProjectDelete"); //$NON-NLS-1$
 								dispose();
 							}  // yes option - return to main menu
 				} else {
-					if (HGlobal.writeLogs) {HB0711Logging.logWrite("Action: cancelling HG0410 Project Delete");} //$NON-NLS-1$
-					  dispose();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("Action: cancelling HG0410 Project Delete");} //$NON-NLS-1$
+					  	dispose();
 				}
 			}
 		});
@@ -265,6 +266,14 @@ public class HG0410ProjectDelete extends HG0450SuperDialog {
 				int[] selectedRow = table_Projects.getSelectedRows();
 				for (int i = 0; i < selectedRow.length; i++) {
 					String selectedProjectName = (String) table_Projects.getValueAt(selectedRow[i], 0);
+					if (HGlobal.showCancelmsg) {
+						if (JOptionPane.showConfirmDialog(btn_Delete,
+								HG0410Msgs.Text_38 + selectedProjectName + "?",	//$NON-NLS-1$
+								HG0410Msgs.Text_36,
+							JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+								break;
+							}	// else keep going
+					}
 
 					// If server name in projects table is ' Local', then set the server name to this PC
 					String selectedServerName = (String) table_Projects.getValueAt(selectedRow[i], 2);

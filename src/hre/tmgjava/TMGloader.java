@@ -24,11 +24,14 @@ package hre.tmgjava;
  *			  2026-01-14 - Log catch block msgs (D Ferguson)
  * v0.05.0032 2026-02-24 - Added HB0711Logging.logWrite("ACTION: in TMGloader loading XXXX tables");
  * 			  2026-03-28 - Changed Action. to ACTION:(N. Tolleshaug)
+ * 			  2026-06-02 - Modified TMG filenames to become case insensitive (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 import com.linuxense.javadbf.DBFException;
@@ -50,6 +53,8 @@ public class TMGloader {
 	String tmgFileName;
 	TMGHREconverter pointConvert;
 	DBFReader tmgReader;
+	CaseInsensitiveDirectoryIndex caseInsentivePointer;
+	String baseFile, memoFile;
 /**
  * TMGloader
  * @param tmgBaseFolder
@@ -58,11 +63,20 @@ public class TMGloader {
 	public TMGloader(TMGHREconverter pointConvert, String tmgBaseFolder, String tmgFileName) throws HCException  {
 		this.tmgBaseFolder = tmgBaseFolder;
 		this.tmgFileName = tmgFileName;
-		this.pointConvert = pointConvert;
+		this.pointConvert = pointConvert;	
+		
+		
+	// Initiate list of filenames in TMG Project folder	
+		caseInsentivePointer = new CaseInsensitiveDirectoryIndex(new File(tmgBaseFolder));
+		
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.DATA_SET + ".dbf").getName();	
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.DATA_SET + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.DATA_SET + " file names: " + baseFile + " / " + memoFile);
 
 		// DATASET TABLE
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.DATA_SET + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.DATA_SET + ".fpt");
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
+		
 		TMGglobal.tmg_D_table = new TMGtableData(tmgReader,"DSID", pointConvert);
 		TMGglobal.tmg_D_table.TMGtableSingleData(tmgReader);
 		statusUpdate(TMGtypes.DATA_SET, TMGglobal.tmg_D_table);
@@ -125,22 +139,34 @@ public class TMGloader {
 	public void loadTmgSupportTables() throws HCException {
 		if (HGlobal.writeLogs)
 			HB0711Logging.logWrite("ACTION: in TMGloader loading Support tables");
+		
 	//STYLE TYPE TABLE
 		loadFileTMG(TMGtypes.STYLE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.STYLE + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.STYLE + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.STYLE + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.STYLE + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.STYLE + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
+		
 		TMGglobal.tmg_ST_table = new TMGtableData(tmgReader,"STYLEID", pointConvert);
 		TMGglobal.tmg_ST_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.STYLE , TMGglobal.tmg_ST_table);
 		resetProgress();
 
 	//STYLE TYPE TABLE
 		loadFileTMG(TMGtypes.FLAG);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.FLAG + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.FLAG + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.FLAG + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.FLAG + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.FLAG + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_C_table = new TMGtableData(tmgReader,"FLAGID", pointConvert);
 		TMGglobal.tmg_C_table.TMGtableSingleData(tmgReader);
-		if (TMGglobal.DUMP) statusUpdate(TMGtypes.STYLE , TMGglobal.tmg_C_table);
+		
+		if (TMGglobal.DUMP) statusUpdate(TMGtypes.FLAG  , TMGglobal.tmg_C_table);
 		resetProgress();
 	}
 
@@ -157,60 +183,91 @@ public class TMGloader {
 
 	// PERSON TABLE
 		loadFileTMG(TMGtypes.PERSON);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PERSON + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PERSON + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.PERSON + " file name: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_$_table = new TMGtableData(tmgReader,"PER_NO", pointConvert);
 		TMGglobal.tmg_$_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.PERSON, TMGglobal.tmg_$_table);
 		resetProgress();
 
 	//NAME TABLE
 		loadFileTMG(TMGtypes.NAME);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.NAME + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.NAME + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.NAME + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.NAME + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.NAME + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_N_table = new TMGtableData(tmgReader,"NPER", pointConvert);
 		TMGglobal.tmg_N_table.TMGtableMultiData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME, TMGglobal.tmg_N_table);
 		resetProgress();
 
 	// PARENT CHILD RELATION TABLE
 		loadFileTMG(TMGtypes.PARENT_CHILD_RELATIONSHIP);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PARENT_CHILD_RELATIONSHIP + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PARENT_CHILD_RELATIONSHIP + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.PARENT_CHILD_RELATIONSHIP + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_F_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_F_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.PARENT_CHILD_RELATIONSHIP, TMGglobal.tmg_F_table);
 		resetProgress();
 
 	//NAME PART VALUE
 		loadFileTMG(TMGtypes.NAME_PART_VALUE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.NAME_PART_VALUE + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.NAME_PART_VALUE + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.NAME_PART_VALUE + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_NPV_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_NPV_table.TMGtableMultiData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME_PART_VALUE, TMGglobal.tmg_NPV_table);
 		resetProgress();
 
 	//NAME PART TYPE
 		loadFileTMG(TMGtypes.NAME_PART_TYPE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.NAME_PART_TYPE + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.NAME_PART_TYPE + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.NAME_PART_TYPE + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_NPT_table = new TMGtableData(tmgReader,"ID", pointConvert);
 		TMGglobal.tmg_NPT_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME_PART_TYPE, TMGglobal.tmg_NPT_table);
 		resetProgress();
 
 	//NAME PART DICTIONARY
 		loadFileTMG(TMGtypes.NAME_DICTIONARY);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.NAME_DICTIONARY + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.NAME_DICTIONARY + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.NAME_DICTIONARY + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.NAME_DICTIONARY + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.NAME_DICTIONARY + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_ND_table = new TMGtableData(tmgReader,"UID", pointConvert);
 		TMGglobal.tmg_ND_table.TMGtableSingleData(tmgReader,false);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.NAME_DICTIONARY, TMGglobal.tmg_ND_table);
 		resetProgress();
 
 	//TAG TYPE TABLE
 		loadFileTMG(TMGtypes.TAG_TYPE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.TAG_TYPE + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.TAG_TYPE + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_T_table = new TMGtableData(tmgReader,"ETYPENUM", pointConvert);
 		TMGglobal.tmg_T_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.TAG_TYPE , TMGglobal.tmg_T_table);
 		resetProgress();
 	} // Name loading
@@ -220,36 +277,54 @@ public class TMGloader {
 			HB0711Logging.logWrite("ACTION: in TMGloader loading Place tables");
 		resetProgress();
 	//PLACE FILE
-		loadFileTMG(TMGtypes.PLACE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PLACE + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.PLACE + ".fpt");
+		loadFileTMG(TMGtypes.PLACE);		
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PLACE + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PLACE + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.PLACE + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_P_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_P_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.PLACE, TMGglobal.tmg_P_table);
 		resetProgress();
 
 	//PLACE DICTIONARY
 		loadFileTMG(TMGtypes.PLACE_DICTIONARY);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PLACE_DICTIONARY + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.PLACE_DICTIONARY + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PLACE_DICTIONARY + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PLACE_DICTIONARY + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.PLACE_DICTIONARY + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_PD_table = new TMGtableData(tmgReader,"UID", pointConvert);
 		TMGglobal.tmg_PD_table.TMGtableSingleData(tmgReader,false);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.PLACE_DICTIONARY, TMGglobal.tmg_PD_table);
 		resetProgress();
 
 	//PLACE	PART TYPE
 		loadFileTMG(TMGtypes.PLACE_PART_TYPE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PLACE_PART_TYPE + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PLACE_PART_TYPE + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.PLACE_PART_TYPE + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_PPT_table = new TMGtableData(tmgReader,"ID", pointConvert);
 		TMGglobal.tmg_PPT_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.PLACE_PART_TYPE, TMGglobal.tmg_PPT_table);
 		resetProgress();
 
 	//PLACE	PART VALUE
 		loadFileTMG(TMGtypes.PLACE_PART_VALUE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.PLACE_PART_VALUE + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.PLACE_PART_VALUE + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.PLACE_PART_VALUE + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_PPV_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_PPV_table.TMGtableMultiData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.PLACE_PART_VALUE, TMGglobal.tmg_PPV_table);
 		resetProgress();
 	}
@@ -268,29 +343,44 @@ public class TMGloader {
 
 	// WITNESS TABLE
 		loadFileTMG(TMGtypes.EVENT_WITNESS);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.EVENT_WITNESS + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.EVENT_WITNESS + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_E_table = new TMGtableData(tmgReader,"GNUM", pointConvert);
 		TMGglobal.tmg_E_table.TMGtableMultiData(tmgReader); // New 22.11.2024
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.EVENT_WITNESS, TMGglobal.tmg_E_table);
 		resetProgress();
 
 	// EVENT TABLE
 		if (all) {
 			loadFileTMG(TMGtypes.EVENT);
-			tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.EVENT + ".dbf");
-			setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.EVENT + ".fpt");
+			baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.EVENT + ".dbf").getName();
+			memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.EVENT + ".fpt").getName();
+			if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.EVENT + " file names: " + baseFile + " / " + memoFile);
+			
+			tmgReader = tableLoader(baseFile);
+			setMemoFile(tmgReader, memoFile);
 			TMGglobal.tmg_G_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 			TMGglobal.tmg_G_table.TMGtableSingleData(tmgReader);
+			
 			if (TMGglobal.DUMP) statusUpdate(TMGtypes.EVENT, TMGglobal.tmg_G_table);
 			resetProgress();
 
 		//TAG TYPE TABLE
 			loadFileTMG(TMGtypes.TAG_TYPE);
-			tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".dbf");
-			setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.TAG_TYPE + ".fpt");
+			baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".dbf").getName();
+			memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.TAG_TYPE + ".fpt").getName();
+			if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.TAG_TYPE + " file names: " + baseFile + " / " + memoFile);
+			
+			tmgReader = tableLoader(baseFile);
+			setMemoFile(tmgReader, memoFile);
 			TMGglobal.tmg_T_table = new TMGtableData(tmgReader,"ETYPENUM", pointConvert);
 			TMGglobal.tmg_T_table.TMGtableSingleData(tmgReader);
+			
 			if (TMGglobal.DUMP) statusUpdate(TMGtypes.TAG_TYPE , TMGglobal.tmg_T_table);
 			resetProgress();
 		}
@@ -301,53 +391,81 @@ public class TMGloader {
 			HB0711Logging.logWrite("ACTION: in TMGloader loading Source tables");
 	// Source type
 		loadFileTMG(TMGtypes.SOURCE_TYPE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE_TYPE + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.SOURCE_TYPE + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_A_table = new TMGtableData(tmgReader,"SOURTYPE", pointConvert);
 		TMGglobal.tmg_A_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_TYPE, TMGglobal.tmg_A_table);
 		resetProgress();
 
 	// Source file
 		loadFileTMG(TMGtypes.SOURCE);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.SOURCE + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.SOURCE + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_M_table = new TMGtableData(tmgReader,"MAJNUM", pointConvert);
 		TMGglobal.tmg_M_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE, TMGglobal.tmg_M_table);
 		resetProgress();
 
 	// Repository file
 		loadFileTMG(TMGtypes.REPOSITORY);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.REPOSITORY + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.REPOSITORY + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.REPOSITORY + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.REPOSITORY + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.REPOSITORY + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_R_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_R_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.REPOSITORY, TMGglobal.tmg_R_table);
 		resetProgress();
 
 	// Source Citations file
 		loadFileTMG(TMGtypes.SOURCE_CITATION);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_CITATION + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.SOURCE_CITATION + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE_CITATION + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE_CITATION + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.SOURCE_CITATION + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_S_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_S_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_CITATION, TMGglobal.tmg_S_table);
 		resetProgress();
 
 	// Source Element file
 		loadFileTMG(TMGtypes.SOURCE_ELEMENT);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.SOURCE_ELEMENT + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.SOURCE_ELEMENT + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.SOURCE_ELEMENT + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_U_table = new TMGtableData(tmgReader,"RECNO", pointConvert);
 		TMGglobal.tmg_U_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.SOURCE_ELEMENT, TMGglobal.tmg_U_table);
 		resetProgress();
 
-		// Source Citations file
+	// Source Citations file
 		loadFileTMG(TMGtypes.REPOSITORY_LINK);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.REPOSITORY_LINK + ".dbf");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.REPOSITORY_LINK + ".dbf").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.REPOSITORY_LINK + " file names: " + baseFile);
+		
+		tmgReader = tableLoader(baseFile);
 		TMGglobal.tmg_W_table = new TMGtableData(tmgReader,"RNUMBER", pointConvert);
 		TMGglobal.tmg_W_table.TMGtableSingleData(tmgReader);
+		
 		if (TMGglobal.DUMP) statusUpdate(TMGtypes.REPOSITORY_LINK, TMGglobal.tmg_W_table);
 		resetProgress();
 	}
@@ -362,10 +480,15 @@ public class TMGloader {
 		if (HGlobal.writeLogs)
 			HB0711Logging.logWrite("ACTION: in TMGloader loading Exhibit tables");
 		resetProgress();
+		
 	//EXHIBIT FILE
 		loadFileTMG(TMGtypes.EXHIBIT);
-		tmgReader = tableLoader(tmgFileName + "_" + TMGtypes.EXHIBIT + ".dbf");
-		setMemoFile(tmgReader,tmgFileName + "_" + TMGtypes.EXHIBIT + ".fpt");
+		baseFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.EXHIBIT + ".dbf").getName();
+		memoFile = caseInsentivePointer.resolve(tmgFileName + "_" + TMGtypes.EXHIBIT + ".fpt").getName();
+		if (TMGglobal.TRACE) System.out.println(" " + TMGtypes.EXHIBIT + " file names: " + baseFile + " / " + memoFile);
+		
+		tmgReader = tableLoader(baseFile);
+		setMemoFile(tmgReader, memoFile);
 		TMGglobal.tmg_I_table = new TMGtableData(tmgReader,"IDEXHIBIT", pointConvert);
 
 /**
@@ -581,3 +704,32 @@ public class TMGloader {
 		}
 	}
 }
+
+/**
+ * Class for listing of filenames in a directory
+ */
+class CaseInsensitiveDirectoryIndex {
+    private final Map<String, File> index = new HashMap<>();
+/**
+ * Constructor
+ * @param dir
+ */
+    public CaseInsensitiveDirectoryIndex(File dir) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                index.put(file.getName().toLowerCase(), file);
+            }
+        }
+    }
+    
+/**
+ * Find the original file name from directory
+ * @param name
+ * @return
+ */
+    public File resolve(String name) {
+        return index.get(name.toLowerCase());
+    }
+}
+

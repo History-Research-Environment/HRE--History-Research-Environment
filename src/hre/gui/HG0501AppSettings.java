@@ -59,6 +59,7 @@ package hre.gui;
  *			  2026-04-20 Focus panel not visible if no project open (N Tolleshaug)
  *			  2026-04-30 Add confirmation of Relate settings and Clear Relationships button (D Ferguson)
  *			  2026-05-04 NLS update (D Ferguson)
+ *			  2026-06-13 If no Relationship person selected cancel relationship process (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -1128,8 +1129,12 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 					Point xyShow = panelOpt.getLocationOnScreen();
 					personSelectScreen.setLocation(xyShow.x+100, xyShow.y);
 					personSelectScreen.setVisible(true);
-				// Put selection into Relationships panel and display it
+				// Put name selected into Relationships panel unless user cancels out of person select
 					txt_Relate.setText(pointPersonHandler.getPersonName(pointOpenProject.getFocusPersonPID()));
+					if (txt_Relate.getText().contains("No name")) {
+						setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+						return;
+						}
 					txt_Relate.setVisible(true);
 					revalidate();
 				// Re-calculate all relationships based on this new focusPerson
