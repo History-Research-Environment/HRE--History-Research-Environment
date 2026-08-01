@@ -60,13 +60,14 @@ package hre.bila;
  * 			  2023-08-05 - Enable update status bar - on/off (N. Tolleshaug)
  * v0.05.0033 2026-02-28 - Added messages from HGlobalCode (N. Tolleshaug)
  *			  2026-03-01 - Completed NLS; log all catch blocks and other msgs (D Ferguson)
+ *		      2026-07-01 - Added variable dvVersion = "V23" (N. Tolleshaug)
+ *			  2026-07-03 - Removed method selectDataBase(String dBversion) (N. Tolleshaug)
  ****************************************************************************************
  * NOTES ON INCOMPLETE FUNCTIONALITY
  ****************************************************************************************
  * NOTE-1 The use of Visible-ID to select person HBTreeCreator - getFocusPerson
  * may not be correct
  ***************************************************************************************/
-
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.ResultSet;
@@ -100,13 +101,10 @@ public class HBTreeCreator extends HBBusinessLayer {
 	private HBViewPointHandler pointViewPointHandler;
 	HBProjectOpenData pointOpenProject;
 	String dBbuild = HGlobal.databaseVersion;
-	String ownerRecordField;
-	String bestNameField;
 	String noRecordedFather = "No recorded father";
 	String noRecordedMother = "No recorded mother";
 	String[] noParentMessages;
 	boolean updateMonitor = true;
-
 	GenealogyTree tree;
 	private int personID;
 	private int dataBaseIndex;
@@ -151,26 +149,14 @@ public class HBTreeCreator extends HBBusinessLayer {
 
     	pointViewPointHandler = pointOpenProject.getViewPointHandler();
 
-    	// Set name display index in this instance of BusinessLayer
+    // Set name display index in this instance of BusinessLayer
     	setNameDisplayIndex(nameDisplayIndex);
 
     	dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 
         personTable = pointOpenProject.getT401Persons();
-        nameTable = pointOpenProject.getT402Names();
-		selectDataBase(dBbuild);
-
-    }	// End HBTree constructor
-
-    private void selectDataBase(String dBversion) {
-    	if (dBversion.startsWith("v22c")) {
-    		ownerRecordField = "OWNER_RPID";
-    		bestNameField = "BEST_NAME_RPID";
-    	} else {
-    		if (HGlobal.writeLogs)
-				HB0711Logging.logWrite("ERROR in HBTreeCreator DB build not found " + dBversion);
-		}
-    }
+        nameTable = pointOpenProject.getT402Names();   
+	}	// End HBTree constructor
 
 /**
  * initateTree()

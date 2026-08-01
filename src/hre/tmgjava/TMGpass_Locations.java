@@ -21,6 +21,7 @@ package hre.tmgjava;
  * v0.05.0033 2026-02-24 - line 207  modified to if (HGlobal.writeLogs) ... (N. Tolleshaug)
  * 			  2026-02-26 - Modified Writelog messag to "WARNING" (N. Tolleshaug)
  * 			  2026-03-28 - Modified Writelog WARNING to MESSAGE: (N. Tolleshaug)
+ * v0.05.0034 2026-06-30 - Remove T553 LANG_CODE reference (D Ferguson)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
@@ -206,10 +207,10 @@ class TMGpass_Locations {
 		if (placeNr > 1) {
 			vectorSize = tmgPPVtable.getVectorSize(placeNr);
 			if (vectorSize < 1) {
-				System.out.println(" MESSAGE: TMGpass_Location - Location data missing for P.dbf table row: " 
+				System.out.println(" MESSAGE: TMGpass_Location - Location data missing for P.dbf table row: "
 							+ placeNr + "/" + vectorSize);
 				if (HGlobal.writeLogs)
-					HB0711Logging.logWrite("MESSAGE: TMGpass_Location - Location data missing for location in P.dbf table row: " 
+					HB0711Logging.logWrite("MESSAGE: TMGpass_Location - Location data missing for location in P.dbf table row: "
 							+ placeNr);
 			}
 			printReport =  "" + (indexP_PID+1) + " Pers: " + personNr + " - " + eventName + " at ";
@@ -333,7 +334,6 @@ class TMGpass_Locations {
 			hreTable.updateLong("END_HDATE_RPID", HREhdate.addToT170_22a_HDATES(tableT170, tmgDate));
 
 			hreTable.updateLong("THEME_RPID", null_RPID);
-			hreTable.updateLong("MEMO_RPID", null_RPID);
 
 		// Processing memo to T167_MEMO_SET
 			String comment = HREmemo.returnStringContent(tmgPtable.getValueString(indexP_PID,"COMMENT"));
@@ -365,9 +365,8 @@ class TMGpass_Locations {
 3 - IS_SYSTEM Type: BOOLEAN  Presision: 1
 4 - OWNER_RPID Type: BIGINT  Presision: 19
 5 - LIST_ENCODING_TYPE Type: BIGINT  Presision: 19
-6 - LANG_CODE Type: VARCHAR  Presision: 5
-7 - SHORT_NAME_DATA Type: VARCHAR  Presision: 300
-8 - LONG_NAME_DATA Type: CLOB  Presision: 30000
+6 - SHORT_NAME_DATA Type: VARCHAR  Presision: 300
+7 - LONG_NAME_DATA Type: CLOB  Presision: 30000
  */
 	public void addToT553_LOCATION_NAME_ELEMENTS(long ownerPID,
 												 long primaryPID,
@@ -384,7 +383,6 @@ class TMGpass_Locations {
 			hreTable.updateLong("PID", primaryPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateLong("OWNER_RPID", ownerPID);
-			hreTable.updateString("LANG_CODE", "");
 			hreTable.updateString("ELEMNT_CODE", pointSupportPass.getPlaceStyleCodes(encodingType));
 			hreTable.updateString("NAME_DATA", nameElement);
 

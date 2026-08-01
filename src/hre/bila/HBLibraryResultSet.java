@@ -48,6 +48,12 @@ package hre.bila;
  * 			  2025-09-25 - Apply fix for Issue 32.08 (D Ferguson)
  * v0.05.0033 2026-03-08 - Added HashMap<String,String> selectPersonNameElements (N. Tolleshaug)
  * 			  2026-06-12 - Added method for updating T168_SENTENCE_SET (N. Tolleshaug)
+ * v0.05.0034 2026-03-08 - Removed eventTableRS.getLong("PRIM_ASSOC_SENTENCE_RPID") (N. Tolleshaug)
+ * 			  2026-07-11 - Adding handling og defaukt and local sentences (N. Tolleshaug)
+ * 			  2026-07-15 - Adding selection local, global and English(US) sentences (N. Tolleshaug)
+ * 			  2026-07-16 - Improved  English(US) sentences handling (N. Tolleshaug)
+ * 			  2026-07-17 - Improved message and eror handling (N. Tolleshaug)
+ * 			  
  * *****************************************************************************************
  * NOTE 01 - Update of table T104 - last PID for T131 is not implemented
  * NOTE 02 - Commit table update not implemented
@@ -63,14 +69,11 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.util.HashMap;
 import java.util.Vector;
-//import java.util.logging.Level;
-//import java.util.logging.Logger;
 
 import javax.swing.table.DefaultTableModel;
 
 import hre.dbla.HDException;
 import hre.gui.HGlobal;
-
 
 /**
  * HBLibraryResultSet contains ResultSet processing methods
@@ -709,31 +712,28 @@ public class HBLibraryResultSet {
 		HREmemo pointHREmemo = pointOpenProject.getHREmemo();;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();;
 		String selectString;
-		long primAssocSentenceRPID = null_RPID, primarySentencePID = null_RPID;
-		ResultSet eventTableRS, sentenceTableRS = null;
-		selectString = pointBusinessLayer.setSelectSQL("*", pointBusinessLayer.eventTable, "PID = " + eventTableRPID);
-		eventTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+		long roleSentencePID = null_RPID;
+		ResultSet sentenceTableRS = null;
+		selectString = pointBusinessLayer.
+				setSelectSQL("*", pointBusinessLayer.sentenceSet,
+							"EVNT_TYPE = " + eventType
+							+ " AND EVNT_ROLE_NUM = " + roleCode
+							+ " AND SENT_OWNER_RPID = " + eventTableRPID
+							+ " AND LANG_CODE = '" + lang_code + "';");
+	
+		sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+		
 		try {
-			eventTableRS.first();
-			primAssocSentenceRPID = eventTableRS.getLong("PRIM_ASSOC_SENTENCE_RPID");
-			selectString = pointBusinessLayer.
-					setSelectSQL("*", pointBusinessLayer.sentenceSet,
-								"EVNT_TYPE = " + eventType
-								+ " AND EVNT_ROLE_NUM = " + roleCode);
-			sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-			//if (sentenceTableRS.getRow() == 0 || primAssocSentenceRPID == null_RPID) {
-			if (primAssocSentenceRPID == null_RPID) {
-			// Find next PID for T168_SENTENCE_SET and crete new sentence
-				primarySentencePID = pointBusinessLayer.lastRowPID(pointBusinessLayer.sentenceSet, dataBaseIndex) + 1;
-				addToT168_SENTENCE_SET(sentenceTableRS, pointHREmemo, primarySentencePID, lang_code, eventType, roleCode, HREsentence);
-				eventTableRS.updateLong("PRIM_ASSOC_SENTENCE_RPID", primarySentencePID);
-				eventTableRS.updateRow();
+			sentenceTableRS.last();
+			if (sentenceTableRS.getRow() > 1) 
+				System.out.println(" storeLocalSentence - Too many found entenses #" + sentenceTableRS.getRow());
+			if (pointBusinessLayer.isResultSetEmpty(sentenceTableRS)) {
+		// Find next PID for T168_SENTENCE_SET and crete new sentence
+				roleSentencePID = pointBusinessLayer.lastRowPID(pointBusinessLayer.sentenceSet, dataBaseIndex) + 1;
+				addToT168_SENTENCE_SET(sentenceTableRS, pointHREmemo, roleSentencePID, lang_code, 
+											eventType, roleCode, eventTableRPID, HREsentence);
 			} else {
-				// Update sentence table T168_SENTENCE_SET 
-				selectString = pointBusinessLayer.
-						setSelectSQL("*", pointBusinessLayer.sentenceSet, "PID = " + primAssocSentenceRPID);
-				sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-				if (pointBusinessLayer.isResultSetEmpty(sentenceTableRS)) return 1;
+		// Update current local sentence
 				sentenceTableRS.first();
 				if (HREsentence.length() <= 500) {
 					sentenceTableRS.updateBoolean("IS_LONG", false);
@@ -743,16 +743,14 @@ public class HBLibraryResultSet {
 					sentenceTableRS.updateClob("LONG_SENT", pointHREmemo.createNClob(HREsentence));
 				}
 				sentenceTableRS.updateRow();
-				eventTableRS.close();
 				sentenceTableRS.close();
-				return 0;
 			}
+			return 0;
 		} catch (SQLException sqle) {
 			System.out.println(" HBLibraryResultSet - storeLocalSentence error: " + sqle.getMessage());
 			sqle.printStackTrace();
 			throw new HBException("HBLibraryResultSet - storeLocalSentence error: " + sqle.getMessage());
 		}
-		return 0;
 	}
 	
 /**
@@ -765,40 +763,44 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-	public int storeDefaultSentence(String HREsentence, int eventType, 
+	public int storeGlobalSentence(long sentenceTablePID, String HREsentence, int eventType, 
 			int roleCode, String lang_code, HBProjectOpenData pointOpenProject) throws HBException {
 		HREmemo pointHREmemo = pointOpenProject.getHREmemo();;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();;
 		String selectString;
-		long standardSentencePID;
-		ResultSet sentenceTableRS = null;
-		//System.out.println(" storeDefaultSentence: " + HREsentence + " Role: " + roleCode);
+		long newSentencePID;
+		ResultSet sentenceTableRS = null, eventRolesRS;
+		//System.out.println(" storeGlobalSentence: " + HREsentence + " Role: " + roleCode + " PID: " + sentenceTablePID);
 		HREsentence = HREsentence.replace("(en-US)","");
 		try {
 			selectString = pointBusinessLayer.
 					setSelectSQL("*", pointBusinessLayer.sentenceSet,
-								"EVNT_TYPE = " + eventType
-								+ " AND EVNT_ROLE_NUM = " + roleCode);
+								"PID = " + sentenceTablePID);				
 			sentenceTableRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 			if (pointBusinessLayer.isResultSetEmpty(sentenceTableRS)) {
-				System.out.println(" sentenceTableRS empty ");
-				return 1;
-			}
-			sentenceTableRS.beforeFirst();
-			while (sentenceTableRS.next()) {
-				//System.out.println(" Sentences: " + sentenceTableRS.getString("LANG_CODE"));
-				if (sentenceTableRS.getString("LANG_CODE").equals(lang_code)) break;
-			}
-			//System.out.println(" Selected - Sentences: " + sentenceTableRS.getString("LANG_CODE"));
-			if (sentenceTableRS.isAfterLast()) {
-			// Create new sentence T168_SENTENCE_SET for new language
-				standardSentencePID = pointBusinessLayer.lastRowPID(pointBusinessLayer.sentenceSet, 
+		// Create new sentence T168_SENTENCE_SET for new language and role
+				newSentencePID = pointBusinessLayer.lastRowPID(pointBusinessLayer.sentenceSet, 
 										dataBaseIndex) + 1;
-				//System.out.println(" Create- Sentences PID: " + standardSentencePID + "/" + HREsentence);
-				addToT168_SENTENCE_SET(sentenceTableRS, pointHREmemo, standardSentencePID, 
-									lang_code, eventType, roleCode, HREsentence);
+				//System.out.println(" Create- Sentences PID: " + newSentencePID + "/" + HREsentence);
+				addToT168_SENTENCE_SET(sentenceTableRS, pointHREmemo, newSentencePID, 
+									lang_code, eventType, roleCode, null_RPID, HREsentence);
+				eventRolesRS = getRoleListRS(eventType, "", lang_code, dataBaseIndex);
+				eventRolesRS.beforeFirst();
+				while (eventRolesRS.next()) {
+					if (eventRolesRS.getInt("EVNT_ROLE_NUM") == roleCode 
+						&& lang_code.equals(eventRolesRS.getString("LANG_CODE"))) {
+							//System.out.println(" Found Role table PID: " + eventRolesRS.getLong("PID"));
+							if (eventRolesRS.getLong("ROLE_SENTENCE_RPID") == null_RPID) {
+								eventRolesRS.updateLong("ROLE_SENTENCE_RPID", newSentencePID);
+								eventRolesRS.updateRow();
+							} else System.out.println(" ROLE_SENTENCE_RPID for: " 
+												+ eventRolesRS.getLong("PID") + " not null" );
+						}
+				}
 			} else {
-				//System.out.println(" Update- Sentences PID: " + sentenceTableRS.getLong("PID") + "/" + HREsentence);
+				sentenceTableRS.first();
+				//System.out.println(" Update Global Sentences PID: " + sentenceTableRS.getLong("PID") + "/" + HREsentence);
+				
 			// if lang sentence exist Update sentence table T168_SENTENCE_SET 
 				if (HREsentence.length() <= 500) {
 					sentenceTableRS.updateBoolean("IS_LONG", false);
@@ -808,9 +810,9 @@ public class HBLibraryResultSet {
 					sentenceTableRS.updateClob("LONG_SENT", pointHREmemo.createNClob(HREsentence));
 				}
 				sentenceTableRS.updateRow();
-				sentenceTableRS.close();
+				sentenceTableRS.close();	
 				return 0;
-			}
+			}			
 		} catch (SQLException sqle) {
 			System.out.println(" HBLibraryResultSet - storeDefaultSentence error: " + sqle.getMessage());
 			sqle.printStackTrace();
@@ -829,7 +831,7 @@ public class HBLibraryResultSet {
  * @throws HBException
  */
 	protected void addToT168_SENTENCE_SET(ResultSet hreTable, HREmemo pointHREmemo, long primaryPID, String lang_code, int etypeNumber,
-										int roleNumber, String HREsentence) throws HBException {											
+										int roleNumber, long eventTablePID, String HREsentence) throws HBException {											
 			try {
 			// moves cursor to the insert row
 				hreTable.moveToInsertRow();
@@ -846,6 +848,7 @@ public class HBLibraryResultSet {
 					hreTable.updateBoolean("IS_LONG", true);
 					hreTable.updateClob("LONG_SENT", pointHREmemo.createNClob(HREsentence));
 				}		
+				hreTable.updateLong("SENT_OWNER_RPID", eventTablePID);
 			//Insert row
 				hreTable.insertRow();	
 			} catch (SQLException sqle) {
@@ -866,42 +869,67 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-	public long selectSentenceSetPID(int eventType, int roleCode, String lang_code, int dataBaseIndex) throws HBException {
+	public long selectSentenceSetPID(long sentenceOwner, int eventType, int roleCode, String lang_code, 
+										int dataBaseIndex) throws HBException {
 		String selectString;
 		ResultSet sentenceSetRS;
 		try {
 			selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.sentenceSet,
 							"EVNT_TYPE = " + eventType
-							+ " AND EVNT_ROLE_NUM = " + roleCode);
+							+ " AND EVNT_ROLE_NUM = " + roleCode
+							+ " AND SENT_OWNER_RPID = " + sentenceOwner
+							+ " AND LANG_CODE = '" + lang_code + "';");
 			sentenceSetRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 			if (pointBusinessLayer.isResultSetEmpty(sentenceSetRS)) {
-				System.out.println(" Empty standard senetenceRS");
-				return null_RPID;
+				throw new HBException("WARNING No local sentense found!");
+			} else  {
+				sentenceSetRS.first();
+				if (HGlobal.DEBUG) 
+					System.out.println(" Local sentences PID: " + sentenceSetRS.getLong("PID")
+													+ "/" + sentenceSetRS.getString("LANG_CODE"));
+				return sentenceSetRS.getLong("PID");
 			}
+		} catch (SQLException sqle) {
+			System.out.println(" HBLibraryResultSet - selectLocalSentenceSetPID: " + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException(" HBLibraryResultSet - selectLocalSentenceSetPID error: " + sqle.getMessage());
+		}
+	}
+	
+/**
+ * public long getFallBackUSsentense(int eventType, int roleCode, int dataBaseIndex) throws HBException
+ * @param eventType
+ * @param roleCode
+ * @param dataBaseIndex
+ * @return
+ * @throws HBException
+ */
+	public long selectFallBackUSsentSetPID(int eventType, int roleCode, int dataBaseIndex) throws HBException {
+		String selectString;
+		ResultSet sentenceSetRS;	
+		selectString = pointBusinessLayer.
+				setSelectSQL("*", pointBusinessLayer.sentenceSet,
+					"EVNT_TYPE = " + eventType
+					+ " AND EVNT_ROLE_NUM = " + roleCode
+					+ " AND SENT_OWNER_RPID = " + null_RPID);
+		sentenceSetRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+		try {
 			sentenceSetRS.beforeFirst();
 			while (sentenceSetRS.next()) {
-				if (sentenceSetRS.getString("LANG_CODE").equals(lang_code)) break;
+				if (HGlobal.DEBUG) 
+					System.out.println(" Enlish(US): sentences PID: " + sentenceSetRS.getLong("PID")
+													+ "/" + sentenceSetRS.getString("LANG_CODE"));
+				if (sentenceSetRS.getString("LANG_CODE").equals("en-US")) break;
 			}
-			
-		// if language not found
 			if (sentenceSetRS.isAfterLast()) {
-				sentenceSetRS.beforeFirst();
-				while (sentenceSetRS.next()) {
-					if (sentenceSetRS.getString("LANG_CODE").equals("en-US")) break;
-				}
-			} else return sentenceSetRS.getLong("PID");
-
-			if (sentenceSetRS.isAfterLast()) {
-				System.out.println(" Empty fallback senetenceRS");
-				return null_RPID;
+				throw new HBException("WARNING - No en-US sentense found!");
 			} else  return sentenceSetRS.getLong("PID");
-			
 		} catch (SQLException sqle) {
-			System.out.println(" HBLibraryResultSet - electSentenceSetPID: " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HBException(" HBLibraryResultSet - electSentenceSetPID: " + sqle.getMessage());
+			throw new HBException(" HBLibraryResultSet - selectFallBackUSsentense error: " + sqle.getMessage());
 		}
+		
 	}
 
 /**
@@ -912,26 +940,27 @@ public class HBLibraryResultSet {
  * @throws HBException
  */
 	public String getSentenceSetString(long sentenseSetTablePID, int dataBaseIndex) throws HBException {
-		String selectString , sentence = "";
-		ResultSet sentenceSet;
-		String langPrefix = "";
+		String selectString , sentence = "NOSENTENCE";
+		ResultSet sentenceSetRS;
+		
 		try {
 			selectString = pointBusinessLayer.
 				setSelectSQL("*", pointBusinessLayer.sentenceSet,
 							"PID = " + sentenseSetTablePID);
-			sentenceSet = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
-			sentenceSet.first();
-			if (pointBusinessLayer.isResultSetEmpty(sentenceSet)) return "NOSENTENCE";
-			if (!sentenceSet.getString("LANG_CODE").equals(HGlobal.dataLanguage)) langPrefix = "(en-US)";
-			if (sentenceSet.getBoolean("IS_LONG"))  {
-				Clob clobMemo = sentenceSet.getClob("LONG_SENT");
+			sentenceSetRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
+			sentenceSetRS.first();
+			if (pointBusinessLayer.isResultSetEmpty(sentenceSetRS)) return "NOSENTENCE";			
+			if (sentenceSetRS.getBoolean("IS_LONG"))  {
+				Clob clobMemo = sentenceSetRS.getClob("LONG_SENT");
 		         Reader readClob = clobMemo.getCharacterStream();
 		         StringBuffer buffer = new StringBuffer();
 		         int ch;
 		         while ((ch = readClob.read())!=-1) buffer.append("" + (char)ch);
 		         sentence = buffer.toString();
-			} else sentence = sentenceSet.getString("SHORT_SENT");
-			return langPrefix + sentence;
+		         //System.out.println(" LONG sentence" + sentence);
+			} else sentence = sentenceSetRS.getString("SHORT_SENT");
+			if (sentence.length() < 5) return "NOSENTENCE";
+			return sentence;
 		} catch (SQLException | IOException sqle) {
 			System.out.println(" HBLibraryResultSet - selectSentenceString: " + sqle.getMessage());
 			sqle.printStackTrace();
@@ -1777,18 +1806,20 @@ public class HBLibraryResultSet {
  * @return
  * @throws HBException
  */
-	public ResultSet getRoleNameList(int eventNumber, String selectRoles, int dataBaseIndex) throws HBException {
+	public ResultSet getRoleListRS(int eventNumber, String selectRoles, int dataBaseIndex) throws HBException {
 		String langCode = HGlobal.dataLanguage;
-		return getRoleNameList(eventNumber, selectRoles, langCode, dataBaseIndex);
+		return getRoleListRS(eventNumber, selectRoles, langCode, dataBaseIndex);
 
 	}
 
-	public ResultSet getRoleNameList(int eventNumber, String selectRoles, String langCode, int dataBaseIndex) throws HBException {
+	public ResultSet getRoleListRS(int eventNumber, String selectRoles, String langCode, int dataBaseIndex) throws HBException {
 		ResultSet roleNameList;
 		//String langCode = HGlobal.dataLanguage;
 		String selectString = 	pointBusinessLayer.setSelectSQL("*",
-				pointBusinessLayer.eventRoleTable,
-				"EVNT_TYPE = " + eventNumber + " AND LANG_CODE = '" + langCode + "'" + selectRoles);
+						pointBusinessLayer.eventRoleTable,
+						"EVNT_TYPE = " + eventNumber 
+						+ " AND LANG_CODE = '" + langCode + "'" + selectRoles); 
+						
 		roleNameList = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 		return roleNameList;
 	}

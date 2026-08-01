@@ -22,10 +22,10 @@ package hre.gui;
  * 			  2024-11-15 Added boolean married name prompt option (D Ferguson)
  * v0.04.0032 2024-12-22 Updated for Build 32 and database v22c (N. Tolleshaug)
  * 			  2025-05-12 Modified Object[] userCred = {"","","","", false} (D Ferguson)
- * v0.05.0033 2026-02-21 Added new field focusPerson (D Ferguson)
- * 			  2026-02-23 Set pluginEnabled=false as default (D Ferguson)
+ * v0.05.0033 2026-02-23 Set pluginEnabled=false as default (D Ferguson)
  * 			  2026-04-07 Add default Media filepath (D Ferguson)
- * 			  2026-04-07 Removed public static String focusPerson (N. Tolleshaug)
+ * v0.05.0034 2026-06-29 Setup for Build 34, Seed v23 (D Ferguson)
+ * 			  2026-07-19 Added databaseBuild for version checking (N Tolleshaug)
  ************************************************************************/
 
 import java.awt.Color;
@@ -38,13 +38,14 @@ import hre.bila.HBProjectOpenData;
  * Common data for HRE (hre.bila, hre.gui and hre.dbla)
  * @author D Ferguson
  * @since 2020-01-23 - HRE Build 18
- * @version Build 0.05.3326.0621
+ * @version Build 0.05.3426.0801
  */
 public class HGlobal {
-	public static String buildNo = "0.05.3326.0621";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "21 June 2026";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.05.3426.0801";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "1 Aug 2026";		// and release date to match //$NON-NLS-1$
 
-	public static String databaseVersion = "v22c";		    // Set Database DDL version //$NON-NLS-1$
+	public static String databaseVersion = "V23";		    // Set Database DDL version //$NON-NLS-1$
+	public static String databaseBuild = "DDL V23 2026-08-01";	// Set Database DDL build //$NON-NLS-1$
 
 	public static boolean DEBUG = false;				    // DEBUG variable - set in App settings, not saved
 	public static boolean TIME = false;				        // TIME variable - set in App settings; enables timing msgs to console
@@ -64,7 +65,6 @@ public class HGlobal {
 	public static String thisComputer;						// computer HRE is running on
 	public static String defDatabaseEngine = "H2";	        // standard database engine //$NON-NLS-1$
 	public static String userID = "";						// UserID as known by the OS, copied to userCred[0] //$NON-NLS-1$
-	//public static String focusPerson = "Focus Person";		// default focus person name
 
 	public static String passWord = "";						// Store used password remote login //$NON-NLS-1$
 	public static String remoteID = "";						// Store used remote user login  //$NON-NLS-1$
@@ -83,9 +83,9 @@ public class HGlobal {
 	public static String keyStorePathUX = "/opt/hre/lib/app/KeyStore/";					 	// Linux location //$NON-NLS-1$
 
 	// location of seed database (Production)
-	public static String seedProjectFile = "C:\\Program Files\\HRE\\app\\HRE Seed database.mv.db";			// default Windows location //$NON-NLS-1$
-	public static String seedProjectMac = "/Applications/HRE.app/Contents/app/HRE Seed database.mv.db";		// MacOS location //$NON-NLS-1$
-	public static String seedProjectUX = "/opt/hre/lib/app/HRE Seed database.mv.db";						// Linux location //$NON-NLS-1$
+	public static String seedProjectFile = "C:\\Program Files\\HRE\\app\\HRE Seed database V23.mv.db";			// default Windows location //$NON-NLS-1$
+	public static String seedProjectMac = "/Applications/HRE.app/Contents/app/HRE Seed database V23.mv.db";		// MacOS location //$NON-NLS-1$
+	public static String seedProjectUX = "/opt/hre/lib/app/HRE Seed database V23.mv.db";						// Linux location //$NON-NLS-1$
 
 	// location of Sample database (Production)
 	public static String sampleProjectFile = "C:\\Program Files\\HRE\\app\\HRE Sample database.mv.db";		// default Windows location //$NON-NLS-1$

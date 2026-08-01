@@ -10,6 +10,7 @@ package hre.gui;
  * 			  2026-01-04 Log debug msgs (D Ferguson)
  * v0.05.0033 2026-02-28 Added NLS messages for HBTreeCreator (N. Tolleshaug)
  * 			  2026-03-01 Implemented full NLS and changed routine name (D Ferguson)
+ * v0.05.0034 2026-07-16 33.18 Add table count data to Project Summary; NLS update (D Ferguson)
  ****************************************************************************************/
 
 import java.awt.Component;
@@ -40,7 +41,7 @@ import hre.nls.HGlobalMsgs;
  * Common methods for HRE (hre.bila and hre.gui)
  * @author Don Ferguson
  * @since 2023-05-02
- * @version build 0.04.3226.0104
+ * @version build 0.05.0034
  */
 public class HGlobalCode {
 
@@ -178,17 +179,28 @@ public class HGlobalCode {
  * @return String[][] summaryData
  */
 	public static String[][] getSummaryData(String[] project, String databaseVersion) {
-		String [][] summary = new String[][] {
-			{HGlobalMsgs.Text_68, " " + currentTime("yyyy-MM-dd / HH:mm:ss")},	// Time Now + time //$NON-NLS-1$ //$NON-NLS-2$
-			{HGlobalMsgs.Text_71, " " + project[0]},							// Project Name //$NON-NLS-1$
-			{HGlobalMsgs.Text_73, " " + project[1]},							// File Name //$NON-NLS-1$
-			{HGlobalMsgs.Text_75, " " + project[2]},							// Folder Name //$NON-NLS-1$
-			{HGlobalMsgs.Text_77, " " + project[3]},							// Server Name //$NON-NLS-1$
-			{HGlobalMsgs.Text_79, " " + project[4]},							// Last Closed //$NON-NLS-1$
-			{HGlobalMsgs.Text_81, " " + project[6]},							// Last Backup //$NON-NLS-1$
-			{HGlobalMsgs.Text_83, " " + project[5]},							// Database Type //$NON-NLS-1$
-			{HGlobalMsgs.Text_85, " " + databaseVersion}						// Database Ver: //$NON-NLS-1$
-		};
+		String[][] summary = new String[19][2];
+		// Load rows 0-8 from open project data
+		summary[0] = new String[]{HGlobalMsgs.Text_68, " " + currentTime("yyyy-MM-dd / HH:mm:ss")};	// Time Now + time //$NON-NLS-1$ //$NON-NLS-2$
+		summary[1] = new String[]{HGlobalMsgs.Text_71, " " + project[0]};							// Project Name //$NON-NLS-1$
+		summary[2] = new String[]{HGlobalMsgs.Text_73, " " + project[1]};							// File Name //$NON-NLS-1$
+		summary[3] = new String[]{HGlobalMsgs.Text_75, " " + project[2]};							// Folder Name //$NON-NLS-1$
+		summary[4] = new String[]{HGlobalMsgs.Text_77, " " + project[3]};							// Server Name //$NON-NLS-1$
+		summary[5] = new String[]{HGlobalMsgs.Text_79, " " + project[4]};							// Last Closed //$NON-NLS-1$
+		summary[6] = new String[]{HGlobalMsgs.Text_81, " " + project[6]};							// Last Backup //$NON-NLS-1$
+		summary[7] = new String[]{HGlobalMsgs.Text_83, " " + project[5]};							// Database Type //$NON-NLS-1$
+		summary[8] = new String[]{HGlobalMsgs.Text_85, " " + databaseVersion};						// Database Version //$NON-NLS-1$
+		// Setup remaining data rows
+		summary[9] = new String[]{HGlobalMsgs.Text_110, "--"};			// T401 count - Number of People
+		summary[10] = new String[]{HGlobalMsgs.Text_111, "--"};			// T402 count - Number of Names
+		summary[11] = new String[]{HGlobalMsgs.Text_112, "--"};			// T450 count - Number of Events
+		summary[12] = new String[]{HGlobalMsgs.Text_113, "--"};			// T551 count - Number of Locations
+		summary[13] = new String[]{HGlobalMsgs.Text_114, "--"};			// T736 count - Number of Sources
+		summary[14] = new String[]{HGlobalMsgs.Text_115, "--"};			// T735 count - Number of Citations
+		summary[15] = new String[]{HGlobalMsgs.Text_116, "--"};			// T738 count - Source Elements
+		summary[16] = new String[]{HGlobalMsgs.Text_117, "--"};			// T460 count - Number of Event Types
+		summary[17] = new String[]{HGlobalMsgs.Text_118, "--"};			// T739 count - Number of Repositories
+		summary[18] = new String[]{HGlobalMsgs.Text_119, "--"};			// T676 count - Number of Media Files
 		return summary;
 	}
 

@@ -52,7 +52,8 @@ package hre.bila;
  * v0.05.0033 2026-04-07 Added and updated FOCUS_PER_PID for T126  (N. Tolleshaug)
  * 			  2026-04-25 ALTER TABLE T460_EVNT_DEFN ALTER COLUMN EVNT_HINT VARCHAR(5000) (N. Tolleshaug)
  * 			  2026-05-15 T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID (N. Tolleshaug)
- * 
+ * v0.05.0034 2026-06-30 Remove the Table alterations, now in Seed V23 (D Ferguson)
+ * 			  2026-07-14 Add getProjectTableCounts to collect table sizes for Project Summary (D Ferguson)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -268,6 +269,29 @@ public class HBProjectHandler extends HBBusinessLayer {
 		return HGlobalCode.getSummaryData(project);
 
 	}
+
+/**
+ * Collects size of existing tables in project
+ * @param dbIndex
+ * @return int[] - the table sizes
+ */
+	public int[] getProjectTableCounts(int dbIndex) throws HBException {
+		String lang = "'"+HGlobal.dataLanguage+"'";
+		int[] rowCounts = new int[10];
+		rowCounts[0] = (int) numberOfTableRows("T401_PERS", dbIndex);		// people
+		rowCounts[1] = (int) numberOfTableRows("T402_PERS_NAME", dbIndex);	// names
+		rowCounts[2] = (int) numberOfTableRows("T450_EVNT", dbIndex);		// events
+		rowCounts[3] = (int) numberOfTableRows("T551_LOCN", dbIndex);		// locations
+		rowCounts[4] = (int) numberOfTableRows("T736_SORC", dbIndex);		// sources
+		rowCounts[5] = (int) numberOfTableRows("T735_CITN", dbIndex);		// citations
+		rowCounts[6] = (int) numberOfTableRows("T738_SORC_ELMNT WHERE SORC_ELMNT_LANG="+lang, dbIndex);	// source elements
+		rowCounts[7] = (int) numberOfTableRows("T460_EVNT_DEFN WHERE LANG_CODE="+lang, dbIndex);		// event types
+		rowCounts[8] = (int) numberOfTableRows("T739_REPO", dbIndex);		// repositories
+		rowCounts[9] = (int) numberOfTableRows("T676_DIGT", dbIndex);		// exhibits
+		return rowCounts;
+
+	}
+
 /**
  * Add project to project list
  * @param projectData String[] with project to be added
@@ -444,7 +468,7 @@ public class HBProjectHandler extends HBBusinessLayer {
 					}
 			// Open project
 					HBProjectOpenData openProject = new HBProjectOpenData(this);
-					
+
 			// Set up all project manager for new project and initiate project
 					openProject.openProject(remote, proIndex, loginData);
 
@@ -479,14 +503,20 @@ public class HBProjectHandler extends HBBusinessLayer {
 					}
 					return 0;
 
-		} catch(HBException | SQLException hbe) {
-			if (HGlobal.DEBUG) {
+		} catch(HBException hbe) {
+			if (HGlobal.DEBUG) 
 				System.out.println(" HBProjectHandler - openProjectLocal/Remote - Open project error: \n"
-								+ hbe.getMessage());
-			}
+															+ hbe.getMessage());	
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("HBProjectHandler - Error in openProjecLocal/Remote");
-				HB0711Logging.printStackTraceToFile(hbe);
+				HB0711Logging.logWrite("HBProjectHandler - HBE Error in openProjecLocal/Remote\n"
+						+ hbe.getMessage());
+			}
+			return 1;
+		} catch(SQLException sqle) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("HBProjectHandler - SQL error in openProjecLocal/Remote\n"
+						+ sqle.getMessage());
+				HB0711Logging.printStackTraceToFile(sqle);
 			}
 			return 1;
 		}
@@ -502,22 +532,12 @@ public class HBProjectHandler extends HBBusinessLayer {
         HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 
         int databaseIndex = pointOpenProject.getOpenDatabaseIndex();
-        
-    // Add FOCUS_PER_PID to T126   
-        alterColumnInTable("T126_PROJECTS","FOCUS_PER_PID","BIGINT", databaseIndex);
-        updateTableInBase("T126_PROJECTS", "UPDATE", "SET FOCUS_PER_PID = " + null_RPID + " WHERE PID = 1000000000000001", databaseIndex);
 
 	// Set IS_IMPORTED = FALSE in T126_PROJECTS
 		updateTableData("UPDATE T126_PROJECTS SET IS_IMPORTED = FALSE WHERE PROJECT_CODE = 1", databaseIndex);
 
 	// Set boolean IS_OWNER in T131
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
-		
-	// Update table T402_PERS_NAME
-		updateTableInBase("T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID" , databaseIndex);
-		
-	// Update table T460_EVNT_DEFN
-		updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE", "ALTER COLUMN EVNT_HINT VARCHAR(5000)" , databaseIndex);
 
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
 

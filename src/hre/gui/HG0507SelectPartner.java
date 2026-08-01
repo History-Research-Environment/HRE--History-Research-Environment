@@ -13,6 +13,11 @@ package hre.gui;
  * v0.04.0032 2025-04-27 Add handling of citations (D Ferguson)
  * 			  2025-06-05 Address minor layout errors (D Ferguson)
  * 			  2026-01-06 Log all catch block and DEBUG msgs (D Ferguson)
+ * v0.05.0034 2026-07-23 Remove Sentence Editor button from screen for AddPartner (D Ferguson)
+ * 			  2026-07-24 Pass correct rolename to EditSentence (D Ferguson)
+ * 			  2026-07-25 Pass sexcodes to Sentence Editor (D Ferguson)
+ * 			  2026-07-27 Added code to to initiate data for sentence edit (N. Tolleshaug)
+ * 			  2026-07-29 Remove use of 'sentenceRole' variables (D Ferguson)
  *************************************************************************************/
 
 import java.awt.Point;
@@ -34,7 +39,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectPartner
  * @author N Tolleshaug
- * @version v0.04.0032
+ * @version v0.05.0034
  * @since 2024-04-05
  */
 
@@ -47,7 +52,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	boolean addRelation;
 	String[] partnerTypeList;
 	int [] partnerTypeNumbers;
-	Object[] partnerRelationData = null;
+	Object[] partnerRelationData;
 	final static int partnerEventGroup = -2; // Include both group 6 and 7
 
 	private ActionListener comboRole1Change = null;
@@ -84,23 +89,45 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		btn_SaveEvent.setEnabled(true);
 
 		pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-		// partnerRelationData[0] = personPID; [1] = eventype; [2] = prirole; [3] = secrole; [4] = priname; [5] = secname
+		
+/* partnerRelationData content
+  			      [0] = personPID; [1] = eventype; [2] = prirole; [3] = secrole;
+				  [4] = priname; [5] = secname, [6] = sex# code of person, [7] = sex# of partner
+				  [8] = partner event table PID
+*/		
 		partnerRelationData = pointPersonHandler.getPartnerTableData(selectedRowInTable);
-
-	// Update event memo
-	// Disable memoText listener first
-		memoText.getDocument().removeDocumentListener(memoTextChange);
-		if (partnerRelationData != null)
-			memoString = pointPersonHandler.readSelectGUIMemo((long)partnerRelationData[0],
-															pointPersonHandler.personPartnerTable);
-		//else memoString = HG05070Msgs.Text_155;		//  No memo found
-		else memoString = "";		//  No memo found
-		memoText.append(memoString);
-	// and enable listener again
-		memoText.getDocument().addDocumentListener(memoTextChange);
-
-	// Get the citation data for this partnerPID
+		
+	// Get the  data for this partnerPID
 		if (partnerRelationData != null) {
+			//System.out.println(" Select partner - event PID: " + partnerRelationData[8]);	
+		// Set event and role for sentence editor
+			eventTypeNumber = (int) partnerRelationData[1];
+			eventRoleNumber = (int) partnerRelationData[2];
+			eventTablePID = (long) partnerRelationData[8]; // Settig value in SelectPerson
+	
+		// Decode the sex number values to a String code (U/F/M)
+			int sexNum = (int) partnerRelationData[6];
+			if (sexNum == 2) sexCode = "M";			//$NON-NLS-1$
+			else if (sexNum == 1) sexCode = "F";	//$NON-NLS-1$
+			else sexCode = "U";						//$NON-NLS-1$
+			sexNum = (int) partnerRelationData[7];
+			if (sexNum == 2) sexCode2 = "M";			//$NON-NLS-1$
+			else if (sexNum == 1) sexCode2 = "F";	//$NON-NLS-1$
+			else sexCode2 = "U";						//$NON-NLS-1$
+	
+		// Update event memo
+		// Disable memoText listener first
+			memoText.getDocument().removeDocumentListener(memoTextChange);
+			if (partnerRelationData != null)
+				memoString = pointPersonHandler.readSelectGUIMemo((long)partnerRelationData[0],
+																pointPersonHandler.personPartnerTable);
+			else memoString = "";		//  No memo found	//$NON-NLS-1$
+			memoText.append(memoString);
+		// and enable listener again
+			memoText.getDocument().addDocumentListener(memoTextChange);
+	
+		// Get the citation data for this partnerPID
+		//if (partnerRelationData != null) {
 			personPID = (long)partnerRelationData[0];
 			objCiteData = pointCitationSourceHandler.getCitationSourceData(personPID, citeTableName); //for T404
 			// and sort it on GUI sequence
@@ -145,6 +172,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		btn_SaveEvent.setText(HG05070Msgs.Text_175);		// Add Partner & Event
 		control2Panel.add(btn_Save, "cell 0 0, align left, gapx 10, tag ok");	//$NON-NLS-1$
 		lbl_ParentName.setVisible(false);
+
+	// Remove the Sentence Editor button from screen for Add Partner case
+		if (addRelation) btn_Sentence.setVisible(false);
 
 /********************
  * Action Listeners
@@ -317,7 +347,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
  * 	public void setEditPartnerRole()
  */
 	public void setEditPartnerRole()	{
-    	int partnerRoleNumber = (int) partnerRelationData[1];
+    	int partnerEventNumber = (int) partnerRelationData[1];
     	int priPartnerRole = (int) partnerRelationData[2];
     	int secPartnerRole = (int) partnerRelationData[3];
     	int partnerRoleindex = 0;
@@ -331,7 +361,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
     // Set edit label for partner2
     	lbl_nRole2.setText("" + partnerRelationData[5]);	//$NON-NLS-1$
     	for (int i = 0; i < partnerTypeNumbers.length; i++) {
-    		if (partnerTypeNumbers[i] == partnerRoleNumber) {
+    		if (partnerTypeNumbers[i] == partnerEventNumber) {
 				partnerRoleindex = i;
 			}
     	}

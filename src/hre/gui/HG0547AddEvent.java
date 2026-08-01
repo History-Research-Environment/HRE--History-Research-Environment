@@ -4,9 +4,10 @@ package hre.gui;
  * v0.04.0032 2025-04-26 first draft (N.Tolleshaug)
  * 			  2025-04-27 Updated to create event record when initiated (N.Tolleshaug)
  *			  2025-05-08 Updated for save data for new event (N.Tolleshaug)
- *			  2025-05-09 - Reload associate and citation event add/edit(N.Tolleshaug)
- *			  2025-11-01 - Modified name for createLocationRecord (N.Tolleshaug)
+ *			  2025-05-09 Reload associate and citation event add/edit(N.Tolleshaug)
+ *			  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
  * 		  	  2026-01-20 Log all catch blocks and other msgs (D Ferguson)
+ * v0.05.0034 2026-07-29 Remove load of partnerNames - never used (D Ferguson)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -49,7 +50,6 @@ public class HG0547AddEvent extends HG0547EditEvent {
 
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;
-		partnerNames = pointWhereWhenHandler.getPartnerNames();
 
 		btn_Save.setText(HG0547Msgs.Text_27);	// Lagre
 		setTitle(HG0547Msgs.Text_45 + eventName + HG0547Msgs.Text_51 + eventPersonName);	//  Add  // Update Event for
@@ -88,7 +88,7 @@ public class HG0547AddEvent extends HG0547EditEvent {
 		tableModel.setRowCount(tableLocationData.length);
 
 	// Create new event
-		eventPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
+		eventTablePID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
 
 	// reset screen
 		pack();
@@ -126,18 +126,18 @@ public class HG0547AddEvent extends HG0547EditEvent {
 
 					//if update memo text
 						if (memoEdited)
-							pointWhereWhenHandler.createEventMemo(eventPID, memoText.getText());
+							pointWhereWhenHandler.createEventMemo(eventTablePID, memoText.getText());
 
 					// Create a new set of HDATE records
 						if (startDateOK)
-							pointWhereWhenHandler.createEventDates(false, eventPID, "START_HDATE_RPID", startHREDate);  //$NON-NLS-1$
+							pointWhereWhenHandler.createEventDates(false, eventTablePID, "START_HDATE_RPID", startHREDate);  //$NON-NLS-1$
 						if (sortDateOK)
-							pointWhereWhenHandler.createEventDates(false, eventPID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
+							pointWhereWhenHandler.createEventDates(false, eventTablePID, "SORT_HDATE_RPID", sortHREDate);		//$NON-NLS-1$
 
 					// Update name element table T403
 						if (locationChanged) {
 							if (locationNamePID == null_RPID)
-								locationNamePID = pointWhereWhenHandler.createLocationAndUpdateEvent(eventPID);
+								locationNamePID = pointWhereWhenHandler.createLocationAndUpdateEvent(eventTablePID);
 							pointWhereWhenHandler.updateLocationElementData(locationNamePID);
 						}
 
@@ -165,7 +165,7 @@ public class HG0547AddEvent extends HG0547EditEvent {
 						HB0711Logging.printStackTraceToFile(hbe);
 					}
 					try {
-						pointWhereWhenHandler.deleteSingleEvent(eventPID);
+						pointWhereWhenHandler.deleteSingleEvent(eventTablePID);
 					} catch (HBException e) {
 						if (HGlobal.writeLogs) {
 							HB0711Logging.logWrite("ERROR: in HG0547Add delete Event failed: " + e.getMessage()); //$NON-NLS-1$

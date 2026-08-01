@@ -37,6 +37,7 @@ package hre.gui;
  * 			  2026-02-16 Fix src # entry formatter to disallow commma (D Ferguson)
  * v0.05.0033 2026-05-25 Setup focus policy (D Ferguson)
  * 			  2026-06-07 Fix 33.64 Stop invalid source# msg on first use of Select Source (D Ferguson)
+ * v0.05.0034 2026-07-04 Change tableSourceElmntDataValues to Object for new T734 fields (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -97,7 +98,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Citation
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2025-01-17
  */
 
@@ -138,7 +139,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	Object[][] objSourceData;
 	Object[] objSourceEditData;
 	String[][] tableSrcElmntData;
-	String[][] tableSourceElmntDataValues;
+	Object[][] objectSourceElmntDataValues;
 	String[] citationParts = new String[3];
 	JTextField fidelityText;
 
@@ -152,7 +153,6 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 	FocusListener accFocus;
 	boolean citeDetailChanged, citeMemoChanged, refTextChanged, assessChanged = false;
 	boolean accuracyChanged, fidelityChanged;
-//	boolean sourceFound = false;
 
 	JTextArea citeMemoText, citeDetailText;
 	JTextField sourceTitleText, refText, acc1, acc2, accD, accP, accM;
@@ -675,7 +675,7 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 				// Get the Source Element values that belong to this Source.
 				// Table contains Element number, Element value
 					try {
-						tableSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
+						objectSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
 					} catch (HBException hbe) {
 						if (HGlobal.writeLogs) {
 							HB0711Logging.logWrite("ERROR: in HG0555 loading Source element data: " + hbe.getMessage()); //$NON-NLS-1$
@@ -689,15 +689,15 @@ public class HG0555EditCitation extends HG0450SuperDialog {
 					citationParts[1] = citationDetail;
 					citationParts[2] = citationMemo;
 					fullFootText.setText(pointReportHandler.parseFootnoteBiblio(templateFullFoot, sourcePID,
-													sourceMemo, tableSourceElmntDataValues, citationParts));
+													sourceMemo, objectSourceElmntDataValues, citationParts));
 					fullFootText.setCaretPosition(0);
 				// Parse the short Footnote text into its output area
 					shortFootText.setText(pointReportHandler.parseFootnoteBiblio(templateShortFoot, sourcePID,
-							sourceMemo, tableSourceElmntDataValues, citationParts));
+							sourceMemo, objectSourceElmntDataValues, citationParts));
 					shortFootText.setCaretPosition(0);
 				// Parse the Bibliography text into its output area
 					biblioText.setText(pointReportHandler.parseFootnoteBiblio(templateBibliography, sourcePID,
-							sourceMemo, tableSourceElmntDataValues, citationParts));
+							sourceMemo, objectSourceElmntDataValues, citationParts));
 					biblioText.setCaretPosition(0);
 				}
 				else {

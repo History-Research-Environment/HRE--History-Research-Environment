@@ -39,9 +39,8 @@ package hre.gui;
  * 			  2026-05-17 Update NLS for Sort date (D Ferguson)
  * 			  2026-05-17 Changed from end date to sort date variable name (N. Tolleshaug)
  * 			  2026-05-21 Revise focusPolicy (D Ferguson)
- ******************************************************************************
- * Notes on functions not yet enabled
- * NOTE04 Sentence edit function
+ * v0.05.0034 2026-07-24 SentenceEDitor button enabled for Edit name (D Ferguson)
+ * 			  2026-07-29 Move SentenceEditor screen so always visible (D Ferguson)
  *****************************************************************************/
 
 import java.awt.Color;
@@ -106,7 +105,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage PersonName by Style
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2022-09-23
  */
 
@@ -176,6 +175,10 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 	boolean setPrimary = false;
 	JButton btn_Save;
     static focusPolicy newPolicy;
+
+    public long getNameTablePID() {
+    	return personNameTablePID;
+    }
 
 /**
  * Create the dialog
@@ -536,9 +539,10 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		memoNameText.setCaretPosition(0);	// set scrollbar to top
 		contents.add(memoNameScroll, "cell 2 6 1 3,grow");		//$NON-NLS-1$
 
-	// Set Sentence Editor button
-		JButton btn_Sentence = new JButton(HG0509Msgs.Text_21);	// Sentence Editor
-		contents.add(btn_Sentence, "cell 1 8, alignx center");	//$NON-NLS-1$
+	// Set Sentence Editor button but NOT for AddPersonName case
+    	JButton btn_Sentence = new JButton(HG0509Msgs.Text_21);	// Sentence Editor
+	    if (!(this instanceof HG0509AddPersonName))
+	    	contents.add(btn_Sentence, "cell 1 8, alignx center");	//$NON-NLS-1$
 
 	// Setup control buttons
 		btn_Save = new JButton(HG0509Msgs.Text_9);			// Save
@@ -851,8 +855,16 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 		btn_Sentence.addActionListener (new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// NOTE04 need code here to allow sentence editing
-				JOptionPane.showMessageDialog(btn_Sentence, "This function is not yet implemented");	//$NON-NLS-1$
+
+				//int eventNameType = Integer.parseInt(nameData[3]);
+				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, pointManagePersonName,
+													nameEventType);
+				sentenceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+			// Anchor new screen at lbl_Citation JLabel
+				Point xyShow = lbl_Citation.getLocationOnScreen();
+				sentenceScreen.setLocation(xyShow.x, xyShow.y);
+				sentenceScreen.setVisible(true);
+
 			}
 		});
 

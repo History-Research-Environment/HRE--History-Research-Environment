@@ -25,9 +25,6 @@ public class HG0566Msgs extends NLS {
 
 	public static String Text_20;
 	public static String Text_21;
-	public static String Text_22;
-	public static String Text_23;
-	public static String Text_24;
 	public static String Text_25;
 	public static String Text_26;
 	public static String Text_27;
@@ -36,10 +33,6 @@ public class HG0566Msgs extends NLS {
 
 	public static String Text_30;
 	public static String Text_31;
-	public static String Text_32;
-	public static String Text_35;
-	public static String Text_36;
-	public static String Text_37;
 	public static String Text_38;
 	public static String Text_39;
 

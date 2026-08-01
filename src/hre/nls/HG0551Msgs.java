@@ -77,13 +77,12 @@ public class HG0551Msgs extends NLS {
 	public static String Text_71;
 	public static String Text_72;
 	public static String Text_73;
-
 	public static String Text_74;
 	public static String Text_75;
 	public static String Text_76;
-
 	public static String Text_77;
 	public static String Text_78;
+	public static String Text_79;
 
 	public static String Text_81;
 	public static String Text_82;

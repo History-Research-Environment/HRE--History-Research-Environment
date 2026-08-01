@@ -1,7 +1,7 @@
 package hre.gui;
-/**************************************************************************************
+/**************************************************************************************************
  * HG0566EditSource extends HG0450SuperDialog
- * ***********************************************************************************
+ * ************************************************************************************************
  * v0.04.0032 2025-02-07 Original draft (D Ferguson)
  *			  2025-02-10 Change textAreas to textPanes for Preview buttons (D Ferguson)
  * 			  2025-06-29 Correctly handle Reminder screen display/remove (D Ferguson)
@@ -45,7 +45,21 @@ package hre.gui;
  *			  2026-03-03 Line 1491 fixed error in  loadElementValueTable (N. Tolleshaug)
  * v0.05.0033 2026-05-19 Fix 33.17 save/display T734 data for unCited Elements (D Ferguson)
  * 			  2026-05-22 Add focus policy code (D Ferguson)
- ************************************************************************************/
+ * v0.05.0034 2026-06-30 Fix 33.29 remove sub-panel of author/editor/compiler (D Ferguson)
+ * 			  2026-07-04 and change tableSourceElmntDataValues to Object for new T734 fields (D Ferguson)
+ * 			  2026-07-06 and do import of PersonIDs from M.dbf grp6-10 fields (D Ferguson)
+ *			  2026-06-12 and do updating of person names in Element value fields (D Ferguson)
+  *			  2026-07-15 Fix for 33.29 - Source copy problem (N. Tolleshaug)
+  *			  2026-07-16 Stop element cell selection turning on Save (D Ferguson)
+ *************************************************************************************************
+ * Note on future functionality:
+ * The T734 data structure allows for an Element text value to be user-input OR be a Person's
+ * name, as found by lookup of the T734 BaseRPID value. But there is also a T734 BaseType value
+ * which is currently set = 0 to imply the BaseRPID is a T401 RPID. It is intended that the
+ * BaseType could be = 2 (for a T551 Location lookup) or = 1 (Lifeform T421 record) and so on.
+ * This would also require, when an Element was right-clicked, that a BaseType selection screen
+ * appeared to allow seelction of the BaseType (and therefore which Txxx RPID was to be stored).
+ *************************************************************************************************/
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -71,7 +85,6 @@ import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.DefaultCellEditor;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -90,6 +103,7 @@ import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
@@ -119,7 +133,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Source
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2025-02-07
  */
 
@@ -149,21 +163,26 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	JComboBox <String> comboSourceTypes, comboFidelity;
 	ActionListener comboSrcTypeChange = null;
 	JTable tableRepo, tableSrcSrc, tableSrcElmntValues;
-	JTextField abbrevText, authorName, editorName, compilerName;
+	JTextField abbrevText;
 	JTextArea titleText;
     JCheckBox activChkBox;
 
 	// For Source Element handling
 	String[] tableSrcElmntValueHeads = null;
-	String[][] tableSrcElmntValueData;
+	Object[][] objectUniqueElmntData;
 	DefaultTableModel srcElmntValueModel = null;
+	int viewRow, viewColumn;
+	String elementPersName = "";	//$NON-NLS-1$
 
 	String[][] tableSrcElmntData;
     Map<String, String> codeToTextMap;
     Map<String, String> textToCodeMap;
-	String[][] tableSourceElmntDataValues;
+	TableModelListener elementListener;
+	Object[][] objectSourceElmntDataValues;
 	List<String> uniqueElementNums, uniqueElementNames, uniqueElementValues;
 	List<String> unCitedElementNums, unCitedElementNames, unCitedElementValues;
+	List<Long> uniqueElementBaseRPIDs, unCitedElementBaseRPIDs;
+	List<Integer> uniqueElementBaseTypes, unCitedElementBaseTypes;
 
 	// For Source of Source handling
 	String[] tableSrcSrcColHeads = null;
@@ -190,8 +209,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
 	private String[] fidelityValues = {"A","B","C","D","E"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 
-	String authorsName = "", editorsName = "", compilersName = ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
 	// For source template parser input and Previews
 	private String[] citationParts = {"","",""};	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	String previewText;
@@ -199,7 +216,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	JScrollPane previewPaneScroll;
 
 	long sourceTablePID, sourceDefnPID, selectedRepositoryTablePID;
-	long sourceAuthorPID = null_RPID, sourceEditorPID = null_RPID, sourceCompilerPID = null_RPID;
 	long originalSourceDefnPID;
 
 	String[] sorcDefnTemplates;
@@ -213,8 +229,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 					 fullFootTextChange, shortFootTextChange, biblioTextChange,
 					 memoTextChange, remindTextChange;
 	boolean fullFootTextChanged = false, shortFootTextChanged = false,
-			biblioTextChanged = false, memoTextChanged = false, remindTextChanged = false,
-			nameElementDataChanged = false, authorNameChanged = false;
+			biblioTextChanged = false, memoTextChanged = false, remindTextChanged = false;
 	String templateTestBrackets, templateTestCodes;
 
 /**
@@ -335,17 +350,14 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			}};
 
 	 // Setup tableSrcElmntValues, model and renderer
-		srcElmntValueModel = new DefaultTableModel(tableSrcElmntValueData, tableSrcElmntValueHeads);
+		srcElmntValueModel = new DefaultTableModel(objectUniqueElmntData, tableSrcElmntValueHeads);
 		tableSrcElmntValues.setModel(srcElmntValueModel);
-
-	// Make table single-click editable
-		((DefaultCellEditor) tableSrcElmntValues.getDefaultEditor(Object.class)).setClickCountToStart(1);
 	// and make loss of focus on a cell terminate the edit
 		tableSrcElmntValues.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);	//$NON-NLS-1$
 		tableSrcElmntValues.getColumnModel().getColumn(0).setMinWidth(80);
 		tableSrcElmntValues.getColumnModel().getColumn(0).setPreferredWidth(150);
 		tableSrcElmntValues.getColumnModel().getColumn(1).setMinWidth(180);
-		tableSrcElmntValues.getColumnModel().getColumn(1).setPreferredWidth(230);
+		tableSrcElmntValues.getColumnModel().getColumn(1).setPreferredWidth(250);
 		tableSrcElmntValues.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		centerLabelRenderer = new DefaultTableCellRenderer();
 		centerLabelRenderer.setHorizontalAlignment(JLabel.CENTER);
@@ -362,7 +374,8 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		tableSrcElmntValues.setFillsViewportHeight(true);
 	// scrollPane contains the Source Element picklist
 		JScrollPane scrollSrcElmntTable = new JScrollPane();
-		scrollSrcElmntTable.setPreferredSize(new Dimension(400, 320));
+		scrollSrcElmntTable.setPreferredSize(new Dimension(450, 300));
+		scrollSrcElmntTable.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollSrcElmntTable.setViewportView(tableSrcElmntValues);
 		valuePanel.add(scrollSrcElmntTable, "cell 0 0"); //$NON-NLS-1$
 
@@ -463,46 +476,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 
         addPanel.add(activPanel, "cell 0 0, aligny top, grow"); //$NON-NLS-1$
 
-		// Define sub-panel for connected personID's
-        JPanel idPanel = new JPanel();
-        idPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-        idPanel.setLayout(new MigLayout("insets 10", "[]10[]", "[]10[]10[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-        JLabel author = new JLabel(HG0566Msgs.Text_22);	// Author of this Source
-        idPanel.add(author, "cell 0 0, alignx right"); //$NON-NLS-1$
-		authorName = new JTextField() {
-		    @Override
-		    protected void processKeyEvent(KeyEvent e) {
-		        // block all editing but allow double-click to still update this field
-		    }
-		};
-		authorName.setColumns(50);
-		idPanel.add(authorName, "cell 1 0, alignx left");	//$NON-NLS-1$
-
-        JLabel editor = new JLabel(HG0566Msgs.Text_23);	// Editor of this Source
-        idPanel.add(editor, "cell 0 1, alignx right"); //$NON-NLS-1$
-    	editorName = new JTextField() {
-		    @Override
-		    protected void processKeyEvent(KeyEvent e) {
-		        // block all editing but allow double-click to still update this field
-		    }
-    	};
-		editorName.setColumns(50);
-		idPanel.add(editorName, "cell 1 1, alignx left");	//$NON-NLS-1$
-
-        JLabel compiler = new JLabel(HG0566Msgs.Text_24);	// Compiler of this Source
-        idPanel.add(compiler, "cell 0 2, alignx right"); //$NON-NLS-1$
-    	compilerName = new JTextField() {
-		    @Override
-		    protected void processKeyEvent(KeyEvent e) {
-		        // block all editing but allow double-click to still update this field
-		    }
-    	};
-		compilerName.setColumns(50);
-		idPanel.add(compilerName, "cell 1 2, alignx left");	//$NON-NLS-1$
-
-        addPanel.add(idPanel, "cell 1 0, aligny top"); //$NON-NLS-1$
-
 	// Define sub-panel for Source Memo/Source reference text (if any)
         JPanel memoPanel = new JPanel();
         memoPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),HG0566Msgs.Text_25)); // Source Reference text
@@ -517,7 +490,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		memoText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		memoText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane memoTextScroll = new JScrollPane(memoText);
-		memoTextScroll.setPreferredSize(new Dimension(650, 140));
+		memoTextScroll.setPreferredSize(new Dimension(700, 140));
 		memoTextScroll.getViewport().setOpaque(false);
 		memoTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		memoText.setCaretPosition(0);	// set scrollbar to top
@@ -539,7 +512,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		remindText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 		remindText.setBorder(new JTable().getBorder());		// match Table border
 		JScrollPane remindTextScroll = new JScrollPane(remindText);
-		remindTextScroll.setPreferredSize(new Dimension(650, 140));
+		remindTextScroll.setPreferredSize(new Dimension(700, 140));
 		remindTextScroll.getViewport().setOpaque(false);
 		remindTextScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);  // Vert scroll if needed
 		remindText.setCaretPosition(0);	// set scrollbar to top
@@ -720,12 +693,9 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			sourceEditData[9] = sourceText;				used
 			sourceEditData[10] = sourceRemind;			used
 			sourceEditData[11] = sourceDefnPID;			used to get SourceDefn templates and Defn Name
-			sourceEditData[12] = sourceAuthorPID;		used
-			sourceEditData[13] = sourceEditorPID;		used
-			sourceEditData[14] = sourceCompilerPID;		used
+			sourceEditData[12] = elementPID- [14] now deleted
  */
 	 protected void loadData() {
-		//System.out.println(" Entering loadData()! ");
 	// Set the title and abbrev text
 		titleText.setText((String)sourceEditData[0]);
 		abbrevText.setText((String)sourceEditData[1]);
@@ -775,9 +745,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		biblioNumberedTemplate = (String)sourceEditData[8];			// get Source bibliography
 		createAndDisplayTextTemplates();
 
-		//System.out.println("Templates name: " + fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate );
-		//System.out.println("Template numbers: " + fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate );
-
 	// Create Lists of all UNIQUE Source Element Numbers and Source Element Names from the Source templates
 		uniqueElementNums =
 				extractUniqueElementNums(fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate);
@@ -791,26 +758,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	// Now that data is loaded , set tabbing within table against column 1
 		if (tableSrcElmntValues.getRowCount() > 0)
 			JTableCellTabbing.setTabMapping(tableSrcElmntValues, 0, tableSrcElmntValues.getRowCount(), 1, 1);
-	// Load Author, Editor, Compiler names (if present)
-		sourceAuthorPID = (long) sourceEditData[12];
-		sourceEditorPID = (long) sourceEditData[13];
-		sourceCompilerPID = (long) sourceEditData[14];
-		try {
-			authorsName = pointCitationSourceHandler.getPersonName(sourceAuthorPID);
-			editorsName = pointCitationSourceHandler.getPersonName(sourceEditorPID);
-			compilersName = pointCitationSourceHandler.getPersonName(sourceCompilerPID);
-		} catch (HBException hbe) {
-			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in HG0566Edit loading Author/Editor/Compiler: " + hbe.getMessage()); //$NON-NLS-1$
-				HB0711Logging.printStackTraceToFile(hbe);
-			}
-		}
-		if (authorsName.isEmpty()) authorName.setText(HG0566Msgs.Text_32);	//  Not recorded
-		else authorName.setText(authorsName);
-		if (editorsName.isEmpty()) editorName.setText(HG0566Msgs.Text_32);	//  Not recorded
-		else editorName.setText(editorsName);
-		if (compilersName.isEmpty()) compilerName.setText(HG0566Msgs.Text_32);	//  Not recorded
-		else compilerName.setText(compilersName);
 
 	// Load Source of Source data
 		// The citnSrcSrcData Object contains a Source# and Source Abbrev to build into tableSrSrcData:
@@ -841,12 +788,10 @@ public class HG0566EditSource extends HG0450SuperDialog {
  			sourceStoreData[9] = sourceText;			used
  			sourceStoreData[10] = sourceRemind;			used
  			sourceStoreData[11] = sourceDefnPID;		used to get SourceDefn templates and Defn Name
- 			sourceStoreData[12] = sourceAuthorPID;		used
- 			sourceStoreData[13] = sourceEditorPID;		used
- 			sourceStoreData[14] = sourceCompilerPID;		used
+ 			sourceStoreData[12]-[14] not used any more
   */
  	 protected void storeData() {
- 		 	sourceStoreData = new Object[15];
+ 		 	sourceStoreData = new Object[12];
  			sourceStoreData[0] = titleText.getText(); //   sourceTitle - used
  			sourceStoreData[1] = abbrevText.getText(); //sourceAbbrev -	used
  			sourceStoreData[2] = ""; // sourceRefNr - use for reference number in table??  //$NON-NLS-1$
@@ -862,9 +807,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
  			sourceStoreData[10] = remindText.getText(); //sourceRemind used
  		// used to get SourceDefn templates and Defn Name
  			sourceStoreData[11] = (long)sorcDefnTable[comboSourceTypes.getSelectedIndex()][1];
- 			sourceStoreData[12] = sourceAuthorPID;
- 			sourceStoreData[13] = sourceEditorPID;
- 			sourceStoreData[14] = sourceCompilerPID;
  	 }
 
 /**
@@ -891,29 +833,67 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		});
 
 		// Listener for changes made in tableSrcElmntValues
-		TableModelListener elmntListener = new TableModelListener() {
+		// This is only invoked for user changes to the text value and NOT use of right-click person changes
+		elementListener = new TableModelListener() {
 			@Override
             public void tableChanged(TableModelEvent tme) {
-				String nameElementName, nameElementData, elementNumber;
-                if (tme.getType() == TableModelEvent.UPDATE) {
+				String elementName, elementData, elementNumber;
+                if (tme.getType() == TableModelEvent.UPDATE) {			//type=0=Update; type=1=insert; type=-1=delete
                     int row = tme.getFirstRow();
                     if (row > -1) {
-                		nameElementName = (String) tableSrcElmntValues.getValueAt(row, 0);
-                		nameElementData = (String) tableSrcElmntValues.getValueAt(row, 1);
-						elementNumber = (String) tableSrcElmntValueData[row][2];
+                		elementName = (String) tableSrcElmntValues.getValueAt(row, 0);
+                		elementData = (String) tableSrcElmntValues.getValueAt(row, 1);
+						elementNumber = (String) objectUniqueElmntData[row][2];
+
 						if (HGlobal.DEBUG && HGlobal.writeLogs)
 									HB0711Logging.logWrite("DEBUG in HG0566Edit Update row: " 	//$NON-NLS-1$
-									+ row + " - " + nameElementName + "/" +elementNumber);		//$NON-NLS-1$ //$NON-NLS-2$
-						if (nameElementData != null) {
+									+ row + " - " + elementName + "/" +elementNumber);		//$NON-NLS-1$ //$NON-NLS-2$
+
+						if (elementData != null) {
 							btn_Save.setEnabled(true);
-							nameElementDataChanged = true;
-							pointCitationSourceHandler.updateElementDataChangeList(nameElementName, elementNumber, nameElementData);
+							// Build the data object to pass to updateElementDataChangeList for the T734 update.
+							// As this is for a text change, ALWAYS set the baseRPID = nullRPID and set the basetype
+							// to = -1 so that the value reload doesn't re-apply a stored baseRPID.
+							Object listenerDataObj[] = new Object[3];
+							listenerDataObj[0] = elementData;		// text value
+							listenerDataObj[1] = null_RPID;			// base RPID must be null
+							if (elementData.isEmpty()) listenerDataObj[2] = -1;		// ensure default RPIDs not used
+							else listenerDataObj[2] = 0;			// basetype (0 by default)
+							pointCitationSourceHandler.updateElementDataChangeList(
+									elementName, elementNumber, listenerDataObj);
 						}
                     }
 				}
 			}
 		};
-		tableSrcElmntValues.getModel().addTableModelListener(elmntListener);
+		tableSrcElmntValues.getModel().addTableModelListener(elementListener);
+
+		// Listener for tableSrcElmntValues right-mouse click
+		tableSrcElmntValues.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {		// try to detect with all possible OS variations
+				if (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger() || e.getButton() == MouseEvent.BUTTON3) {
+				// Get the physical point where the click occurred
+					Point point = e.getPoint();
+					// Convert that point into view-based row and column indexes
+					viewRow = tableSrcElmntValues.rowAtPoint(point);
+					viewColumn = tableSrcElmntValues.columnAtPoint(point);
+					// Ensure the click was actually inside a valid cell (not empty viewport space)
+					if (viewRow != -1 && viewColumn != -1) {
+					// Now use PersonSlect to let user select a person
+						try {
+							activatePersonSelect();
+						} catch (HBException hbe) {
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0566Edit elementName update: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
+						}
+					}
+					// now see routine resetElementName for how the returned PID is handled
+				}
+			}
+		});
 
 		// Listener for edit of Title text
 		titleTextChange = new DocumentListener() {
@@ -1058,96 +1038,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		};
 		remindText.getDocument().addDocumentListener(remindTextChange);
 
-	// Mouse click listener for Author name
-		authorName.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                // If no name present go direct to selecting one
-                	if (authorsName.isEmpty()) {
-                		try {
-							activatePersonSelect(1);
-						} catch (HBException hbe) {
-							if (HGlobal.writeLogs) {
-								HB0711Logging.logWrite("ERROR: in HG0566Edit adding Author: " + hbe.getMessage()); //$NON-NLS-1$
-								HB0711Logging.printStackTraceToFile(hbe);
-							}
-						}
-                    	btn_Save.setEnabled(true);
-                	}
-                // Else ask if user wants to Select another or Delete this one
-                	else try {
-                    	selectOption(HG0566Msgs.Text_35, 1);		// Author
-					} catch (HBException hbe) {
-						if (HGlobal.writeLogs) {
-							HB0711Logging.logWrite("ERROR: in HG0566Edit editing Author: " + hbe.getMessage()); //$NON-NLS-1$
-							HB0711Logging.printStackTraceToFile(hbe);
-						}
-					}
-                }
-            }
-        });
-
-	// Mouse click listener for Editor name
-		editorName.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                // If no name present go direct to selecting one
-                	if (editorsName.isEmpty()) {
-                		try {
-							activatePersonSelect(2);
-						} catch (HBException hbe) {
-							if (HGlobal.writeLogs) {
-								HB0711Logging.logWrite("ERROR: in HG0566Edit adding Editor: " + hbe.getMessage()); //$NON-NLS-1$
-								HB0711Logging.printStackTraceToFile(hbe);
-							}
-						}
-                    	btn_Save.setEnabled(true);
-                	}
-                // Else ask if user wants to Select another or Delete this one
-                	else try {
-                    	selectOption(HG0566Msgs.Text_36, 2);		// Editor
-					} catch (HBException hbe) {
-						if (HGlobal.writeLogs) {
-							HB0711Logging.logWrite("ERROR: in HG0566Edit editing Editor: " + hbe.getMessage()); //$NON-NLS-1$
-							HB0711Logging.printStackTraceToFile(hbe);
-						}
-					}
-                }
-            }
-        });
-
-	// Mouse click listener for Compilor name
-		compilerName.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                // If no name present go direct to selecting one
-                	if (compilersName.isEmpty()) {
-                		try {
-							activatePersonSelect(3);
-						} catch (HBException hbe) {
-							if (HGlobal.writeLogs) {
-								HB0711Logging.logWrite("ERROR: in HG0566Edit adding Compiler: " + hbe.getMessage()); //$NON-NLS-1$
-								HB0711Logging.printStackTraceToFile(hbe);
-							}
-						}
-                    	btn_Save.setEnabled(true);
-                	}
-                // Else ask if user wants to Select another or Delete this one
-                	else try {
-                    	selectOption(HG0566Msgs.Text_37, 3);		// Compiler
-					} catch (HBException hbe) {
-						if (HGlobal.writeLogs) {
-							HB0711Logging.logWrite("ERROR: in HG0566Edit editing Compiler: " + hbe.getMessage()); //$NON-NLS-1$
-							HB0711Logging.printStackTraceToFile(hbe);
-						}
-					}
-                }
-            }
-        });
-
 	// Source Types combo-box listener
 		comboSrcTypeChange = new ActionListener() {
 			@Override
@@ -1178,10 +1068,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				}
 				createAndDisplayTextTemplates();
 
-				//System.out.println("Templates name: " + fullFootNamedTemplate + shortFootNamedTemplate + biblioNamedTemplate );
-				//System.out.println("Template numbers: " + fullFootNumberedTemplate + shortFootNumberedTemplate + biblioNumberedTemplate );
-
-			// Create Lists of all UNIQUE Source Element Numbers and Names from the revised Source templates
+		// Create Lists of all UNIQUE Source Element Numbers and Names from the revised Source templates
 				uniqueElementNums =
 						extractUniqueElementNums(fullFootNumberedTemplate+shortFootNumberedTemplate+biblioNumberedTemplate);
 				uniqueElementNames =
@@ -1215,16 +1102,6 @@ public class HG0566EditSource extends HG0450SuperDialog {
 			}
 		});
 
-		// Listener for tableSrcElmntValues row selection
-		tableSrcElmntValues.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent selectSrc) {
-				if (!selectSrc.getValueIsAdjusting()) {
-					if (tableSrcElmntValues.getSelectedRow() == -1) return;
-					btn_Save.setEnabled(true);
-				}
-			}
-        });
-
 		// Listener for fullFootnote Preview button
 		btn_fullPreview.addActionListener(new ActionListener() {
 			@Override
@@ -1232,7 +1109,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				previewText = pointReportHandler.parseFootnoteBiblio(fullFootNumberedTemplate,	// footnote template
 										sourceTablePID,					// PID of this Source
 										(String)sourceEditData[9],		// Source Memo text
-										tableSourceElmntDataValues,		// source element numbers, values
+										objectSourceElmntDataValues,	// source element numbers, values, BaseRPID, BaseType
 										citationParts);					// dummy citation entries
 				previewPane.setText(previewText);
 				previewPane.setCaretPosition(0);    // show from the top
@@ -1252,7 +1129,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				previewText = pointReportHandler.parseFootnoteBiblio(shortFootNumberedTemplate,	// footnote template
 									sourceTablePID,					// PID of this Source
 									(String)sourceEditData[9],		// Source Memo text
-									tableSourceElmntDataValues,		// source element numbers, values
+									objectSourceElmntDataValues,	// source element numbers, values, BaseRPID, BaseType
 									citationParts);					// dummy citation entries
 				previewPane.setText(previewText);
 				previewPane.setCaretPosition(0);    // show from the top
@@ -1272,7 +1149,7 @@ public class HG0566EditSource extends HG0450SuperDialog {
 				previewText = pointReportHandler.parseFootnoteBiblio(biblioNumberedTemplate,	// biblio template
 									sourceTablePID,					// PID of this Source
 									(String)sourceEditData[9],		// Source Memo text
-									tableSourceElmntDataValues,		// source element numbers, values
+									objectSourceElmntDataValues,	// source element numbers, values, BaseRPID, BaseType
 									citationParts);					// dummy citation entries
 				previewPane.setText(previewText);
 				previewPane.setCaretPosition(0);    // show from the top
@@ -1484,122 +1361,252 @@ public class HG0566EditSource extends HG0450SuperDialog {
 	public void loadElementDefinitionTable() {
 		int nrOfRows = 0, index = 0;
 		uniqueElementValues = new ArrayList<String>();
+		uniqueElementBaseRPIDs = new ArrayList<Long>();
 
-	// Reload tableSrcElmntValueData
+		// Reload objectUniqueElmntData
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
 
 		if (uniqueElementNums.size() > 0) {
 			for (int i = 0; i < uniqueElementNames.size(); i++)
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) nrOfRows++;
-			} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: "
-																	+ uniqueElementNums.size());
+		} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: "   //$NON-NLS-1$ //$NON-NLS-2$
+				+ uniqueElementNums.size());
 
-		tableSrcElmntValueData = new String[nrOfRows][3];
+		objectUniqueElmntData = new Object[nrOfRows][5];		// to handle names, data, nums, rpids, types
 		if (uniqueElementNums.size() > 0)
 			for (int i = 0; i < uniqueElementNames.size(); i++) {
-			// Ignore elements with numbers in the 'specials' range as they will not have T734 values
+				// Ignore elements with numbers in the 'specials' range as they will not have T734 values
 				if (HGlobal.DEBUG && HGlobal.writeLogs)
-							HB0711Logging.logWrite("DEBUG in HG0566Edit unique names/numbers: "		//$NON-NLS-1$
+					HB0711Logging.logWrite("DEBUG in HG0566Edit unique names/numbers: "		//$NON-NLS-1$
 							+ uniqueElementNames.get(i).trim() + "/" + uniqueElementNums.get(i).trim());	//$NON-NLS-1$
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
-					tableSrcElmntValueData[index][0] = uniqueElementNames.get(i).trim();
-					tableSrcElmntValueData[index][1] = "";		//$NON-NLS-1$
-					tableSrcElmntValueData[index][2] = uniqueElementNums.get(i).trim();
+					objectUniqueElmntData[index][0] = uniqueElementNames.get(i).trim();
+					objectUniqueElmntData[index][1] = uniqueElementValues.get(i);
+					objectUniqueElmntData[index][2] = uniqueElementNums.get(i).trim();
+					objectUniqueElmntData[index][3] = uniqueElementBaseRPIDs.get(i);
+					objectUniqueElmntData[index][4] = uniqueElementBaseTypes.get(i);
 					if (HGlobal.DEBUG && HGlobal.writeLogs)
-								HB0711Logging.logWrite("DEBUG in HG0566Edit loadElementDefinitionTable nr: " 	//$NON-NLS-1$
-									+ index + " - " + tableSrcElmntValueData[index][0]							//$NON-NLS-1$
-									+ "/" + tableSrcElmntValueData[index][2]);									//$NON-NLS-1$
-					srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+						HB0711Logging.logWrite("DEBUG in HG0566Edit loadElementDefinitionTable nr: " 	//$NON-NLS-1$
+								+ index + " - " + objectUniqueElmntData[index][0]							//$NON-NLS-1$
+										+ "/" + objectUniqueElmntData[index][2]);									//$NON-NLS-1$
+					srcElmntValueModel.addRow(objectUniqueElmntData[index]);
 					index++;
 				}
 			}
-	}
+	}		// End loadElementDefinitionTable
 
 /**
- * public void loadElementValueTable(boolean addNewElementRecords)
+ * public void loadElementValueTable(boolean copyElementRecords)
  */
-	public void loadElementValueTable(boolean addNewElementRecords) {
-		// Use the uniqueElementNums list to match Element numbers in the imported
-		// tableSourceElmntDataValues to create an Element Value list aligned with Element Names,
-		// then use that to load the table of Element names and values.
+	public void loadElementValueTable(boolean copyElementRecords) {
+		// The data in objectSourceElmntDataValues consists of Source Element data 'owned'
+		// by this Source. Each row of this 2D object contains data from T734_SORC_DATA records:
+		//		0) NUM: the Element number - 5-char starting with the original 2-digit TMG element group
+		//		1) DATA: the text value of the Element, May be blank. Must be blank if next field not a nullRPID
+		//		2) RPID: the PID of a Base data record. Equals the null_RPID value if text exists
+		//		3) BASE_TYPE:integer value. If 0, the RPID is a PersonRPID (the only possible type for now).
+		//									If = -1 it is an Element that has been edited be= ""
+		// Because of the way TMG groups work, for imported TMG projects the records which have a
+		// PersonPID value can only belong to groups 6-10, but we don't know WHICH element they apply to.
+		// This means we have to apply any of these PersonPID values to ANY Element that belongs to ANY
+		// Element in groups 6-10, that are used in this Source.
+		// To process these cases, we need a 2-step process:
+		// 	STEP 1:look for any Element where the text is blank and the PID value is NOT
+		// 		the nullRPID - for these Elements we lookup the Element number and if it is of
+		// 		the form 'NN000' we use the PID to get the Person's name and save both for grp = NN.
+		//  STEP 2: After we have built the list of Unique Element Numbers and Values, we look for
+		// 		any cases where we have an Element number starting with '06' to '10' which
+		// 		still has no baseRPID value. These must be imported TMG elements which were intended to
+		// 		receive one of these Person values, so we match them to a saved grpRPID value.
+		// 		Example: suppose we have Element# '07031' (for [HOUSEHOLD]) with a null_RPID.
+		// 		We save the stored grp7RPID and gr7Name value as its values.
+		// Start the STEP 1 process:
+		Long grp6RPID = null_RPID, grp7RPID = null_RPID , grp8RPID = null_RPID, grp9RPID = null_RPID, grp10RPID = null_RPID;
+		String grp6Name = "", grp7Name = "" , grp8Name = "", grp9Name = "", grp10Name = ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+		boolean grpRPIDFound = false;
+		for (int i = 0; i < objectSourceElmntDataValues.length; i++) {
+			// If the Element DATA is empty and the Element RPID is NOT the nullRPID, then
+			// the RPID is the PID of a Person (if the BASE_TYPE=0) so get the Person's
+			// RPID and save it for nay special grp NN000 entries..
+			if ((String)objectSourceElmntDataValues[i][1] == ""			// no text		//$NON-NLS-1$
+					&& (int)objectSourceElmntDataValues[i][3] == 0		// RPID is for a Person
+					&& (long)objectSourceElmntDataValues[i][2] != null_RPID)  {
+				// if this is a special grp NN000 entry, get and save the Person RPID and Name
+				try {
+					if (objectSourceElmntDataValues[i][0].equals("06000")) {		//$NON-NLS-1$
+						grpRPIDFound = true;
+						grp6RPID = (Long)objectSourceElmntDataValues[i][2];
+						grp6Name = pointPersonHandler.getPersonName((long) grp6RPID);
+					}
+					else if (objectSourceElmntDataValues[i][0].equals("07000")) {		//$NON-NLS-1$
+						grpRPIDFound = true;
+						grp7RPID =  (Long)objectSourceElmntDataValues[i][2];
+						grp7Name = pointPersonHandler.getPersonName((long) grp7RPID);
+					}
+					else if (objectSourceElmntDataValues[i][0].equals("08000")) {		//$NON-NLS-1$
+						grpRPIDFound = true;
+						grp8RPID = (Long)objectSourceElmntDataValues[i][2];
+						grp8Name = pointPersonHandler.getPersonName((long) grp8RPID);
+					}
+					else if (objectSourceElmntDataValues[i][0].equals("09000")) {		//$NON-NLS-1$
+						grpRPIDFound = true;
+						grp9RPID = (Long)objectSourceElmntDataValues[i][2];
+						grp9Name = pointPersonHandler.getPersonName((long) grp9RPID);
+					}
+					else if (objectSourceElmntDataValues[i][0].equals("10000")) {		//$NON-NLS-1$
+						grpRPIDFound = true;
+						grp10RPID = (Long)objectSourceElmntDataValues[i][2];
+						grp10Name = pointPersonHandler.getPersonName((long) grp10RPID);
+					}
+				} catch (HBException e) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0566Edit loading Person name: " + e.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(e);
+					}
+				}
+			}
+		}
+
+		// Now use the uniqueElementNums list to match Element numbers in the imported
+		// objectSourceElmntDataValues to create Element Value, Element RPID lists aligned with Element Names,
+		// then use that to load the displayed table of Element names and values (though RPID is hidden).
 		// Any existing Element names/values that exist in the new Source Defn will be preserved.
 		// But ignore Elements with numbers > 40000 (which were TMG Grp 28-32) as they do not have T734 values
 		int nrOfRows = 0, index = 0;
 		int uniqueElementSize;
 		uniqueElementValues = new ArrayList<String>();
+		uniqueElementBaseRPIDs = new ArrayList<Long>();
+		uniqueElementBaseTypes = new ArrayList<Integer>();
 		boolean matched = false;
 		for (int i = 0; i < uniqueElementNums.size(); i++) {
 			matched = false;
-			for (int j = 0; j < tableSourceElmntDataValues.length; j++) {
-				if (uniqueElementNums.get(i).equals(tableSourceElmntDataValues[j][0])) {
-							uniqueElementValues.add(tableSourceElmntDataValues[j][1]);
+			for (int j = 0; j < objectSourceElmntDataValues.length; j++) {
+				if (uniqueElementNums.get(i).equals(objectSourceElmntDataValues[j][0])) {
+							uniqueElementValues.add((String) objectSourceElmntDataValues[j][1]);
+							uniqueElementBaseRPIDs.add((Long) objectSourceElmntDataValues[j][2]);
+							uniqueElementBaseTypes.add((Integer) objectSourceElmntDataValues[j][3]);
 							matched = true;
 				}
 			}
-	// If no match for this Element Number, add a blank Value to the Value List
-			if (matched == false) uniqueElementValues.add("");		//$NON-NLS-1$
+	// If no match for this Element Number, add a blank Value to the Value List, nullRPID to the RPID list, 0 to the type list
+			if (matched == false) {
+				uniqueElementValues.add("");		//$NON-NLS-1$
+				uniqueElementBaseRPIDs.add(null_RPID);
+				uniqueElementBaseTypes.add(0);
+			}
 		}
-	// We now have 2 lists - uniqueElmtNums & uniqueElmntValues hopefully of same size
 
+	// We now have 4 lists - uniqueElmtNums, uniqueElmntValues, uniqueElmntRPIDs, uniqueElmntTypes - hopefully al same size
 		if (uniqueElementNums.size() != uniqueElementNames.size()) {
 			uniqueElementSize = uniqueElementNums.size();
-			System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: "
-							+ uniqueElementNames.size() + "/" + uniqueElementNums.size());
-			if (HGlobal.writeLogs) HB0711Logging.logWrite(" ERROR - HG0566EditSource: " + titleText.getText() + " - uniqueList.size() - Name/Nums not equal: "
-					+ uniqueElementNames.size() + "/" + uniqueElementNums.size());
+			if (HGlobal.writeLogs) HB0711Logging.logWrite(" ERROR - HG0566EditSource: " 								//$NON-NLS-1$
+												+ titleText.getText() + " - uniqueList.size() - Name/Nums not equal: "   //$NON-NLS-1$
+												+ uniqueElementNames.size() + "/" + uniqueElementNums.size());			//$NON-NLS-1$
 		} else uniqueElementSize = uniqueElementNames.size();
 
-	// (Re)load tableSrcElmntValueData
+
+	// Special grp6-10 processing STEP2:
+	// Now find any possible TMG imported Elements from grps 6-10 with no data value, AND baseType >= 0.
+	// BaseType < 0 indicates it WAS an RPID/personName but has been edited to just a blank, so we
+	// should NOT insert a saved RPID and Name; if >= 0, insert the saved RPID & Name.
+	if (grpRPIDFound) {
+			for (int i = 0; i < uniqueElementNums.size(); i++) {
+				if (uniqueElementNums.get(i).startsWith("06") 			//$NON-NLS-1$
+						&& uniqueElementValues.get(i).equals("")		//$NON-NLS-1$
+						&& uniqueElementBaseTypes.get(i) >= 0)	{
+							uniqueElementBaseRPIDs.set(i, grp6RPID);
+							uniqueElementValues.set(i, grp6Name);
+				}
+				if (uniqueElementNums.get(i).startsWith("07") 			//$NON-NLS-1$
+						&& uniqueElementValues.get(i).equals("")		//$NON-NLS-1$
+						&& uniqueElementBaseTypes.get(i) >= 0)	{
+							uniqueElementBaseRPIDs.set(i, grp7RPID);
+							uniqueElementValues.set(i, grp7Name);
+				}
+				if (uniqueElementNums.get(i).startsWith("08") 			//$NON-NLS-1$
+						&& uniqueElementValues.get(i).equals("")		//$NON-NLS-1$
+						&& uniqueElementBaseTypes.get(i) >= 0)	{
+							uniqueElementBaseRPIDs.set(i, grp8RPID);
+							uniqueElementValues.set(i, grp8Name);
+				}
+				if (uniqueElementNums.get(i).startsWith("09") 			//$NON-NLS-1$
+						&& uniqueElementValues.get(i).equals("")		//$NON-NLS-1$
+						&& uniqueElementBaseTypes.get(i) >= 0)	{
+							uniqueElementBaseRPIDs.set(i, grp9RPID);
+							uniqueElementValues.set(i, grp9Name);
+				}
+				if (uniqueElementNums.get(i).startsWith("10") 			//$NON-NLS-1$
+						&& uniqueElementValues.get(i).equals("")		//$NON-NLS-1$
+						&& uniqueElementBaseTypes.get(i) >= 0)	{
+							uniqueElementBaseRPIDs.set(i, grp10RPID);
+							uniqueElementValues.set(i, grp10Name);
+				}
+			}
+		}
+
+	// (Re)load objectUniqueElmntData
 		if (uniqueElementSize > 0) {
 			for (int i = 0; i < uniqueElementSize; i++)
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000)
 									nrOfRows++;
-		} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: "
+		} else System.out.println(" ERROR - HG0566EditSource: " + titleText.getText() + " - Number list size: "  //$NON-NLS-1$ //$NON-NLS-2$
 					 												+ uniqueElementSize);
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
-		tableSrcElmntValueData = new String[nrOfRows][3];
+		objectUniqueElmntData = new Object[nrOfRows][5];		// to handle names, data, nums, rpids, types
+		Object[] elementDataObj = new Object[3];
 		if (uniqueElementSize > 0)
 			for (int i = 0; i < uniqueElementSize; i++) {
+				elementDataObj = new Object[3];
 			// Ignore elements with numbers in the 'specials' range as they will not have T734 values
 				if (Integer.parseInt(uniqueElementNums.get(i)) < 40000) {
-					tableSrcElmntValueData[index][0] = uniqueElementNames.get(i).trim();
-					tableSrcElmntValueData[index][1] = uniqueElementValues.get(i).trim();
-					tableSrcElmntValueData[index][2] = uniqueElementNums.get(i);
-					srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+					objectUniqueElmntData[index][0] = (String)uniqueElementNames.get(i).trim();
+					objectUniqueElmntData[index][1] = (String)uniqueElementValues.get(i).trim();
+					objectUniqueElmntData[index][2] = (String)uniqueElementNums.get(i);
+					objectUniqueElmntData[index][3] = (Long)uniqueElementBaseRPIDs.get(i);
+					objectUniqueElmntData[index][4] = (int)uniqueElementBaseTypes.get(i);
+					srcElmntValueModel.addRow(objectUniqueElmntData[index]);
+			// Build the data object to pass to updateElementDataChangeList
+					elementDataObj[0] = objectUniqueElmntData[index][1];		// text value
+					elementDataObj[1] = objectUniqueElmntData[index][3];		// base RPID
+					elementDataObj[2] = 0;										// basetype (0 for Persons)
 
 			// If copy source add changes to ElementDataChangeList to create source element copy
-					if (addNewElementRecords)
+					if (copyElementRecords)
 						pointCitationSourceHandler.updateElementDataChangeList(
-									tableSrcElmntValueData[index][0],
-									tableSrcElmntValueData[index][2],
-									tableSrcElmntValueData[index][1]);
+									(String)objectUniqueElmntData[index][0],			// Name
+									(String)objectUniqueElmntData[index][2],			// Num
+									elementDataObj);						// contains text value, baseRPID, basetype
 					index++;
 				}
 			}
 
 		//  UNCITED FIELD TESTS
-		// There may be more element Values in tableSourceElmntDataValues (as loaded from
+		// There may be more element Values in objectSourceElmntDataValues (as loaded from
 		// T734), which belong to Elements no longer cited in the footnotes.
-		// These need to be identified and loaded to tableSrcElmntValueData to be visible.
+		// These need to be identified and loaded to objectUniqueElmntData to be visible.
 		// To do this we need 3 more lists of unCitedNames/Numbers/Values.
-		// First - run through tableSourceElmntDataValues' number items and find
+		// First - run through objectSourceElmntDataValues' number items and find
 		// those entries NOT already in uniqueElementNums, then extract their
-		// Numbers and Values into the new unCited Lists (and exit if there are none).
+		// Numbers, Values, BaseRPIDs into the new unCited Lists (and exit if there are none).
 		// Second, lookup these numbers in tableSrcElmntData (from T738) to get the Element Names.
 		// Third, load all these items as extra rows in the srcElmntValueModel.
 		unCitedElementNames = new ArrayList<String>();
 		unCitedElementNums = new ArrayList<String>();
 		unCitedElementValues = new ArrayList<String>();
-		// First, search tableSourceElmntDataValues for element Numbers not used
-		for (int i = 0; i < tableSourceElmntDataValues.length; i++) {
+		unCitedElementBaseRPIDs = new ArrayList<Long>();
+		unCitedElementBaseTypes = new ArrayList<Integer>();
+		// First, search objectSourceElmntDataValues for element Numbers not used
+		for (int i = 0; i < objectSourceElmntDataValues.length; i++) {
 			boolean unCited = true;
 			for (int j = 0; j < uniqueElementNums.size(); j++) {
-				if (tableSourceElmntDataValues[i][0].equals(uniqueElementNums.get(j)))   //test the element number
+				if (objectSourceElmntDataValues[i][0].equals(uniqueElementNums.get(j)))   //test the element number
 					unCited = false;
 			}
 			if (unCited) {
-					unCitedElementNums.add(tableSourceElmntDataValues[i][0]);		// save element number
-					unCitedElementValues.add(tableSourceElmntDataValues[i][1]);		// save element value
+					unCitedElementNums.add((String) objectSourceElmntDataValues[i][0]);		// save element number
+					unCitedElementValues.add((String) objectSourceElmntDataValues[i][1]);	// save element value
+					unCitedElementBaseRPIDs.add((Long) objectSourceElmntDataValues[i][2]);	// save RPID value
+					unCitedElementBaseTypes.add((Integer) objectSourceElmntDataValues[i][3]); // save type value
 			}
 		}
 		// If no unCited elements found, we're done
@@ -1616,40 +1623,54 @@ public class HG0566EditSource extends HG0450SuperDialog {
 		}
 
 		// Third, add these Names/alues to the srcElmntValueModel for display
-		// To do this we need to save the existing tableSrcElmntValueData data in tableWork,
-		// then build a new tableSrcElmntValueData containing tableWork data AND new unCited data.
-		int oldRowCount = tableSrcElmntValueData.length;
+		// To do this we need to save the existing objectUniqueElmntData data in objectWork,
+		// then build a new objectUniqueElmntData containing objectWork data AND new unCited data.
+		int oldRowCount = objectUniqueElmntData.length;
 		int newRowCount = oldRowCount + unCitedElementNames.size();
-		String[][] tableWork = new String[oldRowCount][3];
-		// Now copy all of tableSrcElmntValueData to tableWork
-		for (int i = 0; i < tableSrcElmntValueData.length; i++) {
-			System.arraycopy(tableSrcElmntValueData[i], 0, tableWork[i], 0, tableSrcElmntValueData[0].length);
+		Object[][] objectWork = new Object[oldRowCount][5];
+		// Now copy all of objectUniqueElmntData to objectWork
+		for (int i = 0; i < objectUniqueElmntData.length; i++) {
+			System.arraycopy(objectUniqueElmntData[i], 0, objectWork[i], 0, objectUniqueElmntData[0].length);
 		}
-		// Now redefinetableSrcElmntValueData and srcElmntValueModel
+		// Now redefineobjectUniqueElmntData and srcElmntValueModel
 		srcElmntValueModel.setRowCount(0); 		// first clear all existing rows
-		tableSrcElmntValueData = new String[newRowCount][3];
+		objectUniqueElmntData = new Object[newRowCount][5];
 		index = 0;
-		// Copy tableWork back into new tableSrcElmntValueData, loading the model as we go
-		for (int i = 0; i < tableWork.length; i++) {
-			System.arraycopy(tableWork[i], 0, tableSrcElmntValueData[i], 0, tableWork[0].length);
-			srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+		// Copy objectWork back into new objectUniqueElmntData, loading the model as we go
+		for (int i = 0; i < objectWork.length; i++) {
+			System.arraycopy(objectWork[i], 0, objectUniqueElmntData[i], 0, objectWork[0].length);
+			srcElmntValueModel.addRow(objectUniqueElmntData[index]);
 			index++;
 		}
 		// Copy in new unCited values and load srcElmntValueModel
 		for (int i = 0; i < unCitedElementNames.size(); i++) {
-			tableSrcElmntValueData[index][0] = unCitedElementNames.get(i).trim();
-			tableSrcElmntValueData[index][1] = unCitedElementValues.get(i).trim();
-			tableSrcElmntValueData[index][2] = unCitedElementNums.get(i);
-			srcElmntValueModel.addRow(tableSrcElmntValueData[index]);
+			objectUniqueElmntData[index][0] = unCitedElementNames.get(i).trim();
+			objectUniqueElmntData[index][1] = unCitedElementValues.get(i).trim();
+			objectUniqueElmntData[index][2] = unCitedElementNums.get(i);
+			objectUniqueElmntData[index][3] = unCitedElementBaseRPIDs.get(i);
+			objectUniqueElmntData[index][4] = unCitedElementBaseTypes.get(i);
+			srcElmntValueModel.addRow(objectUniqueElmntData[index]);
 			index++;
 		}
+
+		// Debug routine to show all unique table values
+		//for (int i = 0; i < uniqueElementNums.size(); i++) {
+		//System.out.println("loadElementValueTable: row="+i+"/"+uniqueElementNums.get(i)+"/"+uniqueElementNames.get(i)+"/"+
+		//		uniqueElementValues.get(i)+"/"+uniqueElementBaseRPIDs.get(i)+"/"+uniqueElementBaseTypes.get(i));
+		//}
+
 		// Finally, for a Source copy, add unCited to ElementDataChangeList to create source element copy
-		if (addNewElementRecords)
+		if (copyElementRecords)
 			for (int i = 0; i < unCitedElementNames.size(); i++) {
+				// Build the data object to pass to updateElementDataChangeList
+				elementDataObj[0] = objectUniqueElmntData[index][1];		// text value
+				elementDataObj[1] = objectUniqueElmntData[index][3];		// base RPID
+				elementDataObj[2] = 0;					// basetype (0 for Persons)
+
 				pointCitationSourceHandler.updateElementDataChangeList(
-							unCitedElementNames.get(i),
-							unCitedElementNums.get(i),
-							unCitedElementValues.get(i));
+							unCitedElementNames.get(i),				// Name
+							unCitedElementNums.get(i),				// Num
+							elementDataObj);			// contains text value, baseRPID, basetype
 			}
 
 	}	// End loadElementValueTable
@@ -1768,73 +1789,52 @@ public class HG0566EditSource extends HG0450SuperDialog {
  * activatePersonSelect()
  * @throws HBException
  */
-	private void activatePersonSelect(int textFieldSelection) throws HBException {
-		pointSelectPerson = pointCitationSourceHandler.activateSelectPerson(pointOpenProject, pointEditSource, textFieldSelection);
+	private void activatePersonSelect() throws HBException {
+		pointSelectPerson = pointCitationSourceHandler.activateSelectPerson(pointOpenProject, pointEditSource);
 		pointSelectPerson.additionalPanel = false; // Turn off additional panels
 		pointSelectPerson.setModalityType(ModalityType.APPLICATION_MODAL);
-		Point xyShow = authorName.getLocationOnScreen();
-		pointSelectPerson.setLocation(xyShow.x-300, xyShow.y-50);
+		Point xyShow = tableSrcElmntValues.getLocationOnScreen();
+		pointSelectPerson.setLocation(xyShow.x-50, xyShow.y-200);
 		pointSelectPerson.setVisible(true);
-	}
+	}		// End activatePersonSelect
 
 /**
- * public void resetNames(long personAuthorPID, long personEditorPID, long personCompilerPID)
+ * public void resetElementName(long personPID)
+ * @param personPID - the PID selected in HG0507, as above
  */
-	public void resetNames(long personAuthorPID, long personEditorPID, long personCompilerPID) {
-		sourceAuthorPID = personAuthorPID;
-		sourceEditorPID = personEditorPID;
-		sourceCompilerPID = personCompilerPID;
+	public void resetElementName(long personPID) {
 		try {
-			authorsName = pointCitationSourceHandler.getPersonName(sourceAuthorPID);
-			editorsName = pointCitationSourceHandler.getPersonName(sourceEditorPID);
-			compilersName = pointCitationSourceHandler.getPersonName(sourceCompilerPID);
+			elementPersName = pointCitationSourceHandler.getPersonName(personPID).trim();
 		} catch (HBException hbe) {
 			if (HGlobal.writeLogs) {
-				HB0711Logging.logWrite("ERROR: in HG0566Edit Author/Editor/Compiler reset: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.logWrite("ERROR: in HG0566Edit elment name reset: " + hbe.getMessage()); //$NON-NLS-1$
 				HB0711Logging.printStackTraceToFile(hbe);
 			}
 		}
-		if (authorsName.isEmpty()) authorName.setText(HG0566Msgs.Text_32);	// Not recorded
-		else authorName.setText(authorsName);
-		if (editorsName.isEmpty()) editorName.setText(HG0566Msgs.Text_32);	// Not recorded
-		else editorName.setText(editorsName);
-		if (compilersName.isEmpty()) compilerName.setText(HG0566Msgs.Text_32);	// Not recorded
-		else compilerName.setText(compilersName);
-	}
+		// Update the uniqueElmntData object with the new PID and text value
+		objectUniqueElmntData[viewRow][1] = elementPersName;		//text data value
+		objectUniqueElmntData[viewRow][3] = personPID;
 
-/**
- * private void selectOption( )
- * @param personTypeSelected
- * @param textFieldSelection
- * @throws HBException
- */
-	private int selectOption(String personTypeSelected, int textFieldSelection) throws HBException {
-		String[] options = { HG0566Msgs.Text_44, HG0566Msgs.Text_45, HG0566Msgs.Text_46 };	// Select, Delete, Cancel
-		int choice = JOptionPane.showOptionDialog(
-				pointEditSource, // Parent component (null for default frame)
-				HG0566Msgs.Text_47, //Select another Person or Delete current entry?
-				HG0566Msgs.Text_48 + personTypeSelected, // Edit
-							0, 3, null, options, options[0] // Specifies the options
-				);
-		// Process the user's choice
-		if (choice == JOptionPane.YES_OPTION) {			// Select option
-			activatePersonSelect(textFieldSelection);
-			btn_Save.setEnabled(true);
-		}
-		if (choice == JOptionPane.NO_OPTION) {		// Delete option
-			int choice2 = JOptionPane.showConfirmDialog(pointEditSource,
-					HG0566Msgs.Text_49,	// Are you sure you want to delete this entry?
-					HG0566Msgs.Text_48 + personTypeSelected, // Edit
-					JOptionPane.YES_NO_OPTION);
-			if (choice2 ==JOptionPane.YES_OPTION) {
-				pointCitationSourceHandler.updateTextFieldSelection(pointEditSource, textFieldSelection);
-				pointCitationSourceHandler.updatePersonName(null_RPID);
-				btn_Save.setEnabled(true);
-				return choice;
-			}
-		}
-		return choice;
-	}
+		// Set the new persons name into the Element table model but do not trigger tableModelListener
+		tableSrcElmntValues.getModel().removeTableModelListener(elementListener);
+		srcElmntValueModel.setValueAt(elementPersName, viewRow, viewColumn);
+		tableSrcElmntValues.getModel().addTableModelListener(elementListener);
+
+		btn_Save.setEnabled(true);
+
+		// Build the data object to pass to updateElementDataChangeList for the T734 update.
+		Object resetNameObj[] = new Object[3];
+		resetNameObj[0] = elementPersName;	// text value
+		resetNameObj[1] = personPID;		// base RPID
+		resetNameObj[2] = 0;				// basetype (0 for Person)
+
+		// Pass across element name, number and object containing data, baseRPID, baseType
+		pointCitationSourceHandler.updateElementDataChangeList(
+				(String)objectUniqueElmntData[viewRow][0], 		// Name
+				(String)objectUniqueElmntData[viewRow][2], 		// Num
+				resetNameObj);
+
+	}		// End resetElementName
 
 /**
  * private int validateBeforeSave( )

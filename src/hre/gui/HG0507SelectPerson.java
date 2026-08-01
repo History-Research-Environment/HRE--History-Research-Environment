@@ -24,7 +24,11 @@
 * v0.05.0033  2026-04-09 Modified for select of Relationship focus person (N.Tolleshaug)
 * 			  2026-05-25 Add tab/focus policy (D Ferguson)
 * 			  2025-06-13 Fix for correct citation parent relation (N. Tolleshaug)
- *************************************************************************************
+* v0.05.0034  2026-07-23 Add Sentence Editor button,listener  (D Ferguson/N. Tolleshaug)
+* 			  2026-07-25 Handle passing sexcodes to Sentence Editor (D Ferguson)
+* 			  2026-07-29 Removed 'sentenceRole' variables (D Ferguson)
+* 			  2026-07-31 Initiate varuable long eventTablePID = null_RPID (N. Tolleshaug)
+*************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
  * NOTE04 need to pass in the initial person (focusPersIDX)	as a new parameter
@@ -103,12 +107,14 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Select Person
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2024-03-10
  */
 
 public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
+	long null_RPID  = 1999999999999999L;
+	long proOffset  = 1000000000000000L;
 // Controls the added memo panel
 	public boolean additionalPanel = true; // Turned off in HG0566EditSource
 
@@ -139,8 +145,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private int foundRow;
 	private int clickedRow, selectedRowInTable;
 	public long personPID, personTablePID; // Mod 13.6.2026 NTo
+	long eventTablePID = null_RPID;
 	private String idText, allColumnsText1, allColumnsText2;
 	String[] tablePersColHeads = null;
+	String sexCode = "U", sexCode2 = "U";			//$NON-NLS-1$ //$NON-NLS-2$
+	int eventRoleNumber;
+	int eventTypeNumber;
 
     JScrollPane scrollTable;
 	JComboBox<String> comboBox_Subset;
@@ -160,8 +170,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	String newSelectedName;
 	JLabel lbl_nRole1, lbl_nRole2, lbl_ParentName;
 
-	public JButton btn_SaveEvent;
-	public JButton btn_Save;
+	public JButton btn_SaveEvent, btn_Save, btn_Sentence;
 
 	private Object[][] tablePersData;
 	private JTable tablePersons;
@@ -460,6 +469,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		control2Panel.setLayout(new MigLayout("insets 10", "[grow]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		btn_SaveEvent = new JButton(HG05070Msgs.Text_139);		// Partner & Event
 		btn_SaveEvent.setEnabled(false);
+		btn_Sentence = new JButton(HG05070Msgs.Text_147);		// Sentence Editor
+		control2Panel.add(btn_Sentence, "cell 0 0, alignx left");	//$NON-NLS-1$
 		if (addRelation)
 			control2Panel.add(btn_SaveEvent, "cell 0 0, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 		btn_Save = new JButton(HG05070Msgs.Text_140);		// Save
@@ -505,13 +516,13 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
         tablePersons.setDefaultRenderer(Integer.class, centerRenderer);
         tablePersons.setModel(myTableModel);
 		tablePersons.getColumnModel().getColumn(0).setMinWidth(50);
-		tablePersons.getColumnModel().getColumn(0).setPreferredWidth(50);
+		tablePersons.getColumnModel().getColumn(0).setPreferredWidth(50);		// ID
 		tablePersons.getColumnModel().getColumn(1).setMinWidth(50);
-		tablePersons.getColumnModel().getColumn(1).setPreferredWidth(250);
+		tablePersons.getColumnModel().getColumn(1).setPreferredWidth(250);		// Name
 		tablePersons.getColumnModel().getColumn(2).setMinWidth(90);
-		tablePersons.getColumnModel().getColumn(2).setPreferredWidth(120);
+		tablePersons.getColumnModel().getColumn(2).setPreferredWidth(120);		// Birth date
 		tablePersons.getColumnModel().getColumn(3).setMinWidth(90);
-		tablePersons.getColumnModel().getColumn(3).setPreferredWidth(120);
+		tablePersons.getColumnModel().getColumn(3).setPreferredWidth(120);		// Death date
 		tablePersons.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
 		// Set the ability to sort on columns
@@ -537,12 +548,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		tablePersons.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, Collections.emptySet());
 		tablePersons.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, Collections.emptySet());
 		InputMap im = tablePersons.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-		im.put(KeyStroke.getKeyStroke("TAB"), "none");
-		im.put(KeyStroke.getKeyStroke("shift TAB"), "none");
+		im.put(KeyStroke.getKeyStroke("TAB"), "none");				//$NON-NLS-1$ //$NON-NLS-2$
+		im.put(KeyStroke.getKeyStroke("shift TAB"), "none");		//$NON-NLS-1$ //$NON-NLS-2$
 		ActionMap am = tablePersons.getActionMap();
 		// Bind TAB to “select next row” (but preserve current 1st row setting)
-		im.put(KeyStroke.getKeyStroke("TAB"), "selectNextRow");
-		am.put("selectNextRow", new AbstractAction() {
+		im.put(KeyStroke.getKeyStroke("TAB"), "selectNextRow");		//$NON-NLS-1$ //$NON-NLS-2$
+		am.put("selectNextRow", new AbstractAction() {				//$NON-NLS-1$
 		    @Override
 		    public void actionPerformed(ActionEvent e) {
 		        int row = tablePersons.getSelectedRow();
@@ -562,8 +573,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		        }
 		    }
 		});  // and repeat for Shift+Tab
-		im.put(KeyStroke.getKeyStroke("shift TAB"), "selectPrevRow");
-		am.put("selectPrevRow", new AbstractAction() {
+		im.put(KeyStroke.getKeyStroke("shift TAB"), "selectPrevRow");	//$NON-NLS-1$ //$NON-NLS-2$
+		am.put("selectPrevRow", new AbstractAction() {					//$NON-NLS-1$
 		    @Override
 		    public void actionPerformed(ActionEvent e) {
 		        int row = tablePersons.getSelectedRow();
@@ -854,12 +865,29 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 						try {
 							pointOpenProject.setFocusPersonPID(personPID);
 						} catch (HBException hbe) {
-							System.out.println(" ERROR: - Update T126 focus person PID");
+							System.out.println(" ERROR: - Update T126 focus person PID");	//$NON-NLS-1$
 							hbe.printStackTrace();
 						}
-				// Only allowed if used to select citation person names.
+				// Only used to select HG0566-Source element names
 					pointCitationSourceHandler.updatePersonName(personPID);
 				}
+			}
+		});
+
+	// Listener for Sentence Editor button
+		btn_Sentence.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent actEvent) {
+				if (pointEditEvent != null) eventTypeNumber = pointEditEvent.getEventNumber();
+				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, eventTablePID,
+															eventTypeNumber,
+															eventRoleNumber, 	// role number
+															sexCode);	// sex code (U/F/M)
+				sentenceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+			// Anchor new screen at actualEvent JLabel
+				Point xyShow = pointSelectPerson.getLocationOnScreen();
+				sentenceScreen.setLocation(xyShow.x, xyShow.y);
+				sentenceScreen.setVisible(true);
 			}
 		});
 

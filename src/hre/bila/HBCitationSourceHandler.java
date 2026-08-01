@@ -55,6 +55,9 @@ package hre.bila;
  *			  2026-02-18 - Fix for 32.21 - Source element table add new source (N. Tolleshaug)
  *v0.05.0033  2026-04-09 - New line 197 - if (pointEditSource != null) - Fix fot App setting (N. Tolleshaug)
  *			  2026-05-19 - Remove method getSourceTemplates (never used) (D Ferguson)
+ *v0.05.0034  2026-07-01 - Removed dropped fieldsT736 handling to enable T736 add/update (D Ferguson)
+ * 			  2026-07-04 - Return new T734 fields to enable Source Element to be a PID (D Ferguson)
+ * 			  2026-06-11 - Updates to hnadle all revised T734 data and updates (D Ferguson)
  * *******************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
@@ -106,7 +109,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	Object[][] tableCiteData = null;
 	Object[][] tableSourceData =  null;
 	String[][] tableSourceElmntData = null;
-	String[][] tableSourceElmntDataValues = null;
+	Object[][] objectSourceElmntDataValues = null;
 	Object[][] tableSourceDefnData = null;
 	String[] sourceDefnTemplates = {" - "," - "," - "};
 	String[] accuracy = {"","","","",""};
@@ -122,7 +125,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 
 // Source T736 variables
 	long sourceTablePID, sourceDefinTablePID, nextSourceTablePID, sourceDefnPID,
-		  sourceAuthorPID = null_RPID, sourceEditorPID = null_RPID, sourceCompilerPID = null_RPID,
 		  reminderTablePID, referenceTablePID;
 
 	String sourceTitle = "New source", sourceAbbrev = "New source", sourceTypeName,
@@ -135,19 +137,21 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sourceDefReminder = "", sourceDefLanguage = "en-US";
 
 	int sourceNumber, majSource, sourceRefId, sourceDefType;
-	int textFieldSelection;
 	boolean sourceActive;
 
-// Sourcce element T738 data
-	String sourceElementNumber = "", sourceElementData = "";
+// Sourcce element T738 data - set null values
+	String sourceElementNumber = "", sourceElementText = "";
+	Long sourceElementBaseRPID = null_RPID;
+	int sourceElementBaseType = 0;
 	long nextSourceElementDataPID;
 	long nextSourceElementTablePID;
+	Object elementDataObj[];		// wil contain text, rpid, type
 
 // Data for source element definition
 	String sourceElementIdent, sourceElementLanguage, sourceElementName;
 
-	// Records the name element changes from HG0566EditSource
-	HashMap<String,String> elementNameDataChanges = new HashMap<String,String>();
+	// Records the Source element changes from HG0566EditSource
+	HashMap<String,Object> elementNameDataChanges = new HashMap<String,Object>();
 
 /**
  * public String[] getAccuracyData()
@@ -179,9 +183,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public HG0507SelectPerson activateSelectPerson(HBProjectOpenData pointOpenProject,
-										HG0566EditSource pointEditSource,
-										int textFieldSelection) throws HBException {
-		this.textFieldSelection = textFieldSelection;
+										HG0566EditSource pointEditSource) throws HBException {
 		this.pointEditSource = pointEditSource;
 		HBPersonHandler pointPersonHandler = pointOpenProject.getPersonHandler();
 		pointSelectPerson = new HG0507SelectPerson(pointPersonHandler, pointOpenProject, false);
@@ -189,20 +191,13 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	}
 
 /**
- * updateAutorsName(long personTablePID)
+ * updatePersonName(long personTablePID)
  * @param personTablePID
  */
 	public void updatePersonName(long personTablePID) {
-		if (textFieldSelection == 1) sourceAuthorPID = personTablePID;
-		else if (textFieldSelection == 2) sourceEditorPID = personTablePID;
-		else if (textFieldSelection == 3) sourceCompilerPID = personTablePID;
+	// Pass the PersonPID selected in HG0507 back to HG0566EditSource
 		if (pointEditSource != null)
-			pointEditSource.resetNames(sourceAuthorPID, sourceEditorPID, sourceCompilerPID);
-	}
-
-	public void updateTextFieldSelection(HG0566EditSource pointEditSource, int textFieldSelection) {
-		this.pointEditSource = pointEditSource;
-		this.textFieldSelection = textFieldSelection;
+			pointEditSource.resetElementName(personTablePID);
 	}
 
 /**
@@ -302,9 +297,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		sourceReference		= (String) sourceStoreData[9];		//  used
 		sourceReminder		= (String) sourceStoreData[10] ; 	//  used
 		sourceDefnPID		= (long) sourceStoreData[11] ;		//  used to get SourceDefn templates and Defn Name
-		sourceAuthorPID		= (long) sourceStoreData[12] ;      //  used
-		sourceEditorPID		= (long) sourceStoreData[13] ;		//  used
-		sourceCompilerPID	= (long) sourceStoreData[14] ;		//  used
 
 		ResultSet sourceTableRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
@@ -343,9 +335,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		sourceReference		= (String) sourceStoreData[9];		//  used
 		sourceReminder		= (String) sourceStoreData[10] ; 	//  used
 		sourceDefnPID		= (long) sourceStoreData[11] ;		//  used to get SourceDefn templates and Defn Name
-		sourceAuthorPID		= (long) sourceStoreData[12] ;
-		sourceEditorPID		= (long) sourceStoreData[13] ;
-		sourceCompilerPID	= (long) sourceStoreData[14] ;
 
 		ResultSet sourceTableRS;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
@@ -677,9 +666,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			// Source title
 				sourceTitle = eventSourcRS.getString("SORC_ABBREV").trim();
 				citationTableData[index][1] = " " + sourceTitle;
-		/*      System.out.println(citationTableData[index][0] + " "
-									+ citationTableData[index][1] + " "
-									+ citationTableData[index][2]);			*/
 				index++;
 
 			}
@@ -813,9 +799,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sourceTextPID = sourceRS.getLong("SORC_TEXT_RPID");
 			if (sourceTextPID == null_RPID) sourceText = "";
 			else sourceText = pointHREmemo.readMemo(sourceTextPID);
-			sourceAuthorPID = sourceRS.getLong("SORC_AUTHOR_RPID");
-			sourceEditorPID = sourceRS.getLong("SORC_EDITOR_RPID");
-			sourceCompilerPID = sourceRS.getLong("SORC_COMPILER_RPID");
 			sourceAbbrev = sourceRS.getString("SORC_ABBREV").trim();
 			sourceTitle = sourceRS.getString("SORC_TITLE").trim();
 			sourceFullFoot = sourceRS.getString("SORC_FULLFORM").trim();
@@ -838,9 +821,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sourceEditData[9] = sourceText;
 			sourceEditData[10] = sourceRemind;
 			sourceEditData[11] = sourceDefnPID;
-			sourceEditData[12] = sourceAuthorPID;
-			sourceEditData[13] = sourceEditorPID;
-			sourceEditData[14] = sourceCompilerPID;
 		} catch (SQLException sqle) {
 			System.out.println(" getSourceData() error: " + sqle.getMessage());
 			sqle.printStackTrace();
@@ -885,8 +865,8 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-	public String[][] getSourceElmntDataValues(long sourceOwner) throws HBException {
-	// Load all T734 SORC_DATA records for a particular Source
+	public Object[][] getSourceElmntDataValues(long sourceOwner) throws HBException {
+	// Load all T734 SORC_DATA records for a particular Source (the Owner)
 		int index = 0;
 		ResultSet elmntValuRS;
 
@@ -896,11 +876,13 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		elmntValuRS = requestTableData(selectString, dataBaseIndex);
 		try {
 			elmntValuRS.last();
-			tableSourceElmntDataValues= new String[elmntValuRS.getRow()][2];
+			objectSourceElmntDataValues= new Object[elmntValuRS.getRow()][4];
 			elmntValuRS.beforeFirst();
 			while (elmntValuRS.next()) {
-				tableSourceElmntDataValues[index][0] = elmntValuRS.getString("SORC_ELMNT_NUM");
-				tableSourceElmntDataValues[index][1] = elmntValuRS.getString("SORC_ELMNT_DATA");
+				objectSourceElmntDataValues[index][0] = elmntValuRS.getString("SORC_ELMNT_NUM");
+				objectSourceElmntDataValues[index][1] = elmntValuRS.getString("SORC_ELMNT_DATA");
+				objectSourceElmntDataValues[index][2] = elmntValuRS.getLong("SORC_ELEMNT_BASE_RPID");
+				objectSourceElmntDataValues[index][3] = elmntValuRS.getInt("SORC_ELEMNT_BASE_TYPE");
 				index++;
 			}
 		} catch (SQLException sqle) {
@@ -908,7 +890,7 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			sqle.printStackTrace();
 			throw new HBException(" getSourceElmntValue() error: " + sqle.getMessage());
 		}
-		return tableSourceElmntDataValues;
+		return objectSourceElmntDataValues;
 	}
 
 /**
@@ -1141,6 +1123,8 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
  SORC_OWNER_RPID
  SORC_ELMNT_NUM
  SORC_ELMNT_DATA
+ SORC_ELEMNT_BASE_RPID
+ SORC_ELEMNT_BASE_TYPE
  * @throws HBException
  */
 	private void addToSourceElementDataT734_SORC_DATA(long T738tablePID, ResultSet hreTable) throws HBException {
@@ -1153,8 +1137,9 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateLong("SORC_OWNER_RPID", sourceTablePID);
 			hreTable.updateString("SORC_ELMNT_NUM", sourceElementNumber);
-			hreTable.updateString("SORC_ELMNT_DATA", sourceElementData);
-
+			hreTable.updateString("SORC_ELMNT_DATA", sourceElementText);
+			hreTable.updateLong("SORC_ELEMNT_BASE_RPID", sourceElementBaseRPID);
+			hreTable.updateInt("SORC_ELEMNT_BASE_TYPE", sourceElementBaseType);
 		//Insert row
 			hreTable.insertRow();
 
@@ -1228,16 +1213,17 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	}
 
 /**
- * public void updateElementDataChangeList(String elementName, String elementNumber, String elementData)
- * Update the elementNameDataChanges HashMap with edited element data.
- * If key (elementNumber exist in HashMap the olde entry is overwritten
- * @param selectedIndex
- * @param nameData
+ * public void updateElementDataChangeList(String elementName, String elementNumber, Object elementDataObject)
+ * Update the elementNameDataChanges HashMap with the elementData Object, which contains value, BasRPID, baseType
+ * If key (elementNumber exist in HashMap the oldest entry is overwritten
+ * @param elementName
+ * @param elementNumber
+ * @param elementDataObject
  */
-	public void updateElementDataChangeList(String elementName, String elementNumber, String elementData) {
+	public void updateElementDataChangeList(String elementName, String elementNumber, Object elementDataObject) {
 		if (HGlobal.DEBUG)
-			System.out.println(" updateElementDataChangeList(): " +  elementName + "/" + elementNumber + "/" + elementData);
-		elementNameDataChanges.put(elementNumber, elementData);
+			System.out.println(" updateElementDataChangeList(): " +  elementName + "/" + elementNumber);
+		elementNameDataChanges.put(elementNumber, elementDataObject);
 	}
 
 /**
@@ -1253,11 +1239,15 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 		if (add) sourceTablePID = nextSourceTablePID; // Why ?
 		sourceElementDataRS = requestTableData(selectString, dataBaseIndex);
 	// Loop HashMap
-		for (Map.Entry<String, String> entry : elementNameDataChanges.entrySet()) {
+		for (Map.Entry<String, Object> entry : elementNameDataChanges.entrySet()) {
 			sourceElementNumber = entry.getKey();
-			sourceElementData = entry.getValue();
+			elementDataObj = (Object[]) entry.getValue();
+			sourceElementText = (String) elementDataObj[0];
+			sourceElementBaseRPID = (Long) elementDataObj[1];
+			sourceElementBaseType = (int) elementDataObj[2];
             if (HGlobal.DEBUG)
-            	System.out.println("Element Data: " + sourceElementNumber + ", Data: " + sourceElementData);
+            	System.out.println("Element Data for Number: " + sourceElementNumber
+            			+ ", Data: " + sourceElementText + " RPID = " + sourceElementBaseRPID);
 			addToSourceElementDataT734_SORC_DATA(nextSourceElementDataPID, sourceElementDataRS);
 			nextSourceElementDataPID++;
 		}
@@ -1278,9 +1268,12 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 			while (sourceElementDataRS.next()) {
 				sourceElementNumber = sourceElementDataRS.getString("SORC_ELMNT_NUM");
 				if (elementNameDataChanges.containsKey(sourceElementNumber)) {
-					sourceElementData = elementNameDataChanges.get(sourceElementNumber);
+					elementDataObj = (Object[]) elementNameDataChanges.get(sourceElementNumber);
 					elementNameDataChanges.remove(sourceElementNumber);
-					sourceElementDataRS.updateString("SORC_ELMNT_DATA", sourceElementData);
+					// Extract the 3 values from the data object
+					sourceElementDataRS.updateString("SORC_ELMNT_DATA", (String) elementDataObj[0]);
+					sourceElementDataRS.updateLong("SORC_ELEMNT_BASE_RPID", (long) elementDataObj[1]);
+					sourceElementDataRS.updateInt("SORC_ELEMNT_BASE_TYPE", (int) elementDataObj[2]);
 					sourceElementDataRS.updateRow();
 				}
 			}
@@ -1306,9 +1299,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	SORC_TYPE SMALLINT NOT NULL,
 	SORC_FIDELITY CHAR(1) NOT NULL,
 	SORC_TEXT_RPID BIGINT NOT NULL,
-	SORC_AUTHOR_RPID BIGINT NOT NULL,
-	SORC_EDITOR_RPID BIGINT NOT NULL,
-	SORC_COMPILER_RPID BIGINT NOT NULL,
 	SORC_ABBREV CHAR(50) NOT NULL,
 	SORC_TITLE VARCHAR(400) NOT NULL,
 	SORC_FULLFORM VARCHAR(500) NOT NULL,
@@ -1339,9 +1329,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateString("SORC_FIDELITY", sourceFidelity);
 			// Create source reference text
 				hreTable.updateLong("SORC_TEXT_RPID", pointHREmemo.addMemoRecord(sourceReference));
-				hreTable.updateLong("SORC_AUTHOR_RPID", sourceAuthorPID);
-				hreTable.updateLong("SORC_EDITOR_RPID", sourceEditorPID);
-				hreTable.updateLong("SORC_COMPILER_RPID", sourceCompilerPID);
 				hreTable.updateString("SORC_ABBREV", sourceAbbrev);
 				hreTable.updateString("SORC_TITLE", sourceTitle);
 				hreTable.updateString("SORC_FULLFORM", sourceFullFoot);
@@ -1371,9 +1358,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 	SORC_TYPE SMALLINT NOT NULL,
 	SORC_FIDELITY CHAR(1) NOT NULL,
 	SORC_TEXT_RPID BIGINT NOT NULL,
-	SORC_AUTHOR_RPID BIGINT NOT NULL,
-	SORC_EDITOR_RPID BIGINT NOT NULL,
-	SORC_COMPILER_RPID BIGINT NOT NULL,
 	SORC_ABBREV CHAR(50) NOT NULL,
 	SORC_TITLE VARCHAR(400) NOT NULL,
 	SORC_FULLFORM VARCHAR(500) NOT NULL,
@@ -1397,9 +1381,6 @@ public class HBCitationSourceHandler extends HBBusinessLayer {
 				hreTable.updateLong("SORC_TEXT_RPID", pointHREmemo.addMemoRecord(sourceReference));
 			else
 				pointHREmemo.findT167_MEMOrecord(sourceReference, referenceTablePID);
-			hreTable.updateLong("SORC_AUTHOR_RPID", sourceAuthorPID);
-			hreTable.updateLong("SORC_EDITOR_RPID", sourceEditorPID);
-			hreTable.updateLong("SORC_COMPILER_RPID", sourceCompilerPID);
 			hreTable.updateString("SORC_ABBREV", sourceAbbrev);
 			hreTable.updateString("SORC_TITLE", sourceTitle);
 			hreTable.updateString("SORC_FULLFORM", sourceFullFoot);

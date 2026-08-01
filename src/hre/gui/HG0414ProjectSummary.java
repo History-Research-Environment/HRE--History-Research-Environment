@@ -13,6 +13,7 @@ package hre.gui;
 * v0.01.0025 2021-03-07 text converted to NLS (D Ferguson)
 * 			 2021-04-03 changed so screen size adjusts to table/font size (D Ferguson)
 * v0.01.0026 2021-05-07 make table expand if screen expanded (D Ferguson)
+* v0.05.0034 2026-07-14 Fix 33.18 Add table count data into Summary display (D Ferguson)
 **************************************************************************************/
 
 import java.awt.Dimension;
@@ -43,7 +44,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Project Summary
  * @author R Thompson
- * @version v0.01.0026
+ * @version v0.05.0034
  * @since 2019-02-17
  */
 
@@ -102,9 +103,9 @@ public class HG0414ProjectSummary extends HG0450SuperDialog {
 		table_Properties.setModel(new DefaultTableModel(summaryData,
 				new String[] {	HG0414Msgs.Text_11, HG0414Msgs.Text_12	}
 				));
-		table_Properties.getColumnModel().getColumn(0).setPreferredWidth(130);
+		table_Properties.getColumnModel().getColumn(0).setPreferredWidth(200);
 		table_Properties.getColumnModel().getColumn(0).setMinWidth(100);
-		table_Properties.getColumnModel().getColumn(1).setPreferredWidth(300);
+		table_Properties.getColumnModel().getColumn(1).setPreferredWidth(250);
 		table_Properties.getColumnModel().getColumn(1).setMinWidth(150);
 		JTableHeader pHeader = table_Properties.getTableHeader();
 		pHeader.setOpaque(false);
@@ -117,7 +118,7 @@ public class HG0414ProjectSummary extends HG0450SuperDialog {
 		// Setup scrollpane at correct size
 		scrollPane.setViewportView(table_Properties);
 		int nRows = table_Properties.getRowCount();
-		table_Properties.setPreferredScrollableViewportSize(new Dimension(430, nRows*table_Properties.getRowHeight()));
+		table_Properties.setPreferredScrollableViewportSize(new Dimension(450, nRows*table_Properties.getRowHeight()));
 
 		pack();
 

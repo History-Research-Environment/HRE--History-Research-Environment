@@ -80,6 +80,8 @@ package hre.tmgjava;
  *			  2026-06-03 - Fix for handling import of user event types (N. Tolleshaug)
  *			  2026-06-11 - Modifications etype = etype + 2000; (N. Tolleshaug)
  *			  2026-06-27 - Updated PRIMARY_NUM in T451_EVNTASSOC (N. Tolleshaug)
+ * v0.05.0034 2026-06-30 - Remove T450/T451 sentence field reference (D Ferguson)
+*			  2026-07-05 - Added updateLong("SENT_OWNER_RPID", null_RPID) to T168 (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -412,7 +414,6 @@ class TMGpass_Events  {
 			if (per1 != 0) {
 				hreTable.updateLong("PRIM_ASSOC_RPID", proOffset + per1);
 				roleNumber = tmgEtable.findVectorString(recNr, 0, "ROLE"); // 22.11.2024
-				//roleNumber = tmgEtable.findValueString(recNr,"ROLE");
 			} else {
 				hreTable.updateLong("PRIM_ASSOC_RPID", proOffset + per2);
 
@@ -435,7 +436,6 @@ class TMGpass_Events  {
 			else hreTable.updateInt("PRIM_ASSOC_ROLE_NUM", 00001);
 
 			hreTable.updateInt("PRIM_ASSOC_BASE_TYPE",0);
-			hreTable.updateLong("PRIM_ASSOC_SENTENCE_RPID", null_RPID);
 
 		// Insert row
 			hreTable.insertRow();
@@ -939,6 +939,7 @@ class TMGpass_Events  {
 	 LANG_CODE
 	 EVNT_TYPE
 	 EVNT_ROLE_NUM
+	 SENT_OWNER_RPID
  */
 
 	protected void addToT168_SENTENCE_SET(ResultSet hreTable, long primaryPID, String lang_code, int etypeNumber,
@@ -959,6 +960,7 @@ class TMGpass_Events  {
 				hreTable.updateBoolean("IS_LONG", true);
 				hreTable.updateClob("LONG_SENT", pointHREbase.createNClob(TMGsentence));
 			}
+			hreTable.updateLong("SENT_OWNER_RPID", null_RPID);
 
 		//Insert row
 			hreTable.insertRow();
@@ -1045,27 +1047,27 @@ class TMGpass_Events  {
 			System.out.println(" WARNING: addTo_T460_EVNT_DEFN - EVNT_ABBREV: " + abbrev + " - Length: "
 					+ abbrev.length() + "/10");
 			if (HGlobal.writeLogs)
-				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_ABBREV - Length: " 
+				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_ABBREV - Length: "
 						+ abbrev.length() + "/10 - " + abbrev + "\n");
 			abbrev = abbrev.substring(0,10);
 		}
-		
+
 	// Reminder too long?
-		if (reminder.length() > 5000) {
+		if (reminder.length() > 15000) {
 			System.out.println(" WARNING: addTo_T460_EVNT_DEF - EVNT_HINT - Length: "
-					+ reminder.length() + "/5000");
+					+ reminder.length() + "/15000");
 			if (HGlobal.writeLogs)
 				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_HINT - Length: "
-						+ reminder.length() + "/5000 - " +  reminder + "\n");
-			reminder = reminder.substring(0,5000);
+						+ reminder.length() + "/15000 - " +  reminder + "\n");
+			reminder = reminder.substring(0,15000);
 		}
-		
+
 	// Pasttense too long?
 		if (pasttense.length() > 30) {
 			System.out.println(" WARNING: addTo_T460_EVNT_DEF - EVNT_PAST - Length: "
 					+ pasttense.length() + "/30");
 			if (HGlobal.writeLogs)
-				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_PAST - Length: " 
+				HB0711Logging.logWrite("WARNING: addTo_T460_EVNT_DEF - EVNT_PAST - Length: "
 						+ pasttense.length() + "/30 - " + pasttense + "\n");
 			pasttense = pasttense.substring(0,30);
 		}
@@ -1300,7 +1302,7 @@ class TMGpass_Events  {
 							partnerEvent++;
 						}
 					}
-				
+
 					assocAdded = false; // Flag to mark assoc already added
 
 					 if (eper != per1 && per1 != 0 && per2 != 0) // Test 11.11.2024 exclude only PER2 set
@@ -1405,10 +1407,10 @@ class TMGpass_Events  {
 			int per1 = tmgGtable.findValueInt(gnumIndex,"PER1");
 			int per2 = tmgGtable.findValueInt(gnumIndex,"PER2");
 			int eper = tmgEtable.getValueInt(primaryIndex,"EPER");
-			
+
 		// Update PX reference that is mark P2 in associate list
 			if (eper == per1 || eper == per2) {
-				principal = true; 
+				principal = true;
 				primaryNumber = 2;
 			} else {
 				principal = false;
@@ -1433,7 +1435,6 @@ class TMGpass_Events  {
 			else hreTable.updateLong("MEMO_RPID",
 					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(memo));
 
-			hreTable.updateLong("ASSOC_SENTENCE_RPID", null_RPID);
 		//Insert row
 			hreTable.insertRow();
 

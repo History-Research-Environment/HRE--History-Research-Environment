@@ -53,6 +53,17 @@ public class HGlobalMsgs extends NLS {
 	public static String Text_103;
 	public static String Text_104;
 
+	public static String Text_110;
+	public static String Text_111;
+	public static String Text_112;
+	public static String Text_113;
+	public static String Text_114;
+	public static String Text_115;
+	public static String Text_116;
+	public static String Text_117;
+	public static String Text_118;
+	public static String Text_119;
+
 	public HGlobalMsgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HGlobal-" + guiLanguage;	//$NON-NLS-1$

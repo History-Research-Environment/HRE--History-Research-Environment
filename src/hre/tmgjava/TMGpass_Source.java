@@ -1,14 +1,14 @@
 package hre.tmgjava;
-/******************************************************************************
+/****************************************************************************************************
  * Uses library com.linuxense.javadbf
  * Java library for reading and writing Xbase (dBase/DBF) files
  * https://github.com/albfernandez/javadbf
  * albfernandez/javadbf is licensed under the
  * GNU Lesser General Public License v3.0
  * Written by Alberto Fern�ndez
- * *******************************************************************************
+ * *************************************************************************************************
  * Process Citation/Source tables in HRE
- * *******************************************************************************
+ * *************************************************************************************************
  * v0.04.0032  2025-02-11 - Added code for citation/source import (N. Tolleshaug)
  * 			   2025-02-11 - Updated code for citation/source tables (N. Tolleshaug)
  * 			   2025-02-14 - Updated code name/location tables import (N. Tolleshaug)
@@ -50,7 +50,9 @@ package hre.tmgjava;
  * 			   2026-03-21 - Handle TMG escape char when extracting Element names (D Ferguson)
  * 			   2026-03-23 - Handle TMG escape char when converting Element name to number (D Ferguson)
  * 			   2026-04-23 - Fix 33.05 identify preloaded [REPOSITORY items correctly (D Ferguson)
- **********************************************************************************
+ * v0.05.0034  2026-06-30 - Remove T736 reference to fields removed in Seed V23 (D Ferguson)
+ * 			   2026-07-04 - Add handling of new T734 fields for TMG Element grp 6-10 (D Ferguson)
+ *******************************************************************************************************
  * Accuracy numerical definitions
  * 		3 = an original source, close in time to the event
  * 		2 = a reliable secondary source
@@ -59,7 +61,7 @@ package hre.tmgjava;
  *  	- = -1 the source does not support the information cited or this information has been disproved.
  * 	space = -2 no accuracy recorded
  * 	empty = -3 No data available
- * *******************************************************************************
+ * ***************************************************************************************************
  * For Fidelity, TMG set it as
  * 1 = Other, 2 = Original, 3 = Photocopy, 4 = Transcript, 5 = Extract :
  * TMG = 1 - > HRE 'E'
@@ -67,7 +69,7 @@ package hre.tmgjava;
  * TMG = 3 - > HRE 'B'
  * TMG = 4 - > HRE 'C'
  * TMG = 5 - > HRE 'D'
- *********************************************************************************/
+ ***************************************************************************************************/
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -155,7 +157,7 @@ public class TMGpass_Source {
 	public HashMap<Integer,Long> sorcDefinPIDindex = new HashMap<Integer,Long>();
 
 /**
- * Constructor TMGpass_V22c_Source
+ * Constructor TMGpass_Source
  * @param pointHREbase
  */
 	TMGpass_Source(HREdatabaseHandler pointHREbase, String ruleSet) {
@@ -639,8 +641,12 @@ public class TMGpass_Source {
 							System.out.println(" T734 element mumber < 01: " + elementNumberList.get(j));
 						else {	// otherwise write out the T734 record
 							T734tablePID = T734tablePID + 1;
-							insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
-									elementNumberList.get(j), sourceTitle, tableT734_SORC_ELMNT_DATA);
+							insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+									sourceTablePID,					// PID of owning T736
+									elementNumberList.get(j), 		// element number
+									sourceTitle, 					// element data (the Source title)
+									null_RPID,						// RPID of a Person (null in this case)
+									tableT734_SORC_ELMNT_DATA);
 						}
 					}
 				}
@@ -673,10 +679,80 @@ public class TMGpass_Source {
 							System.out.println(" T734 element mumber - splitInfo - " + j + " - " + splitInfo[j][1] + "/" + splitInfo[j][0]);
 						else {		// otherwise, write the T734
 							T734tablePID = T734tablePID + 1;
-							insertRowT734_SORC_DATA(T734tablePID, sourceTablePID,
-									splitInfo[j][1], splitInfo[j][0], tableT734_SORC_ELMNT_DATA);
+							insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+									sourceTablePID,					// PID of owning T736
+									splitInfo[j][1], 				// element number
+									splitInfo[j][0], 				// element text data
+									null_RPID,						// RPID of a Person (null in this case)
+									tableT734_SORC_ELMNT_DATA);
 						}
 					}
+				}
+
+			// In each M record there are 5 fields which may contain a Person ID#.
+			// Each of these numbers is used as a Person reference for any Source Element of gropus 6-10, and
+			// replaces what is otherwise a text value for any Source Element of these groups.
+			// To handle these, we need to do the following:
+			// 		1) if the ID# in any of these firlds is > 0, use it as the Person PID
+			//		2) create a T734 record with no text, but containing the Person PID
+			//		3) use a T734 element number of the relevant group number + 000
+			// The fields are M.SPERNO (group 6), M.SUBJECTID (group 7), M.COMPILERID (group 8),
+			//	 M.EDITORID (group 9), M.SPERNO2 (group 10). We now work through these values:
+				Long mTablePerPID;
+				int mTablePerID = tmgMtable.getValueInt(index_M_Table, "SPERNO");
+				if (mTablePerID > 0) {
+					mTablePerPID = proOffset + mTablePerID;
+					T734tablePID = T734tablePID + 1;
+					insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+							sourceTablePID,					// PID of owning T736
+							"06000", 						// element number
+							"", 							// element text data
+							mTablePerPID,					// RPID of a Person
+							tableT734_SORC_ELMNT_DATA);
+				}
+				mTablePerID = tmgMtable.getValueInt(index_M_Table, "SUBJECTID");
+				if (mTablePerID > 0) {
+					mTablePerPID = proOffset + mTablePerID;
+					T734tablePID = T734tablePID + 1;
+					insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+							sourceTablePID,					// PID of owning T736
+							"07000", 						// element number
+							"", 							// element text data
+							mTablePerPID,					// RPID of a Person
+							tableT734_SORC_ELMNT_DATA);
+				}
+				mTablePerID = tmgMtable.getValueInt(index_M_Table, "COMPILERID");
+				if (mTablePerID > 0) {
+					mTablePerPID = proOffset + mTablePerID;
+					T734tablePID = T734tablePID + 1;
+					insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+							sourceTablePID,					// PID of owning T736
+							"08000", 						// element number
+							"", 							// element text data
+							mTablePerPID,					// RPID of a Person
+							tableT734_SORC_ELMNT_DATA);
+				}
+				mTablePerID = tmgMtable.getValueInt(index_M_Table, "EDITORID");
+				if (mTablePerID > 0) {
+					mTablePerPID = proOffset + mTablePerID;
+					T734tablePID = T734tablePID + 1;
+					insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+							sourceTablePID,					// PID of owning T736
+							"09000", 						// element number
+							"", 							// element text data
+							mTablePerPID,					// RPID of a Person
+							tableT734_SORC_ELMNT_DATA);
+				}
+				mTablePerID = tmgMtable.getValueInt(index_M_Table, "SPERNO2");
+				if (mTablePerID > 0) {
+					mTablePerPID = proOffset + mTablePerID;
+					T734tablePID = T734tablePID + 1;
+					insertRowT734_SORC_DATA(T734tablePID, 	// T734 PID
+							sourceTablePID,					// PID of owning T736
+							"10000", 						// element number
+							"", 							// element text data
+							mTablePerPID,					// RPID of a Person
+							tableT734_SORC_ELMNT_DATA);
 				}
 
 			// For each of the 3 M table source templates, convert their element [NAME] entries
@@ -850,10 +926,13 @@ public class TMGpass_Source {
 	createTableInBase("T734_SORC_DATA","PID BIGINT NOT NULL,"
 			  + "SORC_OWNER_RPID BIGINT NOT NULL,"
 			  + "SORC_ELMNT_NUM CHAR(5) NOT NULL,"
-			  + "SORC_ELMNT_DATA VARCHAR(400) NOT NULL");
+			  + "SORC_ELMNT_DATA VARCHAR(400) NOT NULL".
+			  + "SORC_ELEMNT_BASE_RPID BIGINT NOT NULL".
+			  + "SORC_ELEMNT_BASE_TYPE SMALLINT NOT NULL"
+			  );
 */
 	private void insertRowT734_SORC_DATA(long T734tablePID, long T736tablePID, String elementNum,
-										String elementData, ResultSet hreTable) throws HCException {
+										String elementData, Long elementBaseRPID, ResultSet hreTable) throws HCException {
 		try {
 		    // moves cursor to the insert row
 				hreTable.moveToInsertRow();
@@ -862,6 +941,8 @@ public class TMGpass_Source {
 				hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 				hreTable.updateLong("SORC_OWNER_RPID", T736tablePID);
 				hreTable.updateString("SORC_ELMNT_NUM", elementNum );
+				hreTable.updateLong("SORC_ELEMNT_BASE_RPID", elementBaseRPID );	// Seed V23 update
+				hreTable.updateInt("SORC_ELEMNT_BASE_TYPE", 0 );			// Seed V23 update - assume erson base type for now
 			// Chesnay project adjustment - 25.10.2025
 				if (elementData.length() > 400) {
 					System.out.println(" * TmgJava - insertRowT734_SORC_DATA - SORC_ELMNT_DATA input > 400:\n" + elementData);
@@ -977,9 +1058,6 @@ public class TMGpass_Source {
 				SORC_TYPE SMALLINT NOT NULL,
 				SORC_FIDELITY CHAR(1) NOT NULL,
 				SORC_TEXT_RPID BIGINT NOT NULL,
-				SORC_AUTHOR_RPID BIGINT NOT NULL,
-				SORC_EDITOR_RPID BIGINT NOT NULL,
-				SORC_COMPILER_RPID BIGINT NOT NULL,
 				SORC_ABBREV CHAR(50) NOT NULL,
 				SORC_TITLE VARCHAR(600) NOT NULL,
 				SORC_FULLFORM VARCHAR(500) NOT NULL,
@@ -1025,11 +1103,6 @@ public class TMGpass_Source {
 				if (sourceMemo.length() == 0) hreTable.updateLong("SORC_TEXT_RPID", null_RPID);
 				else hreTable.updateLong("SORC_TEXT_RPID",
 						tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(sourceMemo));
-
-			// Check the following RPID value towards PID for T401
-				hreTable.updateLong("SORC_AUTHOR_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"SPERNO"));
-				hreTable.updateLong("SORC_EDITOR_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"EDITORID"));
-				hreTable.updateLong("SORC_COMPILER_RPID", proOffset + tmgMtable.getValueInt(index_M_Table,"COMPILERID"));
 			// End
 				hreTable.updateString("SORC_ABBREV",tmgMtable.getValueString(index_M_Table,"ABBREV"));
 				String sorcTitle = tmgMtable.getValueString(index_M_Table,"TITLE");

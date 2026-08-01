@@ -39,6 +39,9 @@ package hre.tmgjava;
  * v0.05.0033 2026-04-06 - Added focusperson in T126 (N. Tolleshaug)
  * 			  2026-04-23 - ALTER TABLE T460_EVNT_DEFN ALTER COLUMN EVNT_HINT VARCHAR(5000)  (N. Tolleshaug)
  * 			  2026-06-27 - Added field PRIMARY_NUM in T451_EVNT_ASSOC (N. Tolleshaug)
+ * v0.05.0034 2026-07-01 - Converted to Build 34 and database V23 (N. Tolleshaug)
+ * 			  2026-07-04 - Renamed to HREtableLoader in build 34 (N. Tolleshaug)
+ * 			  2026-07-04 - Removed in B34 all databse updates from B33 (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -47,13 +50,13 @@ import java.sql.SQLException;
 import hre.bila.HB0711Logging;
 import hre.gui.HGlobal;
 /**
- * class HREloader_V22c
+ * class HRETableLoader
  * Initiate the HRE tables
  * @author NTo - Nils Tolleshaug
  * @since 2020-03-05
  * @see document
  */
-public class HREloader_V22c {
+public class HREtableLoader {
 
 	HREdatabaseHandler pointHREbase;
 	String urlH2loc;
@@ -67,32 +70,21 @@ public class HREloader_V22c {
  * @param urlH2loc
  * @throws HCException
  */
-	public HREloader_V22c(String urlH2loc, TMGHREconverter tmgHreConverter) throws HCException {
+	public HREtableLoader(String urlH2loc, TMGHREconverter tmgHreConverter) throws HCException {
 		int nrOfTables = 32;
 		int completed = 0;
 		this.urlH2loc = urlH2loc;
 		this.tmgHreConverter = tmgHreConverter;
 		try {
-			System.out.println(" HREloader database: v22c - HRE database connected!");
+			
 			pointHREbase = new HREdatabaseHandler(urlH2loc);
+			System.out.println(" HREloader - HRE database connected!");
 
 	// Update table T126 - IS_IMPORTED
 			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");
-			
-	// Add FOCUS_PER_RPID to T126		
-			alterColumnInTable("T126_PROJECTS","FOCUS_PER_PID","BIGINT");
 
 	// Set boolean IS_OWNER in T131
 			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
-			
-	//ALTER TABLE table_name  RENAME COLUMN old_name to new_name;
-			updateTableInBase("T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID");
-			
-	// Add FRIMARY_NUM to T451		
-			alterColumnInTable("T451_EVNT_ASSOC","PRIMARY_NUM","SMALLINT");
-			
-	// Update table T460_EVNT_DEFN
-			updateTableInBase("T460_EVNT_DEFN", "ALTER TABLE","ALTER COLUMN EVNT_HINT VARCHAR(5000)");
 
 	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");

@@ -53,7 +53,12 @@ package hre.tmgjava;
  *			  2026-06-14 - Added import of memo for name types N.dbf table (N. Tolleshaug)
  *			  2026-06-18 - Remove inferred names from import to T403 (N. Tolleshaug)
  *			  2026-06-21 - Remove sort names from T403 if equal name element (N. Tolleshaug/D Ferguson)
+ * v0.05.0034 2025-06-30 - Remove T403 reference to LANG_CODE for Seed V23 (D Ferguson)
+ ***************************************************************************************
+ *  NOTE - See findNameValue(int indexNPID, boolean inferredSurname, boolean inferredGivenname)
+ *         for sortname options NTo/Don
  ****************************************************************************************/
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -599,7 +604,6 @@ public class TMGpass_Persons {
 			hreTable.updateLong("PID", primaryPID);
 			hreTable.updateLong("CL_COMMIT_RPID", null_RPID);
 			hreTable.updateLong("OWNER_RPID", proOffset + tmgNtable.getValueInt(rowPID,"RECNO"));
-			hreTable.updateString("LANG_CODE", ""); // Not needed ********************
 			hreTable.updateString("ELEMNT_CODE", pointSupportPass.getPersonStyleCodes(encodingType));
 			hreTable.updateString("NAME_DATA", nameElement);
 		//Insert row
@@ -806,10 +810,12 @@ public class TMGpass_Persons {
 					else surName = nameString;
 
 				if (namePartInx  == 8 ) 	//sortsurname
-					if (inferredSurname || surName.equals(nameString)) continue;
+					if (surName.equals(nameString)) continue; // NTo - keep the sortname if missing name
+					//if (inferredSurname || surName.equals(nameString)) continue; // Don option 21.6.2026
 
 				if (namePartInx  == 9 ) 	// sortgiven
-					if (inferredGivenname || givenName.equals(nameString)) continue;
+					if (givenName.equals(nameString)) continue; // NTo - keep the sortname if missing name
+					//if (inferredGivenname || givenName.equals(nameString)) continue; // Don option 21.6.2026
 
 				nameValueIndex++;
 			// Convert surname to lowercase

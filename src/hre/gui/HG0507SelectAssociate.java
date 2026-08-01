@@ -14,6 +14,11 @@ package hre.gui;
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
  * v0.05.0033 2026-05-11 Handling duplicate associate roles (N. Tolleshaug)
  * 			  2026-05-15 Update NLS (D Ferguson)
+ * v0.05.0034 2026-07-23 Remove SentenceEditor button for AddAssoc case (D Ferguson)
+ * 			  2026-07-24 Setup rolename passed to EditSentence (D Ferguson)
+ * 			  2026-07-25 Pass sexcodes to Sentence Editor (D Ferguson)
+ * 			  2026-07-29 Remove use of 'sentenceRole' variable (D Ferguson)
+ * 			  2026-07-31 Added eventTablePID = (long) assocRelationData[4]; (N. Tolleshaug)
  **************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -34,7 +39,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectAssociate
  * @author N Tolleshaug
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2024-04-05
  */
 
@@ -77,16 +82,28 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 		btn_SaveEvent.setVisible(false);
 		btn_Save.setText(HG05070Msgs.Text_153);	// Save new Associate
 
-	// Add code for select role and activate save button
 		lbl_Relate.setText(HG05070Msgs.Text_154);	//   Set Associate type
 		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+
+	// Get the selected Persons PID, Role#, Name and sexNum code
 		assocRelationData = pointWhereWhenHandler.getAssocTableData(indexInAssocTable);
+		
+	// Decode the sex number value to a String code (U/F/M)
 		if (assocRelationData != null) {
+			int sexNum = (int) assocRelationData[3];
+			if (sexNum == 2) sexCode = "M";			//$NON-NLS-1$
+			else if (sexNum == 1) sexCode = "F";	//$NON-NLS-1$
+			else sexCode = "U";						//$NON-NLS-1$
+			
+		// Get the PID for the event table 	- T450_EVNT
+			eventTablePID = (long) assocRelationData[4];
+
 			if(HGlobal.DEBUG && HGlobal.writeLogs)
 				HB0711Logging.logWrite("Status: in HG0507SelAssoc AssocData: " 		//$NON-NLS-1$
 						+ assocRelationData[0] + "/" + assocRelationData[1] + "/"	//$NON-NLS-1$ //$NON-NLS-2$
-						+ assocRelationData[2]);
+						+ assocRelationData[2] +"/" + assocRelationData[3]) ;		//$NON-NLS-1$
 		}
+	// Get the role data for this event type
 		roleData = pointEventRoleManager.getRolesDataForEvent(eventNumber, ""); //$NON-NLS-1$
 
 	// Update event memo
@@ -95,11 +112,10 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 		if (assocRelationData != null)
 			memoString = pointPersonHandler.readSelectGUIMemo((long)assocRelationData[0],
 							pointPersonHandler.eventAssocTable);
-		 //else memoString = HG05070Msgs.Text_155;		//  No memo found
-		else memoString = "";		//  No memo found
+		else memoString = "";		//  No memo found		//$NON-NLS-1$
 
 		memoText.append(memoString);
-	// and enable it again
+	// and enable listener again
 		memoText.getDocument().addDocumentListener(memoTextChange);
 
 	// Set assoc name in window
@@ -118,6 +134,12 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 	    updateComboPanel(comboBox_Relationships, assocRoleList);
 		comboBox_Relationships.setVisible(true);
 
+	// Remove the Sentence Editor button from screen for Add Assoc case
+		if (addRelation) btn_Sentence.setVisible(false);
+
+/********************
+ * Action Listeners
+ *******************/
 	// Listener for Select Associate Save button
 		btn_Save.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -190,6 +212,7 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
     		if (assocRoleNumber[i] == assocRole) assocRoleindex = i;
     	}
     	comboBox_Relationships.setSelectedIndex(assocRoleindex);
+    	eventRoleNumber = assocRole;
 	}
 
 /**

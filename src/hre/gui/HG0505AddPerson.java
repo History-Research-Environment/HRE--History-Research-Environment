@@ -50,9 +50,7 @@ package hre.gui;
  * 			  2025-03-24 Remove all Citation tables (D Ferguson)
  * 			  2026-02-02 Log all catch block and DEBUG msgs (D Ferguson)
  * v0.05.0033 2026-05-21 Revise focus policy (D Ferguson)
- ********************************************************************************
- * NOTES on incomplete functionality:
- * NOTE02 need Sentence Editor function
+ * v0.05.0034 2026-07-24 Removed Sentence Editor buttons and listener (D Ferguson)
  ********************************************************************************/
 
 import java.awt.CardLayout;
@@ -118,7 +116,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Add Person
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2022-03-18
  */
 
@@ -368,10 +366,10 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		String sortDateText = HG0505Msgs.Text_4;			// Sort Date:
 		String locStyleText = HG0505Msgs.Text_5;			// Location Style:
 //		String citationText = HG0505Msgs.Text_6;			// Citations:			** no longer used **
-//		String suretyText = HG0505Msgs.Text_7;				// Surety:			** no longer used **
+//		String suretyText = HG0505Msgs.Text_7;				// Surety:				** no longer used **
 		String memoText = HG0505Msgs.Text_8;				// Memo:
 //		String sentenceText = HG0505Msgs.Text_9;			// Sentence:			** no longer used **
-		String sentenceEditor = HG0505Msgs.Text_10;			// Sentence Editor
+//		String sentenceEditor = HG0505Msgs.Text_10;			// Sentence Editor		** no longer used **
 //		String citationUpText = HG0505Msgs.Text_11;			// Moves Citation up the list		** no longer used **
 //		String citationDownText = HG0505Msgs.Text_12;		// Moves Citation down the list		** no longer used **
 		String addPersonText = HG0505Msgs.Text_13;			// Add Person
@@ -888,10 +886,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add Memo sub-panel to Birth panel
 		panelBirth.add(panelBirthMemo, "cell 0 1");	//$NON-NLS-1$
 
-	// Add a Sentence Edit button
-		JButton btn_SentenceBirth = new JButton(sentenceEditor);
-		panelBirth.add(btn_SentenceBirth, "cell 0 2, aligny center, alignx center");		//$NON-NLS-1$
-
 	// Add Birth panel to cardBirth
 		cardBirth.add(panelBirth, "cell 0 0, aligny top");		//$NON-NLS-1$
 
@@ -1064,10 +1058,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add Memo sub-panel to Bapt panel
 		panelBapt.add(panelBaptMemo, "cell 0 1");	//$NON-NLS-1$
 
-	// Add a Sentence Edit button
-		JButton btn_SentenceBapt = new JButton(sentenceEditor);
-		panelBapt.add(btn_SentenceBapt, "cell 0 2, align center");		//$NON-NLS-1$
-
 	// Add Bapt panel to cardBapt
 		cardBapt.add(panelBapt, "cell 0 0, aligny top");		//$NON-NLS-1$
 
@@ -1239,10 +1229,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelDeathMemo.add(memoDeathScroll, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Memo sub-panel to Death panel
 		panelDeath.add(panelDeathMemo, "cell 0 1");	//$NON-NLS-1$
-
-	// Add a Sentence Edit button
-		JButton btn_SentenceDeath = new JButton(sentenceEditor);
-		panelDeath.add(btn_SentenceDeath, "cell 0 2, align center");		//$NON-NLS-1$
 
 	// Add Death panel to cardDeath
 		cardDeath.add(panelDeath, "cell 0 0, aligny top");		//$NON-NLS-1$
@@ -1417,10 +1403,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 	// Add Memo sub-panel to Burial panel
 		panelBurial.add(panelBurialMemo, "cell 0 1");	//$NON-NLS-1$
 
-	// Add a Sentence Edit button
-		JButton btn_SentenceBurial = new JButton(sentenceEditor);
-		panelBurial.add(btn_SentenceBurial, "cell 0 2, align center");		//$NON-NLS-1$
-
 	// Add Burial panel to cardBurial
 		cardBurial.add(panelBurial, "cell 0 0, aligny top");		//$NON-NLS-1$
 
@@ -1576,10 +1558,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
 		panelPartnerMemo.add(memoPartnerScroll, "cell 0 1, aligny top");		//$NON-NLS-1$
 	// Add Memo sub-panel to Partner panel
 		panelPartner.add(panelPartnerMemo, "cell 0 1");	//$NON-NLS-1$
-
-	// Add a Sentence Edit button
-		JButton btn_SentencePartner = new JButton(sentenceEditor);
-		panelPartner.add(btn_SentencePartner, "cell 0 2, align center");		//$NON-NLS-1$
 
 	// Add Partner panel to cardPartner
 		cardPartner.add(panelPartner, "cell 0 0, aligny top");		//$NON-NLS-1$
@@ -2358,19 +2336,6 @@ public class HG0505AddPerson extends HG0450SuperDialog {
         memoDeathText.getDocument().addDocumentListener(textListen);
         memoBurialText.getDocument().addDocumentListener(textListen);
         memoPartnerText.getDocument().addDocumentListener(textListen);
-
-		// General Listener for Sentence Editor buttons
-		ActionListener sentenceListener = new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				// NOTE02 need code here to allow sentence editing
-				JOptionPane.showMessageDialog(contents, "This function is not yet implemented"); //$NON-NLS-1$
-			}
-		};
-		btn_SentenceBirth.addActionListener(sentenceListener);
-		btn_SentenceBapt.addActionListener(sentenceListener);
-		btn_SentenceDeath.addActionListener(sentenceListener);
-		btn_SentenceBurial.addActionListener(sentenceListener);
-		btn_SentencePartner.addActionListener(sentenceListener);
 
 	// Activate listener for Add New Person SAVE button ONLY
 	if (unrelated)

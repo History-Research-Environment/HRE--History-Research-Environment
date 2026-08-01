@@ -11,6 +11,7 @@ package hre.gui;
  * 			  2024-10-06 Removed reset PS for partner event (N Tolleshaug)
  * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
  * v0.04.0032 2026-01-20 Log all catch blocks and other msgs (D Ferguson)
+ * v0.05.0034 2026-07-28 Removed int selectedEventNum = 1004, selectedRoleNum = 1 (N. Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -42,13 +43,20 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 	final static int partnerEventGroup = -2; // Include both group 6 and 7
 	static long eventPID = null_RPID;
 	long  partnerTablePID = null_RPID;
-	int selectedEventNum = 1004, selectedRoleNum = 1;
+	// v0.05.0034 2026-07-28 removed
+	//int selectedEventNum = 1004, selectedRoleNum = 1;
 	static String sexCode = "U";		//$NON-NLS-1$
 
 	public HG0547PartnerEvent(HBProjectOpenData pointOpenProject, int selectedRowInTable, int eventNumber,
 								int roleNumber , long createdPartnerTablePID) throws HBException {
 		super(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
 		this.partnerTablePID = createdPartnerTablePID;
+		
+/* partnerRelationData content
+  [0] = personPID; [1] = eventype; [2] = prirole; [3] = secrole;
+  [4] = priname; [5] = secname, [6] = sex# code of person, [7] = sex# of partner
+  [8] = partner event table PID
+*/
 
 		partnerRelationData = pointPersonHandler.getPartnerTableData(selectedRowInTable);
 		if (partnerRelationData != null) {
@@ -57,6 +65,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 			// If partner table row exist
 				partnerTablePID = (long)partnerRelationData[0];
 				selectedEventNum = (int)partnerRelationData[1];
+				selectedRoleNum = (int)partnerRelationData[2]; // Added v0.05.0034 2026-07-28
 			// If partner event is created
 				if (createdPartnerTablePID != null_RPID) {
 					partnerTablePID = createdPartnerTablePID;
@@ -68,7 +77,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 				}
 			}
 		}
-
+		
 		setTitle(HG0547Msgs.Text_50 + eventName + HG0547Msgs.Text_51 + eventPersonName);	// Create   //  event for
 
 	// Partner role recorded in partner table!

@@ -42,6 +42,7 @@ package hre.gui;
  *			  2026-02-05 Logged all catch block msgs and updated NLS (D Ferguson)
  * v0.05.0033 2026-06-28 Add a default Locn style setting to the General panel (D Ferguson)
  *							(action on this combobox to be completed - see line 968)
+ * v0.05.0034 2026-06-08 Update NLS (D Ferguson)
  ********************************************************************************/
 
 import java.awt.Component;
@@ -556,7 +557,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 
 		// Setup sub-panel for default Place style
 		JPanel stylePanel = new JPanel();
-		stylePanel.setBorder(BorderFactory.createTitledBorder ("Default Location Style"));		// Default Location Style
+		stylePanel.setBorder(BorderFactory.createTitledBorder (HG0551Msgs.Text_79));		// Default Location Style
 		stylePanel.setLayout(new MigLayout("insets 5", "[]", "[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		if (initiate) {

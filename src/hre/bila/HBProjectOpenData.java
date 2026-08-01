@@ -798,6 +798,23 @@ public class HBProjectOpenData {
 	//  Get database version
 			databaseDDLversion = pointProjectHandler.pointLibraryResultSet.
 					getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
+			
+	// Check dtabase version		
+		    if (!databaseDDLversion.contains("V23")) {
+				throw new HBException(" HBProjectOpenData - HRE database version not accepted" +
+					" found: " + databaseDDLversion);
+			}
+/**
+ * Give WARNING if generated HRE does not match database build
+ */
+		    if (!databaseDDLversion.contains(HGlobal.databaseBuild)) {
+				System.out.println(" WARNING: database build: " + databaseDDLversion
+						+ " using HRE for version DDL" + HGlobal.databaseBuild );
+				JOptionPane.showMessageDialog(null, " WARNING: \nOpened DB build: " + databaseDDLversion
+						+ "\nnot equal to HRE expected DB build " + HGlobal.databaseBuild  , 
+						"Project Open databse", JOptionPane.WARNING_MESSAGE);
+			}	    
+		    
 
 		// Set up ResultSet T126_PROJECTS
 			selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
@@ -819,27 +836,14 @@ public class HBProjectOpenData {
 			if (HGlobal.DEBUG) 
 				System.out.println (" *** Focus person PID (getFocusPersonPID()) = " + getFocusPersonPID());
 
-		    if (HGlobal.DEBUG) {
+		    if (HGlobal.DEBUG) 
 				System.out.println(" Opened DB created from: "
 		    		+ databaseDDLversion + " / HRE DB implement: " + HGlobal.databaseVersion);
-			}
-
-/**
- * Give WARNING if generated HRE does not match database
- */
-		    if (!databaseDDLversion.contains(HGlobal.databaseVersion)) {
-				System.out.println(" WARNING: database build: " + databaseDDLversion
-						+ " using HRE for version DDL" + HGlobal.databaseVersion );
-			}
-
+			
 /**
  * 		Generate ResultSet for project tables
  * 		Select database version to process
- */
-		    if (!databaseDDLversion.contains("v22c")) {
-				throw new HBException(" HBProjectOpenData - HRE database version not accepted" +
-					" found: " + databaseDDLversion);
-			}
+ */  
 			if (HGlobal.DEBUG)
 				System.out.println("Database DDL build: " + databaseDDLversion);
 			generateHRETables22(dataBaseIndex);

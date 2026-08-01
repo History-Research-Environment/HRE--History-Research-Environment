@@ -12,6 +12,7 @@ package hre.gui;
  *			  2025-12-22 Updated foot note error handling (N. Tolleshaug)
  *			  2025-12-29 NLS update (D Ferguson)
  *			  2026-01-07 Log catch block msgs (D Ferguson)
+ * v0.05.0034 2026-07-04 Change tableSourceElmntDataValues to Object for new T734 fields (D Ferguson)
  ************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -30,7 +31,7 @@ import hre.nls.HG0566Msgs;
 /**
  * Update Source
  * @author N. Tolleshaug
- * @version v0.04.0032
+ * @version v0.05.0034
  * @since 2025-10-06
  */
 public class HG0566UpdateSource extends HG0566EditSource {
@@ -117,7 +118,7 @@ public class HG0566UpdateSource extends HG0566EditSource {
 
 		// Get the Source Element data values belonging to this Source
 		try {
-			tableSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
+			objectSourceElmntDataValues = pointCitationSourceHandler.getSourceElmntDataValues(sourcePID);
 		} catch (HBException hbe) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0566Upd loading Source Element data: " + hbe.getMessage()); //$NON-NLS-1$
@@ -196,10 +197,10 @@ public class HG0566UpdateSource extends HG0566EditSource {
 			// Validation tests passed OK, so start the Save process
 				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("Action: saving data in HG0566UpdateSource");	//$NON-NLS-1$
-				// Collect the GUI data
+				// Collect the current Source data to save the T736 record
 				storeData();
 				try {
-				// Update source record
+				// Update T736 source record
 					pointCitationSourceHandler.updateSourceRecord(sourceTablePID, sourceStoreData);
 				// Update source element data
 					pointCitationSourceHandler.updateSourceElementDataRecords(sourceTablePID);

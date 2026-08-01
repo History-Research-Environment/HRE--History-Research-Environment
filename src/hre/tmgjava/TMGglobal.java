@@ -26,21 +26,22 @@ package hre.tmgjava;
  * 			  2025-07-22 - Added T734_SORC_DATA table (N. Tolleshaug)
  * 			  2025-09-18 - Added other T7xx tables and updated database dates (D Ferguson)
  * 			  2025-09-30 - Updated //bruker// to  //Nils// (N. Tolleshaug)
- * 			  2025-10-21 - Updated log file to "C:\\Users\\Nils\\HRE\\NTo-B32-V22C-Log.txt"; (N. Tolleshaug)
+ * 			  2025-10-21 - Updated log file to "C:\\Users\\Bruker\\HRE\\NTo-B32-V22C-Log.txt"; (N. Tolleshaug)
+ * v0.05.0034 2026-07-04 - Updated for Build 34 (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.sql.ResultSet;
 
 public class TMGglobal {
 
-	public static String buildNo = "14.05.2026";			// Set Build number
-	public static String releaseDate = "14 May.. 2026";		// and release date
-
-	//public static String databaseVersion = "v22c 2024-10-20";	// Database version DDL
-	public static String databaseVersion = "v22c 2025-09-18";	// Database version DDL
-
-	//public static String databaseBuild = "v22c 2024-11-01"; // Updated for v22c / v22c 2024-11-01
-	public static String databaseBuild = "v22c 2025-09-18"; // Updated for v22c / SQL: DDL v22c 2025-09-18
+	public static String buildNo = "3.07.2026";			// Set Build number
+	public static String releaseDate = "1 Jul.. 2026";		// and release date
+	
+// This the expected databse version in the copied seed for project import
+	public static String SeedDatabaseVersion = "DDL V23 2026-08-01"; 
+	
+// This value is uded to update the HRE database version after modifiction	
+	public static String HREdatabaseBuild = "DDL V23 2026-08-01"; 
 
 	public static int dataSetID = 1; // Selected DATASET number from TMG folder
 
@@ -65,7 +66,7 @@ public class TMGglobal {
 
 // Controls of name processing Upper/Lower case and display/sort string
 	public static boolean LOWER_CASE = true; // Convert surname from  _ND.dbf to lower case
-	//public static boolean LOWER_CASE = false; // Convert surname from  _ND.dbf to lower case
+	//public static boolean LOWER_CASE = false; // Not convert surname from  _ND.dbf to lower case
 
 	//public static boolean UPDATE_SORT_DISP = true; // Update preloaded DISP or SORT
 	public static boolean UPDATE_SORT_DISP = false; // Update preloaded DISP or SORT
@@ -90,7 +91,7 @@ public class TMGglobal {
 	public static String userName = "";						// User name as known by the OS
 
 	// New exhibit path for test NTo
-	public static String newExhibitFolderPath = "C:\\Users\\Nils\\Documents\\The Master Genealogist v9\\Exhibits\\Ferguson\\";
+	public static String newExhibitFolderPath = "C:\\Users\\Bruker\\Documents\\The Master Genealogist v9\\Exhibits\\Ferguson\\";
 
 	// path to HRE Help sub-folders	(Production)
 	public static String helpPath = "file:\\C:\\Program Files\\HRE\\Help\\";
@@ -103,17 +104,21 @@ public class TMGglobal {
 
 // ****** Log file for for console output from converter enabled by TRACE
 // ******-- Specific for user NTo - need to general for all Users ---********
-	public static String dumpTableFolder = "C:\\Users\\Nils\\HRE\\";
+	public static String dumpTableFolder = "C:\\Users\\Bruker\\HRE\\";
 // ******-- Specific for user NTo - need to general for all Users ---********
-	public static String logFile = "C:\\Users\\Nils\\HRE\\NTo-B32-V22c-Conslole.log";
+	public static String logFile = "C:\\Users\\Bruker\\HRE\\NTo-B32-V23-Conslole.log";
 // **************************************************************************
-	public static String tmgStartFolder = "C:\\Users\\Nils\\Documents\\The Master Genealogist v9\\Projects\\";
+	public static String tmgStartFolder = "C:\\Users\\Bruker\\Documents\\The Master Genealogist v9\\Projects\\";
 // DDL 22c **************************************************************************
-	public static String tmghreBase22c = "C:/Users/Nils/HRE/Project/HRE-TMG-v22c";
+	public static String tmghreBase22c = "C:\\Users\\Bruker\\HRE\\Project\\HRE-TMG-v22c";
 //****************************************************************************************
-	public static String seedBase = "C:\\Users\\Nils\\HRE\\HRE Seed database.mv.db";
+	public static String tmghreBase23 = "C:\\Users\\Bruker\\HRE\\Project\\HRE-TMG-v23";
+	//****************************************************************************************
+	public static String seedBase = "C:\\Users\\Bruker\\HRE\\HRE Seed database.mv.db";
 // DDL 22c **************************
-	public static String seedBase22c = "C:\\Users\\Nils\\HRE\\HRE Seed database v22c.mv.db";
+	public static String seedBase22c = "C:\\Users\\Bruker\\HRE\\HRE Seed database v22c.mv.db";
+// DDL 23 **************************
+	public static String seedBase23 = "C:\\Users\\Bruker\\HRE\\HRE Seed database V23.mv.db";
 
 /**
  * Table objects for TMG tables
@@ -141,8 +146,6 @@ public class TMGglobal {
 	public static TMGtableData  tmg_T_table = null;
 	public static TMGtableData  tmg_U_table = null;
 	public static TMGtableData  tmg_W_table = null;
-
-
 
 /**
  * ResultSet objects for HRE database

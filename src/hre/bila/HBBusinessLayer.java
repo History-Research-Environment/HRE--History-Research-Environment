@@ -33,6 +33,7 @@ package hre.bila;
  * 			  2025-07-02 - Added sentence set Table name (N. Tolleshaug)
  * 			  2025-09-01 - Added remaining source/evidence tables (D Ferguson)
  * 			  2026-01-27 - Rearranged code (N. Tolleshaug)
+ * v0.05.0034 2026-07-03 - Removed test if (dBversion.contains("V23")) (N. Tolleshaug)
  ******************************************************************************************/
 
 import java.sql.ResultSet;
@@ -140,92 +141,89 @@ public class HBBusinessLayer  {
 	public HBBusinessLayer() {
 /**
  * Set up pointers to library class objects according to database version
+ * Datebase column varibalec
  */
-		if (dBversion.contains("v22c")) {
-/**
- * DDL22c
- */
-		// Table names
-			pointLibraryResultSet = new HBLibraryResultSet(this);
+		
+	// Table names
+		pointLibraryResultSet = new HBLibraryResultSet(this);
 
-		// System tables
-			schemaDefined = "T104_SCHEMA_DEFN";
-			projectTable = "T126_PROJECTS";
-			userTable = "T131_USER";
+	// System tables
+		schemaDefined = "T104_SCHEMA_DEFN";
+		projectTable = "T126_PROJECTS";
+		userTable = "T131_USER";
 
-		// Style tables
-			nameStyles = "T160_NAME_STYLE";
-			nameStylesOutput = "T162_NAME_STYLE_OUTPUT";
-			nameElementsDefined = "T163_NAME_ELEMNT_DEFN";
+	// Style tables
+		nameStyles = "T160_NAME_STYLE";
+		nameStylesOutput = "T162_NAME_STYLE_OUTPUT";
+		nameElementsDefined = "T163_NAME_ELEMNT_DEFN";
 
-		// Memo/entity
-			memoSet = "T167_MEMO_SET";
-			sentenceSet = "T168_SENTENCE_SET";
-			entityTypeDefinition = "T169_ENTY_TYPE_DEFN";
+	// Memo/entity
+		memoSet = "T167_MEMO_SET";
+		sentenceSet = "T168_SENTENCE_SET";
+		entityTypeDefinition = "T169_ENTY_TYPE_DEFN";
 
-		// Date tables
-			dateTable = "T170_DATE";
+	// Date tables
+		dateTable = "T170_DATE";
 
-		// language tables
-			languageUses = "T200_LANG_USES";
-			translatedLang = "T201_LANG_TRAN";
-			translatedData = "T204_DATA_TRAN";
-			translatedFlag = "T204_FLAG_TRAN";
+	// language tables
+		languageUses = "T200_LANG_USES";
+		translatedLang = "T201_LANG_TRAN";
+		translatedData = "T204_DATA_TRAN";
+		translatedFlag = "T204_FLAG_TRAN";
 
-			flagDefinition = "T251_FLAG_DEFN";
-			flagSettingValues = "T252_FLAG_VALU";
+		flagDefinition = "T251_FLAG_DEFN";
+		flagSettingValues = "T252_FLAG_VALU";
 
-		//Person tables
-			personTable = "T401_PERS";
-			personNameTable = "T402_PERS_NAME";
-			personNamesTableElements = "T403_PERS_NAME_ELEMNTS";
-			personPartnerTable = "T404_PARTNER";
-			personParentTable = "T405_PARENT_RELATION";
+	//Person tables
+		personTable = "T401_PERS";
+		personNameTable = "T402_PERS_NAME";
+		personNamesTableElements = "T403_PERS_NAME_ELEMNTS";
+		personPartnerTable = "T404_PARTNER";
+		personParentTable = "T405_PARENT_RELATION";
 
-		//Event tables
-			eventTable = "T450_EVNT";
-			eventAssocTable = "T451_EVNT_ASSOC";
-			eventDefnTable = "T460_EVNT_DEFN";
-			eventRoleTable = "T461_EVNT_ROLE";
+	//Event tables
+		eventTable = "T450_EVNT";
+		eventAssocTable = "T451_EVNT_ASSOC";
+		eventDefnTable = "T460_EVNT_DEFN";
+		eventRoleTable = "T461_EVNT_ROLE";
 
-		//Location tables
-			locationTable = "T551_LOCN";
-			locationNameTable = "T552_LOCN_NAME";
-			locationNameElementTable = "T553_LOCN_ELEMNTS";
+	//Location tables
+		locationTable = "T551_LOCN";
+		locationNameTable = "T552_LOCN_NAME";
+		locationNameElementTable = "T553_LOCN_ELEMNTS";
 
-		//Exhibit table
-			digtalExhibitTable = "T676_DIGT";
-			digtalNameTable = "T677_DIGT_NAME";
+	//Exhibit table
+		digtalExhibitTable = "T676_DIGT";
+		digtalNameTable = "T677_DIGT_NAME";
+		//ownerRecordField = "OWNER_RPID";
+		//bestNameField = "BEST_NAME_RPID";
 
-		// Citation / source tables
-			sourceDataTable = "T734_SORC_DATA";
-			citationTable = "T735_CITN";
-			sourceTable = "T736_SORC";
-			sourceDefnTable = "T737_SORC_DEFN";
-			sourceElmntTable = "T738_SORC_ELMNT";
-			repoTable = "T739_REPO";
-			sourceLinkTable = "T740_SORC_LINK";
+	// Citation / source tables
+		sourceDataTable = "T734_SORC_DATA";
+		citationTable = "T735_CITN";
+		sourceTable = "T736_SORC";
+		sourceDefnTable = "T737_SORC_DEFN";
+		sourceElmntTable = "T738_SORC_ELMNT";
+		repoTable = "T739_REPO";
+		sourceLinkTable = "T740_SORC_LINK";
 
-		// Field names
-			visibleId = "VISIBLE_ID";
-			ownerRecordField = "OWNER_RPID";
-			ownerStyleField = "OWNER_RECORD_RPID";
-			bestImage = "BEST_IMAGE_RPID";
-    		bestNameField = "BEST_NAME_RPID";
-    		personFatherField = "SPERM_PROVIDER_RPID";
-    		personMotherField = "EGG_PROVIDER_RPID";
-			personHDateBirthField = "BIRTH_HDATE_RPID";
-			personHdateDeathField = "DEATH_HDATE_RPID";
-			personLocnBirthField = "BIRTH_PLACE_RPID";
-			personLocnDeathField = "DEATH_PLACE_RPID";
+	// Field names
+		visibleId = "VISIBLE_ID";
+		ownerRecordField = "OWNER_RPID";
+		ownerStyleField = "OWNER_RECORD_RPID";
+		bestImage = "BEST_IMAGE_RPID";
+		bestNameField = "BEST_NAME_RPID";
+		personFatherField = "SPERM_PROVIDER_RPID";
+		personMotherField = "EGG_PROVIDER_RPID";
+		personHDateBirthField = "BIRTH_HDATE_RPID";
+		personHdateDeathField = "DEATH_HDATE_RPID";
+		personLocnBirthField = "BIRTH_PLACE_RPID";
+		personLocnDeathField = "DEATH_PLACE_RPID";
 
-		// Crital event Types
-			birthEventType = 1002;
-			deathEventType = 1003;
+	// Critical event Types
+		birthEventType = 1002;
+		deathEventType = 1003;
 
-		} else {
-			System.out.println("HBBusinessLayer - Database build version not found");
-		}
 		pointLibraryBusiness = new HBLibraryBusiness(this);
 	}
 

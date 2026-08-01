@@ -94,6 +94,7 @@ package hre.gui;
  * 			  2026-02-28 Fix 32.36 Stop AncDescReport screen blocking HRE close (D Ferguson)
  * 			  2026-04-04 Remove Notepads from Person Menu (D Ferguson)
  * 			  2026-04-20 Fix 33.02 change P-symbol popup location (D Ferguson)
+ * v0.05.0034 2026-07-14 Fix 33.18 Add table count data into Project Summary (D Ferguson)
  *********************************************************************************************
  * NLS: Text_37 no longer used
  **********************************
@@ -185,7 +186,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * HRE Main menu
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2020-05-10
  */
 
@@ -931,14 +932,20 @@ public class HG0401HREMain extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 			// If no projects open, return
 			if (HGlobal.numOpenProjects == 0) return;
-			// Get the current active project name and get it's Summary data
+			// Get the current active project name and get it's Summary data and table sizes
 			HBProjectOpenData pointOpenProject = getSelectedOpenProject();
 			String[][] summaryData = null;
+			int[] tableCount = null;
 			try {
 				summaryData = ((HBProjectHandler) pointBusinessLayer[0]).getSummaryUserProjectAction(pointOpenProject.getProjectName());
+				tableCount = ((HBProjectHandler) pointBusinessLayer[0]).getProjectTableCounts(pointOpenProject.getOpenDatabaseIndex());
 			} catch (HBException hbe) {
 				JOptionPane.showMessageDialog(null, HG0401Msgs.Text_8
 						+  hbe.getMessage(), HG0401Msgs.Text_10, JOptionPane.ERROR_MESSAGE);
+			}
+			// Move the tableCount data into the summaryData as Strings
+			for (int i = 0; i < tableCount.length; i++) {
+				summaryData[i+9][1] = String.valueOf(tableCount[i]);
 			}
 			// Display the data
 			HG0414ProjectSummary summScreen = new HG0414ProjectSummary(summaryData);

@@ -371,7 +371,7 @@ public class HBEventRoleManager extends HBBusinessLayer {
 	private void listEventRoles(int eventType, String selectRoles) throws HBException {
 		int nrOfRows;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		ResultSet eventRoles = pointLibraryResultSet.getRoleNameList(eventType, selectRoles, lang_code, dataBaseIndex);
+		ResultSet eventRoles = pointLibraryResultSet.getRoleListRS(eventType, selectRoles, lang_code, dataBaseIndex);
 		try {
 			if (isResultSetEmpty(eventRoles)) {
 				nrOfRows = 0;
@@ -551,7 +551,7 @@ public class HBEventRoleManager extends HBBusinessLayer {
 	private void dataEventRoles(int eventType) throws HBException {
 		int nrOfRows;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		ResultSet eventRoles = pointLibraryResultSet.getRoleNameList(eventType, "", dataBaseIndex);
+		ResultSet eventRoles = pointLibraryResultSet.getRoleListRS(eventType, "", dataBaseIndex);
 		try {
 			if (isResultSetEmpty(eventRoles))
 				nrOfRows = 0;

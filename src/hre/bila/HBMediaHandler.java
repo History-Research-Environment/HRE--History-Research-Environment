@@ -15,6 +15,8 @@ package hre.bila;
  * 			  2023-03-03 - exhibit text length > 100 truncated to length = 100 (N. Tolleshaug)
  * 			  2023-03-10 - Add Caption handling into media images (N. Tolleshaug)
  * v0.05.0033 2026-06-23 - Fix to handle ownerTablePID == null_RPID (N. Tolleshaug)
+ * v0.05.0034 2026-07-03 - Removed method selectDataBase(String dBversion) (N. Tolleshaug)
+ * 			  2026-07-18 - Fix 33.78 - getAall exhibits error (N. Tolleshaug)
  * ******************************************************************************************
  * Note content from T169 controlling exhibits
  * ******************************************************************************************
@@ -52,9 +54,6 @@ import hre.gui.HGlobal;
  */
 public class HBMediaHandler extends HBBusinessLayer {
 	String dBbuild = HGlobal.databaseVersion;
-	String ownerRecordField;
-	String bestNameField;
-
 	long proOffset = 1000000000000000L;
 	long null_RPID  = 1999999999999999L;
 	String personName = " Person name";
@@ -78,24 +77,10 @@ public class HBMediaHandler extends HBBusinessLayer {
  */
 	public HBMediaHandler(HBProjectOpenData pointOpenProject) {
 		super();
-		selectDataBase(dBbuild);
 		if (HGlobal.DEBUG) {
 			System.out.println("Media Handler initiated!!");
 		}
 	}
-
-/**
- * void selectDataBase(String dBversion)
- * @param dBversion
- */
-    private void selectDataBase(String dBversion) {
-    	if (dBversion.startsWith("v22c")) {
-    		ownerRecordField = "OWNER_RPID";
-    		bestNameField = "BEST_NAME_RPID";
-    	} else {
-			System.out.println("HBMediaHandler - selected DataBase not found - " + dBversion);
-		}
-    }
 
 /**
  * findSubTypePID()
@@ -187,8 +172,9 @@ public class HBMediaHandler extends HBBusinessLayer {
 			if (ownerTablePID != null_RPID) {
 				bestImageOwnerSQLString = setSelectSQL("*", ownerTable, "PID = " + ownerTablePID);
 				ownerSelected = requestTableData(bestImageOwnerSQLString, dataBaseIndex);
+				if (isResultSetEmpty(ownerSelected)) return 1; // Mod 18.7.20126 Fix 33.78
 				ownerSelected.first();
-				//System.out.println(" getAllExhibitImage - Image type: " + imageType + "  PID = " + ownerTablePID);
+				if (HGlobal.DEBUG) System.out.println(" getAllExhibitImage - Image type: " + imageType + "  PID = " + ownerTablePID);
 				bestImagePID = ownerSelected.getLong("BEST_IMAGE_RPID");
 			}
 
@@ -200,9 +186,9 @@ public class HBMediaHandler extends HBBusinessLayer {
 				image = null;
 				return 1;
 			}
-			if (HGlobal.DEBUG) {
+			if (HGlobal.DEBUG) 
 				System.out.println(" Number of images for person: " + allExhibitsSelected.getRow());
-			}
+			
 
 	// Extract all images for person / event / location
 			allExhibitsSelected.beforeFirst();

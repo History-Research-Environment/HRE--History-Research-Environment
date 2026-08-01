@@ -12,6 +12,7 @@ package hre.gui;
  * v0.04.0032 2025-06-05 Address minor layout errors (D Ferguson)
  * 			  2026-01-06 Log catch block msgs (D Ferguson)
  * v0.05.0033 2025-06-13 Fix for correct citation parent relation (N. Tolleshaug)
+ * v0.05.0034 2026-07-23 Remove btn_Sentence visibility (D Ferguson)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
@@ -35,7 +36,7 @@ import hre.nls.HG05070Msgs;
 /**
  * HG0507SelectParent
  * @author N Tolleshaug
- * @version v0.04.0032
+ * @version v0.05.0034
  * @since 2024-04-05
  */
 public class HG0507SelectParent extends HG0507SelectPerson {
@@ -48,7 +49,6 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 	final static int parentEventGroup = -1;
 	String memoString;
 	boolean addRelation;
-	
 
 /**
  * HG0507SelectParent constructor
@@ -93,8 +93,7 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 			memoString = pointPersonHandler.readSelectGUIMemo((long)parentRelationData[0],
 							pointPersonHandler.personParentTable);
 		} else
-			//memoString = HG05070Msgs.Text_155;		//  No memo found
-			memoString = "";		//  No memo found
+			memoString = "";		//  No memo found		//$NON-NLS-1$
 
 		memoText.append(memoString);
 	// and enable it again
@@ -125,6 +124,12 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 
 		comboBox_Relationships.setVisible(true);
 
+	// Remove the Sentence Editor button from screen
+		btn_Sentence.setVisible(false);
+
+/*******************
+ * Action Listeners
+ * *****************/
 	// Listener for Select Parent Save button
 		btn_Save.addActionListener(new ActionListener() {
 			@Override
