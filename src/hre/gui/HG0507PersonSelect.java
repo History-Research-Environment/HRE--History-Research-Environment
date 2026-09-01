@@ -72,6 +72,7 @@ package hre.gui;
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
  * v0.05.0033 2026-05-29 Change default double-click to ManagePerson, not VP (D Ferguson)
  * 			  2026-06-09 Make filter text change not require ID re-selection (D Ferguson)
+ * v0.05.0034 2026-08-10 Make tableEntity Name sort case-insensitive ( D Ferguson)
  ***************************************************************************************
  * NOTES for incomplete functionality
  * NOTE02 No code for importing saved filters
@@ -148,7 +149,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Person Select
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2019-09-16
  */
 
@@ -560,16 +561,18 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 
 				table_Entity.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-				// Set the ability to sort on columns
-				table_Entity.setAutoCreateRowSorter(true);
-			    TableModel myModel = table_Entity.getModel();
-			    TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
-				List <RowSorter.SortKey> psortKeys1 = new ArrayList<>();
-
+				// Disable auto sorter creation (we are creating our own)
+				table_Entity.setAutoCreateRowSorter(false);
+				TableModel myModel = table_Entity.getModel();
+				TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
+				// Apply lexicographic comparator for column 1 but ignore case and treat space as a real character
+				sorter.setComparator(1, String.CASE_INSENSITIVE_ORDER);
 				// Presort on column 1
+				List<RowSorter.SortKey> psortKeys1 = new ArrayList<>();
 				psortKeys1.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
 				sorter.setSortKeys(psortKeys1);
-			    table_Entity.setRowSorter(sorter);
+				// Install sorter
+				table_Entity.setRowSorter(sorter);
 
 			    // Set tooltips and header format
 				table_Entity.getTableHeader().setToolTipText(HG05070Msgs.Text_80);

@@ -82,6 +82,8 @@ package hre.tmgjava;
  *			  2026-06-27 - Updated PRIMARY_NUM in T451_EVNTASSOC (N. Tolleshaug)
  * v0.05.0034 2026-06-30 - Remove T450/T451 sentence field reference (D Ferguson)
 *			  2026-07-05 - Added updateLong("SENT_OWNER_RPID", null_RPID) to T168 (N. Tolleshaug)
+*			  2026-08-10 - Changed to assocTablePID to ownerTablePID (N. Tolleshaug)
+* 			  2026-08-18 - Added NAMEREC event best name import (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -134,6 +136,8 @@ class TMGpass_Events  {
 	int rowsInT402 = 0;
 	int eventType = 0;
 	int personNr = 0;
+	int ownerType = 0; // owner type:  1 - name, 2 - event, 3 - associate 4 - partner
+	long ownerTablePID = null_RPID;
 
 	//Statistics
 	int noMemo = 0;
@@ -153,7 +157,7 @@ class TMGpass_Events  {
 /**
  * Map for retrieving event admin group.
  */
-	private HashMap<Integer,Integer> eventAdminTMGmap = new HashMap<>();
+	private HashMap<Integer,Integer> eventAdminTMGmap = new HashMap<Integer,Integer>();
 /**
  * 	Records the role data and sentence RPID
  */
@@ -162,23 +166,26 @@ class TMGpass_Events  {
 /**
  * Record born place and death place PID
  */
-	private HashMap<Long,Long> personBornPlaceIndex = new HashMap<>();
-	private HashMap<Long,Long> personDeathPlaceIndex = new HashMap<>();
+	private HashMap<Long,Long> personBornPlaceIndex = new HashMap<Long,Long>();
+	private HashMap<Long,Long> personDeathPlaceIndex = new HashMap<Long,Long>();
 
 /**
  * Hashmap for storing partner roles extracted from E.dbf witness, The map uses the gnum primary index
  * and is the two dimensional array holding pri_role and sec_role for partner relation
  */
-	HashMap<Long,int[]> roleEvents = new HashMap<>();
+	HashMap<Long,int[]> roleEvents = new HashMap<Long,int[]>();
+	
 /**
  * HashMap for birth events
  */
-	HashMap<Long,Long> birthEvents = new HashMap<>();
+	HashMap<Long,Long> birthEvents = new HashMap<Long,Long>();
 
 	private long locationTablePID = proOffset + 1;
 	private long eventDefnPID = proOffset;
 	private long eventRolePID = proOffset;
 	private long eventSentencPID = proOffset + 1;
+	private long eventBestNameRPID = null_RPID;
+	private long priPartnerBestNameRPID, secPartnerBestNameRPID;
 
 	public int getAdminGroup(int eventTypeNr) {
 		if (eventAdminTMGmap.containsKey(eventTypeNr))
@@ -219,6 +226,9 @@ class TMGpass_Events  {
  */
 	public void addEventTable(TMGHREconverter tmgHreConverter) throws HCException {
 		this.tmgHreConverter = tmgHreConverter;
+		int tableGrecno, vectorSize, namerec;
+		int etypeNumber, origtype, adminGroup;
+		long nameTablePID;
 		int currentRow = 0;
 		int primaryIndex = 0;
 		int tmgPlaceNr;
@@ -265,9 +275,9 @@ class TMGpass_Events  {
 					else locationTablePID = null_RPID;
 
 				// Updated for en-UK initiated projects with event type < 1000
-					int etypeNumber = tmgGtable.getValueInt(index_G_Table,"ETYPE");
-					int origtype = tmgTtable.findValueInt(etypeNumber,"ORIGETYPE");
-					int adminGroup = getAdminGroup(etypeNumber);
+					etypeNumber = tmgGtable.getValueInt(index_G_Table,"ETYPE");
+					origtype = tmgTtable.findValueInt(etypeNumber,"ORIGETYPE");
+					adminGroup = getAdminGroup(etypeNumber);
 
 				// Set etype to 2XXX for user-added events - Fix 31.02
 					if (origtype != 0) etypeNumber = origtype + 1000;
@@ -281,29 +291,55 @@ class TMGpass_Events  {
 						personBornPlaceIndex.put(personRPID, locationTablePID);
 					}
 
-					//if (etypeNumber == 1003) { // Death event
 					if (adminGroup == 5) { // Death event 3.6.2026
 						personRPID = tmgGtable.getValueInt(index_G_Table,"PER1") + proOffset;
 						personDeathPlaceIndex.put(personRPID, locationTablePID);
 					}
-
+					
+			// Collect NAMEREC from E.dbf TMG witness table	14-8-2026	
+					eventBestNameRPID = null_RPID;
+					priPartnerBestNameRPID = null_RPID;
+					secPartnerBestNameRPID = null_RPID;
+					tableGrecno = tmgGtable.getValueInt(index_G_Table,"RECNO");
+					vectorSize = tmgEtable.getVectorSize(tableGrecno);
+					for (int i = 0; i < vectorSize; i++) {
+						namerec = tmgEtable.findVectorInt(tableGrecno, i, "NAMEREC");
+						if (namerec != 0) System.out.println(" Witness vector: " + i
+								
+								+ " Admin: " + adminGroup + "/"
+								+ " E-Type: " + etypeNumber + " - "
+								+ "EPER/GNUM/PRI/ROLR/NAMEREC - "
+								+ tmgEtable.findVectorInt(tableGrecno, i, "EPER") + "/"
+								+ tmgEtable.findVectorInt(tableGrecno, i, "GNUM") + "/"
+								+ tmgEtable.findVectorBoolean(tableGrecno, i, "PRIMARY") + "/"
+								+ tmgEtable.findVectorString(tableGrecno, i, "ROLE") + "/"
+								+ tmgEtable.findVectorInt(tableGrecno, i, "NAMEREC"));
+						
+						if (tmgHreConverter.pointPersonPass.nameRECNOindexPID.containsKey(namerec)) {
+							nameTablePID = tmgHreConverter.pointPersonPass.nameRECNOindexPID.get(namerec);
+							//if (tmgEtable.findVectorBoolean(tableGrecno, i, "PRIMARY"))
+							if (adminGroup == marrGroup || adminGroup == divorceGroup) {
+								if (i == 0) priPartnerBestNameRPID = nameTablePID;
+								if (i == 1) secPartnerBestNameRPID = nameTablePID;
+							} else if (tmgEtable.findVectorBoolean(tableGrecno, i, "PRIMARY"))
+								eventBestNameRPID = nameTablePID;
+							//System.out.print(" NAMEREC PID: " + nameTablePID);
+						} 
+					}
+					
 					if (TMGglobal.DEBUG)
 							System.out.println("** TMG name_P.dbf - location: " + tmgPlaceNr
 									+ " / RECNO: " + tmgGtable.getValueInt(index_G_Table,"RECNO")
 								+ " / STYLEID: " + styleId);
+					
+				// ADD EVENTS with new LOCATION
+					addToT450_EVNT(index_G_Table, etypeNumber, locationTablePID, tableT450);
 
-					// ADD EVENTS with new LOCATION
-						addToT450_EVNT(index_G_Table, etypeNumber, locationTablePID, tableT450);
-
-					// Set up partner table // 3.6.2026
-						//int eventTypeNr = tmgGtable.getValueInt(index_G_Table, "ETYPE");
-						//int adminGroup = getAdminGroup(eventTypeNr);
-
-				   // Only record marriages and divorces
-						if (adminGroup == marrGroup || adminGroup == divorceGroup) {
-							primaryIndex++;
-							addToT404_PARTNER(primaryIndex, index_G_Table, tableT404);
-						}
+			   // Only record marriages and divorces
+					if (adminGroup == marrGroup || adminGroup == divorceGroup) {
+						primaryIndex++;
+						addToT404_PARTNER(primaryIndex, index_G_Table, tableT404);
+					}
 
 				} else System.out.println("Dataset DSID not processed tmgGtable: "
 						+ tmgGtable.getValueInt(index_G_Table,"DSID"));
@@ -353,7 +389,7 @@ class TMGpass_Events  {
 	public void addToT450_EVNT(int rowPID, int etypeNumber, long locationTablePID, ResultSet hreTable) throws HCException {
 		String tmgDate, tmgSort, roleNumber = "";
 		long sortDate = null_RPID, startDate = null_RPID, indexPID;
-		int recNr;
+		int recNr, per1, per2;
 		if (TMGglobal.DEBUG)
 			System.out.println("** addTo T450_EVENTS row: " + rowPID);
 
@@ -407,8 +443,8 @@ class TMGpass_Events  {
 					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(efoot));
 
 		// Find the role number from E.dbf table "ROLE"
-			int per1 = tmgGtable.getValueInt(rowPID,"PER1");
-			int per2 = tmgGtable.getValueInt(rowPID,"PER2");
+			per1 = tmgGtable.getValueInt(rowPID,"PER1");
+			per2 = tmgGtable.getValueInt(rowPID,"PER2");
 
 		// check if PER1 == 0 then set PER2 as PRIM_ASSOC_RPID
 			if (per1 != 0) {
@@ -436,6 +472,7 @@ class TMGpass_Events  {
 			else hreTable.updateInt("PRIM_ASSOC_ROLE_NUM", 00001);
 
 			hreTable.updateInt("PRIM_ASSOC_BASE_TYPE",0);
+			hreTable.updateLong("PREF_NAME_RPID", eventBestNameRPID);
 
 		// Insert row
 			hreTable.insertRow();
@@ -526,6 +563,9 @@ class TMGpass_Events  {
 
 		// Surety in TMG also recorded for other partner relationship
 			hreTable.updateString("SURETY", tmgGtable.getValueString(indexG_PID,"ENSURE"));
+			
+			hreTable.updateLong("PRPRI_NAME_RPID", priPartnerBestNameRPID);
+			hreTable.updateLong("PRSEC_NAME_RPID", secPartnerBestNameRPID);
 
 		// Insert row
 			hreTable.insertRow();
@@ -609,7 +649,7 @@ class TMGpass_Events  {
 					extractLangTags(indexT_PID, eventTypeNr, properties, reminder);
 				 }
 
-			// Get role sentences
+			// Create role sentences
 				 extractRoleSentence(eventTypeNr, etypeName, tsentence);
 
 			// Extract roles and get Primary roles
@@ -713,7 +753,8 @@ class TMGpass_Events  {
 		String roleTMGsentence = "";
 		String[] roleSentence;
 		int roleNumber = 0;
-
+	// Setting print sentence on
+		//printSentenceControl = true;
 		int posLabel = roleString.indexOf("[:LABELS]"); // result -1 of not found
 		if (roleString.length() == 0) return;
 		if (posLabel < 0) posLabel = 0;
@@ -801,6 +842,35 @@ class TMGpass_Events  {
 					}
 			}
 		return;
+	}
+	
+/**
+ * private void exstractLocalSentences(int eventTypeNr,int roleNumber,
+											String etypeName, String localSsentence)	
+ * @param eventTypeNr
+ * @param roleNumber
+ * @param etypeName
+ * @param localSsentence
+ * @throws HCException
+ */
+	private void exstractLocalSentences(int eventTypeNr, int roleNumber,
+											String etypeName, String localSsentence) throws HCException {
+		boolean printSentenceControl = false;
+		String sentenceLine, language;
+		String[] sentenceLaguages = localSsentence.split("\\[L=");
+		if (printSentenceControl)
+				System.out.println(" LOCAL sentence : " + eventTypeNr + " Role:" + roleNumber 
+						+ " OwnerType: " + ownerType + " Name: " + etypeName);
+		for (int i = 1; i < sentenceLaguages.length; i++) {
+			language = sentenceLaguages[i].substring(0, sentenceLaguages[i].indexOf(']'));
+			sentenceLine = sentenceLaguages[i].substring(sentenceLaguages[i].indexOf(']') + 1, 
+																sentenceLaguages[i].length());
+			if (printSentenceControl) 
+				System.out.println(" Language: " + language + " Sentence: " + sentenceLine);
+			addToT168_SENTENCE_SET(tableT168, eventSentencPID, getLangCode(language), eventTypeNr,
+					roleNumber, sentenceLine);
+			eventSentencPID = eventSentencPID + 1;
+		}	
 	}
 
 /**
@@ -960,7 +1030,8 @@ class TMGpass_Events  {
 				hreTable.updateBoolean("IS_LONG", true);
 				hreTable.updateClob("LONG_SENT", pointHREbase.createNClob(TMGsentence));
 			}
-			hreTable.updateLong("SENT_OWNER_RPID", null_RPID);
+			hreTable.updateLong("SENT_OWNER_RPID", ownerTablePID);
+			hreTable.updateInt("LOCAL_TYPE", ownerType); // Added 4.8.2026
 
 		//Insert row
 			hreTable.insertRow();
@@ -1201,11 +1272,13 @@ class TMGpass_Events  {
  * @param tmgHreConverter
  */
 	public void addEventsAssocTable(TMGHREconverter tmgHreConverter) throws HCException {
-		int currentRow = 0, progress;
+		int currentRow = 0, progress, roleNumber;
 		long eventAssocPID = proOffset;
-		boolean assocAdded = false;
+		boolean assocAdded = false, primary;
 		int excludedWitness = 0, addedAssoc = 0, partnerEvent = 0, eventsBirths = 0, primaryRoleFound = 0, edbferror = 0;
-		int per2assocs = 0;
+		int per2assocs = 0, origtype;
+		int namerec, seq, gnumIndex, eper, per1, per2, etype;
+		String sentence, witmemo, role ;
 		int nrOftmgERows = tmgEtable.getNrOfRows();
 
 		if (TMGglobal.DEBUG)
@@ -1232,10 +1305,10 @@ class TMGpass_Events  {
 		// DATASET CHECK
 			if(TMGglobal.dataSetID == tmgEtable.getValueInt(indexE_ROW,"DSID"))	{
 		// Data from TMG E.dbf
-				int gnumIndex = tmgEtable.getValueInt(indexE_ROW,"GNUM");
-				int eper = tmgEtable.getValueInt(indexE_ROW,"EPER");
-				boolean primary = tmgEtable.getValueBoolean(indexE_ROW,"PRIMARY");
-				String role = HREmemo.returnStringContent(tmgEtable.getValueString(indexE_ROW,"ROLE"));
+				gnumIndex = tmgEtable.getValueInt(indexE_ROW,"GNUM");
+				eper = tmgEtable.getValueInt(indexE_ROW,"EPER");
+				primary = tmgEtable.getValueBoolean(indexE_ROW,"PRIMARY");
+				role = HREmemo.returnStringContent(tmgEtable.getValueString(indexE_ROW,"ROLE"));
 
 			// Fix 31.15: check role will convert to numeric; if not, fix it
 			// role in E.dbf is often "Princ" or something else erroneous
@@ -1247,25 +1320,25 @@ class TMGpass_Events  {
 				}
 
 		// Data from TMG G.dbf
-				int per1 = tmgGtable.findValueInt(gnumIndex,"PER1");
-				int per2 = tmgGtable.findValueInt(gnumIndex,"PER2");
-				int etype = tmgGtable.findValueInt(gnumIndex,"ETYPE");
+				per1 = tmgGtable.findValueInt(gnumIndex,"PER1");
+				per2 = tmgGtable.findValueInt(gnumIndex,"PER2");
+				etype = tmgGtable.findValueInt(gnumIndex,"ETYPE");
 
 		// Data from TMG T.dbf
 				int admin = tmgTtable.findValueInt(etype,"ADMIN");
 
-				String sentence = HREmemo.returnStringContent(tmgEtable.getValueString(indexE_ROW,"WSENTENCE"));
-				int namerec = tmgEtable.getValueInt(indexE_ROW,"NAMEREC");
-				String witmemo = HREmemo.returnStringContent(tmgEtable.getValueString(indexE_ROW,"WITMEMO"));
-				int seq = tmgEtable.getValueInt(indexE_ROW,"SEQUENCE");
+				sentence = HREmemo.returnStringContent(tmgEtable.getValueString(indexE_ROW,"WSENTENCE"));
+				namerec = tmgEtable.getValueInt(indexE_ROW,"NAMEREC");
+				witmemo = HREmemo.returnStringContent(tmgEtable.getValueString(indexE_ROW,"WITMEMO"));
+				seq = tmgEtable.getValueInt(indexE_ROW,"SEQUENCE");
 
 		// Updated for en-UK initiated projects with event type < 1000
 		// Set etype to 2XXX - Fix 31.02 - user defined match preloaded event types
-				int origtype = tmgTtable.findValueInt(etype,"ORIGETYPE");
+				origtype = tmgTtable.findValueInt(etype,"ORIGETYPE");
 				if (origtype != 0) etype = origtype + 1000;
 				else etype = etype + 2000; // Fix 11.6.2026 NTo
 				if (etype < 1000) etype = origtype + 1000; //### Needed code 11.6.2026 - NTO ???
-
+								
 		// Extract the birth event PID for a person
 				if (eper == per1 && per2 == 0)
 					//if (admin == birthGroup && etype == 1002) {
@@ -1327,6 +1400,14 @@ class TMGpass_Events  {
 						eventAssocPID++;
 						addToT451_EVNT_ASSOC(indexE_ROW, eventAssocPID, tableT451);
 						assocAdded = true; // Mark assoc already added
+						
+					// Test 5.8.2026 import of LOCAL sentence
+						if (sentence.length() > 5) {
+							ownerType = 3;
+							roleNumber = Integer.parseInt(role);
+							ownerTablePID = eventAssocPID;
+							exstractLocalSentences(etype, roleNumber, "Local WSENTENCE", sentence);
+						}
 					}
 
 /**			Exclude self associate if per1 same as person and per2 not set and not primary
@@ -1335,9 +1416,19 @@ class TMGpass_Events  {
 				if (!assocAdded)
 					if (primary || eper == per1) { // Exclude primary or principal PER1 recordings
 						excludedWitness++;
+						long eventTablePID = tmgHreConverter.pointSourcePass.eventIndexPID.get(gnumIndex);
+					// Test 5.8.2026 import of LOCAL sentence
+						if (sentence.length() > 5) {
+							ownerType = 2;
+							roleNumber = Integer.parseInt(role);
+							ownerTablePID = eventTablePID;
+							exstractLocalSentences(etype, roleNumber, "Local WSENTENCE", sentence);
+						}
+						//tmgHreConverter.pointSourcePass.eventIndexPID.put(recNr, indexPID );
 						if (TMGglobal.TRACE)
 							//if (admin != 6 && per1 != 0 && per2 != 0)
-								System.out.println(" Excluded from T451 " + " Event: " + gnumIndex
+								System.out.println(" Excluded from T451 " 
+										+ " Event: " + gnumIndex
 										+ " E-EPER: " + eper
 										+ " G-PER1: " + per1
 										+ " G-PER2: " + per2
@@ -1353,6 +1444,13 @@ class TMGpass_Events  {
 							addedAssoc++;
 							eventAssocPID++;
 							addToT451_EVNT_ASSOC(indexE_ROW, eventAssocPID, tableT451);
+						// Test 5.8.2026 import of LOCAL sentence
+							if (sentence.length() > 5) {
+								ownerType = 3;
+								roleNumber = Integer.parseInt(role);
+								ownerTablePID = eventAssocPID;
+								exstractLocalSentences(etype, roleNumber, "Local WSENTENCE", sentence);
+							}
 					}
 			}
 		}
@@ -1434,6 +1532,8 @@ class TMGpass_Events  {
 			if (memo.length() == 0) hreTable.updateLong("MEMO_RPID", null_RPID);
 			else hreTable.updateLong("MEMO_RPID",
 					tmgHreConverter.pointHREmemo.addToT167_22c_MEMO(memo));
+			
+			hreTable.updateLong("PREF_NAME_RPID", null_RPID);
 
 		//Insert row
 			hreTable.insertRow();

@@ -27,7 +27,11 @@
 * v0.05.0034  2026-07-23 Add Sentence Editor button,listener  (D Ferguson/N. Tolleshaug)
 * 			  2026-07-25 Handle passing sexcodes to Sentence Editor (D Ferguson)
 * 			  2026-07-29 Removed 'sentenceRole' variables (D Ferguson)
-* 			  2026-07-31 Initiate varuable long eventTablePID = null_RPID (N. Tolleshaug)
+* 			  2026-07-31 Initiate variable long eventTablePID = null_RPID (N. Tolleshaug)
+* 			  2026-08-05 ownerType = 2; Owner type event for LOCAL (N. Tolleshaug)
+ * 			  2026-08-16 Add Preferred name functions to inpersRolePanel (D Ferguson)
+ * 			  2026-08-28 Implemented listner for Preferred name (N. Tolleshaug)
+ *   		  2026-08-29 Partner save fix for default setting problem (N. Tolleshaug)
 *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -115,6 +119,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
+	int dataBaseIndex;
 // Controls the added memo panel
 	public boolean additionalPanel = true; // Turned off in HG0566EditSource
 
@@ -144,8 +149,11 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private int focusPersIDX = 1;	// default start person	// see NOTE04
 	private int foundRow;
 	private int clickedRow, selectedRowInTable;
-	public long personPID, personTablePID; // Mod 13.6.2026 NTo
-	long eventTablePID = null_RPID;
+	protected int ownerType = 2; // Set owner type event  for LOCAL
+	public long personPID = null_RPID, personTablePID = null_RPID, citedTablePID = null_RPID; // Mod 13.6.2026 NTo
+	long ownerTablePID = null_RPID, eventTablePID = null_RPID, partnerTablePID;
+	long primPartnerRPID = null_RPID, 
+			secPartnerRPID = null_RPID, priPartnerPrefNamePID = null_RPID, secPartnerPrefNamePID = null_RPID;
 	private String idText, allColumnsText1, allColumnsText2;
 	String[] tablePersColHeads = null;
 	String sexCode = "U", sexCode2 = "U";			//$NON-NLS-1$ //$NON-NLS-2$
@@ -154,6 +162,21 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
     JScrollPane scrollTable;
 	JComboBox<String> comboBox_Subset;
+	JComboBox<String> combo_prefName1;
+	JComboBox<String> combo_prefName2;
+	
+    Object[][] objNameData1; // Stores the name list for selected pre name
+    Object[][] objNameData2; // Stores the name list for selected sec name
+	
+	String[] prefNameOptions = {"Standard setting"};
+	String[] prefNameOptions1 = {"Standard setting"};
+	String[] prefNameOptions2 = {"Standard setting"};
+	String defaultSetting = prefNameOptions1[0];
+	boolean changedPrefName = false;
+	boolean partnerEvent = false;
+	Object[] partnerRelationData;
+	long assocPrefNamePID;
+
 
     JTextArea memoText; 				// accessed by update
 	DocumentListener memoTextChange;	// accessed by update
@@ -168,13 +191,15 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 
 	String[] partnerEventList;
 	String newSelectedName;
-	JLabel lbl_nRole1, lbl_nRole2, lbl_ParentName;
+	JLabel lbl_nRole1, lbl_nRole2, lbl_PersonName;
 
 	public JButton btn_SaveEvent, btn_Save, btn_Sentence;
 
 	private Object[][] tablePersData;
 	private JTable tablePersons;
 	DefaultTableModel myTableModel = null;
+	
+
 
 	Object[][] objCiteData;
 	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
@@ -182,7 +207,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	String[] tableCiteHeader;
 	String citeTableName = "";	//$NON-NLS-1$
 
-	JLabel lbl_Relate, lbl_Parent;
+	JLabel lbl_Parent;
 	JComboBox<String> comboBox_Relationships;
 	int[] eventRoleTypes;
 
@@ -202,6 +227,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		this.pointOpenProject = pointOpenProject;
 		this.pointPersonHandler = pointPersonHandler;
 		pointCitationSourceHandler = pointOpenProject.getCitationSourceHandler();
+		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		this.addRelation = addRela;
 		if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: entering HG0507SelectPerson");	//$NON-NLS-1$
 
@@ -285,9 +311,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		comboBox_Subset = new JComboBox<>();
 		comboBox_Subset.setToolTipText(HG05070Msgs.Text_43);	// List of saved filter and subset names
 
-		for (int i = 1; i < tablePersColHeads.length; i++) {
+		for (int i = 1; i < tablePersColHeads.length; i++) 
 			comboBox_Subset.addItem(tablePersColHeads[i]);
-			}
+			
 		comboBox_Subset.addItem(idText);					// ID
 		comboBox_Subset.addItem(allColumnsText1);			// All Columns
 		findPanel.add(comboBox_Subset, "cell 1 2"); //$NON-NLS-1$
@@ -297,11 +323,11 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	// Define panel for Person list
 		personPanel = new JPanel();
 		personPanel.setLayout(new MigLayout("insets 0", "[grow]", "[]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		// scrollPane contains the Person Select picklist
+	// scrollPane contains the Person Select picklist
 		scrollTable = new JScrollPane();
 		scrollTable.setPreferredSize(new Dimension(570, 400));
 
-		// Setup JTable to show person data
+	// Setup JTable to show person data
 		tablePersons = new JTable() {
 			private static final long serialVersionUID = 1L;
 				@Override
@@ -331,24 +357,22 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		control1Panel.setVisible(true);
 
 	// Define Alternate panels for use after Select button clicked (visibility false initially)
-	// Define panel for Person/Partner name(s)/role(s)
+	// Define panel for Assoc/Parent/Partner name(s)/role(s)
 		persRolePanel = new JPanel();
-		persRolePanel.setLayout(new MigLayout("insets 5", "[]20[]", "[][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		persRolePanel.setLayout(new MigLayout("insets 5", "[]10[]50[]10[]", "[][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		lbl_Parent = new JLabel();
 		lbl_Parent.setText(newTitle); // Set new title for window
 		lbl_Parent.setFont(lbl_Parent.getFont().deriveFont(lbl_Parent.getFont().getStyle() | Font.BOLD));
 		persRolePanel.add(lbl_Parent, "cell 0 0, alignx left"); //$NON-NLS-1$
 
-		lbl_Relate = new JLabel();
-		lbl_Relate.setFont(lbl_Relate.getFont().deriveFont(lbl_Relate.getFont().getStyle() | Font.BOLD));
-		persRolePanel.add(lbl_Relate, "cell 1 0, alignx left,"); //$NON-NLS-1$
-
-		lbl_ParentName = new JLabel(HG05070Msgs.Text_133);	// Parent dummy
-		persRolePanel.add(lbl_ParentName, "cell 0 1, alignx left"); //$NON-NLS-1$
+		lbl_PersonName = new JLabel(HG05070Msgs.Text_133);	// Parent dummy
+		persRolePanel.add(lbl_PersonName, "cell 0 0, alignx left"); //$NON-NLS-1$
 
 		comboBox_Relationships = new JComboBox<>();
-		persRolePanel.add(comboBox_Relationships, "cell 1 1, alignx left"); //$NON-NLS-1$
+		persRolePanel.add(comboBox_Relationships, "cell 1 0, alignx left"); //$NON-NLS-1
+
 		contents.add(persRolePanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$
+		pack();
 		persRolePanel.setVisible(false);
 
 	// Define panel for Memo
@@ -630,7 +654,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Cancel1.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 1st phase"); //$NON-NLS-1$
+				if (HGlobal.writeLogs) 
+					HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 1st phase"); //$NON-NLS-1$
 		    	dispose();
 			}
 		});
@@ -638,7 +663,8 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Cancel2.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 2nd phase"); //$NON-NLS-1$
+				if (HGlobal.writeLogs) 
+					HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 2nd phase"); //$NON-NLS-1$
 		    	dispose();
 			}
 		});
@@ -809,6 +835,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				}
 			}
 		});
+		
 
 	// Listener for tablePersons row selection of a relation to be added
 		tablePersons.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -821,7 +848,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
 				// Get the person's name
-					lbl_ParentName.setText((String) tablePersData[selectedRowInTable][1]);
+					lbl_PersonName.setText((String) tablePersData[selectedRowInTable][1]);
 					newSelectedName = (String) tablePersData[selectedRowInTable][1];
 					lbl_nRole2.setText("" + newSelectedName);		//$NON-NLS-1$
 					btn_Select.setEnabled(true);
@@ -879,8 +906,10 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (pointEditEvent != null) eventTypeNumber = pointEditEvent.getEventNumber();
-				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, eventTablePID,
-															eventTypeNumber,
+				if (thisSelectPerson instanceof HG0507SelectAssociate) ownerType = 3; // Associate table
+				if (thisSelectPerson instanceof HG0507SelectPartner) ownerType = 4; // Partner table
+				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, ownerTablePID,
+															eventTablePID, ownerType, eventTypeNumber,
 															eventRoleNumber, 	// role number
 															sexCode);	// sex code (U/F/M)
 				sentenceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
@@ -910,7 +939,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 										= new HG0555EditCitation(false, pointOpenProject, citeTableName, 1, (long)objCiteDataToEdit[3]);
 						citeScreen.pointSelectPerson = pointSelectPerson;
 						citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-						Point xyCite = lbl_Relate.getLocationOnScreen();
+						Point xyCite = lbl_Parent.getLocationOnScreen();
 						citeScreen.setLocation(xyCite.x, xyCite.y + 30);
 						citeScreen.setVisible(true);
 						btn_Save.setEnabled(true);
@@ -922,12 +951,12 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Add.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				pointCitationSourceHandler.setCitedTableData(citeTableName, personPID);
-				// NB keyAssocMin = 1 by default as follows
+				pointCitationSourceHandler.setCitedTableData(citeTableName, citedTablePID);
+			// NB keyAssocMin = 1 by default as follows
 				HG0555EditCitation citeScreen = new HG0555EditCitation(true, pointOpenProject, citeTableName, 1);
 				citeScreen.pointSelectPerson = pointSelectPerson;
 				citeScreen.setModalityType(ModalityType.APPLICATION_MODAL);
-				Point xyCite = lbl_Relate.getLocationOnScreen();
+				Point xyCite = lbl_Parent.getLocationOnScreen();
 				citeScreen.setLocation(xyCite.x, xyCite.y + 30);
 				citeScreen.setVisible(true);
 				btn_Save.setEnabled(true);
@@ -998,6 +1027,66 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		});
 
 	}	// End HG0507SelectPerson constructor
+	
+/**
+ * protected void activatePrefNameListener()	
+ */
+	protected void activatePrefNameListener() {
+		combo_prefName1.addActionListener (new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				int selectedIndex = combo_prefName1.getSelectedIndex();
+				if (partnerEvent) {
+					setPartnerPrefNameAction();
+				} else {
+					if (selectedIndex > 0) {	
+						assocPrefNamePID = pointPersonHandler.getPersonNameTablePID(selectedIndex - 1);
+						//System.out.println( " Assoc PRI - PID: " + assocPrefNamePID);
+					} else {
+						assocPrefNamePID = null_RPID;
+						//System.out.println( " Assoc PRI default: " + defaultSetting);
+					}
+				}
+				changedPrefName = true;
+				btn_Save.setEnabled(true);
+			}
+		});
+		
+	// On selection within Preferred Name2 combobox
+		if (partnerEvent)
+			combo_prefName2.addActionListener (new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					setPartnerPrefNameAction();
+					changedPrefName = true;
+					btn_Save.setEnabled(true);
+				}
+			});
+	}
+	
+/**
+ * setPartnerPrefNameAction()
+ * 
+ */
+	private void setPartnerPrefNameAction() {
+		int selectedIndex;
+		selectedIndex = combo_prefName1.getSelectedIndex();
+		if (selectedIndex > 0) {
+			priPartnerPrefNamePID = (long) objNameData1[selectedIndex -1][3];
+			//System.out.println( " Partner PRI PID: " + priPartnerPrefNamePID);
+		} else {
+			priPartnerPrefNamePID = null_RPID;
+			//System.out.println( " Partner PRI default: " + defaultSetting);
+		}
+		selectedIndex = combo_prefName2.getSelectedIndex();
+		if (selectedIndex > 0) {
+			secPartnerPrefNamePID = (long) objNameData2[selectedIndex -1][3];
+			//System.out.println( " Partner SEC PID: " + secPartnerPrefNamePID);
+		} else {
+			secPartnerPrefNamePID = null_RPID;
+			//System.out.println( " Partner SEC default: " + defaultSetting);
+		}
+	}
 
 /**
  * resetCitationTable
@@ -1005,7 +1094,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
  * @throws HBException
  */
 	public void resetCitationTable(String tableName) throws HBException {
-		objCiteData = pointCitationSourceHandler.getCitationSourceData(personTablePID, tableName);
+		objCiteData = pointCitationSourceHandler.getCitationSourceData(citedTablePID, tableName);
 		Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
 		citeModel.setDataVector(objCiteData, tableCiteHeader);
 	}

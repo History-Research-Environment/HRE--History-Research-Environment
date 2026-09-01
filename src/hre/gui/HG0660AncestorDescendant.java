@@ -12,10 +12,12 @@ package hre.gui;
  * v0.04.0032 2025-06-24 Change output to write PDF file or print the tree (D Ferguson)
  * 			  2026-01-04 Log catch block error msgs (D Ferguson)
  * v0.05.0033 2026-05-29 Fix 33.38 stop HG0660 blocking filechooser dialog (D Ferguson)
+ * v0.05.0034 2026-08-13 Fix 33.39 After writing a file, offer to open it (D Ferguson)
  ***************************************************************************************/
 
 import java.awt.Container;
 import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
@@ -280,16 +282,18 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				HG0577FileChooser chooseFile
 						= new HG0577FileChooser(HG0660Msgs.Text_61, 		// Select
-								"PDF files (*.pdf)",									//$NON-NLS-1$
-								"pdf", HG0660Msgs.Text_62, HGlobal.pathHREreports, 1); //$NON-NLS-1$
-				chooseFile.setModalityType(ModalityType.MODELESS);
+								"PDF files (*.pdf)",						//$NON-NLS-1$
+								"pdf", HG0660Msgs.Text_62, 		//$NON-NLS-1$  // Tree output.pdf
+								HGlobal.pathHREreports,		// if blank will default to Documents
+								1);
+				chooseFile.setModalityType(ModalityType.APPLICATION_MODAL);
 				chooseFile.setAlwaysOnTop(true);
 				Point xy = leftTitle.getLocationOnScreen();      // Gets leftTitle location on screen
 				chooseFile.setLocation(xy.x, xy.y);     		 // Sets chooser screen top-left corner relative to that
 				chooseFile.setVisible(true);
 				setCursor(Cursor.getDefaultCursor());
 				// Chosen filename and folder are stored in 'chosen' fields - if something there, proceed
-				if (!HGlobal.chosenFilename.isEmpty() )  {
+				if (!HGlobal.chosenFilename.trim().isEmpty() )  {
 					String lower = HGlobal.chosenFilename.toLowerCase();  								//make filename all lower case
 					int test = lower.lastIndexOf(".pdf");	//$NON-NLS-1$								// test if it ends in .pdf
 					if (test == -1)  HGlobal.chosenFilename = HGlobal.chosenFilename + ".pdf";  		// if not, add .pdf		//$NON-NLS-1$
@@ -308,10 +312,15 @@ public class HG0660AncestorDescendant extends HG0450SuperDialog implements Actio
 						originalScroll.setViewportView(null);
 						new HB0631OutputJTreeToFile(tree, headerField.getText(), footerField.getText(), outFile);
 						originalScroll.setViewportView(tree);
-				       	JOptionPane.showMessageDialog(btn_File,
-				       								  HGlobal.chosenFilename + HG0660Msgs.Text_64,  //  successfuly written
-				       								  HG0660Msgs.Text_65,							// PDF File Output
-				       								  JOptionPane.INFORMATION_MESSAGE);
+
+				       	if (JOptionPane.showConfirmDialog(btn_File,
+				       				HGlobal.chosenFilename + HG0660Msgs.Text_64,  //  successfuly written. Do you want to open it?
+				       				HG0660Msgs.Text_65,							// PDF File Output
+				       				JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) return;  	// NO, so exit
+				       	// If YES, use OS default app to open the PDF file and exit
+				       	Desktop.getDesktop().open(outFile);
+				       	dispose();
+
 					} catch (Exception hbe) {
 						// HG0631Output should have trapped this first, but log it anyway
 	        			if (HGlobal.writeLogs) {

@@ -60,6 +60,7 @@ package hre.gui;
  *			  2026-04-30 Add confirmation of Relate settings and Clear Relationships button (D Ferguson)
  *			  2026-05-04 NLS update (D Ferguson)
  *			  2026-06-13 If no Relationship person selected cancel relationship process (D Ferguson)
+ * v0.05.0034 2026-08-06 Update Relationship calls to use HBRelationHandler (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Color;
@@ -125,7 +126,7 @@ import hre.bila.HB0744UserAUX;
 import hre.bila.HBException;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
-import hre.bila.HBReportHandler;
+import hre.bila.HBRelationHandler;
 import hre.bila.HBToolHandler;
 import hre.nls.HG0501Msgs;
 import net.miginfocom.swing.MigLayout;
@@ -133,7 +134,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Application Settings
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2019-05-17
  */
 
@@ -143,7 +144,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 	private String screenID = "50100";  //$NON-NLS-1$
 	public HG0401HREMain mainPanel;		// needed for GUI language reset
 	private HBPersonHandler pointPersonHandler;
-	private HBReportHandler pointHBReportHandler;
+	private HBRelationHandler pointHBRelationHandler;
 	private JPanel contents;
 
 	private boolean changedPathLocation, changedPathReports,
@@ -1121,7 +1122,7 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 				HG0507SelectPerson personSelectScreen;
 				try {
-					pointHBReportHandler = pointOpenProject.getReportHandler();
+					pointHBRelationHandler = pointOpenProject.getRelationHandler();
 					pointPersonHandler = pointOpenProject.getPersonHandler();
 				// Display SelectPerson screen to select new focus person
 					personSelectScreen = pointPersonHandler.activateSelectFocusPerson(pointOpenProject);
@@ -1138,7 +1139,9 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 					txt_Relate.setVisible(true);
 					revalidate();
 				// Re-calculate all relationships based on this new focusPerson
-					pointHBReportHandler.activateRelationCalc(pointOpenProject.getFocusPersonPID());
+					if (pointHBRelationHandler == null)
+						pointHBRelationHandler = new HBRelationHandler(pointOpenProject);
+					pointHBRelationHandler.recalcRelationsT401(pointOpenProject.getFocusPersonPID());
 				// Update ResultSet T401
 					pointOpenProject.reloadT401Persons();
 					pointPersonHandler.resetPersonManager();
@@ -1151,22 +1154,23 @@ public class HG0501AppSettings extends HG0450SuperDialog {
 			     setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 	        	JOptionPane.showMessageDialog(btn_RelatePerson,
 	        				HG0501Msgs.Text_163,		// Relationships have been created
-	        				HG0501Msgs.Text_162,			// Create Relationships
+	        				HG0501Msgs.Text_162,		// Create Relationships
 							JOptionPane.INFORMATION_MESSAGE);
 	        	btn_ClearRelate.setVisible(true);
 	        	btn_RelatePerson.setText(HG0501Msgs.Text_164);	// Refresh Relationships
 		      }
 		    });
 
-		// Listener for 'Clear Relate' button
+		// Listener for 'Clear Relationships' button
 		btn_ClearRelate.addActionListener(new ActionListener() {
 		     @Override
 			public void actionPerformed(ActionEvent e) {
 				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-				pointHBReportHandler = pointOpenProject.getReportHandler();
-			// Code to run throughT401 and zero all RELATE fields and also remove focus person PID from T126
+				if (pointHBRelationHandler == null)
+					pointHBRelationHandler = new HBRelationHandler(pointOpenProject);
+			// Run throughT401 and zero all RELATE fields and also remove focus person PID from T126
 				try {
-					pointHBReportHandler.clearRelationParameters();
+					pointHBRelationHandler.clearRelationDataInT401();
 				} catch (HBException hbe) {
 					if (HGlobal.writeLogs) {
 						HB0711Logging.logWrite("ERROR: in HG0501 clear relationship " + hbe.getMessage());	//$NON-NLS-1$

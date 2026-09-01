@@ -8,6 +8,7 @@ package hre.gui;
  *			  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
  * 		  	  2026-01-20 Log all catch blocks and other msgs (D Ferguson)
  * v0.05.0034 2026-07-29 Remove load of partnerNames - never used (D Ferguson)
+ * 			  2026-08-29 Updated for preferred name setting (N.Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -15,7 +16,7 @@ package hre.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeListener;
+//import java.beans.PropertyChangeListener;
 
 import javax.swing.JOptionPane;
 import javax.swing.event.TableModelEvent;
@@ -40,13 +41,11 @@ public class HG0547AddEvent extends HG0547EditEvent {
 	long locationNamePID = null_RPID;
 	boolean dateOK = false;
 	boolean locationChanged = false;
-
-	PropertyChangeListener propListener;
-	HG0547AddEvent pointUpdateEvent = this;
+	HG0547AddEvent pointAddEvent = this;
 
 	public HG0547AddEvent(HBProjectOpenData pointOpenProject, int eventNumber,
 									int roleNumber, String sexCode) throws HBException {
-		super(pointOpenProject, eventNumber, roleNumber, null_RPID, sexCode);
+		super(pointOpenProject, eventNumber, roleNumber, null_RPID, null_RPID,sexCode);
 
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;
@@ -147,6 +146,14 @@ public class HG0547AddEvent extends HG0547EditEvent {
 							locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
 							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 						}
+						
+					// update prefName for event and partner
+						if (changedPrefName) 
+							if (partnerEvent) 
+								pointPersonHandler.updatePartnerPrefName(partnerTablePID, 
+													priPartnerPrefNamePID, secPartnerPrefNamePID);	
+							else 	
+								pointWhereWhenHandler.updateEventPrefName(eventTablePID, eventPrefNanePID);
 
 					} else 	if (HGlobal.DEBUG && HGlobal.writeLogs)
 						HB0711Logging.logWrite("Action: in HG0547Add no edited data to save"); //$NON-NLS-1$

@@ -54,6 +54,8 @@ package hre.bila;
  * 			  2026-05-15 T402_PERS_NAME","ALTER TABLE", "RENAME COLUMN END_HDATE_RPID TO SORT_HDATE_RPID (N. Tolleshaug)
  * v0.05.0034 2026-06-30 Remove the Table alterations, now in Seed V23 (D Ferguson)
  * 			  2026-07-14 Add getProjectTableCounts to collect table sizes for Project Summary (D Ferguson)
+ * 		  	  2026-08-14 Updated new project to database build 2026.8.10 (N. Tolleshaug)
+ * 			  2026-08-31 Updated for T404 pre neame database build 2026.8.10 (N. Tolleshaug)
  * ***************************************************************************************
  * NOTE 01 - Copy As action - Error from accessing a "No Content" database is not
  * 			 handled correct. The "No Content" database is not released/closed
@@ -539,6 +541,25 @@ public class HBProjectHandler extends HBBusinessLayer {
 	// Set boolean IS_OWNER in T131
 		updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001", databaseIndex);
 
+	// Add LOCAL_TYPE to T168		
+		alterColumnInTable("T168_SENTENCE_SET","LOCAL_TYPE","SMALLINT", databaseIndex);	
+		
+	// Add PRPRI_NAME_RPID to T404_PARTNER		
+		alterColumnInTable("T404_PARTNER","PRPRI_NAME_RPID","BIGINT", databaseIndex);	
+		
+	// Add PRSEC_NAME_RPID to T404_PARTNER		
+		alterColumnInTable("T404_PARTNER","PRSEC_NAME_RPID","BIGINT", databaseIndex);
+		
+	// Add PREF_NAME_RPID to T1450		
+		alterColumnInTable("T450_EVNT","PREF_NAME_RPID","BIGINT" , databaseIndex);
+		
+	// Add PREF_NAME_RPID to T1451		
+		alterColumnInTable("T451_EVNT_ASSOC","PREF_NAME_RPID","BIGINT", databaseIndex);		
+		
+	// Update table 104_SCHEMA_DEFN with the HREdatabseBuild / After SQL updates
+		updateTableInBase("T104_SCHEMA_DEFN ", "UPDATE", "SET VERSION_NAME = '"
+				+ HGlobal.databaseBuild + "' WHERE PID = 1000000000000001;", databaseIndex);
+		
 		initiateDateFormat(3); // set initial date format	use index = 0 to 9
 
 		dateFormatSelect(); // set dateFormat index

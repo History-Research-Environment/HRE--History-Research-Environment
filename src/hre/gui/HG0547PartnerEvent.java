@@ -12,6 +12,7 @@ package hre.gui;
  * 			  2024-11-19 Updated location style handling (N. Tolleshaug)
  * v0.04.0032 2026-01-20 Log all catch blocks and other msgs (D Ferguson)
  * v0.05.0034 2026-07-28 Removed int selectedEventNum = 1004, selectedRoleNum = 1 (N. Tolleshaug)
+ * 			  2026-08-23 - Updated for save preferred event name (N.Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -48,12 +49,13 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 	static String sexCode = "U";		//$NON-NLS-1$
 
 	public HG0547PartnerEvent(HBProjectOpenData pointOpenProject, int selectedRowInTable, int eventNumber,
-								int roleNumber , long createdPartnerTablePID) throws HBException {
-		super(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
-		this.partnerTablePID = createdPartnerTablePID;
+								int roleNumber , long selectedPartnerTablePID) throws HBException {
+		super(pointOpenProject, eventNumber, roleNumber, eventPID, selectedPartnerTablePID, sexCode);
+		this.partnerTablePID = selectedPartnerTablePID;
+		//System.out.println(" Partner event PID: " + partnerTablePID + "/" + eventNumber);
 		
 /* partnerRelationData content
-  [0] = personPID; [1] = eventype; [2] = prirole; [3] = secrole;
+  [0] = partnerTablePID; [1] = eventype; [2] = prirole; [3] = secrole;
   [4] = priname; [5] = secname, [6] = sex# code of person, [7] = sex# of partner
   [8] = partner event table PID
 */
@@ -67,8 +69,8 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 				selectedEventNum = (int)partnerRelationData[1];
 				selectedRoleNum = (int)partnerRelationData[2]; // Added v0.05.0034 2026-07-28
 			// If partner event is created
-				if (createdPartnerTablePID != null_RPID) {
-					partnerTablePID = createdPartnerTablePID;
+				if (selectedPartnerTablePID != null_RPID) {
+					partnerTablePID = selectedPartnerTablePID;
 				}
 			} catch (HBException hbe) {
 				if (HGlobal.writeLogs) {
@@ -94,7 +96,7 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 				long newEventRecordPID;
 				try {
 				// Check if data updated
-					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited) {
+					if (locationElementUpdate || startDateOK ||sortDateOK || memoEdited || changedPrefName) {
 
 					// Create new event
 						newEventRecordPID = pointWhereWhenHandler.createNewEvent(selectedEventNum, selectedRoleNum);
@@ -120,6 +122,11 @@ public class HG0547PartnerEvent extends HG0547EditEvent {
 							locationNamePID = pointWhereWhenHandler.getLocationNameRecordPID();
 							pointWhereWhenHandler.updateStoredNameStyle(selectedStyleIndex, locationNamePID);
 						}
+						
+					// update prefName for event
+						if (changedPrefName) pointPersonHandler.
+											updatePartnerPrefName(partnerTablePID, 
+													priPartnerPrefNamePID, secPartnerPrefNamePID);	
 
 					} else if (HGlobal.DEBUG && HGlobal.writeLogs)
 									HB0711Logging.logWrite("Action: in HG0547Partner no edited data to save");	//$NON-NLS-1$

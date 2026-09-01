@@ -71,6 +71,7 @@ package hre.bila;
  * 			  2026-01-27 - Updated code for database index setting for handlers(N.Tolleshaug)
  * v0.05.0033 2026-04-06 - Added method getFocusPersonPID (N. Tolleshaug)
  * 			  2026-04-09 - Added methods to update tFocusPersonPID (N. Tolleshaug)
+ * v0.05.0034 2026-08-06 - Updated for new HBRelationsHandler (D Ferguson)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -109,7 +110,7 @@ import hre.tmgjava.TMGglobal;
 /**
  * Stores all open project data for an HRE project
  * @author Nils Tolleshaug
- * @version v0.03.0030
+ * @version v0.05.0034
  * @since 2019-12-14
  */
 public class HBProjectOpenData {
@@ -123,6 +124,7 @@ public class HBProjectOpenData {
 	private HBWhereWhenHandler pointWhereWhenHandler;
 	private HBMediaHandler pointMediaHandler;
 	private HBReportHandler pointReportHandler;
+	private HBRelationHandler pointRelationHandler;
 	private HREmemo pointHREmemo;
 
     long proOffset = 1000000000000000L;
@@ -409,11 +411,11 @@ public class HBProjectOpenData {
     public long getSelectedPersonPID() {
     	return selectedPersonPID;
     }
-    
+
     public long getFocusPersonPID() {
     	return focusPersonPID;
     }
-    
+
     public void setFocusPersonPID(long focusPersonPID) throws HBException {
     	this.focusPersonPID = focusPersonPID;
     	updateFocusPersonT126(focusPersonPID);
@@ -482,7 +484,7 @@ public class HBProjectOpenData {
     public void setSelectedPersonPID(long personPID) {
     	selectedPersonPID = personPID;
     }
-    
+
 
  /**
   * getReloadPersonSelectData()
@@ -596,9 +598,9 @@ public class HBProjectOpenData {
 	}
 
 	public ArrayList<String> getTableList() {
-		if (HGlobal.DEBUG) 
+		if (HGlobal.DEBUG)
 			System.out.println("HBProjectOpenData - getTableList");
-		
+
 		return databaseTables;
 	}
 
@@ -611,15 +613,15 @@ public class HBProjectOpenData {
 		this.pointProjectHandler = pointProjectHandler;
 		if (HGlobal.DEBUG) System.out.println(" New - HBProjectOpenData!");
 	}
-	
+
 /**
- * private void initiateManagersOpenProject()	
+ * private void initiateManagersOpenProject()
  * @throws HBException
  */
 	public void initiateManagersOpenProject() throws HBException {
 		//System.out.println(" initiateManagersOpenProject() called!");
-		
-	// Set up memo handler	
+
+	// Set up memo handler
 		pointHREmemo = new HREmemo(pointProjectHandler.pointDBlayer, dataBaseIndex);
 
 	// Set up citation - source handler
@@ -649,7 +651,7 @@ public class HBProjectOpenData {
 	// Set up Report handler
 		pointReportHandler  = new HBReportHandler(this);
 		pointReportHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
-		
+
 	// Set up HBPersonHandler
 		pointPersonHandler = new HBPersonHandler(this);
 		pointPersonHandler.pointDBlayer = pointProjectHandler.pointDBlayer;
@@ -717,17 +719,25 @@ public class HBProjectOpenData {
 	public HBReportHandler getReportHandler() {
 		return pointReportHandler;
 	}
-	
+
 /**
- * public HREmemo getHREmemo()	
+ * getRelationHandler() - get pointer to HBRelationHandler
+ * @return
+ */
+	public HBRelationHandler getRelationHandler() {
+		return pointRelationHandler;
+	}
+
+/**
+ * public HREmemo getHREmemo()
  * @return
  */
 	public HREmemo getHREmemo() {
 		return pointHREmemo;
 	}
-	
+
 /**
- * public HDDatabaseLayer getPointDBlayer()	
+ * public HDDatabaseLayer getPointDBlayer()
  * @return
  */
 	public HDDatabaseLayer getPointDBlayer() {
@@ -754,7 +764,7 @@ public class HBProjectOpenData {
 
 	    // Connect to database and return database open index
 	        dataBaseIndex = pointProjectHandler.pointDBlayer.connectSQLdatabase(remote, dataBaseFilePath, logonData);
-	   
+
 	      // If remote set status for tcp connection
 	        if (remote) {
 	        	String connectStatus = pointProjectHandler.pointDBlayer.getConnectStatus();
@@ -762,10 +772,10 @@ public class HBProjectOpenData {
 	    // Set status in main window
 	        	HG0401HREMain.mainFrame.setStatusAction(connectStatus);
 	        }
-	        
-	  // Set up managers after project is open woth new dataBaseIndex     
+
+	  // Set up managers after project is open woth new dataBaseIndex
 	        initiateManagersOpenProject();
-	        
+
 	  // Reset pointers to VP data - only one project at a time
 			getViewPointHandler().resetVPdata();
 
@@ -798,8 +808,8 @@ public class HBProjectOpenData {
 	//  Get database version
 			databaseDDLversion = pointProjectHandler.pointLibraryResultSet.
 					getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
-			
-	// Check dtabase version		
+
+	// Check dtabase version
 		    if (!databaseDDLversion.contains("V23")) {
 				throw new HBException(" HBProjectOpenData - HRE database version not accepted" +
 					" found: " + databaseDDLversion);
@@ -811,10 +821,10 @@ public class HBProjectOpenData {
 				System.out.println(" WARNING: database build: " + databaseDDLversion
 						+ " using HRE for version DDL" + HGlobal.databaseBuild );
 				JOptionPane.showMessageDialog(null, " WARNING: \nOpened DB build: " + databaseDDLversion
-						+ "\nnot equal to HRE expected DB build " + HGlobal.databaseBuild  , 
+						+ "\nnot equal to HRE expected DB build " + HGlobal.databaseBuild  ,
 						"Project Open databse", JOptionPane.WARNING_MESSAGE);
-			}	    
-		    
+			}
+
 
 		// Set up ResultSet T126_PROJECTS
 			selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
@@ -831,19 +841,19 @@ public class HBProjectOpenData {
 				}
 				importedProject = true;
 			}
-			
+
 		// Print focus person PID
-			if (HGlobal.DEBUG) 
+			if (HGlobal.DEBUG)
 				System.out.println (" *** Focus person PID (getFocusPersonPID()) = " + getFocusPersonPID());
 
-		    if (HGlobal.DEBUG) 
+		    if (HGlobal.DEBUG)
 				System.out.println(" Opened DB created from: "
 		    		+ databaseDDLversion + " / HRE DB implement: " + HGlobal.databaseVersion);
-			
+
 /**
  * 		Generate ResultSet for project tables
  * 		Select database version to process
- */  
+ */
 			if (HGlobal.DEBUG)
 				System.out.println("Database DDL build: " + databaseDDLversion);
 			generateHRETables22(dataBaseIndex);
@@ -1210,11 +1220,11 @@ public class HBProjectOpenData {
 	    		+ "User ID: " + selectedVisibleIDX + " PID: " + personTablePID + " Name: " + selectedPersonName);
 		}
 	}
-	
+
 /**
  * private void updateFocusPersonT126(long focusPersonPID)
  * @param focusPersonPID
- * @throws HBException 
+ * @throws HBException
  */
 	private void updateFocusPersonT126(long focusPersonPID) throws HBException {
 		selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
@@ -1224,7 +1234,7 @@ public class HBProjectOpenData {
 			projectTableRS.updateLong("FOCUS_PER_PID", focusPersonPID);
 			projectTableRS.updateRow();
 			projectTableRS.close();
-		} catch (SQLException sqle) {	
+		} catch (SQLException sqle) {
 			System.out.println(" ERROR: Update focus person" + sqle.getMessage());
 			throw new HBException(" table T126_PROJECTS - error update T126 tabel focus person" + sqle.getMessage());
 		}

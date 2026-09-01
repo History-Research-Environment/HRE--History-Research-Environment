@@ -13,6 +13,7 @@ package hre.gui;
  * 			  2026-01-06 Log catch block msgs (D Ferguson)
  * v0.05.0033 2025-06-13 Fix for correct citation parent relation (N. Tolleshaug)
  * v0.05.0034 2026-07-23 Remove btn_Sentence visibility (D Ferguson)
+ * 			  2026-08-16 Code sync with other changes in persRolePanel (D Ferguson)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
@@ -76,12 +77,9 @@ public class HG0507SelectParent extends HG0507SelectPerson {
 		btn_SaveEvent.setVisible(false);
 		btn_Save.setText(HG05070Msgs.Text_163);	// Save new Parent
 
-	// Add code for select parent role and activate save button
-		lbl_Relate.setText(HG05070Msgs.Text_164);	//  Set Parent type
-
-	// Set parent name in window
+	// Set parent name/role list in window
 		if (parentRelationData != null)
-			lbl_ParentName.setText((String) parentRelationData[1]);	// Edit parent:
+			lbl_PersonName.setText((String) parentRelationData[1]);
 		parentRoleList = pointPersonHandler.getRolesForParent(parentEventGroup);
 		parentRoleType = pointPersonHandler.getRolesTypeParent();
 	    updateComboPanel(comboBox_Relationships, parentRoleList);

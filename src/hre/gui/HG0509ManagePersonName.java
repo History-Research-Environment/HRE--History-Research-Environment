@@ -857,7 +857,7 @@ public class HG0509ManagePersonName extends HG0450SuperDialog {
 			public void actionPerformed(ActionEvent arg0) {
 
 				//int eventNameType = Integer.parseInt(nameData[3]);
-				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, pointManagePersonName,
+				HG0548EditSentence sentenceScreen = new HG0548EditSentence(pointOpenProject, personNameTablePID,
 													nameEventType);
 				sentenceScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 			// Anchor new screen at lbl_Citation JLabel

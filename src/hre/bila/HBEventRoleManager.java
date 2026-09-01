@@ -30,6 +30,8 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import javax.swing.JOptionPane;
+
 //import javax.swing.JRadioButton;
 
 //import hre.dbla.HDDatabaseLayer;
@@ -381,14 +383,16 @@ public class HBEventRoleManager extends HBBusinessLayer {
 			}
 			if (nrOfRows == 0) {
 					if (HGlobal.DEBUG)
-							System.out.println(" No roles found for eventtype: " + eventType + " Select: " + selectRoles);
+							System.out.println(" No roles found for eventtype: " + eventType + " SelectRole: " + selectRoles);
+					JOptionPane.showMessageDialog(null," No roles found for eventtype nr: " + eventType,
+							"ListEventRoles", JOptionPane.WARNING_MESSAGE);
 				// Setup null values to avoid empty role list being returned
 					eventRoleList = new String[1];
 					eventRoleType = new int[1];
 					eventRoleSeq = new int[1];
 					eventRoleKey = new boolean[1];
 					eventRoleSentencePID = new long[1];
-					eventRoleList[0] = "Dummy";
+					eventRoleList[0] = "No roles";
 					eventRoleType[0] = 1;
 					eventRoleSeq[0] = 0;
 					eventRoleSentencePID[0] = null_RPID;

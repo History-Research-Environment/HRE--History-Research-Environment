@@ -98,6 +98,8 @@ package hre.bila;
   * 		   2026-07-25 - Add sexID to assoc data passed back to SelectAssoc (D Ferguson)
   * 		   2026-07-28 - Setting role sentense - Fix for pri/sec role select (N. Tolleshaug)
   * 		   2026-07-31 - Added assocRelationData[4] = eventTablePID; (N. Tolleshaug)
+  * 		   2026-08-19 - Modified for handling preferred name (N.Tolleshaug)
+  * 		   2026-08-28 - Updated for save preferred event/assoc name (N.Tolleshaug)
   *****************************************************************************************/
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -276,9 +278,9 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public Object[] getAssocTableData(int indexInTable) {
 		return pointEditEventRecord.getAssocTableData(indexInTable);
 	}
-
-	public String[] getPartnerNames() {
-		return pointEditEventRecord.getPartnerNames();
+	
+	public String[] getPartnerNames(long partnerTablePID) throws HBException {
+		return pointEditEventRecord.getPartnerNames(partnerTablePID);
 	}
 
 	public Object[][] getLocationDataTable(int styleIndex) {
@@ -320,6 +322,14 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public void changeEventType(long eventTablePID, int selectedEventNum, int selectedRoleNum) throws HBException {
 		pointEditEventRecord.changeEventType(eventTablePID, selectedEventNum, selectedRoleNum);
 	}
+	
+	public void updateEventPrefName(long eventTablePID, long prefNamePID) throws HBException {
+		pointEditEventRecord.updateEventPrefName(eventTablePID, prefNamePID);
+	}
+	
+	public void updateAssocPrefName(long assocTablePID, long prefNamePID) throws HBException {
+		pointEditEventRecord.updateAssocPrefName(assocTablePID, prefNamePID);
+	}	
 
 	public void updateEventPartnerTable(long partnerTablePID, long newEventRecordPID) throws HBException {
 		pointEditEventRecord.updateEventPartnerTable(partnerTablePID, newEventRecordPID);
@@ -1077,23 +1087,19 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 	public HG0547EditEvent activateUpdateEvent(HBProjectOpenData pointOpenProject, int tableRow,
 												boolean updateEvent, String sexCode) throws HBException {
 		ResultSet selectedEventTable, partnerTableRS;
-		long priPartnerPID, secPartnerPID, selectedPersonPID, primAssocPID = null_RPID, 
-				locationTablePID, locationNamePID, 
+		long primAssocPID = null_RPID, locationTablePID, partnerTablePID = null_RPID, locationNamePID, 
 				eventTablePID, hdateDate, hdateSort;
-		int priRoleNum, secRoleNum;
 		String selectString, primAssocName;
-		String[] personPartners = new String[4];
 		int eventGroup, eventNumber = 0, roleNumber = 0;
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		selectedEventTableRow = tableRow;
 		pointPersonMannager = pointOpenProject.getPersonHandler();
-
 	// Mod 2.12.2024
 		if (updateEvent)
 			eventTablePID = pointPersonMannager.getEventPID(tableRow);
 		else
 			eventTablePID = pointEditEventRecord.eventTablePID;
-		selectedPersonPID = pointOpenProject.getSelectedPersonPID();
+		
 		dateFormatSelect();
 		try {
 			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
@@ -1113,28 +1119,8 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				selectString = setSelectSQL("*", personPartnerTable, "EVNT_RPID = " + eventTablePID);
 				partnerTableRS = requestTableData(selectString, dataBaseIndex);
 				partnerTableRS.first();
-				priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
-				secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
-		// New 28.7.2026 NTo Fix for pri/sec sentence role select
-				if (selectedPersonPID == priPartnerPID) {
-					priRoleNum = partnerTableRS.getInt("PRI_ROLE");
-					secRoleNum = partnerTableRS.getInt("SEC_ROLE");
-				} else {
-					secPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
-					priPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
-					secRoleNum = partnerTableRS.getInt("PRI_ROLE");
-					priRoleNum = partnerTableRS.getInt("SEC_ROLE");
-				}
-				roleNumber = priRoleNum;
-				eventNumber = partnerTableRS.getInt("PARTNER_TYPE");				
-				partnerTableRS.close();
-
-			// Build list of both names, both roles for HG0547EditEvent
-				personPartners[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
-				personPartners[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
-				personPartners[2] = getEventRoleName(eventNumber, priRoleNum).trim();
-				personPartners[3] = getEventRoleName(eventNumber, secRoleNum).trim();
-
+				partnerTablePID = partnerTableRS.getLong("PID");
+				eventNumber = partnerTableRS.getInt("PARTNER_TYPE");	
 			} else {
 				eventNumber = selectedEventTable.getInt("EVNT_TYPE");
 				roleNumber = selectedEventTable.getInt("PRIM_ASSOC_ROLE_NUM");
@@ -1158,7 +1144,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			pointCreateEventRecord = new CreateEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventTablePID, primAssocPID);
 			pointEditEventRecord.setDatesForEdit(hdateDate, hdateSort);
-			pointEditEventRecord.setPartnerNames(personPartners);
+			//pointEditEventRecord.setPartnerNames(personPartners);
 		// Check if date and sort exist
 			if (hdateDate == null_RPID || hdateSort == null_RPID) {
 				addHdate = true;
@@ -1168,7 +1154,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 
 	// Start update event
 			pointEditEvent = new HG0547UpdateEvent(pointOpenProject, eventNumber, roleNumber,
-					eventTablePID, addHdate, locationNamePID, sexCode);
+					eventTablePID, addHdate, locationNamePID, partnerTablePID, sexCode);
 
 	// If witnessed event set primary assoc name for an Update event
 			if (primAssocPID != null_RPID) {
@@ -1203,7 +1189,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			eventPID = pointPersonMannager.getEventPID(tableRow);
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, eventPID);
-			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
+			pointEditEvent = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber, eventPID, null_RPID,sexCode);
 			return pointEditEvent;
 		} catch (HBException hbe) {
 			System.out.println("HBWhereWhenHandler - activateEditEvent error: " + hbe.getMessage());
@@ -1299,45 +1285,23 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
  * @param roleName
  * @param eventPerson
  * @return
+ * @throws HBException 
  */
 	public HG0547EditEvent activateAddPartnerEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
 								long partnerTablePID, int partnerTableRow) {
-		ResultSet partnerTableRS;
-		long priPartnerPID, secPartnerPID;
-		int priRoleNum, secRoleNum;
-		int eventType = eventNumber;
-		String[] partnerNames = new String[4];
+		
+		//System.out.println(" activateAddPartnerEventr - PID: " + partnerTablePID + "/" + eventNumber);
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		pointPersonMannager = pointOpenProject.getPersonHandler();
-		String selectString = setSelectSQL("*", personPartnerTable, "PID = " + partnerTablePID);
+		int eventType = eventNumber;
 		try {
-			partnerTableRS = requestTableData(selectString, dataBaseIndex);
-			partnerTableRS.first();
-			if (partnerTableRS.getLong("EVNT_RPID") != null_RPID) {
-				JOptionPane.showMessageDialog(null,	" Partner event already exist!","Add partner event",
-						JOptionPane.INFORMATION_MESSAGE);
-				return null;
-			}
-			priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
-			secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
-			priRoleNum = partnerTableRS.getInt("PRI_ROLE");
-			secRoleNum = partnerTableRS.getInt("SEC_ROLE");
-			eventType = partnerTableRS.getInt("PARTNER_TYPE");
-			partnerTableRS.close();
 			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
-
-			partnerNames[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
-			partnerNames[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
-			partnerNames[2] = getEventRoleName(eventNumber, priRoleNum).trim();
-			partnerNames[3] = getEventRoleName(eventNumber, secRoleNum).trim();
-
 			pointManageLocationData = new ManageLocationNameData(pointDBlayer, dataBaseIndex, pointOpenProject);
 			pointEditEventRecord = new EditEventRecord(pointDBlayer, dataBaseIndex, pointOpenProject, null_RPID);
-			pointEditEventRecord.setPartnerNames(partnerNames);
 			pointEditEvent = new HG0547PartnerEvent(pointOpenProject, partnerTableRow, eventType,
 													roleNumber, partnerTablePID);
 			return pointEditEvent;
-		} catch (HBException | SQLException hbe) {
+		} catch (HBException hbe) {
 			System.out.println(" HBWhereWhenHandler - activateAddPartnerEvent: " + hbe.getMessage());
 			hbe.printStackTrace();
 		}
@@ -1811,7 +1775,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 																pointOpenProject);
 		pointEventManager.editEventData();
 		HG0547EditEvent editEventScreen = new HG0547EditEvent(pointOpenProject, eventNumber, roleNumber,
-												eventPID, sexCode);
+												eventPID, null_RPID, sexCode);
 		return editEventScreen;
 	}
 
@@ -3203,6 +3167,7 @@ class EditEventRecord extends HBBusinessLayer {
 	Object[][] eventRoleData;
 	int[] eventRoleType;
 	int selectedNameStyle;
+	private String[] personNameStyle;
 // Memo handling
 	String memoElement = "";
 	long memoElementPID = null_RPID;
@@ -3251,14 +3216,6 @@ class EditEventRecord extends HBBusinessLayer {
 
 	public Object[][] getAssociateTable() {
 		return associateTable;
-	}
-
-	public String[] getPartnerNames() {
-		return personPartnerNames;
-	}
-
-	public void setPartnerNames(String[] personPartnerNames) {
-		this.personPartnerNames = personPartnerNames;
 	}
 
 /**
@@ -3343,7 +3300,40 @@ class EditEventRecord extends HBBusinessLayer {
 		} catch (SQLException sqle) {
 			updateTableData("ROLLBACK", dataBaseIndex);
 			sqle.printStackTrace();
-			throw new HBException(" HBWhereWhenHandler + readFromGUIMemo error: " + sqle.getMessage());
+			throw new HBException(" HBWhereWhenHandler + changeEventType error: " + sqle.getMessage());
+		}
+	}
+	
+/**
+ * public void updatePrefNamePID(long e	
+ * @param eventTablePID
+ * @param prefNamePID
+ * @throws HBException
+ */
+	public void updateEventPrefName(long eventTablePID, long prefNamePID) throws HBException {
+		updatePrefNamePID(eventTablePID, eventTable, prefNamePID);
+	}
+	
+	public void updateAssocPrefName(long assocTablePID, long prefNamePID) throws HBException {
+		updatePrefNamePID(assocTablePID, eventAssocTable, prefNamePID);
+	}
+	
+	public void updatePrefNamePID(long tablePID, String tableName, long prefNamePID) throws HBException {
+		ResultSet eventTableRS;
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		String selectString = setSelectSQL("*", tableName, "PID = " + tablePID);
+	//Start transaction
+		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+		try {
+			eventTableRS = requestTableData(selectString, dataBaseIndex);
+			eventTableRS.first();
+			eventTableRS.updateLong("PREF_NAME_RPID", prefNamePID);
+			eventTableRS.updateRow();
+			updateTableData("COMMIT", dataBaseIndex);
+		} catch (SQLException sqle) {
+			updateTableData("ROLLBACK", dataBaseIndex);
+			sqle.printStackTrace();
+			throw new HBException(" HBWhereWhenHandler + updatePrefNamePID error: " + "Table: " + tableName + "/" + sqle.getMessage());
 		}
 	}
 
@@ -3353,14 +3343,10 @@ class EditEventRecord extends HBBusinessLayer {
  * @param nameData
  */
 	public void addToLocationChangeList(int selectedIndex, String nameData) {
-		// ** Note: if test edited out for remove space in element table? **
-		//if (nameData != null) {
-		//if (nameData.length() > 0) {
 			String nameElementCode = pointLocationStyleData.getNameStyleElementCodes(selectedNameStyle)[selectedIndex];
 			if (HGlobal.DEBUG)
 				System.out.println(" Edit EventRecord - addToLocationChangeList(): " +  nameElementCode + " / " + nameData);
 			eventLocationChanges.put(nameElementCode, nameData);
-		//}
 	}
 
 /**
@@ -3636,6 +3622,66 @@ class EditEventRecord extends HBBusinessLayer {
 	public Object[] getAssocTableData(int indexInTable) {
 		return assocDataHash.get(indexInTable);
 	}
+	
+	public String[] getPartnerNames(long partnerTablePID) throws HBException {
+		ResultSet partnerTableRS;
+		long priPartnerPID, secPartnerPID, selectedPersonPID;
+		int priRoleNum, secRoleNum, eventType;
+		selectedPersonPID = pointOpenProject.getSelectedPersonPID();
+		String[] partnerNames = new String[4];
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		String selectString = setSelectSQL("*", personPartnerTable, "PID = " + partnerTablePID);
+		try {
+			partnerTableRS = requestTableData(selectString, dataBaseIndex);
+			partnerTableRS.first();
+/*			if (partnerTableRS.getLong("EVNT_RPID") != null_RPID) {
+				JOptionPane.showMessageDialog(null,	" Partner event already exist!","Add partner event",
+						JOptionPane.INFORMATION_MESSAGE);
+				return null;
+			} */
+			priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
+			secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
+			priRoleNum = partnerTableRS.getInt("PRI_ROLE");
+			secRoleNum = partnerTableRS.getInt("SEC_ROLE");
+			eventType = partnerTableRS.getInt("PARTNER_TYPE");
+	// New 18.8.2026 NTo Fix for pri/sec sentence role select
+			if (selectedPersonPID == priPartnerPID) {
+				priRoleNum = partnerTableRS.getInt("PRI_ROLE");
+				secRoleNum = partnerTableRS.getInt("SEC_ROLE");
+			} else {
+				secPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
+				priPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
+				secRoleNum = partnerTableRS.getInt("PRI_ROLE");
+				priRoleNum = partnerTableRS.getInt("SEC_ROLE");
+			}
+			partnerTableRS.close();
+	
+			personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, "N", dataBaseIndex);
+			partnerNames[0] = pointLibraryResultSet.exstractPersonName(priPartnerPID, personNameStyle, dataBaseIndex).trim();
+			partnerNames[1] = pointLibraryResultSet.exstractPersonName(secPartnerPID, personNameStyle, dataBaseIndex).trim();
+			partnerNames[2] = getEventRoleName(eventType, priRoleNum).trim();
+			partnerNames[3] = getEventRoleName(eventType, secRoleNum).trim();
+			
+			return partnerNames;
+		} catch (SQLException hbe) {
+			System.out.println(" HBWhereWhenHandler - EditEventRecord - getPartnerNames: " + hbe.getMessage());
+			hbe.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	 * getEventRoleName(int eventNumber, int roleNumber)
+	 * @param eventNumber
+	 * @param roleNumber
+	 * @return
+	 * @throws HBException
+	 */
+		public String getEventRoleName(int eventNumber, int roleNumber) throws HBException {
+			String langCode = HGlobal.dataLanguage;
+			dataBaseIndex =  pointOpenProject.getOpenDatabaseIndex();
+			return pointLibraryResultSet.getRoleName(roleNumber, eventNumber, langCode, dataBaseIndex).trim();
+		}
 
 /**
  * prepareAssociateTable(long selectPersonPID)
@@ -3702,6 +3748,7 @@ class EditEventRecord extends HBBusinessLayer {
 					assocRelationData[2] = personName.trim();
 					assocRelationData[3] = sexNum;
 					assocRelationData[4] = eventTablePID;
+			
 					assocDataHash.put(assocRows, assocRelationData);
 					assocRows++;
 				}

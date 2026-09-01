@@ -76,20 +76,27 @@ package hre.gui;
  * 			  2026-04-04 Remove Notepads card (D Ferguson)
  * 			  2026-04-07 Added foicus person name (N. Tolleshaug)
  * 			  2026-04-24 Collapse gt-gt-gt-gt-etc relationships to nth-gt for Eng (D Ferguson)
- * 			  2026-05-02 Corrected chars ��� in class NorwegianNamer
- * 			  2026-05-15 Corrected Dutch ancestor (aprent) naming (D Ferguson)
-* 			  2026-05-20 Corrected other Dutch realtionship names (D Ferguson)
-* 			  2026-06-25 Fix 33.22 cancel editing/delete/copy in parent event table (N. Tolleshaug)
-* 			  2026-05-28 Update NLS (D Ferguson)
-* 			  2026-06-23 Add editor panel for Reference field edit and re-NLS (D Ferguson)
+ * 			  2026-05-02 Corrected chars ??? in class NorwegianNamer
+ * 			  2026-05-15 Corrected Dutch ancestor (parent) naming (D Ferguson)
+ * 			  2026-05-20 Corrected other Dutch realtionship names (D Ferguson)
+ * 			  2026-06-25 Fix 33.22 cancel editing/delete/copy in parent event table (N. Tolleshaug)
+ * 			  2026-05-28 Update NLS (D Ferguson)
+ * 			  2026-06-23 Add editor panel for Reference field edit and re-NLS (D Ferguson)
+ * v0.05.0034 2026-08-07 Add Relationship Visulaise buttons (D Ferguson)
+ * 			  2026-08-09 Fix relation graph colours and add captions (D Ferguson)
+ * 			  2026-08-11 Update NLS and adjust Norwegian kinship terms (D Ferguson)
+ * 			  2026-08-13 Complete Norwegian cousin terms (D Ferguson)
+ * 						 Make Relation diagram close when person chnages (D Ferguson + ChatGPT)
+ * 			  2026-08-18 Make Relation display inter-active (D Ferguson + ChatGPT)
+ * 			  2026-08-20 Moved all Relation handling code to RelationHandler (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 need listener and code for handling DNA data
  * NOTE09 need to load new audio/video media or delete existing
  * NOTE15 need copy/renumber actions added
- *
  *********************************************************************************************/
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -98,6 +105,7 @@ import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -123,6 +131,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFormattedTextField;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
@@ -145,6 +154,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
@@ -164,6 +174,13 @@ import hre.bila.HBException;
 import hre.bila.HBMediaHandler;
 import hre.bila.HBPersonHandler;
 import hre.bila.HBProjectOpenData;
+import hre.bila.HBRelationHandler;
+import hre.bila.HBRelationHandler.Relationship;
+import hre.bila.HBRelationHandler.RelationshipClassifier;
+import hre.bila.HBRelationHandler.RelationshipDescriptor;
+import hre.bila.HBRelationHandler.RelationshipNamer;
+import hre.bila.HBRelationHandler.RelationshipNamerFactory;
+import hre.bila.HBRelationHandler.RelationshipPanel;
 import hre.bila.HBWhereWhenHandler;
 import hre.nls.HG0506Msgs;
 import net.miginfocom.swing.MigLayout;
@@ -171,16 +188,18 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Person
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2020-08-09
  */
 public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	private static final long serialVersionUID = 001L;
 	public static final String screenID = "50600";	//$NON-NLS-1$
 	private String className;
+
 	protected HBPersonHandler pointPersonHandler;
     protected HBProjectOpenData pointOpenProject;
     protected HBWhereWhenHandler pointHBWhereWhenHandler;
+    protected HBRelationHandler pointHBRelationHandler;
 	protected JInternalFrame personManagerFrame = this;
 	private JPanel contents;
 
@@ -209,6 +228,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
     JPanel relatePanel;
     JLabel relationship1, relationship2;
     int[] relateTable;
+    String graphCaption1, graphCaption2;
 
 /**
  * Objects holding card/panel data
@@ -1076,14 +1096,21 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		relatePanel = new JPanel();
 		relatePanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
 		contents.add(relatePanel, "cell 1 1, aligny top, growx, hidemode 3");	//$NON-NLS-1$
-		relatePanel.setLayout(new MigLayout("insets 5", "[]", "[][]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		relatePanel.setLayout(new MigLayout("insets 5", "[]10[]30[]", "[][]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		JLabel relation = new JLabel(HG0506Msgs.Text_90);		// Relationship:
 		relatePanel.add(relation, "Cell 0 0");	//$NON-NLS-1$
 		relationship1 = new JLabel();
 		relationship2 = new JLabel();
 		relatePanel.add(relationship1, "Cell 1 0");	//$NON-NLS-1$
-		relatePanel.add(relationship2, "Cell 1 1");	//$NON-NLS-1$
+		relatePanel.add(relationship2, "Cell 1 1, hidemode 3");	//$NON-NLS-1$
+
+		JButton btn_visual1 = new JButton(HG0506Msgs.Text_94);		// Visualize
+		relatePanel.add(btn_visual1, "Cell 2 0, align right");	//$NON-NLS-1$
+
+		JButton btn_visual2 = new JButton(HG0506Msgs.Text_94);		// Visualize
+		btn_visual2.setVisible(false);
+		relatePanel.add(btn_visual2, "Cell 2 1, align right, hidemode 3");	//$NON-NLS-1$
 
 		relatePanel.setVisible(false);		// default to not visible
 
@@ -1109,11 +1136,17 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				RelationshipNamer namer = RelationshipNamerFactory.forLanguage(HGlobal.dataLanguage);
 				relateText2 = namer.name(d2);
 			}
-			// Put the text (if any) into the relationship panel
+			// Put the text (if any) into the relationship panel.
+			// Also build caption texts for the Relationship graphs (so ready if needed).
 			if (relateText1.isEmpty() && relateText2.isEmpty()) relatePanel.setVisible(false);
 			else {
 				relationship1.setText(relateText1 + HG0506Msgs.Text_91 + focusPersonName);			// of
-				if (!relateText2.isEmpty()) relationship2.setText(relateText2 + HG0506Msgs.Text_91 + focusPersonName);  //  of
+				graphCaption1 = persName.getText() + HG0506Msgs.Text_95 + relationship1.getText();	// is the
+				if (!relateText2.isEmpty()) {
+					relationship2.setText(relateText2 + HG0506Msgs.Text_91 + focusPersonName);  	// of
+					graphCaption2 = persName.getText() + HG0506Msgs.Text_95 + relationship2.getText();	// is the
+					btn_visual2.setVisible(true);
+				}
 				relatePanel.setVisible(true);
 			}
 		}
@@ -1164,25 +1197,11 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		    	 }
 	    	 }
 	    	 @Override
-			public void internalFrameClosing(InternalFrameEvent c)  {
-			// close reminder display
-				if (reminderDisplay != null) reminderDisplay.dispose();
-
-		    // Set frame size in GUI data
-				Dimension frameSize = getSize();
-				pointOpenProject.setSizeScreen(screenID,frameSize);
-
-			// Set position	in GUI data
-				Point position = getLocation();
-				pointOpenProject.setPositionScreen(screenID,position);
-
-			// Set class name in GUI configuration data
-				pointOpenProject.setClassName(screenID,"HG0506ManagePerson"); //$NON-NLS-1$
-
-			// Mark the screen as closed in T302
-				pointOpenProject.closeStatusScreen(screenID);
-				dispose();
-			} // return to main menu
+	    	 public void internalFrameClosing(InternalFrameEvent c)  {
+	    	// Close Reminder, update all T302 settings, then exit
+	    		 closeReminderUpdateT302();
+	    		 dispose();
+	    	 } // return to main menu
 		});
 
 		// Listener for Copy Person toolbar icon
@@ -1206,34 +1225,20 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 							   JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 					return;
 				}
-				try {
-					pointPersonHandler.deletePersonInTable(personPID, pointOpenProject);
-					JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_48 + persName.getText(),	// Deleted Person:
-							HG0506Msgs.Text_49, JOptionPane.INFORMATION_MESSAGE);						// Delete Person
+	       		try {
+	       			pointPersonHandler.deletePersonInTable(personPID, pointOpenProject);
+	       			JOptionPane.showMessageDialog(contents, HG0506Msgs.Text_48 + persName.getText(),	// Deleted Person:
+	       					HG0506Msgs.Text_49, JOptionPane.INFORMATION_MESSAGE);						// Delete Person
 
-				// Indicate we are closing this screen after a Person delete
-					closeAfterDelete = true;
+	       		// Indicate we are closing this screen after a Person delete
+	       			closeAfterDelete = true;
 
-				// Delete person from Person menu Recents list
-					HG0401HREMain.mainFrame.deleteRecentPerson(personPID);
+	       		// Delete person from Person menu Recents list
+	       			HG0401HREMain.mainFrame.deleteRecentPerson(personPID);
 
-    			// close reminder display
-					if (reminderDisplay != null) reminderDisplay.dispose();
-
-			    // Set frame size in GUI data
-					Dimension frameSize = getSize();
-					pointOpenProject.setSizeScreen(screenID,frameSize);
-
-				// Set position	in GUI data
-					Point position = getLocation();
-					pointOpenProject.setPositionScreen(screenID,position);
-
-				// Set class name in GUI configuration data
-					pointOpenProject.setClassName(screenID,"HG0506ManagePerson"); //$NON-NLS-1$
-
-				// Mark the screen as closed in T302 and remove open screeen
-					pointOpenProject.closeStatusScreen(screenID);
-					dispose();
+	       		// Close Reminder, update all T302 settings, then exit
+	       			closeReminderUpdateT302();
+	       			dispose();
 
 				} catch (HBException hbe) {
 					if (HGlobal.writeLogs) {
@@ -1268,23 +1273,10 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        			HB0711Logging.logWrite("Status: in HG0506 Entered:" + enteredNum + "  PID: "+ personPID); //$NON-NLS-1$ //$NON-NLS-2$
 
 	        		if (personPID != null_RPID) {
-    				// close reminder display
-    					if (reminderDisplay != null) reminderDisplay.dispose();
-
-    			    // Set frame size in GUI data
-    					Dimension frameSize = getSize();
-    					pointOpenProject.setSizeScreen(screenID,frameSize);
-
-    				// Set position	in GUI data
-    					Point position = getLocation();
-    					pointOpenProject.setPositionScreen(screenID,position);
-
-    				// Set class name in GUI configuration data
-    					pointOpenProject.setClassName(screenID,"HG0506ManagePerson"); //$NON-NLS-1$
-
-    				// Mark the screen as closed in T302 and remove open screeen
-    					pointOpenProject.closeStatusScreen(screenID);
-    					dispose();
+	        		// Close Reminder, update all T302 settings, then exit
+	        			closeReminderUpdateT302();
+	        			dispose();
+	        		// Load new ManagePerson with new PID
 	        			pointPersonHandler.initiateManagePerson(pointOpenProject, personPID, screenID);
 
 	        		} else {
@@ -1394,7 +1386,9 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		        	Object[] partnerRelationData = pointPersonHandler.getPartnerTableData(selectedPartnerTableRow);
 		        	long partnerTablePID = (long)partnerRelationData[0];
 
-					HG0547EditEvent editPartnerScreen = pointHBWhereWhenHandler.activateAddPartnerEvent(pointOpenProject,
+					HG0547EditEvent editPartnerScreen;
+					System.out.println(" ManagePerson - New Partner Event partnerTablePID: " + partnerTablePID + "/" + eventNumber);
+					editPartnerScreen = pointHBWhereWhenHandler.activateAddPartnerEvent(pointOpenProject,
 														eventNumber, roleNumber, partnerTablePID, selectedPartnerTableRow);
 					if (editPartnerScreen == null) 	return;
 
@@ -1402,6 +1396,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					Point xyShow = persName.getLocationOnScreen();
 					editPartnerScreen.setLocation(xyShow.x, xyShow.y);
 					editPartnerScreen.setVisible(true);
+
 	        	} else {
 					JOptionPane.showMessageDialog(tablePartners,
 							HG0506Msgs.Text_81			// Proceed to the Partner table and either: \n
@@ -1519,19 +1514,20 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	    ActionListener popAL7 = new ActionListener() {
 	        @Override
 			public void actionPerformed(ActionEvent e) {
+	        	HG0547EditEvent editEventScreen = null;
 	        // The right-clicked (or double-clicked) row is passed here in rowClicked
         		int rowInTable = tableEvents.convertRowIndexToModel(rowClicked);
         		if (rowInTable == -1) return;
         		String eventClassClicked = (String) objEventData[rowInTable][5];
         		if (HGlobal.DEBUG)
-        			System.out.println(" Type of event clicked at row: " + rowInTable + " - " + eventClassClicked); //$NON-NLS-1$ //$NON-NLS-2$
+        			System.out.println(" Event clicked at row: " + rowInTable + " - " + eventClassClicked); //$NON-NLS-1$ //$NON-NLS-2$
         	// Fix 24.5.2026 - Avoid editing of a father recorded in Person Manager event table
         		if (eventClassClicked.equals("C")) {	//$NON-NLS-1$
         			JOptionPane.showMessageDialog(personManagerFrame, HG0506Msgs.Text_61);	// Edit of parent/child relationship is invalid
         			return;
         		}
 	        	HBWhereWhenHandler pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
-				HG0547EditEvent editEventScreen = null;
+
 				try {
 					editEventScreen = pointHBWhereWhenHandler.activateUpdateEvent(pointOpenProject, rowInTable, true, sexCode);
 					if (editEventScreen != null) {
@@ -2188,7 +2184,176 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 					setTableFilter(comboBox_Subset.getSelectedItem().toString(), filterTextField.getText());
 			}
 		});
+
+		// Listener for Relationship visual1 button
+		btn_visual1.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+			// Get the focus person PID and target PID (this person)
+				long focusPID = pointOpenProject.getFocusPersonPID();
+				long targetPID = personPID;
+				if (pointHBRelationHandler == null)
+					pointHBRelationHandler = new HBRelationHandler(pointOpenProject);
+			// Build the relationship data for this pair
+				Relationship relations =
+				        pointHBRelationHandler.findRelationships(focusPID, targetPID);
+			// Build the panel layout based on the Primary focusPID - > LCA -> targetpID paths
+				RelationshipPanel panel =
+				        new HBRelationHandler.RelationshipPanel(relations.primaryPath);
+
+			// Setup a handler for cursor click within the display
+				panel.setPersonClickHandler(pid -> {
+			    	// Close Reminder, update all T302 settings, then exit
+		    		 closeReminderUpdateT302();
+				    dispose();
+				    // load the Person of the clicked PID
+        			pointPersonHandler.initiateManagePerson(pointOpenProject, pid, screenID);
+				});
+
+			// Setup a max panel size - will become scrollpane if exceeded
+				JScrollPane scrollPane = createRelationshipScrollPane(panel, 760, 420);
+			// Define a panel for holding everything
+				JPanel dialogPanel = new JPanel(new BorderLayout());
+				// and add the diagram scrollpane
+				dialogPanel.add(scrollPane, BorderLayout.CENTER);
+			// Define a panel for the caption
+				JPanel captionPanel = new JPanel(new BorderLayout(20, 0));
+				// add the caption text (centred) from where it was created earlier
+				JLabel lbl_Caption1 = new JLabel(graphCaption1, SwingConstants.CENTER);
+				// Pad the label text at top and bottom by 10
+				lbl_Caption1.setBorder(new EmptyBorder(10, 0, 10, 0));
+				captionPanel.add(lbl_Caption1, BorderLayout.CENTER);
+			// Add the caption panel to the dialog panel
+				dialogPanel.add(captionPanel,  BorderLayout.SOUTH);
+			// Setup a dialog owner
+				Window owner = SwingUtilities.getWindowAncestor(btn_visual1);
+				JInternalFrame driver1 = (JInternalFrame) SwingUtilities.getAncestorOfClass(
+				                JInternalFrame.class, btn_visual1);
+			// Create the diagram dialog
+				JDialog graph1 = new JDialog(owner, HG0506Msgs.Text_96, JDialog.ModalityType.MODELESS); // Relationship Diagram
+			// Ensure the diagram closes if the driver closes
+				if (driver1 != null) {
+				    driver1.addInternalFrameListener(new InternalFrameAdapter() {
+				            @Override
+				            public void internalFrameClosed(InternalFrameEvent e) {
+				                graph1.dispose();
+				            }
+				        }
+				    );
+				}
+			// Display the diagram
+				graph1.add(dialogPanel);
+				graph1.pack();
+				Point xy = rightPanel.getLocationOnScreen();
+				graph1.setLocation(xy);
+				graph1.setVisible(true);
+			}
+		});
+
+		// Listener for Relationship visual2 button
+		btn_visual2.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+			// Get the focus person PID and target PID (this person)
+				long focusPID = pointOpenProject.getFocusPersonPID();
+				long targetPID = personPID;
+				if (pointHBRelationHandler == null)
+					pointHBRelationHandler = new HBRelationHandler(pointOpenProject);
+			// Build the relationship data for this pair
+				Relationship relations =
+				        pointHBRelationHandler.findRelationships(focusPID, targetPID);
+			// Build the panel layout based on the Secondary focusPID - > LCA -> targetpID paths
+				RelationshipPanel panel =
+				        new HBRelationHandler.RelationshipPanel(relations.secondaryPath);
+
+			// Setup a handler for cursor click within the display
+				panel.setPersonClickHandler(pid -> {
+			    	// Close Reminder, update all T302 settings, then exit
+		    		 closeReminderUpdateT302();
+				    dispose();
+				    // load the Person of the clicked PID
+        			pointPersonHandler.initiateManagePerson(pointOpenProject, pid, screenID);
+				});
+
+			// Setup a max panel size - will become scrollpane if exceeded
+				JScrollPane scrollPane = createRelationshipScrollPane(panel, 760, 420);
+			// Define a panel for holding everything
+				JPanel dialogPanel = new JPanel(new BorderLayout());
+				// and add the diagram scrollpane
+				dialogPanel.add(scrollPane, BorderLayout.CENTER);
+			// Define a panel for the caption
+				JPanel captionPanel = new JPanel(new BorderLayout(20, 0));
+			// add the caption text (centred) from where it was created earlier
+				JLabel lbl_Caption2 = new JLabel(graphCaption2, SwingConstants.CENTER);
+			// Pad the label text at top and bottom by 10
+				lbl_Caption2.setBorder(new EmptyBorder(10, 0, 10, 0));
+				captionPanel.add(lbl_Caption2, BorderLayout.CENTER);
+			// Add the caption panel to the dialog panel
+				dialogPanel.add(captionPanel,  BorderLayout.SOUTH);
+			// Setup a dialog owner
+				Window owner = SwingUtilities.getWindowAncestor(btn_visual1);
+				JInternalFrame driver2 = (JInternalFrame) SwingUtilities.getAncestorOfClass(
+				                JInternalFrame.class, btn_visual2);
+			// Create the diagram dialog
+				JDialog graph2 = new JDialog(owner, HG0506Msgs.Text_96, JDialog.ModalityType.MODELESS); // Relationship Diagram
+			// Ensure the diagram closes if the driver closes
+				if (driver2 != null) {
+				    driver2.addInternalFrameListener(new InternalFrameAdapter() {
+				            @Override
+				            public void internalFrameClosed(InternalFrameEvent e) {
+				                graph2.dispose();
+				            }
+				        }
+				    );
+				}
+			// Display the diagram
+				graph2.add(dialogPanel);
+				graph2.pack();
+				Point xy = tableEvents.getLocationOnScreen();
+				graph2.setLocation(xy);
+				graph2.setVisible(true);
+			}
+		});
+
 	}	// End HG0506ManagePerson constructor
+
+/**
+ * Perform Reminder close and update T302 settings
+ */
+	private void closeReminderUpdateT302() {
+		// close reminder display
+		if (reminderDisplay != null) reminderDisplay.dispose();
+
+		// Set frame size in GUI data
+		Dimension frameSize = getSize();
+		pointOpenProject.setSizeScreen(screenID,frameSize);
+
+		// Set position	in GUI data
+		Point position = getLocation();
+		pointOpenProject.setPositionScreen(screenID,position);
+
+		// Set class name in GUI configuration data
+		pointOpenProject.setClassName(screenID,"HG0506ManagePerson"); //$NON-NLS-1$
+
+		// Mark the screen as closed in T302
+		pointOpenProject.closeStatusScreen(screenID);
+	}		// End closeReminderUpdateT302
+
+/**
+ * Creates a scroll pane whose viewport grows with the relation diagram,
+ * up to a requested maximum size. Scrollbars appear only when required.
+ */
+    private static JScrollPane createRelationshipScrollPane (
+            RelationshipPanel panel, int maxViewportWidth,  int maxViewportHeight) {
+        JScrollPane scrollPane = new JScrollPane(panel);
+        Dimension diagramSize = panel.getPreferredSize();
+        int viewportWidth = Math.min(diagramSize.width,maxViewportWidth) + 20;
+        int viewportHeight = Math.min(diagramSize.height,maxViewportHeight) + 20;
+        scrollPane.setPreferredSize(new Dimension(viewportWidth,viewportHeight));
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        return scrollPane;
+    }		// End createRelationshipScrollPane
 
 /**
  * Action setup and/or change of filter settings
@@ -2246,456 +2411,5 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	        }
 	    }
 	}	// End DCTextField
-
-// ======================================
-// Universal Relationship Descriptors
-// ======================================
-	public static class RelationshipDescriptor {
-		    enum Type {SELF, ANCESTOR, DESCENDANT, SIBLING, NIBLING, PIBLING, COUSIN }
-
-		    public final Type type;
-		    public final int generationsUp;
-		    public final int generationsDown;
-		    public final int cousinDegree;
-		    public final int cousinRemoval;
-	        public final String sexCode;       // "M" or "F"
-
-		    public RelationshipDescriptor(Type type, int generationsUp, int generationsDown,
-		                                  int cousinDegree, int cousinRemoval, String sexCode)
-		    	{
-			        this.type = type;
-			        this.generationsUp = generationsUp;
-			        this.generationsDown = generationsDown;
-			        this.cousinDegree = cousinDegree;
-			        this.cousinRemoval = cousinRemoval;
-			        this.sexCode = sexCode;
-		    	}
-		}	// End RelationshipDescriptor
-
-// ===================================================
-// Conversion of (x,y) pair to RelationshipDescriptor
-// ===================================================
-	public static class RelationshipClassifier {
-	    public static RelationshipDescriptor classify(int x, int y, String sexCode) {
-	        // SELF
-	        if (x == 0 && y == 0)
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.SELF, 0, 0, 0, 0, sexCode );
-
-	        // DIRECT ANCESTOR  (root is ABOVE target)  (0, +k)
-	        if (x == 0 && y > 0)
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.ANCESTOR, y, 0, 0, 0, sexCode );
-
-	        // DIRECT DESCENDANT (root is BELOW target) (-k, 0)
-	        if (y == 0 && x < 0)
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.DESCENDANT, 0, -x, 0, 0, sexCode );
-
-	        // SIBLING  (-1, -1)
-	        if (x == -1 && y == -1)
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.SIBLING, 0, 0, 0, 0, sexCode );
-
-	        // NIBLING (niece/nephew)  (-k, -1)  where k > 1
-	        if (y == -1 && x < -1)
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.NIBLING, 0, -(x + 1), 0, 0, sexCode );
-
-	        // PIBLING (aunt/uncle) (-1, -k)  where k > 1
-	        if (x == -1 && y < -1)
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.PIBLING, -(y + 1), 0, 0, 0, sexCode );
-
-	        // COUSINS
-	        // (-k, -k)  → degree = k - 1
-	        // (-k1, -k2) → removal = |k1 - k2|
-	        if (x < -1 && y < -1) {
-	            int kRoot   = -y;   // steps root → LCA
-	            int kTarget = -x;   // steps target → LCA
-	            int k = Math.min(kRoot, kTarget);   // 2→1st, 3→2nd, 4→3rd
-	            int degree = k - 1;                 // 1,2,3,...
-	            int removal = Math.abs(kRoot - kTarget);
-	            return new RelationshipDescriptor(
-	                    RelationshipDescriptor.Type.COUSIN, 0, 0, degree, removal, sexCode );
-	        }
-	        // FALLBACK (should never happen)
-	        return new RelationshipDescriptor(
-	                RelationshipDescriptor.Type.SELF, 0, 0, 0, 0, sexCode  );
-	    }
-	}		// End RelationshipClassifier
-
-    public interface RelationshipNamer {
-        String name(RelationshipDescriptor d);
-    }
-
-    public static class RelationshipNamerFactory {
-        public static RelationshipNamer forLanguage(String lang) {
-            return switch (lang) {
-                case "en-US" -> new EnglishNamer();		//$NON-NLS-1$
-                case "en-GB" -> new EnglishNamer();		//$NON-NLS-1$
-                case "fr-FR" -> new FrenchNamer();		//$NON-NLS-1$
-                case "de-DE" -> new GermanNamer();		//$NON-NLS-1$
-                case "es-ES" -> new SpanishNamer();		//$NON-NLS-1$
-                case "nl-NL" -> new DutchNamer();		//$NON-NLS-1$
-                case "it-IT" -> new ItalianNamer();		//$NON-NLS-1$
-                case "no-NB" -> new NorwegianNamer();	//$NON-NLS-1$
-			default -> new EnglishNamer();
-            };
-        }
-    }		// End RelationshipNamerFactory
-
-// ================================================================================
-// LANGUAGE IMPLEMENTATIONS
-// NB: SELF case should never be returned as (0,0) pairs should never
-// be passed into these routines.
-// NB: no NLS done after this point as ALL strings are already language-specific
-// ===============================================================================
-// ---------------- ENGLISH ----------------
-    public static class EnglishNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-            return switch (d.type) {
-                case SELF -> "self";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "brother" : "sister";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval);
-            };
-        }
-        private String ancestor(int up, String sex) {
-            String base = sex.equals("M") ? "grandfather" : "grandmother";
-            if (up == 1) return sex.equals("M") ? "father" : "mother";
-            if (up == 2) return base;
-            int greats = up - 2;
-            // Use full "great-great-" only for 1–2 greats
-            if (greats <= 2)
-                return "great-".repeat(greats) + base;
-            // Compact form: "4th-gt grandfather"
-            return ordinal(greats) + "-gt " + base;
-        }
-        private String descendant(int down, String sex) {
-            String base = sex.equals("M") ? "grandson" : "granddaughter";
-            if (down == 1) return sex.equals("M") ? "son" : "daughter";
-            if (down == 2) return base;
-            int greats = down - 2;
-            if (greats <= 2)
-                return "great-".repeat(greats) + base;
-            return ordinal(greats) + "-gt " + base;
-        }
-        private String nibling(int down, String sex) {
-            String base = sex.equals("M") ? "nephew" : "niece";
-            if (down == 1) return base;
-            int greats = down - 1;
-            if (greats <= 2)
-                return "great-".repeat(greats) + base;
-            return ordinal(greats) + "-gt " + base;
-        }
-        private String pibling(int up, String sex) {
-            String base = sex.equals("M") ? "uncle" : "aunt";
-            if (up == 1) return base;
-            int greats = up - 1;
-            if (greats <= 2)
-                return "great-".repeat(greats) + base;
-            return ordinal(greats) + "-gt " + base;
-        }
-
-        private String cousin(int degree, int removal) {
-            int n = degree; // 1→1st, 2→2nd, 3→3rd
-            String base = ordinal(n) + " cousin";
-            if (removal == 0) return base;
-            return base + " " + removal + " time" + (removal > 1 ? "s" : "") + " removed";
-        }
-        private String ordinal(int n) {
-            return switch (n) {
-                case 1 -> "1st";
-                case 2 -> "2nd";
-                case 3 -> "3rd";
-                default -> n + "th";
-            };
-        }
-    }		// End EnglishNamer
- // ---------------- FRENCH ----------------
-    public static class FrenchNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-            return switch (d.type) {
-                case SELF -> "soi-même";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "frère" : "soeur";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
-            };
-        }
-        private String ancestor(int up, String sex) {
-            if (up == 1) return sex == "M" ? "père" : "mère";
-            if (up == 2) return sex == "M" ? "grand-père" : "grand-mère";
-            return "arrière-".repeat(up - 2) + (sex == "M" ? "grand-père" : "grand-mère");
-        }
-        private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "fils" : "fille";
-            if (down == 2) return sex == "M" ? "petit-fils" : "petite-fille";
-            return "arrière-".repeat(down - 2) + (sex == "M" ? "petit-fils" : "petite-fille");
-        }
-        private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "neveu" : "nièce";
-            return "petit-".repeat(down - 1) + (sex == "M" ? "neveu" : "nièce");
-        }
-        private String pibling(int up, String sex) {
-            if (up == 1) return sex == "M" ? "oncle" : "tante";
-            return "grand-".repeat(up - 1) + (sex == "M" ? "oncle" : "tante");
-        }
-        private String cousin(int degree, int removal, String sex) {
-            String base = (sex == "M" ? "cousin" : "cousine") + " " + degree + "ᵉ degré";
-            if (removal == 0) return base;
-            return base + " éloigné(e) de " + removal + " génération(s)";
-        }
-    }	// End FrenchNamer
- // ---------------- GERMAN ----------------
-    public static class GermanNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-            return switch (d.type) {
-                case SELF -> "selbst";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "Bruder" : "Schwester";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
-            };
-        }
-        private String ancestor(int up, String sex) {
-            if (up == 1) return sex == "M" ? "Vater" : "Mutter";
-            if (up == 2) return sex == "M" ? "Großvater" : "Großmutter";
-            return "Ur-".repeat(up - 2) + (sex == "M" ? "Großvater" : "Großmutter");
-        }
-        private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "Sohn" : "Tochter";
-            if (down == 2) return sex == "M" ? "Enkel" : "Enkelin";
-            return "Ur-".repeat(down - 2) + (sex == "M" ? "Enkel" : "Enkelin");
-        }
-        private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "Neffe" : "Nichte";
-            return "Groß-".repeat(down - 1) + (sex == "M" ? "Neffe" : "Nichte");
-        }
-        private String pibling(int up, String sex) {
-            if (up == 1) return sex == "M" ? "Onkel" : "Tante";
-            return "Groß-".repeat(up - 1) + (sex == "M" ? "Onkel" : "Tante");
-        }
-        private String cousin(int degree, int removal, String sex) {
-            String base = degree + ". Grades " + (sex == "M" ? "Cousin" : "Cousine");
-            if (removal == 0) return base;
-            return base + ", " + removal + " mal entfernt";
-        }
-    }		// End GermanNamer
- // ---------------- SPANISH ----------------
-    public static class SpanishNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-            return switch (d.type) {
-                case SELF -> "yo mismo";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "hermano" : "hermana";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
-            };
-        }
-        private String ancestor(int up, String sex) {
-            if (up == 1) return sex == "M" ? "padre" : "madre";
-            if (up == 2) return sex == "M" ? "abuelo" : "abuela";
-            return "bis-".repeat(up - 2) + (sex == "M" ? "abuelo" : "abuela");
-        }
-        private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "hijo" : "hija";
-            if (down == 2) return sex == "M" ? "nieto" : "nieta";
-            return "bis-".repeat(down - 2) + (sex == "M" ? "nieto" : "nieta");
-        }
-        private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "sobrino" : "sobrina";
-            return "sobrino/sobrina de " + (down - 1) + "º grado";
-        }
-        private String pibling(int up, String sex) {
-            if (up == 1) return sex == "M" ? "tío" : "tía";
-            return "tío/tía de " + (up - 1) + "º grado";
-        }
-        private String cousin(int degree, int removal, String sex) {
-            String base = (sex == "M" ? "primo" : "prima") + " de " + degree + "º grado";
-            if (removal == 0) return base;
-            return base + ", " + removal + " vez" + (removal > 1 ? "es" : "") + " removido";
-        }
-    }		// End SpanishNamer
- // ---------------- DUTCH ----------------
-    public static class DutchNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-        	String[] dutchGreats = {"", "",			// for up = 0, 1
-        							"groot",		// for up or down = 2, etc
-        							"overgroot",
-        							"betovergroot",
-        							"oud",
-        							"oudgroot",
-        							"oudovergroot",
-        							"oudbetovergroot",
-        							"stam",
-        							"stamgroot",			// 10
-        							"stamovergroot",
-        							"stambetovergroot",
-        							"stamoud",
-        							"stamoudgroot",
-        							"stamoudovergroot",
-        							"stamoudbetovergroot",
-        							"edel",
-        							"edelgroot",
-        							"edelovergroot",
-        							"edelbetovergroot",			// 20
-        							"edeloud",
-        							"edeloudgroot",
-        							"edeloudovergroot",
-        							"edeloudbetovergroot",
-        							"edelstam",
-        							"edelstamgroot",
-        							"edelstamovergroot",
-        							"edelstambeovergroot",
-        							"edelstamoud",
-        							"edelstamoudgroot",			// 30
-        							"edelstamoudovergroot",
-        							"edelstamoudbetovergroot",
-        							"voor",
-           							"voorgroot",
-        							"voorovergroot",
-        							"voorbetovergroot",
-           							"vooroudgroot",
-        							"vooroudovergroot",
-        							"vooroudbetovergroot",
-        							"voorstamgroot"  };			// 40
-            return switch (d.type) {
-                case SELF -> "zelf";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode, dutchGreats);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "broer" : "zus";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode, dutchGreats);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode, dutchGreats);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
-            };
-        }
-        private String ancestor(int up, String sex, String[] greats) {
-            if (up == 1) return sex == "M" ? "vader" : "moeder";
-            if (up < 41) return greats[up] + (sex == "M" ? "vader" : "moeder");
-            // Hopefully never get as far as this!
-            return String.valueOf(up - 2) + (sex == "M" ? "-overgrootvader" : "-overgrootmoeder");
-        }
-        private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "zoon" : "dochter";
-            if (down == 2) return sex == "M" ? "kleinzoon" : "kleindochter";
-            if (down == 3) return sex == "M" ? "achterkleinzoon" : "achterkleindochter";
-            if (down == 4) return sex == "M" ? "achterachterkleinzoon" : "achterachterkleindochter";
-            return String.valueOf(down - 2) + (sex == "M" ? "-achterkleinzoon" : "-achterkleindochter");
-        }
-        private String nibling(int down, String sex, String[] greats) {
-            if (down == 1) return sex == "M" ? "neef" : "nicht";
-            if (down < 41) return greats[down] + (sex == "M" ? "neef" : "nicht");
-            // Hopefully never get as far as this!
-            return String.valueOf(down - 2) + (sex == "M" ? "-overgrootneef" : "-overgrootnicht");
-        }
-        private String pibling(int up, String sex, String[] greats) {
-            if (up == 1) return sex == "M" ? "oom" : "tante";
-            if (up < 41) return greats[up] + (sex == "M" ? "oom" : "tante");
-            // Hopefully never get as far as this!
-            return String.valueOf(up - 2) + (sex == "M" ? "-overgrootoom" : "-overgroottante");
-        }
-        private String cousin(int degree, int removal, String sex) {
-        	String cousinNum ="", cousinRem ="";
-        	if (degree == 1 || degree > 20) cousinNum = degree + "st ";
-        	else cousinNum = degree + "de";
-        	if (removal == 1 || removal > 20) cousinRem = " " + removal + "st graad";
-        	else cousinRem = " " + removal + "de graad";
-            String base = cousinNum + (sex == "M" ? "neven" : "nichten");
-            if (removal == 0) return base;
-            return base + cousinRem;
-        }
-    }		// End DutchNamer
- // ---------------- ITALIAN ----------------
-    public static class ItalianNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-            return switch (d.type) {
-                case SELF -> "sé stesso";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "fratello" : "sorella";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
-            };
-        }
-        private String ancestor(int up, String sex) {
-            if (up == 1) return sex == "M" ? "padre" : "madre";
-            if (up == 2) return sex == "M" ? "nonno" : "nonna";
-            return "bis-".repeat(up - 2) + (sex == "M" ? "nonno" : "nonna");
-        }
-        private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "figlio" : "figlia";
-            if (down == 2) return sex == "M" ? "nipote" : "nipote"; // gender-neutral in Italian
-            return "bis-".repeat(down - 2) + "nipote";
-        }
-        private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "nipote" : "nipote"; // nephew/niece both "nipote"
-            return "pro-".repeat(down - 1) + "nipote";
-        }
-        private String pibling(int up, String sex) {
-            if (up == 1) return sex == "M" ? "zio" : "zia";
-            return "pro-".repeat(up - 1) + (sex == "M" ? "zio" : "zia");
-        }
-        private String cousin(int degree, int removal, String sex) {
-            String base = (sex == "M" ? "cugino" : "cugina") + " di " + degree + "º grado";
-            if (removal == 0) return base;
-            return base + ", " + removal + " volta" + (removal > 1 ? "e" : "") + " rimosso";
-        }
-    }		// End ItalianNamer
- // ---------------- NORWEGIAN ----------------
-    public static class NorwegianNamer implements RelationshipNamer {
-        @Override
-        public String name(RelationshipDescriptor d) {
-            return switch (d.type) {
-                case SELF -> "selv";
-                case ANCESTOR -> ancestor(d.generationsUp, d.sexCode);
-                case DESCENDANT -> descendant(d.generationsDown, d.sexCode);
-                case SIBLING -> d.sexCode == "M" ? "bror" : "s�ster";
-                case NIBLING -> nibling(d.generationsDown, d.sexCode);
-                case PIBLING -> pibling(d.generationsUp, d.sexCode);
-                case COUSIN -> cousin(d.cousinDegree, d.cousinRemoval, d.sexCode);
-            };
-        }
-        private String ancestor(int up, String sex) {
-            if (up == 1) return sex == "M" ? "far" : "mor";
-            if (up == 2) return sex == "M" ? "bestefar" : "bestemor";
-            return "tipp-".repeat(up - 2) + (sex == "M" ? "oldefar" : "oldemor");
-        }
-        private String descendant(int down, String sex) {
-            if (down == 1) return sex == "M" ? "s�nn" : "datter";
-            if (down == 2) return sex == "M" ? "barnebarn" : "barnebarn"; // gender-neutral
-            return "tipp-".repeat(down - 2) + "barnebarn";
-        }
-        private String nibling(int down, String sex) {
-            if (down == 1) return sex == "M" ? "nev�" : "niese";
-            return "gammel-".repeat(down - 1) + (sex == "M" ? "nev�" : "niese");
-        }
-        private String pibling(int up, String sex) {
-            if (up == 1) return sex == "M" ? "onkel" : "tante";
-            return "gammel-".repeat(up - 1) + (sex == "M" ? "onkel" : "tante");
-        }
-        private String cousin(int degree, int removal, String sex) {
-            String base = degree + ". grad " + (sex == "M" ? "fetter" : "kusine");
-            if (removal == 0) return base;
-            return base + ", " + removal + " gang fjernet";
-        }
-    }		// End NorwegianNamer
 
 }  // End of HG0506ManagePerson

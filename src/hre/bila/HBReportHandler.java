@@ -31,21 +31,18 @@ package hre.bila;
  * 			  2026-07-04 - Change tableSourceElmntDataValues to Object for new T734 fields (D Ferguson)
  * 			  2026-07-25 - Refactor code change (N. Tolleshaug)
  * 			  2026-07-28 - Improved handling of partner events (N. Tolleshaug)
- * 			  2026-07-30 - Added ? + sentence varibale (?P) for not found (N. Tolleshaug)
+ * 			  2026-07-30 - Added ? + sentence variable (?P) for not found (N. Tolleshaug)
+ * 			  2026-08-03 - Added name sentence variable output (N. Tolleshaug)
+ * 			  2026=08-06 - Split off RelationCalc into HBRelationHandler (D Ferguson)
+ * 			  2026=08-08 - Added handling of "S" sentence variables for associates (N. Tolleshaug)
+ * 			  2026-08-30 - Prepare preferred name presentation(N. Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,7 +59,7 @@ public class HBReportHandler extends HBBusinessLayer {
 	HBRepositoryHandler pointRepositoryHandler;
 	HBNameStyleManager pointLocationStyleData;
 	HBReportHandler pointReportHandler = this;
-	RelationCalculation pointRelationCalculation;
+
 	HREmemo pointHREmemo;
 	public ReportEventTMG pointReportEventTMG;
 	public ReportNameTMG pointReportNameTMG;
@@ -73,13 +70,13 @@ public class HBReportHandler extends HBBusinessLayer {
 	String personNameFields ="Title|Prefix|GivenName|PreSurname|Surname|Suffix|OtherName|SortSurname|SortGiven|";
 	String locationNameCodes = "0500|1100|3000|3100|3400|3500|3900|0100|4100|4300|";
 	String locationNameFields = "Addressee|Detail|City|County|State|Country|Postal|Phone|LatLong|Temple|";
-	
+
 /**
  * public ReportEventTMG createReportEventData(long eventTablePID)
  * @param eventTablePID
  * @return
  */
-	public ReportEventTMG createReportEventData(long eventTablePID) {
+	public ReportEventTMG createReportEventData(long eventTablePID, long ownerTablePID, int ownerType) {
 		try {
 		// Set up the element code arrays
 			if (eventTablePID == null_RPID || eventTablePID == 0) {
@@ -88,7 +85,7 @@ public class HBReportHandler extends HBBusinessLayer {
 			}
 			personNameCodeArray = personNameCodes.split("\\|");
 			locationNameCodeArray = locationNameCodes.split("\\|");
-			pointReportEventTMG = new ReportEventTMG(pointOpenProject, eventTablePID);
+			pointReportEventTMG = new ReportEventTMG(pointOpenProject, eventTablePID, ownerTablePID, ownerType);
 			pointReportNameTMG = null;
 			return pointReportEventTMG;
 		} catch (HBException hbe) {
@@ -96,9 +93,9 @@ public class HBReportHandler extends HBBusinessLayer {
 			return null;
 		}
 	}
-	
+
 /**
- * public ReportNameTMG createReportNameData(long nameTablePID)	
+ * public ReportNameTMG createReportNameData(long nameTablePID)
  * @param nameTablePID
  * @return
  */
@@ -694,28 +691,6 @@ public class HBReportHandler extends HBBusinessLayer {
 	}    // End validate FormatCodes
 
 /**
- * Activivate relation Calculate
- * @param focusPersonPID
- * @throws HBException
- */
-	public void activateRelationCalc(long focusPersonPID) throws HBException {
-
-		if (pointRelationCalculation == null)
-					pointRelationCalculation = new	RelationCalculation(pointOpenProject);
-		pointRelationCalculation.recalcRelationsT401(focusPersonPID);
-	}
-
-/**
- * Clear all relation parameters in T401 and focusperson in t126
- * @throws HBException
- */
-	public void clearRelationParameters() throws HBException {
-		if (pointRelationCalculation == null)
-			pointRelationCalculation = new	RelationCalculation(pointOpenProject);
-		pointRelationCalculation.clearRelationDataInT401();
-	}
-
-/**
  * String runTMGparcer(String roleSentence)
  * @param roleSentence
  * @return
@@ -772,7 +747,7 @@ public class HBReportHandler extends HBBusinessLayer {
         String regexStandard = "\\[(.*?)\\]"; // [P] was married <to [PO]> <[D]> <[L]>
         String regexRoles = "\\[R:\\d{5}\\]"; // (en-US)[R:Barn] was born <at [L2]> <in [L]> <[D]>. <[M]>
         if (HGlobal.DEBUG) System.out.println(" Input sentence: " + inputSentence);
-
+        
         try {
 	        int count;
 	        patternVariables = Pattern.compile(regexStandard);
@@ -858,13 +833,15 @@ public class HBReportHandler extends HBBusinessLayer {
 	        reportSentence = reportSentence.replace("<",""); // Temp removal of misplaced
 	        reportSentence = reportSentence.replace(">",""); // Temp removal of misplaced
 	        reportSentence = reportSentence.replace("(en-US)","");
+	      
 	        if (HGlobal.DEBUG) System.out.println(" Report sentence build: " + reportSentence);
 	        return reportSentence;
+	        
 		} catch (Exception exe) {
-			System.out.println(" HBReportHandler - sentenseParser " + exe.getMessage());
+			System.out.println(" HBReportHandler - sentenseParser error: " + exe.getMessage());
 			exe.printStackTrace();
+			throw new HBException(" HBReportHandler - sentenseParser error: " + exe.getMessage());
 		}
-        return reportSentence;
     }
 
 /**
@@ -928,18 +905,24 @@ public class HBReportHandler extends HBBusinessLayer {
 		long eventTablePID, memoRPID;
 		String selectString, eventDate, locationName, eventPersonName;
 		ResultSet eventTableRS, personTableRS, assocTableRS, partnerTableRS;
-		long personTablePID, nameStylePID, eventBestPersonNamePID, startHdate, eventLocationPID, priPartnerPID, secPartnerPID;
-		int dataBaseIndex, visbleIdent, eventType, eventGroup, birthSex;
-		HashMap<String,String> personNameElements, locationNameElements;
+		long personTablePID, ownerTablePID, nameStylePID, bestPersonNamePID, startHdate, 
+			eventLocationPID, priPartnerPID, secPartnerPID;
+		long assocPersonPrefRPID, eventPersonPrefNamePID = null_RPID, priPartnerPrefNamePID = null_RPID, 
+			 secPartnerPrefNamePID = null_RPID;
+		int dataBaseIndex, visbleIdent, eventType, eventGroup, birthSex, subjectBirthSex, ownerType;
+		HashMap<String,String> personNameElements, subjectNameElements, locationNameElements;
 		long[] associatePID;
 		int[] associateRoles;
 		int[] primaryNumbers;
+		long[] associatePrefNameRPID;
 		String[] partnerNames, nameStyleCodes;
 		boolean partnerEvent = false;
 		int rows = 0;
 
-		ReportEventTMG(HBProjectOpenData pointOpenProject, long eventTablePID) throws HBException {
+		ReportEventTMG(HBProjectOpenData pointOpenProject, long eventTablePID, long ownerTablePID, int ownerType) throws HBException {
 			this.eventTablePID = eventTablePID;
+			this.ownerTablePID = ownerTablePID;
+			this.ownerType = ownerType; // owner type:  1 - name, 2 - event, 3 - associate, 4 - partner 
 			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 			pointHREmemo = pointOpenProject.getHREmemo();
 			pointPersonHandler = pointOpenProject.getPersonHandler();
@@ -947,7 +930,7 @@ public class HBReportHandler extends HBBusinessLayer {
 			pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 			pointLibraryResultSet = pointPersonHandler.pointLibraryResultSet;
 			personTablePID = pointOpenProject.getSelectedPersonPID();
-			
+
 		// Look up data from eventable
 			selectString = setSelectSQL("*", eventTable,"PID = " + eventTablePID);
 			eventTableRS = requestTableData(selectString, dataBaseIndex);
@@ -962,10 +945,11 @@ public class HBReportHandler extends HBBusinessLayer {
 			// personTablePID = eventTableRS.getLong("PRIM_ASSOC_RPID");
 				startHdate = eventTableRS.getLong("START_HDATE_RPID");
 				eventLocationPID = eventTableRS.getLong("EVNT_LOCN_RPID");
+				eventPersonPrefNamePID =  eventTableRS.getLong("PREF_NAME_RPID");
 				memoRPID = eventTableRS.getLong("MEMO_RPID");
 				eventGroup = pointPersonHandler.pointLibraryResultSet.getEventGroup(eventType, dataBaseIndex);
 				eventDate = pointPersonHandler.pointLibraryResultSet.exstractDate(startHdate, dataBaseIndex);
-					
+
 		    	if (eventGroup == pointPersonHandler.marrGroup || eventGroup == pointPersonHandler.divorceGroup) {
 	    // Get and extract the partner names and roles
 		    		partnerEvent = true;
@@ -973,24 +957,31 @@ public class HBReportHandler extends HBBusinessLayer {
 					partnerTableRS = requestTableData(selectString, dataBaseIndex);
 					partnerTableRS.first();
 					priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
+					priPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");
 					if (personTablePID == priPartnerPID) {
 						secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
+						secPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
 					} else {
 						secPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
 						priPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
+						priPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
 						personTablePID = priPartnerPID;
 					}
 					partnerTableRS.close();
-		    	} 
-		    	
-				// look up data from persontable
+		    	}
+
+		// look up data from persontable
 				selectString = setSelectSQL("*", personTable, "PID = " + personTablePID);
 				personTableRS = requestTableData(selectString, dataBaseIndex);
 				personTableRS.first();
-				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				bestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
 				visbleIdent = personTableRS.getInt("VISIBLE_ID");
 				birthSex = personTableRS.getInt("BIRTH_SEX");
-				nameStyleCodes = getOuputReportStyleCodes(eventBestPersonNamePID);
+				nameStyleCodes = getOuputReportStyleCodes(bestPersonNamePID);
+				
+				if (eventPersonPrefNamePID == null_RPID)  eventPersonPrefNamePID = bestPersonNamePID;
+				if (priPartnerPrefNamePID == null_RPID) priPartnerPrefNamePID = bestPersonNamePID;
+				if (secPartnerPrefNamePID == null_RPID) secPartnerPrefNamePID = bestPersonNamePID;
 
 			} catch (SQLException sqle) {
 				sqle.printStackTrace();
@@ -1011,9 +1002,10 @@ public class HBReportHandler extends HBBusinessLayer {
  * @return
  * @throws HBException
  */
-		 public String returnSentenceVariable(String sentenceVariable) {
+		 public String returnSentenceVariable(String sentenceVariable) throws HBException {
 			int rows = 0;
-			String roleNumber;
+			String roleNumber = "00000";
+			//long personTablePID;
 			try {
 /* Proceess R - role variables
  *    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
@@ -1024,30 +1016,26 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			rows = collectAssociatePersons(eventTablePID);
 		    		if (personNameElements == null)
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
-		    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
+		    				selectPersonNameElements(eventPersonPrefNamePID, dataBaseIndex);
 		    		String[] roleData = sentenceVariable.split(":");
 		    		if (roleData.length > 1) {
 		    			roleNumber = roleData[1];
 		    			//System.out.println(" Role number: " + roleNumber);
 		    			if (partnerEvent) {
-		    				if (roleNumber.equals("00004")) return findPersonName(priPartnerPID);
-		    				if (roleNumber.equals("00003")) return findPersonName(secPartnerPID);
-		    				//if (roleNumber.equals("00004")) return findPersonName(secPartnerPID);
-		    			} else if (roleNumber.equals("00001") || roleNumber.equals("00003"))
+		    				if (roleNumber.equals("00020")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
+		    				if (roleNumber.equals("00004")) return findPersonName(priPartnerPID, priPartnerPrefNamePID);
+		    				if (roleNumber.equals("00003")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
+			    			return findPersonName(findAssociatePersonRole(roleNumber), null_RPID);
+		    			} else {
+		    				if (roleNumber.equals("00001") || roleNumber.equals("00003"))
 		    					return getPersonName(personNameElements, visbleIdent);
-		    			else {
-		    			// Select the associate with the rolenumber
-		    					if (rows == 0)
-		    						rows = collectAssociatePersons(eventTablePID);
-		    					int roleInt = Integer.parseInt(roleNumber);
-		    					for (int index = 0; index < associatePID.length; index++)
-		    						if (roleInt == associateRoles[index])
-		    							return findPersonName(associatePID[index]);
-		    					return "";
+		    				return findPersonName(findAssociatePersonRole(roleNumber), assocPersonPrefRPID);
 		    			}
-		    		}
-		    	}
+		    					
 
+		    		} else return "?" + sentenceVariable;
+		    	}
+		    		
 
 		    /* Process Px
 		    	Summarising Px in sentence reference terms:
@@ -1055,26 +1043,27 @@ public class HBReportHandler extends HBBusinessLayer {
 		    	    [P1] -- produces the name of the person entered in the P1 slot in the event tag
 		    	    [P2] -- produces the name of the person entered in the P2 slot in the event tag
 		    	    [P] --  produces the name of the subject of the sentence (who will be a P1 or a P2 person
-		    	    [PO] -- produces the name of the other principal (if there is one), 
+		    	    [PO] -- produces the name of the other principal (if there is one),
 		    	    	    the one who is not the subject.
-		    	    
+
             */
 		    	if (sentenceVariable.startsWith("P")) {
 		    		if (personNameElements == null)
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
-		    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
-		    		
+		    				selectPersonNameElements(eventPersonPrefNamePID, dataBaseIndex);
+
 		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+")
 		    										 || sentenceVariable.equals("P1"))
 		    				return getPersonName(personNameElements, visbleIdent);
-		    		
-		    		if (sentenceVariable.equals("PP")) 
+
+		    		if (sentenceVariable.equals("PP"))
 		    			if (birthSex == 1) return "He";
 		    			else if (birthSex == 2) return "She";
 		    			else if (birthSex == 3) return "Hen";
-		    		
+
 		    		if (sentenceVariable.equals("PO") || sentenceVariable.equals("P2")
-		    										  || sentenceVariable.equals("POS")) return getPersonOptional();
+		    										  || sentenceVariable.equals("POS"))								 
+		    			return getPersonOptional();
 
 		    		switch (sentenceVariable) {
 		    			case "PG":  return personNameElements.get(personNameCodeArray[2]);
@@ -1083,10 +1072,37 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			case "PGS": return personNameElements.get(personNameCodeArray[2]);
 		    			case "PFS":  return personNameElements.get(personNameCodeArray[2]);
 		    			case "PLS":  return personNameElements.get(personNameCodeArray[4]);
-		    			default: return "";
+		    			//default: return "?" + sentenceVariable;
 		    		}
+		    	
+			    	/**
+			    	 * [PAR] The parents of the Current Principal
+					 * [PARO]The parents of the Other Principal
+					 * [PAR1] The parents of Principal #1
+					 * [PAR2] The parents of Principal #2
+			    	 */
+			    	
+			    	if (sentenceVariable.startsWith("PA")) {
+			    			String prefix;
+			    			if (birthSex == 1) prefix = " son of "; 
+			    			else if (birthSex == 2) prefix = " dauther of "; 
+			    			else prefix = " parents ";
+			    			switch (sentenceVariable) {	
+			    			case "PAR":  
+			    				if (partnerEvent) 
+			    					return prefix + findPersonName(findFatherForPerson(priPartnerPID), null_RPID);   
+			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID); 
+			    			case "PARO": 
+			    				if (partnerEvent) 
+			    					return prefix + findPersonName(findFatherForPerson(secPartnerPID), null_RPID);  
+			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID);  
+			    			case "PAR1": return "?" + ownerType + sentenceVariable; 
+			    			case "PAR2": return "?" + ownerType + sentenceVariable; 
+			    			default: return "??" + sentenceVariable;
+			    		}
+			    	}
 		    	}
-
+		    	
 		    // Process date
 		    	if (sentenceVariable.startsWith("D")) {
 		    		return  eventDate;
@@ -1105,27 +1121,37 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			case "L4":  return locationNameElements.get(locationNameCodeArray[3]);
 		    			case "L5":  return locationNameElements.get(locationNameCodeArray[4]);
 		    			case "L6":  return locationNameElements.get(locationNameCodeArray[5]);
-		    			default: return "";
+		    			default: return "?" + sentenceVariable;
 		    		}
 		    	 }
-			    // process Sx variables
+		    	
+			// process Sx variables Subject variables
+		    // Need update *******************************************' NTo 7-8-2026
 		    	if (sentenceVariable.startsWith("S")) {
+		    		//System.out.println(" S-variable OwnerType: " + ownerType + " OwnerPID:" + ownerTablePID);
+		    		if ( ownerType == 3) {
+		    			long bestSubjectPersonName = findSubjectNameRablePID(ownerTablePID);
+			    		if (subjectNameElements == null)
+			    			subjectNameElements =  pointPersonHandler.pointLibraryResultSet.
+			    				selectPersonNameElements(bestSubjectPersonName, dataBaseIndex);
+		    		} else return "?" + ownerType + "/" +sentenceVariable;
+		    		
 		    		switch (sentenceVariable) {
-		    			case "S": return getPersonName(personNameElements, visbleIdent);
-		    			case "S+": return getPersonName(personNameElements, visbleIdent);
-		    			case "SS": return getPersonName(personNameElements, visbleIdent);
-		    			case "SG": return getPersonName(personNameElements, visbleIdent);
-		    			case "SF": return getPersonName(personNameElements, visbleIdent);
-		    			case "SL": return getPersonName(personNameElements, visbleIdent);
-		    			case "SA": return "";
-		    			case "SE": return "";
-		    			case "SP": return "He/She";
-		    			case "SPP": return "";
-		    			case "SM": return "";
-		    			case "SGS": return "";
-		    			case "SFS": return "";
-		    			case "SLS": return "";
-		    			default: return "";
+		    			case "S": return getPersonName(subjectNameElements, visbleIdent);
+		    			case "S+": return getPersonName(subjectNameElements, visbleIdent);
+		    			case "SS": return subjectNameElements.get(personNameCodeArray[2]);
+		    			case "SG": return subjectNameElements.get(personNameCodeArray[2]);
+		    			case "SF": return subjectNameElements.get(personNameCodeArray[2]);
+		    			case "SL": return subjectNameElements.get(personNameCodeArray[4]);
+		    			case "SA": return "?Age";
+		    			case "SE": return "?ExAge";
+		    			case "SP": if (subjectBirthSex == 1) return "She"; else if (subjectBirthSex == 2) return "He"; 
+		    			case "SPP": if (subjectBirthSex == 1) return "Her"; else if (subjectBirthSex == 2) return "His"; 
+		    			case "SM": if (subjectBirthSex == 1) return "Her"; else if (subjectBirthSex == 2) return "Him"; 
+		    			case "SGS": return subjectNameElements.get(personNameCodeArray[2]) + "'s";
+		    			case "SFS": return subjectNameElements.get(personNameCodeArray[2]) + "'s";
+		    			case "SLS": return subjectNameElements.get(personNameCodeArray[4]) + "'s";
+		    			default: return "?" + sentenceVariable;
 		    		}
 		    	}
 
@@ -1133,29 +1159,33 @@ public class HBReportHandler extends HBBusinessLayer {
 		    	 if (sentenceVariable.startsWith("W")) {
 		    		 if (rows == 0)
 		    			 rows = collectAssociatePersons(eventTablePID);
-		    		 if (rows < 1) return "";
+		    		 if (rows < 1) return "?" + sentenceVariable;	 
 		    		 if (sentenceVariable.equals("W"))
-		    			 return findPersonName(associatePID[0]);
+		    			 return findPersonName(associatePID[0], associatePrefNameRPID[0]);
 					 if (sentenceVariable.equals("WO") && rows > 1)
-		    			 return findPersonName(associatePID[1]);
+		    			 return findPersonName(associatePID[1], associatePrefNameRPID[1]);
 					 if (sentenceVariable.equals("WO") && rows > 2)
-		    			 return findPersonName(associatePID[2]);
-					 if (sentenceVariable.equals("WM")) {
-		        			 return "Witness memo";
-		    		 }
+		    			 return findPersonName(associatePID[2], associatePrefNameRPID[2]);
+					 if (sentenceVariable.equals("WM")) return "WM memo";
+					 return "?" + sentenceVariable;
+		  
 		    	 }
 
 		    // Process memo
-		    	 if (sentenceVariable.startsWith("M")) {
+		    	 if (sentenceVariable.startsWith("M")) 
 						return pointHREmemo.readMemo(memoRPID);
-		    	 }
+		    	 
+		    // create new line or [:CR:]	 
+		    	 if (sentenceVariable.startsWith(":CR:")) 
+		    		 return "\n";
+		    	 
 		    	 return "?" + sentenceVariable;
 
 			} catch (HBException hbe) {
 				System.out.println(" Sentence variable error: " + hbe.getMessage());
 				hbe.printStackTrace();
+				throw new HBException();
 			}
-			return "?" + sentenceVariable;
 	    }
 
 /**
@@ -1193,8 +1223,62 @@ public class HBReportHandler extends HBBusinessLayer {
 				sqle.printStackTrace();
 				throw new HBException(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
 			}
-
 		}
+	
+		
+		private long findMotherForPerson(long personTablePID) throws HBException {
+			return findValueForPerson("EGG_PROVIDER_RPID", personTablePID);
+		}
+		
+		private long findFatherForPerson(long personTablePID) throws HBException {
+			return findValueForPerson("SPERM_PROVIDER_RPID", personTablePID);
+		}
+		
+		private long findBestNameForPerson(long personTablePID) throws HBException {
+			return findValueForPerson("BEST_NAME_RPID", personTablePID);
+		}
+		
+		private long findValueForPerson(String relation, long personTablePID ) throws HBException {
+			ResultSet personTableRS;
+			selectString = setSelectSQL(relation, personTable, "PID = " + personTablePID);
+			personTableRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				personTableRS.first();
+				return personTableRS.getLong(relation);
+			} catch (SQLException sqle) {
+				System.out.println("findParentForPerson - " + sqle.getMessage());
+				sqle.printStackTrace();
+				throw new HBException();
+			}
+		}
+	
+/**
+ * private long findSubjectNameRablePID(long assocTablePID)		
+ * @param assocTablePID
+ * @return
+ * @throws HBException
+ */
+	private long findSubjectNameRablePID(long assocTablePID) throws HBException {
+		ResultSet personNameRS;
+		long assocPersonTablePID, assocPersonPefNamePID;
+		selectString = setSelectSQL("ASSOC_RPID", eventAssocTable,"PID = " + assocTablePID);
+		personNameRS = requestTableData(selectString, dataBaseIndex);
+		try {
+			personNameRS.first();
+			assocPersonTablePID = personNameRS.getLong("ASSOC_RPID");
+			assocPersonPefNamePID = personNameRS.getLong("PREF_NAME_RPID");
+			selectString = setSelectSQL("BEST_NAME_RPID,BIRTH_SEX", personTable,"PID = " + assocPersonTablePID);
+			personNameRS = requestTableData(selectString, dataBaseIndex);
+			personNameRS.first();
+			subjectBirthSex = personNameRS.getInt("BIRTH_SEX");
+			if (assocPersonPefNamePID == null_RPID) return personNameRS.getLong("BEST_NAME_RPID");
+			else return assocPersonPefNamePID;
+		} catch (SQLException sqle) {
+			System.out.println(" HBReportHandler - findSubjectNameRablePID" + sqle.getMessage());
+			sqle.printStackTrace();
+			throw new HBException(" HBReportHandler - findSubjectNameRablePID" + sqle.getMessage());
+		}	
+	}
 
 /**
  * Returns partner Optional (PO) name or name first of person in associate list if not partener event
@@ -1202,14 +1286,14 @@ public class HBReportHandler extends HBBusinessLayer {
  * @throws HBException
  */
 	public String getPersonOptional() throws HBException {
-			if (partnerEvent) 
-				return findPersonName(secPartnerPID);	
+			if (partnerEvent)
+				return findPersonName(secPartnerPID, null_RPID);
 			if (rows == 0) rows = collectAssociatePersons(eventTablePID);
 			if (rows < 1) return "";
 		// Find the primary P2 name
 			for (int i = 0; i < primaryNumbers.length; i++)
-				if (primaryNumbers[i] == 2) return findPersonName(associatePID[i]);
-			return findPersonName(associatePID[0]);
+				if (primaryNumbers[i] == 2) return findPersonName(associatePID[i], associatePrefNameRPID[i]);
+			return findPersonName(associatePID[0], associatePrefNameRPID[0]);
 		}
 
 /**
@@ -1221,27 +1305,27 @@ public class HBReportHandler extends HBBusinessLayer {
 		public String findAssociatePersonName(int index) throws HBException {
 			index = index -1;
 			if (index < 0 || index > rows) return "";
-			return findPersonName(associatePID[index]);
+			return findPersonName(associatePID[index], associatePrefNameRPID[index]);
 		}
 
-		private String findPersonName(long personTablePID) throws HBException {
+		private String findPersonName(long personTablePID, long prefNamePID) throws HBException {
 			HashMap<String,String> personNameElements = null;
+			long bestPersonNamePID;
 			int viibleIdent;
-    		if (personNameElements == null)
-    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
-    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
 			selectString = setSelectSQL("*", personTable, "PID = " + personTablePID);
 			personTableRS = requestTableData(selectString, dataBaseIndex);
 			try {
 				personTableRS.first();
-				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				if (prefNamePID == null_RPID)
+					bestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				else bestPersonNamePID = prefNamePID;
 				viibleIdent = personTableRS.getInt("VISIBLE_ID");
 				personNameElements =  pointLibraryResultSet.
-						selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
+						selectPersonNameElements(bestPersonNamePID, dataBaseIndex);
 				return getPersonName(personNameElements, viibleIdent);
 			} catch (SQLException sqle) {
 				sqle.printStackTrace();
-				throw new HBException(" ReportEventData - collectAssocatePersons error: " + sqle.getMessage());
+				throw new HBException(" ReportEventData - findPersonName error: " + sqle.getMessage());
 			}
 		}
 
@@ -1272,7 +1356,7 @@ public class HBReportHandler extends HBBusinessLayer {
 		public String getPersonName() throws HBException {
     		if (personNameElements == null)
     			personNameElements =  pointPersonHandler.pointLibraryResultSet.
-    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
+    				selectPersonNameElements(eventPersonPrefNamePID, dataBaseIndex);
 			return getPersonName(personNameElements, visbleIdent);
 		}
 
@@ -1347,9 +1431,11 @@ public class HBReportHandler extends HBBusinessLayer {
 				rows = pointReportEventTMG.collectAssociatePersons(eventTablePID);
 			int roleInt = Integer.parseInt(roleNumber);
 			for (int i = 0; i < associatePID.length; i++)
-				if (roleInt == associateRoles[i])
+				if (roleInt == associateRoles[i]) {
+					assocPersonPrefRPID = associatePrefNameRPID[i];
 					return associatePID[i];
-		return 0L;
+				}
+		return null_RPID;
 	}
 
 /**
@@ -1378,12 +1464,15 @@ public class HBReportHandler extends HBBusinessLayer {
 				associatePID = new long[nrOfRows];
 				associateRoles = new int[nrOfRows];
 				primaryNumbers = new int[nrOfRows];
+				associatePrefNameRPID = new long[nrOfRows];
 				assocTableRS.beforeFirst();
 				while (assocTableRS.next()) {
 					associatePID[index] = assocTableRS.getLong("ASSOC_RPID");
 					associateRoles[index] = assocTableRS.getInt("ROLE_NUM");
 					primaryNumbers[index] = assocTableRS.getInt("PRIMARY_NUM");
-					//System.out.println(" Assocs: " + associatePID[index] + "/" + associateRoles[index]);
+					associatePrefNameRPID[index] = assocTableRS.getLong("PREF_NAME_RPID");
+					//System.out.println(" Assocs: " + associatePID[index] + "/" + associateRoles[index]
+					//		+ "/" + primaryNumbers[index]);
 					index++;
 				}
 			} catch (SQLException sqle) {
@@ -1417,16 +1506,138 @@ public class HBReportHandler extends HBBusinessLayer {
 			return pointHREmemo.readMemo(memoRPID);
 		}
 	} // End ReportEventData
-	
+
 /**
  * class ReportNameTMG
  */
 	public class ReportNameTMG extends HBBusinessLayer {
-		long nameTablePID;
+		HBProjectOpenData pointOpenProject;
+		HBPersonHandler pointPersonHandler;
+		HBWhereWhenHandler pointWhereWhenHandler;
+		HBLibraryResultSet pointLibraryResultSet;
+		String[] nameStyleCodes;
+		ResultSet personNameTableRS, personTableRS;
+		String selectString, eventDate;
+		long selectedPersonPID, personNamedPID, eventBestPersonNamePID, nameTablePID, startHdate, memoRPID;
+		HashMap<String,String> personNameElements, personNamedElements;
+		int dataBaseIndex, visbleIdent, eventType, eventGroup, birthSex;
+
+/**
+ * ReportNameTMG(HBProjectOpenData pointOpenProject, long nameTablePID)
+ * @param pointOpenProject
+ * @param nameTablePID
+ * @throws HBException
+ */
 		ReportNameTMG(HBProjectOpenData pointOpenProject, long nameTablePID) throws HBException {
 			this.nameTablePID = nameTablePID;
+			selectedPersonPID = pointOpenProject.getSelectedPersonPID();
+			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+			pointHREmemo = pointOpenProject.getHREmemo();
+			pointPersonHandler = pointOpenProject.getPersonHandler();
+			this.pointDBlayer = pointPersonHandler.pointDBlayer;
+			pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
+			pointLibraryResultSet = pointPersonHandler.pointLibraryResultSet;
+			nameStyleCodes = getOuputReportStyleCodes(nameTablePID);
+
 			if (HGlobal.DEBUG) System.out.println(" ReportNameTMG  Name table PID: " +  nameTablePID);
+		// Look up data from nametable
+			selectString = setSelectSQL("*", personNameTable, "PID = " + nameTablePID);
+			personNameTableRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				personNameTableRS.first();
+				personNamedPID = personNameTableRS.getLong("OWNER_RPID");
+				startHdate = personNameTableRS.getLong("START_HDATE_RPID");
+				memoRPID = personNameTableRS.getLong("MEMO_RPID");
+				eventDate = pointPersonHandler.pointLibraryResultSet.exstractDate(startHdate, dataBaseIndex);
+
+			// look up data from persontable
+				selectString = setSelectSQL("*", personTable, "PID = " + selectedPersonPID);
+				personTableRS = requestTableData(selectString, dataBaseIndex);
+				personTableRS.first();
+				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				visbleIdent = personTableRS.getInt("VISIBLE_ID");
+				birthSex = personTableRS.getInt("BIRTH_SEX");
+			} catch (SQLException sqle) {
+				sqle.printStackTrace();
+				throw new HBException("ReportEventData error: " + sqle.getMessage());
+			}
 		}
+
+/**
+ * private String[] getOuputStyleCodes(long nameStyleOutputPID)
+ * @param nameStyleOutputPID
+ * @return
+ * @throws HBException
+ */
+		private String[] getOuputReportStyleCodes(long bestPersonNamePID) throws HBException {
+			ResultSet bestPersonNameRS,nameStyleOutputRS;
+			String codeString = "No String";
+			long nameStyleOutputPID;
+			String[] outputDataCodes = null;
+			selectString = setSelectSQL("*", personNameTable,"PID = " + bestPersonNamePID);
+			bestPersonNameRS = requestTableData(selectString, dataBaseIndex);
+			try {
+				bestPersonNameRS.first();
+				nameStyleOutputPID = bestPersonNameRS.getLong("NAME_STYLE_RPID");
+				nameStyleOutputRS = pointLibraryResultSet.getOutputStylesTable(nameStylesOutput,
+						"N", nameStyleOutputPID, dataBaseIndex);
+				if (isResultSetEmpty(nameStyleOutputRS)) return outputDataCodes;
+
+				nameStyleOutputRS.beforeFirst();
+				while (nameStyleOutputRS.next()) {
+					if (nameStyleOutputRS.getString("OUT_TYPE").equals("R")) {
+							codeString = nameStyleOutputRS.getString("OUT_ELEMNT_CODES");
+							outputDataCodes = codeString.split("\\|");
+							break;
+					}
+				}
+				//System.out.println(" Output Style Codes: " + codeString);
+				return outputDataCodes;
+			} catch (SQLException sqle) {
+				System.out.println(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+				sqle.printStackTrace();
+				throw new HBException(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+			}
+		}
+
+/**
+ * Create and returns the person name according to the recorded namestyle
+ * @return String with person name and (visible id)
+ * @throws HBException
+ */
+		public String getPersonName() throws HBException {
+    		if (personNameElements == null)
+    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
+    				selectPersonNameElements(nameTablePID, dataBaseIndex);
+			return getPersonName(personNameElements, visbleIdent);
+		}
+
+		private String getPersonName(HashMap<String,String> personNameElements, int viibleIdent) {
+			String nameElement, nameCode, personName = "";
+			boolean first = true, comma = false;
+			for (int i = 0; i < nameStyleCodes.length; i++) {
+				nameCode = nameStyleCodes[i];
+				if (nameCode.contains("#")) {
+					comma = true;
+					nameCode = nameCode.substring(0,4);
+					//System.out.println(" New name code: " + nameCode);
+				}
+				nameElement = personNameElements.get(nameCode);
+				if (comma) nameElement = nameElement + ",";
+				if (nameElement != null) {
+					if (first)
+						personName =  nameElement;
+					else personName = personName + " " + nameElement;
+					if (first) first = false;
+				}
+				comma = false;
+			}
+
+			if (viibleIdent > 0)
+				return personName + "(" + viibleIdent + ")";
+			return personName;
+		}
+
 /**
  * returnSentenceVariable(String sentenceVariable)
  * @param sentenceVariable
@@ -1434,422 +1645,50 @@ public class HBReportHandler extends HBBusinessLayer {
  */
 		public String returnSentenceVariable(String sentenceVariable) {
 			if (HGlobal.DEBUG) System.out.println(" Not found sentence variable: " + sentenceVariable);
+			try {
+			   	if (sentenceVariable.startsWith("P")) {
+		    		if (personNameElements == null)
+		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
+		    				selectPersonNameElements(selectedPersonPID, dataBaseIndex);
+
+		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+")
+		    										 || sentenceVariable.equals("P1"))
+		    				return getPersonName(personNameElements, visbleIdent);
+
+		    		if (sentenceVariable.equals("PP"))
+		    			if (birthSex == 2) return "His";
+		    			else if (birthSex == 1) return "Hers";
+		    			else if (birthSex == 3) return "Hen's";
+		    			else return "?" + sentenceVariable;
+
+			   	}
+
+			   	if (sentenceVariable.startsWith("N")) {
+			    		if (personNamedElements == null)
+			    			personNamedElements =  pointPersonHandler.pointLibraryResultSet.
+			    				selectPersonNameElements(nameTablePID, dataBaseIndex);
+
+			    		if (sentenceVariable.equals("N") || sentenceVariable.equals("P+")
+			    										 || sentenceVariable.equals("P1"))
+			    				return getPersonName(personNamedElements, 0);
+			   	}
+			    // Process date
+		    	if (sentenceVariable.startsWith("D")) {
+		    		if (eventDate.length() > 0) return  eventDate;
+					return "";
+		    	}
+
+			    // Process memo
+		    	 if (sentenceVariable.startsWith("M"))
+						return pointHREmemo.readMemo(memoRPID);
+				 return "";
+
+			} catch (HBException hbe) {
+				System.out.println(" Sentence variable error: " + hbe.getMessage());
+				hbe.printStackTrace();
+			}
 			return "?" + sentenceVariable;
 		}
 	}
 } // End Class HBReportHandler
 
-class RelationCalculation extends HBBusinessLayer {
-/************************************************************************************************
- * Class  RelationCalculation
- * Processes data for recalcukation of relationship code pairs
- * As created by CoPilot and replaced by ChatGPT to Create relationship codes
- * Sends requests to database over Database Layer API
- ************************************************************************************************
- * v0.05.0033 2026-04-10 - First draft (D Ferguson)
- * 			  2026-04-12 - Second draft (D Ferguson)
- * 			  2026-04-13 - Getting cousins almost right (D Ferguson)
- * 			  2026-04-14 - Remove invalid codes for no blood relationships (D Ferguson)
- * 			  2026-04-16 - Handle aunts/cousins greater than 4 generations (D Ferguson)
- * 			  2026-04-18 - Use ChatGPT code to fix all problems (D Ferguson)
- * 			  2026-05-01 - Used ChatGPT to extend to 2 relationships (D Ferguson)
- ************************************************************************************************/
-
-	    protected ResultSet pointT401_PERSONS;
-	    HBProjectOpenData pointOpenProject;
-	    HBPersonHandler pointPersonHandler;
-	    static HashMap<Long,Object[]> parentMap = new HashMap<Long,Object[]>();
-
-/**
- * Constructor RelationCalculation(HBProjectOpenData pointOpenProject)
- * @param pointOpenProject
- */
-	  public RelationCalculation(HBProjectOpenData pointOpenProject)  {
-		  this.pointOpenProject = pointOpenProject;
-		  long personTablePID;
-		  pointDBlayer = pointOpenProject.getPointDBlayer();
-		  pointPersonHandler = pointOpenProject.getPersonHandler();
-		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
-		  try {
-			  pointT401_PERSONS.beforeFirst();
-			  while (pointT401_PERSONS.next()) {
-				  Object[] parents = new Object[2];
-				  parents[0] = pointT401_PERSONS.getLong("SPERM_PROVIDER_RPID");
-				  parents[1] = pointT401_PERSONS.getLong("EGG_PROVIDER_RPID");
-				  personTablePID = pointT401_PERSONS.getLong("PID");
-				  parentMap.put(personTablePID, parents);
-			  }
-		} catch (SQLException sqle) {
-			System.out.println(" ERROR in  RelationCalculation: " + sqle.getMessage());
-			sqle.printStackTrace();
-		}
-	  }
-
-/**
- * Recalculate Relationships ans save in all T401 records
- * public void recalcRelationsT401(long focusPersonPID)
- * @param focusPersonPID
- * @throws HBException
- */
-	  public void recalcRelationsT401(long focusPersonPID) throws HBException {
-		  long personTablePID;
-		  int T401_RELATE1, T401_RELATE2, T401_RELATE3, T401_RELATE4;
-//		  int RELATE1, RELATE2;
-		  int numberOfPerson = 0;
-		  boolean updateT401 = true; // Controls update of T401
-		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
-		  int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		  System.out.println(" Start test relations!");
-		  // Start transaction
-		  updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
-		  try {
-			  pointT401_PERSONS.beforeFirst();
-			  while (pointT401_PERSONS.next()) {
-				  personTablePID = pointT401_PERSONS.getLong("PID");
-				  Relationship relations = findRelationships(focusPersonPID, personTablePID );
-			 // following updates relations
-				  T401_RELATE1 = relations.primary.x;
-				  T401_RELATE2 = relations.primary.y;
-				  T401_RELATE3 = relations.secondary.x;
-				  T401_RELATE4 = relations.secondary.y;
-
-			 // Debugging code
-/*				  RELATE1 = pointT401_PERSONS.getInt("RELATE1");
-				  RELATE2 = pointT401_PERSONS.getInt("RELATE2");
-				  if (RELATE1 != T401_RELATE1 || RELATE2 != T401_RELATE2) {
-					  errorIndex++;
-					  System.out.println(" " + errorIndex + " - " + pointPersonHandler.getPersonName(personTablePID)
-					  + " - PID: "+ personTablePID + " TMG: (" + RELATE1 + "," + RELATE2 + ") HRE: "
-					  + "(" + T401_RELATE1 + "," + T401_RELATE2 + ")");
-				  } */
-				  if ((T401_RELATE3 != 0) || (T401_RELATE4 != 0)) {
-					  System.out.println(pointPersonHandler.getPersonName(personTablePID)
-							  + " - PID: "+ personTablePID
-							  +" primar: " + "(" + T401_RELATE1 + "," + T401_RELATE2 + ")"
-							  +" second: " + "(" + T401_RELATE3 + "," + T401_RELATE4 + ")");
-				  		numberOfPerson++;
-				  }
-
-			 // T401 update code
-				  if (updateT401) {
-					  pointT401_PERSONS.updateInt("RELATE1", T401_RELATE1);
-					  pointT401_PERSONS.updateInt("RELATE2", T401_RELATE2);
-					  pointT401_PERSONS.updateInt("RELATE3", T401_RELATE3);
-					  pointT401_PERSONS.updateInt("RELATE4", T401_RELATE4);
-					  pointT401_PERSONS.updateRow();
-				  }
-			  }
-			  //System.out.println( " Deviations: " + errorIndex + " Total tested: " + numberOfPerson);
-			  System.out.println( " Total with REL-3 or REL-4 != 0: " + numberOfPerson);
-
-		// End transaction
-			  updateTableData("COMMIT", dataBaseIndex);
-		  } catch (SQLException sqle) {
-		 // Roll back transaction
-			  updateTableData("ROLLBACK", dataBaseIndex);
-			  if (HGlobal.writeLogs) {
-				  HB0711Logging.logWrite("ERROR: in recalcRelationsT401 " + sqle.getMessage());	//$NON-NLS-1$
-				  HB0711Logging.printStackTraceToFile(sqle);
-			  }
-		  }
-	  }
-
-  /**
-   * Clear the relation varibales in T401
-   * @throws HBException
-   */
-  	  public void clearRelationDataInT401() throws HBException {
-  		  pointT401_PERSONS =  pointOpenProject.getT401Persons();
-  		  int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-  	// Start transaction
-  		  updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
-  	// Set focus person in T126 to null_RPID
-  		  pointOpenProject.setFocusPersonPID(null_RPID);
-  		  try {
-  			  pointT401_PERSONS.beforeFirst();
-  			  while (pointT401_PERSONS.next()) {
-  				  pointT401_PERSONS.updateInt("RELATE1", 0);
-  				  pointT401_PERSONS.updateInt("RELATE2", 0);
-  				  pointT401_PERSONS.updateInt("RELATE3", 0);
-  				  pointT401_PERSONS.updateInt("RELATE4", 0);
-  				  pointT401_PERSONS.updateRow();
-  			  }
-
-  		// End transaction
-  			  updateTableData("COMMIT", dataBaseIndex);
-  		  } catch (SQLException sqle) {
-  		// Roll back transaction
-  				updateTableData("ROLLBACK", dataBaseIndex);
-  				if (HGlobal.writeLogs) {
-  					HB0711Logging.logWrite("ERROR: in recalcRelationsT401 " + sqle.getMessage());	//$NON-NLS-1$
-  					HB0711Logging.printStackTraceToFile(sqle);
-  				}
-  		  }
-  	  }
-
-/**
- * Return parents of a given PID
- * public static Object[] getParentsPID(long personTablePID)
- * @param personTablePID
- * @return
- */
-	    public static Object[] getParentsPID(long personTablePID) {
-	    	if (parentMap.containsKey(personTablePID))
-	    		return parentMap.get(personTablePID);
-			return null;
-	    }
-
-/**
- * Construct a Relationship (x,y) pair
- */
-	    public static class Relationship {
-	        public CodePair primary;
-	        public CodePair secondary;
-	        public Relationship(CodePair p1, CodePair p2) {
-	            this.primary = p1;
-	            this.secondary = p2;
-	        }
-	    }
-	    public static class CodePair {
-	        public int x, y;
-	        public CodePair(int x, int y) {
-	            this.x = x;
-	            this.y = y;
-	        }
-	    }
-
-/**
- * Build ancestor map: PID generations up from startPID
- *           depth 0 = self, 1 = parent, 2 = grandparent, ...
- * public static Map<Long, Integer> buildAncestorMap(long startPID)
- * @param startPID
- * @return
- */
-	    @SuppressWarnings("unused")
-		private static Map<Long, List<Integer>> buildAncestorMap(
-	            			long pid, long NULL_RPID, int maxDepth ) {
-
-	        Map<Long, List<Integer>> map = new HashMap<>();
-	        Queue<long[]> q = new LinkedList<>();
-	        q.add(new long[]{pid, 0});
-
-	        while (!q.isEmpty()) {
-	            long[] cur = q.poll();
-	            long id = cur[0];
-	            int depth = (int) cur[1];
-	            if (depth > maxDepth) continue;
-	            if (id == NULL_RPID) continue;
-
-	            map.computeIfAbsent(id, k -> new ArrayList<>()).add(depth);
-	            Object[] parents = getParentsPID(id);
-	            if (parents == null) continue;
-	            for (Object p : parents) {
-	                if (p == null) continue;
-	                long parent = (Long) p;
-	                if (parent == NULL_RPID) continue;
-	                q.add(new long[]{parent, depth + 1});
-	            }
-	        }
-	        return map;
-	    }
-/***
- * Further Helper methods for findRelationships
- */
-	    static class LcaCandidate {
-	        long lcaPID;
-	        int df;
-	        int dt;
-	        CodePair code;
-	        int score;
-	        LcaCandidate(long lcaPID, int df, int dt, CodePair code) {
-	            this.lcaPID = lcaPID;
-	            this.df = df;
-	            this.dt = dt;
-	            this.code = code;
-	            this.score = score(code);
-	        }
-	    }
-	    static int score(CodePair c) {
-	        if (c.x==0 && c.y==0)
-	            return 9999;
-	        if (c.x==0 || c.y==0)
-	            return Math.abs(c.x)+Math.abs(c.y);
-	        return
-	           100 * Math.min(Math.abs(c.x),Math.abs(c.y))
-	          +10 * Math.abs(Math.abs(c.x)-Math.abs(c.y));
-	    }
-	    static String canonicalBand(CodePair c) {
-	        int a=Math.abs(c.x);
-	        int b=Math.abs(c.y);
-	        if (a>b) {
-	            int t=a;
-	            a=b;
-	            b=t;
-	        }
-	        return a + ":" + b;
-	    }
-	    static boolean dominates(LcaCandidate a, LcaCandidate b) {
-	        return
-	          a.df <= b.df &&
-	          a.dt <= b.dt &&
-	          (a.df < b.df || a.dt < b.dt);
-	    }
-
-/**
- * Find Relationship up to 2 relate pairs between focus and target
- * @param focusPID
- * @param targetPID
- * @return
- */
-	    public static Relationship findRelationships(long focusPID, long targetPID) {
-
-	    	final long NULL_RPID = 1999999999999999L;
-	    	// Assumed that no project will be deeper than 60 generations (about 2000 years)
-	    	final int MAX_DEPTH = 60;
-
-	    	//List<Relationship> results = new ArrayList<>();
-	    	Relationship results;
-	    	// Focus person is not related to itself
-	    	if (focusPID == targetPID) {
-	    		results =  new Relationship(new CodePair(0,0), new CodePair(0,0));
-	    		return results;
-	    	}
-
-	    	Map<Long, List<Integer>> focusMap =
-	    			buildAncestorMap(focusPID, NULL_RPID, MAX_DEPTH);
-	    	Map<Long, List<Integer>> targetMap =
-	    			buildAncestorMap(targetPID, NULL_RPID, MAX_DEPTH);
-
-	    	Set<Long> allLCAs = new HashSet<>(focusMap.keySet());
-	    	allLCAs.retainAll(targetMap.keySet());
-
-// Step 1
-	    	Map<String, LcaCandidate> bestPerBand = new HashMap<>();
-
-	    	for (Long lcaId : focusMap.keySet()) {
-	    		if (!targetMap.containsKey(lcaId))
-	    			continue;
-
-	    		List<Integer> fDepths = focusMap.get(lcaId);
-	    		List<Integer> tDepths = targetMap.get(lcaId);
-	    		int bestDF = Integer.MAX_VALUE;
-	    		int bestDT = Integer.MAX_VALUE;
-	    		int bestScore = Integer.MAX_VALUE;
-
-	    		for (int dF : fDepths) {
-	    			for (int dT : tDepths) {
-	    				int score = dF + dT;
-	    				if (score < bestScore) {
-	    					bestScore = score;
-	    					bestDF = dF;
-	    					bestDT = dT;
-	    				}
-	    			}
-	    		}
-
-	    		if (bestDF == Integer.MAX_VALUE)
-	    			continue;
-
-	    		// derive relationship
-	    		CodePair primary;
-	    		if (bestDF == 0 && bestDT == 0)
-	    			primary = new CodePair(0, 0);
-	    		else if (bestDT == 0)
-	    			primary = new CodePair(0, bestDF);
-	    		else if (bestDF == 0)
-	    			primary = new CodePair(-bestDT, 0);
-	    		else if (bestDF == 1 && bestDT == 1)
-	    			primary = new CodePair(-1, -1);
-	    		else if ((bestDF == 1 && bestDT == 2) || (bestDF == 2 && bestDT == 1)) {
-	    			if (bestDF < bestDT)
-	    				primary = new CodePair(-2, -1);
-	    			else
-	    				primary = new CodePair(-1, -2);
-	    		}
-	    		else {
-	    			int min = Math.min(bestDF, bestDT);
-	    			int max = Math.max(bestDF, bestDT);
-	    			int cousin = min - 1;
-	    			int removed = max - min;
-	    			primary = new CodePair(-(cousin + 1), -(cousin + 1 + removed));
-	    		}
-
-	    		String band = canonicalBand(primary);
-
-	    		LcaCandidate existing = bestPerBand.get(band);
-	    		if (existing == null || score(primary) < score(existing.code)) {
-	    			bestPerBand.put(
-	    					band,
-	    					new LcaCandidate(lcaId, bestDF, bestDT, primary)
-	    					);
-	    		}
-	    	}
-	    	// convert map to list
-	    	List<LcaCandidate> candidates = new ArrayList<>(bestPerBand.values());
-
-// Step 2 - filter out higher candidate noise
-	    	int minSum = Integer.MAX_VALUE;
-	    	// find minimum depth
-	    	for (LcaCandidate c : candidates) {
-	    		int s = c.df + c.dt;
-	    		if (s < minSum) minSum = s;
-	    	}
-	    	// allow one extra level above
-	    	int maxAllowed = minSum + 1;
-	    	List<LcaCandidate> filtered = new ArrayList<>();
-	    	for (LcaCandidate c : candidates) {
-	    		int sum = c.df + c.dt;
-	    		if (sum <= maxAllowed)
-	    			filtered.add(c);
-	    	}
-	    	candidates = filtered;
-
-// Step 3 - sort
-	    	candidates.sort(Comparator.comparingInt(c -> c.score));
-
-// Step 4 - Pick 2 independent bands
-	    	LcaCandidate first = null;
-	    	LcaCandidate second = null;
-	    	Set<String> usedBands = new HashSet<>();
-	    	for (LcaCandidate c : candidates) {
-	    		String band = canonicalBand(c.code);
-	    		if (first == null) {
-	    			first = c;
-	    			usedBands.add(band);
-	    			continue;
-	    		}
-	    		if (usedBands.contains(band))
-	    			continue;
-	    		second = c;
-	    		break;
-	    	}
-
-// Step 5 Suppress bogus secondary if primary is parent/child
-	    	if (first != null && second != null) {
-	    	    boolean isParentChild =
-	    	        (first.code.x == 0 && Math.abs(first.code.y) == 1) ||
-	    	        (first.code.y == 0 && Math.abs(first.code.x) == 1);
-	    	    if (isParentChild)
-	    	    	second = null;
-	    	}
-
-// Step 6 - return
-	    	if (first == null) {
-	    	    results = new Relationship(
-	    	        new CodePair(0, 0),
-	    	        new CodePair(0, 0));
-	    	}
-	    	else if (second == null) {
-	    	    results = new Relationship(
-	    	        first.code,
-	    	        new CodePair(0, 0));
-	    	}
-	    	else {
-	    	    results = new Relationship(
-	    	        first.code,
-	    	        second.code);
-	    	}
-	    	return results;
-	    }
-
-} // End class RelationCalc

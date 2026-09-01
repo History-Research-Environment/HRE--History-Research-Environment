@@ -54,6 +54,7 @@ package hre.tmgjava;
  *			  2026-06-18 - Remove inferred names from import to T403 (N. Tolleshaug)
  *			  2026-06-21 - Remove sort names from T403 if equal name element (N. Tolleshaug/D Ferguson)
  * v0.05.0034 2025-06-30 - Remove T403 reference to LANG_CODE for Seed V23 (D Ferguson)
+ * 			  2026-08-18 - HashMap crossref RECNO and HRE personNameTablePID (N. Tolleshaug)
  ***************************************************************************************
  *  NOTE - See findNameValue(int indexNPID, boolean inferredSurname, boolean inferredGivenname)
  *         for sortname options NTo/Don
@@ -61,6 +62,7 @@ package hre.tmgjava;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import hre.bila.HB0711Logging;
 import hre.gui.HGlobal;
@@ -103,6 +105,11 @@ public class TMGpass_Persons {
 	int nrDefaultFlag = 0;
 	int nrTotalFlag = 0;
 	int errorFlag = 0; // count number of flag errors
+/**
+ * HashMap for birth events
+ */
+	HashMap<Integer,Long> nameRECNOindexPID = new HashMap<Integer,Long>();
+	
 	// Max number printed
 	int maxNrPrint = 20;
 
@@ -284,7 +291,7 @@ public class TMGpass_Persons {
  */
 	public void addNamesToHRE(TMGHREconverter tmgHreConverter) throws HCException {
 		this.tmgHreConverter = tmgHreConverter;
-		int currentRow = 0;
+		int currentRow = 0, nameTableRECNO;
 		long nameElementPID = proOffset;
 		boolean inferredSurname, inferredGivenname;
 		try {
@@ -333,8 +340,14 @@ public class TMGpass_Persons {
 			// T402_LIFE_PERSON_NAMES
 					if(TMGglobal.dataSetID == tmgNtable.getValueInt(indexNPID,"DSID"))	{
 
-							addToT402_PERS_NAME(indexNPID,T402);
-
+						addToT402_PERS_NAME(indexNPID,T402);
+						
+			// Find RECNO for N.table			
+						nameTableRECNO = tmgNtable.getValueInt(indexNPID,"RECNO");
+						
+			// Set up Hashmap for index TMG N.dbf			
+						nameRECNOindexPID.put(nameTableRECNO, proOffset + nameTableRECNO);
+						
 				// Create T403 Name element for each name
 						for (int i = 0; i < nameValues.length ; i++) {
 							if (nameValues[i].length() > 0) {

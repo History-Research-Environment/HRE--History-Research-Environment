@@ -19,6 +19,8 @@ package hre.gui;
  * 			  2025-05-24 Changes to show key people and roles in screen top panel (D Ferguson)
  * 			  2025-11-01 Modified name for createLocationRecord (N.Tolleshaug)
  * v0.04.0032 2026-01-20 Log all catch blocks and other msgs (D Ferguson)
+ * v0.05.0034 2026-08-17 Modified for handling preferred name (N.Tolleshaug)
+ * 			  2026-08-23 Updated for save preferred event name (N.Tolleshaug)
  *******************************************************************************
  * NOTES for incomplete functionality:
  * NOTE08 need to check that Min# of Key_Assoc have been selected before saving
@@ -47,7 +49,7 @@ import hre.nls.HG0547Msgs;
 
 public class HG0547UpdateEvent extends HG0547EditEvent {
 	private static final long serialVersionUID = 1L;
-	long null_RPID  = 1999999999999999L;
+	static long null_RPID  = 1999999999999999L;
 	long locationNamePID;
 	boolean dateOK = false;
 	boolean locationChanged = false;
@@ -56,8 +58,9 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 	HG0547UpdateEvent pointUpdateEvent = this;
 
 	public HG0547UpdateEvent(HBProjectOpenData pointOpenProject, int eventNumber,int roleNumber, long eventPID,
-									 boolean addHdate, long locNamePID, String sexCode) throws HBException {
-		super(pointOpenProject, eventNumber, roleNumber, eventPID, sexCode);
+									 boolean addHdate, long locNamePID, long partnerTablePID, String sexCode) throws HBException {
+		super(pointOpenProject, eventNumber, roleNumber, eventPID, partnerTablePID, sexCode);
+		//System.out.println(" HG0547UpdateEvent PID: " + eventPID + "/" + eventNumber);
 		this.locationNamePID = locNamePID;
 		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		changedLocationNameStyle = false;
@@ -142,7 +145,8 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 				try {
 				// Check if changes in GUI
 					if (locationChanged || changedLocationNameStyle || startDateOK || sortDateOK
-										|| memoEdited || changeEventType || citationOrderChanged) {
+										|| memoEdited || changeEventType || citationOrderChanged
+										|| changedPrefName) {
 					// Crate or update hdate
 						if (startDateOK)
 							pointWhereWhenHandler.
@@ -178,6 +182,15 @@ public class HG0547UpdateEvent extends HG0547EditEvent {
 						if (citationOrderChanged && objEventCiteData.length > 1)
 								pointCitationSourceHandler.updateCiteGUIseq(eventPID, "T450", objEventCiteData);	//$NON-NLS-1$
 
+					// update prefName for event and partner
+						if (changedPrefName) 
+							if (partnerEvent) 
+								pointPersonHandler.updatePartnerPrefName(partnerTablePID, 
+													priPartnerPrefNamePID, secPartnerPrefNamePID);	
+							else 	
+								pointWhereWhenHandler.updateEventPrefName(eventTablePID, eventPrefNanePID);
+						
+						
 					} else
 						if (HGlobal.DEBUG && HGlobal.writeLogs)
 							HB0711Logging.logWrite("Action: in HG0547Update  no updated data to save");	//$NON-NLS-1$

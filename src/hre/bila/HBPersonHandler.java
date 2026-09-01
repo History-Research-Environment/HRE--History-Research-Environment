@@ -133,13 +133,20 @@ package hre.bila;
   * v0.05.0034 2026-07-01 - Removed setting T403 LANG_CODE (D Ferguson)
   * 		   2026-07-25 - Add sex# code into partnerRelationData for both (D Ferguson)
   * 		   2026-07-30 - added new partnerEditData[8] = selectedPartnerEvent (N.Tolleshaug)
+  * 		   2026-08-07 - Added data for error in getPersonSex(long personPID) (N.Tolleshaug)
+  * 		   2026-08-07 - Testing call getPersonSex(long personPID) personPID != null_RPID(N.Tolleshaug)
+  * 		   2026-08-17 - Modified for indexing EPER and name table PID (N.Tolleshaug)
+  *  		   2026-08-19 - Modified for handling preferred name (N.Tolleshaug)
+  *  		   2026-08-28 - Updated for save preferred partner name (N.Tolleshaug)
   *********************************************************************************************
   * 	Interpretation of partnerRelationData
-  *			 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
-  *				4 = selectedPerson, 5 = partner, 6 = sex# code of person, 7 = Sex# of partner
+  *		Interpretation 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
+  *					    4 = selectedPerson, 5 = partner name, 6 = sex# code of person, 
+  *					    7 = sec# code of partner, 8 = selectedPartnerEven
   **********************************************************************************************
   *		 Interpretation of parentRelationData:
-  *		 		0 = ParentPID, 1 = parent Name, 2 = paentRole, 3 = surety, 4 = parentRPID
+  *		 				0 = ParentTablePID, 1 = parent Name, 2 = paentRole, 3 = surety, 
+  *						4 = parent personTablePID
   ***************************************************************************************************/
 
 import java.awt.Cursor;
@@ -297,6 +304,10 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public Object[] getPartnerTableData(int indexInTable) {
 		return pointManagePersonData.getPartnerTableData(indexInTable);
 	}
+	
+	public Object[][] preparePersonNameTable(long selectPersonPID) throws HBException {
+		return pointManagePersonData.preparePersonNameTable(selectPersonPID);
+	}
 
 	public String getPersonReference() {
 		return pointManagePersonData.getPersonReference();
@@ -328,7 +339,11 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public Object[][] getManagedNameTable() {
 		return pointManagePersonData.getNameTable();
 	}
-
+	
+	public long getPersonNameTablePID(int index) {
+		return pointManagePersonData.getPersonNameTablePID(index);
+	}
+		
 	public int[] getManagedRelateTable() {
 		return pointManagePersonData.getRelateTable();
 	}
@@ -375,6 +390,12 @@ public class HBPersonHandler extends HBBusinessLayer {
 
 	public void updateReferenceField(String reference) throws HBException {
 		pointManagePersonData.updateReferenceField(reference);
+	}
+	
+	public void updatePartnerPrefName(long partnerTablePID, 
+		long priPartnerPrefNamePID, long secPartnerPrefNamePID) throws HBException {
+		//System.out.println(" PM - UpdatePartnerTable: " + partnerTablePID + "-" + priPartnerPrefNamePID + "/" + secPartnerPrefNamePID);
+		pointManagePersonData.updatePartnerPrefName(partnerTablePID, priPartnerPrefNamePID, secPartnerPrefNamePID);	
 	}
 
 
@@ -654,10 +675,12 @@ public class HBPersonHandler extends HBBusinessLayer {
 			personTableRS.first();
 			return personTableRS.getInt("BIRTH_SEX");
 		} catch (SQLException sqle) {
-			System.out.println(" HBPersonHandler - getPersonSex: " + sqle.getMessage());
+			System.out.println(" HBPersonHandler personPID: " + personPID 
+									+ " error getPersonSex: " + sqle.getMessage());
 			sqle.printStackTrace();
+			throw new HBException(" HBPersonHandler personPID: " + personPID 
+									+ " error getPersonSex: " + sqle.getMessage());
 		}
-		return 0;
 	}
 
 /**
@@ -2548,7 +2571,7 @@ class PersonSelectData {
  * @version v0.00.0025
  * @since 2020-11-16
  */
-class ManagePersonData extends HBBusinessLayer {
+ class ManagePersonData extends HBBusinessLayer {
 
 	String dBbuild = HGlobal.databaseVersion;
 
@@ -2903,6 +2926,33 @@ class ManagePersonData extends HBBusinessLayer {
 			throw new HBException(" HBPersonHandler countMarriages() error " + sqle.getMessage());
 		}
 	}
+	
+/**
+ * public void updatePartnerPrefNamePID(long partnerTablePID, 
+ * 			long priPartnerPrefNamePID, long secPartnerPrefNamePID) throws HBException {
+ * @param partnerTablePID
+ * @param prefNamePID
+ * @throws HBException
+ */
+	public void updatePartnerPrefName(long partnerTablePID, long priPartnerPrefNamePID, long secPartnerPrefNamePID) throws HBException {
+		ResultSet partnerTableRS;
+		int dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+		String selectString = setSelectSQL("*", personPartnerTable, "PID = " + partnerTablePID);
+	//Start transaction
+		updateTableData("SET AUTOCOMMIT OFF;", dataBaseIndex);
+		try {
+			partnerTableRS = requestTableData(selectString, dataBaseIndex);
+			partnerTableRS.first();
+			partnerTableRS.updateLong("PRPRI_NAME_RPID", priPartnerPrefNamePID);
+			partnerTableRS.updateLong("PRSEC_NAME_RPID", secPartnerPrefNamePID);
+			partnerTableRS.updateRow();
+			updateTableData("COMMIT", dataBaseIndex);
+		} catch (SQLException sqle) {
+			updateTableData("ROLLBACK", dataBaseIndex);
+			sqle.printStackTrace();
+			throw new HBException(" HBWhereWhenHandler + updatePartnerPrefNamePID error: " + sqle.getMessage());
+		}
+	}
 
 /**
  * updateAllNameTable()  update the all name table
@@ -2928,30 +2978,26 @@ class ManagePersonData extends HBBusinessLayer {
  * @param selectPersonPID
  * @throws HBException
  */
-	private void preparePersonNameTable(long selectPersonPID) throws HBException {
+	public Object[][] preparePersonNameTable(long selectPersonPID) throws HBException {
 		String selectString;
 		boolean primaryName;
-		ResultSet personNameTableRS, personTableRS;
-		long name_RPID = null_RPID, nameStylePID = null_RPID;
+		Object [][] nameTable = null;
+		ResultSet personNameTableRS;
+		long name_RPID = null_RPID, nameStylePID = null_RPID, hdatePID;
 		int nameType;
 		String langCode = HGlobal.dataLanguage;
+		if (selectPersonPID == null_RPID) return nameTable;
 		personNamePIDhash = new HashMap<>();
 		try {
-		// Find best name for selected person
-			selectString = setSelectSQL("*", personTable, " PID = " + selectPersonPID);
-			personTableRS = requestTableData(selectString, dataBaseIndex);
-			personTableRS.first();
-			personNamePID = personTableRS.getLong(bestNameField);
 		// Set up table
 			selectString = setSelectSQL("*", personNameTable, ownerRecordField + " = " + selectPersonPID);
 			personNameTableRS = requestTableData(selectString, dataBaseIndex);
 			personNameTableRS.last();
 			nrRows = personNameTableRS.getRow();
-			nameTable = new Object[nrRows][3];
+			nameTable = new Object[nrRows][4];
 			personNameTableRS.beforeFirst();
 			int row = 0;
 			while (personNameTableRS.next()) {
-
 				name_RPID = personNameTableRS.getLong("PID");
 				nameStylePID = personNameTableRS.getLong("NAME_STYLE_RPID");
 				nameType = personNameTableRS.getInt("NAME_EVNT_TYPE");
@@ -2962,20 +3008,23 @@ class ManagePersonData extends HBBusinessLayer {
 			// set up personal name style
 				personStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStylePID, "N", dataBaseIndex);
 			// Find name according to name style
-				nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID,dataBaseIndex, personStyle);
+				nameTable[row][1] = " " + pointLibraryResultSet.selectPersonName(name_RPID, dataBaseIndex, personStyle);
 			// Mark primary
 				if (primaryName) {
 					nameTable[row][1] = nameTable[row][1] + "(Primary)";
 				}
-
-				long hdatePID = personNameTableRS.getLong("START_HDATE_RPID");
+			// Handle name date
+				hdatePID = personNameTableRS.getLong("START_HDATE_RPID");
 				nameTable[row][2] = pointLibraryResultSet.exstractDate(hdatePID, dataBaseIndex);
+				nameTable[row][3] = name_RPID;
 				personNamePIDhash.put(row, name_RPID);
 				row++;
 			}
 			nameRows = row;
+			this.nameTable = nameTable;
+			return nameTable;
 		} catch (SQLException sqle) {
-			throw new HBException("HBPersonHandler - allNameTable: " + sqle.getMessage());
+			throw new HBException("HBPersonHandler - preparePersonNameTable: " + sqle.getMessage());
 		}
 	}
 
@@ -2986,11 +3035,11 @@ class ManagePersonData extends HBBusinessLayer {
  * @throws HBException
  * @throws SQLException
  * 	Interpretation of parentRelationData:
-		 			0 = ParentPID,
+		 			0 = ParentTablePID,
 					1 = parent Name,
 					2 = paentRole,
 					3 = surety
-					4 = parentRPID
+					4 = parent personTableRPID
  */
 	private int prepareParentTable(long selectPersonPID) throws HBException, SQLException {
 		int errorCode = 0;
@@ -3077,7 +3126,9 @@ class ManagePersonData extends HBBusinessLayer {
  * @throws HBException
  * Setting of partnerRelationData
 		Interpretation 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
-					    4 = selectedPerson, 5 = partner name, 6 = sex# code of person, 7 = sec# code of partner
+					    4 = selectedPerson, 5 = partner name, 6 = sex# code of person, 
+					    7 = sec# code of partner, 8 = selectedPartnerEven
+					    
  */
 	private int preparePartnerTable(long selectedPersonPID) throws HBException {
 		ArrayList<Object[]> partnerList = new ArrayList<>();
@@ -3118,9 +3169,12 @@ class ManagePersonData extends HBBusinessLayer {
 				} else {
 					System.out.println(" Not found: " + selectPersonPID);
 				}
-			// Get their sex numeric codes
-				priSex = pointOpenProject.getPersonHandler().getPersonSex(selectPersonPID);
-				secSex = pointOpenProject.getPersonHandler().getPersonSex(personPartnerPID);
+				
+			// Get their sex numeric codes / eliminate not known partner
+				if (selectPersonPID != null_RPID)
+					priSex = pointOpenProject.getPersonHandler().getPersonSex(selectPersonPID);
+				if (personPartnerPID != null_RPID)
+					secSex = pointOpenProject.getPersonHandler().getPersonSex(personPartnerPID);
 
 				int partnerEventCount = 0;
 				eventHDatePID = null_RPID;

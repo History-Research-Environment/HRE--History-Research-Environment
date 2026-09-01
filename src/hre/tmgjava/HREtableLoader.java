@@ -42,6 +42,7 @@ package hre.tmgjava;
  * v0.05.0034 2026-07-01 - Converted to Build 34 and database V23 (N. Tolleshaug)
  * 			  2026-07-04 - Renamed to HREtableLoader in build 34 (N. Tolleshaug)
  * 			  2026-07-04 - Removed in B34 all databse updates from B33 (N. Tolleshaug)
+ * 			  2026-08-18 - Added fields for NAMEREC import (N. Tolleshaug)
  *********************************************************************************/
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -82,9 +83,24 @@ public class HREtableLoader {
 
 	// Update table T126 - IS_IMPORTED
 			updateTableInBase("T126_PROJECTS", "UPDATE", "SET IS_IMPORTED = TRUE WHERE PROJECT_CODE = 1");
-
+			
 	// Set boolean IS_OWNER in T131
 			updateTableInBase("T131_USER", "UPDATE", "SET IS_OWNER = TRUE WHERE PID = 1000000000000001");
+			
+	// Add LOCAL_TYPE to T168		
+			alterColumnInTable("T168_SENTENCE_SET","LOCAL_TYPE","SMALLINT");	
+			
+	// Add PRPRI_NAME_RPID to T404_PARTNER		
+			alterColumnInTable("T404_PARTNER","PRPRI_NAME_RPID","BIGINT");	
+			
+	// Add PRSEC_NAME_RPID to T404_PARTNER		
+			alterColumnInTable("T404_PARTNER","PRSEC_NAME_RPID","BIGINT");
+			
+	// Add PREF_NAME_RPID to T1450		
+			alterColumnInTable("T450_EVNT","PREF_NAME_RPID","BIGINT");
+			
+	// Add PREF_NAME_RPID to T1451		
+			alterColumnInTable("T451_EVNT_ASSOC","PREF_NAME_RPID","BIGINT");		
 
 	//Delete all preloaded rows in T461_EVNT_ROLE but keep table
 			updateTableInBase("T461_EVNT_ROLE", "DELETE FROM");

@@ -41,6 +41,7 @@ package hre.gui;
  * 			  2024-11-17 Code sync (N. Tolleshaug)
  * v0.03.0031 2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
+ * v0.05.0034 2026-08-10 Apply improved sorter process to al placenames (D Ferguson)
  ****************************************************************************************
  * NOTES for incomplete functionality
  * NOTE03 No code for importing saved filters
@@ -56,6 +57,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.PatternSyntaxException;
 
@@ -105,7 +107,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Location Select
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0034
  * @since 2019-09-16
  */
 public class HG0507LocationSelect extends HG0451SuperIntFrame  {
@@ -352,22 +354,49 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		        }
 				table_Entity.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-			    // Set the ability to sort on columns
-				table_Entity.setAutoCreateRowSorter(true);
-			    TableModel myModel = table_Entity.getModel();
-			    TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
-				List <RowSorter.SortKey> psortKeys = new ArrayList<>();
+				// Remove java std sorter
+				table_Entity.setAutoCreateRowSorter(false);
+				TableModel myModel = table_Entity.getModel();
+				TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
 
-			    // Presort on last column down through to column 1
+				// Reusable comparator for all place-name columns, to ignore quotes,
+				// compare case, treat street numbers numerically, fallback to lexigraphic mode
+				Comparator<String> placeComparator = (String a, String b) -> {
+				    if (a == null) return (b == null ? 0 : -1);
+				    if (b == null) return 1;
+				    // Strip ALL leading quotes of any common type
+				    a = a.trim().replaceFirst("^[\"'“”‘’]+", "");
+				    b = b.trim().replaceFirst("^[\"'“”‘’]+", "");
+				    String aTrim = a.trim();
+				    String bTrim = b.trim();
+				    // Extract leading numbers
+				    String aNum = aTrim.split("\\D", 2)[0];
+				    String bNum = bTrim.split("\\D", 2)[0];
+				    boolean aIsNum = aNum.matches("\\d+");
+				    boolean bIsNum = bNum.matches("\\d+");
+				    if (aIsNum && bIsNum) {
+				        int numA = Integer.parseInt(aNum);
+				        int numB = Integer.parseInt(bNum);
+				        if (numA != numB) return Integer.compare(numA, numB);
+				    }
+				    // Case-insensitive lexicographic fallback
+				    return String.CASE_INSENSITIVE_ORDER.compare(a, b);
+				};
+
+				List<RowSorter.SortKey> psortKeys = new ArrayList<>();
+				// Apply the sort/comparator to all place columns
 				int columns = 1;
-		        for (int i = 2; i < tableControlData.length; i++) {
-		        	if ((boolean)tableControlData[i][1]) {
-		        		psortKeys.add(new RowSorter.SortKey(columns, SortOrder.ASCENDING));
-		        		columns++;
-		        	}
-		        }
+				for (int i = 2; i < tableControlData.length; i++) {
+				    if ((boolean)tableControlData[i][1]) {
+				        psortKeys.add(new RowSorter.SortKey(columns, SortOrder.ASCENDING));
+				        // Attach comparator to this column
+				        sorter.setComparator(columns, placeComparator);
+				        columns++;
+				    }
+				}
+				// Apply the sorter
 				sorter.setSortKeys(psortKeys);
-			    table_Entity.setRowSorter(sorter);
+				table_Entity.setRowSorter(sorter);
 
 			    // Set tooltips and header format
 				table_Entity.getTableHeader().setToolTipText(HG05075Msgs.Text_41);
@@ -686,17 +715,18 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 		            public void mousePressed(MouseEvent me) {
 						int errorCode = 0;
 						// double-click
-		            	if (me.getClickCount() == 2 && table_Entity.getSelectedRow() != -1) {
-		            		selectedRow = table_Entity.getSelectedRow();
-		            		int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
-		            	// Collect location data
-		        			long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
-		        			errorCode = pointViewPointHandler.initiateLocationVP(pointOpenProject, locationTablePID);
-							if (errorCode > 0) {
-								userInfoInitVP(errorCode);
-							}
-		                }
-		                if (me.getButton() == MouseEvent.BUTTON3) {
+						if (me.getClickCount() == 2 && table_Entity.getSelectedRow() != -1) {
+							selectedRow = table_Entity.getSelectedRow();
+							int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);
+							// show manage location
+							long locationTablePID = pointWhereWhenHandler.getLocationTablePID (selectedRowInTable);
+							errorCode = pointWhereWhenHandler.initiateManageLocation(pointOpenProject, locationTablePID,"50800");	//$NON-NLS-1$
+							if (errorCode > 1)
+								if (HGlobal.DEBUG && HGlobal.writeLogs)
+									HB0711Logging.logWrite("Status: in HG0507LocnSelect show Manage Location errorCode = " //$NON-NLS-1$
+											+ errorCode);
+						}
+						if (me.getButton() == MouseEvent.BUTTON3) {
 		                // right-click
 		                	selectedRow = table_Entity.rowAtPoint(me.getPoint());
 		                	int selectedRowInTable = table_Entity.convertRowIndexToModel(selectedRow);

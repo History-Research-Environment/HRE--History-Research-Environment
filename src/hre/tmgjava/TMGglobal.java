@@ -28,6 +28,7 @@ package hre.tmgjava;
  * 			  2025-09-30 - Updated //bruker// to  //Nils// (N. Tolleshaug)
  * 			  2025-10-21 - Updated log file to "C:\\Users\\Bruker\\HRE\\NTo-B32-V22C-Log.txt"; (N. Tolleshaug)
  * v0.05.0034 2026-07-04 - Updated for Build 34 (N. Tolleshaug)
+ * 			  2026-08-18 - Prepared for NAMEREC import (N. Tolleshaug)
  *****************************************************************************************/
 
 import java.sql.ResultSet;
@@ -41,7 +42,7 @@ public class TMGglobal {
 	public static String SeedDatabaseVersion = "DDL V23 2026-08-01"; 
 	
 // This value is uded to update the HRE database version after modifiction	
-	public static String HREdatabaseBuild = "DDL V23 2026-08-01"; 
+	public static String HREdatabaseBuild = "DDL V23 2026-08-10"; 
 
 	public static int dataSetID = 1; // Selected DATASET number from TMG folder
 

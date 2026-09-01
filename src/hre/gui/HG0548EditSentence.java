@@ -25,6 +25,7 @@ package hre.gui;
  * 			  2026-07-25 Added name evente sentence processing (N. Tolleshaug)
  * 		      2026-07-30 Modified contructor to receive eventtabkePID (N. Tolleshaug)
  * 			  2026-07-30 Fixed save event sentence (N. Tolleshaug)
+ * 			  2026-08-05 Handling LOCAL sentences with ownerTypes (N. Tolleshaug)
  *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE01 v0.05.0034 -  Only defaukt sentence implemented NToLocal sentence need update
@@ -82,22 +83,22 @@ import net.miginfocom.swing.MigLayout;
 public class HG0548EditSentence extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	private static final int nameRelatedEventGroup = 1;
+	public static final String screenID = "54800"; //$NON-NLS-1$
+	
+	long null_RPID  = 1999999999999999L;
+	long proOffset  = 1000000000000000L;
+	String lang_code = HGlobal.dataLanguage;
+	
 	HBEventRoleManager pointEventRoleManager;
 	HBReportHandler pointReportHandler;
 	HBProjectOpenData pointOpenProject;
 	HG0548EditSentence pointEditSentence = this;
-	HG0509ManagePersonName pointManagePersonName;
 	HG0507SelectPartner pointSelectPartner;
-	int dataBaseIndex;
-	int eventNumber;
-	int eventNameType;
-
-	public static final String screenID = "54800"; //$NON-NLS-1$
-	long null_RPID  = 1999999999999999L;
-	long proOffset  = 1000000000000000L;
+	int dataBaseIndex, eventNumber, eventNameType;
+	int ownerType = 0; // owner type:  1 - name, 2 - event, 3 - associate, 4 - partner
 
 	private JPanel contents;
-	long eventTablePID, nameTablePID, roleSentencePID = null_RPID, sentenceTablePID;
+	long eventTablePID, ownerTablePID, nameTablePID, roleSentencePID = null_RPID, sentenceTablePID;
 
 	JTextArea sentenceTextArea, previewTextArea;
 	JLabel lbl_Preview;
@@ -126,26 +127,23 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	String[] sentenceOptions = {" Local"," Global"," Englist(US)"};
 	int currentComboIndex = 0, roleNumber;
 	String displayLanguage = "";	//$NON-NLS-1$
-	String lang_code = HGlobal.dataLanguage;
-
-
+	
 /**
  * HG0548EditSentence constructor for edit name
  * @throws HBException
  */
-	public HG0548EditSentence(HBProjectOpenData pointOpenProject, HG0509ManagePersonName pointManagePersonName,
+	public HG0548EditSentence(HBProjectOpenData pointOpenProject, long personNameTablePID,
 			int eventNameType)  {
-		//System.out.println(" Edit name sentence type " + eventNameType);
-		this.pointManagePersonName = pointManagePersonName;
+		this.nameTablePID = personNameTablePID;
+		this.ownerTablePID = personNameTablePID;
 		this.pointOpenProject = pointOpenProject;
 		this.eventNumber = eventNameType;
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();
 		pointReportHandler = pointOpenProject.getReportHandler();
 		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
-		if (pointManagePersonName != null)
-			nameTablePID = pointManagePersonName.getNameTablePID();
 		nameSentence = true;
+		ownerType = 1; // Set owner type name sentence for LOCAL
 		editSentenseConstructor();
 	}
 	
@@ -153,19 +151,42 @@ public class HG0548EditSentence extends HG0450SuperDialog {
  * HG0548EditSentence constructor for edit event
  * @throws HBException
  */
-	public HG0548EditSentence(HBProjectOpenData pointOpenProject, long eventTablePID,
-								int eventNumber, int roleNumber, String sexCode)  {
+	public HG0548EditSentence(HBProjectOpenData pointOpenProject, long ownerTablePID,
+								int ownerType, int eventNumber, int roleNumber, String sexCode)  {
 		this.pointOpenProject = pointOpenProject;
+		this.ownerType = ownerType;
 		this.roleNumber = roleNumber;
 		this.eventNumber = eventNumber;
 		this.sexCode = sexCode;
-		this.eventTablePID = eventTablePID;
+		this.ownerTablePID = ownerTablePID;
+		this.eventTablePID = ownerTablePID;
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();
 		pointReportHandler = pointOpenProject.getReportHandler();
 		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		editSentenseConstructor();
 	}
+	
+	
+	/**
+	 * HG0548EditSentence constructor for edit event
+	 * @throws HBException
+	 */
+		public HG0548EditSentence(HBProjectOpenData pointOpenProject, long ownerTablePID, long eventTablePID,
+									int ownerType, int eventNumber, int roleNumber, String sexCode)  {
+			this.pointOpenProject = pointOpenProject;
+			this.ownerType = ownerType;
+			this.roleNumber = roleNumber;
+			this.eventNumber = eventNumber;
+			this.sexCode = sexCode;
+			this.ownerTablePID = ownerTablePID;
+			this.eventTablePID = eventTablePID;
+			pointEventRoleManager = pointOpenProject.getEventRoleManager();
+			pointReportHandler = pointOpenProject.getReportHandler();
+			pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
+			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
+			editSentenseConstructor();
+		}
 		
 /**
  * Create the dialog
@@ -222,7 +243,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
     	toolBar.setFloatable(false);
     	toolBar.setAlignmentX(Component.LEFT_ALIGNMENT);
     	toolBar.add(Box.createHorizontalGlue());
-    	// Add the HG0450 icons
+    // Add the HG0450 icons
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
@@ -303,21 +324,36 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		contents.add(btn_Save, "cell 1 5, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 
 		comboSentenceOption = new JComboBox<String>(sentenceOptions);
-		comboSentenceOption.setSelectedIndex(1);
 		contents.add(comboSentenceOption, "cell 0 1, alignx right");		//$NON-NLS-1$
 
 	// End of Panel Definition
 
 	// create eventReportDate instance
 		try {
+			
+	// Test if LOCAL sentence exist
+			if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
+			sentenceTablePID = pointReportHandler.pointLibraryResultSet.
+				selectSentenceSetPID(ownerTablePID, ownerType, eventNumber, roleNumber,
+									 			lang_code, dataBaseIndex);
+			if (sentenceTablePID == null_RPID) 
+				comboSentenceOption.setSelectedIndex(1);
+			 else {
+				comboSentenceOption.setSelectedIndex(0);
+				localSentence = true; // Set LOCAL sentence
+				//System.out.println(" Local detected");
+			}
+			
 		// Set up sentence processing for events or names
 			if (nameSentence) pointReportHandler.createReportNameData(nameTablePID);
-			else pointReportHandler.createReportEventData(eventTablePID);
+			else pointReportHandler.createReportEventData(eventTablePID, ownerTablePID, ownerType);
+			
 		// Load initial Role setting's sentence and convert role numbers to names
 			currentComboIndex = comboRoleNames.getSelectedIndex();
 			if (nameSentence) eventNumber = nameEventsNumbers[currentComboIndex];
 			if (nameSentence) roleSentencePID = null_RPID;
 			else roleSentencePID = eventRoleSentensePID[currentComboIndex];
+			
 		//System.out.println(" Global sentence initial  PID: " + roleSentencePID + " Event Type: " + eventNumber);
 			eventRoleSentence = getEventRoleSentenceforEvents(currentComboIndex, roleSentencePID);
 			sentenceTextArea.append(convertSentRoleNumToNames(eventRoleSentence));
@@ -399,16 +435,26 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 						}
 
 					try {
+						localSentence = false; // Set GLOBAL sentence
 					// NO option - carry on with the new combobox selection
 						currentComboIndex = comboRoleNames.getSelectedIndex();
 						if (nameSentence) roleSentencePID = null_RPID;
 						else roleSentencePID = eventRoleSentensePID[currentComboIndex];
-						//roleSentencePID = eventRoleSentensePID[currentComboIndex];
 						if (nameSentence) eventNumber = nameEventsNumbers[currentComboIndex];
 						//System.out.println(" Global role selected sentense PID: " + roleSentencePID);
+					// Test if LOCAL sentence exist
+						if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
+						sentenceTablePID = pointReportHandler.pointLibraryResultSet.
+							selectSentenceSetPID(ownerTablePID, ownerType, eventNumber, roleNumber,
+												 			lang_code, dataBaseIndex);
+						if (sentenceTablePID == null_RPID) comboSentenceOption.setSelectedIndex(1);
+						else {
+							comboSentenceOption.setSelectedIndex(0);
+							localSentence = true; // Set LOCAL sentence
+							//System.out.println(" Local detected");
+						}
 					// Collect current sentence
 						eventRoleSentence = getEventRoleSentenceforEvents(currentComboIndex, roleSentencePID);
-						if (eventRoleSentence.startsWith("(en-US)")) showWarning = true;	//$NON-NLS-1$
 					// Clear out current sentence
 						sentenceTextArea.setText("");		//$NON-NLS-1$
 					// Load and convert sentence role numbers to role namese
@@ -454,8 +500,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 				try {
 					if (localSentence) {
 						if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
-						pointReportHandler.pointLibraryResultSet.storeLocalSentence(eventTablePID, sentenceToSave, eventNumber,
-								roleNumber, lang_code, pointOpenProject);
+						pointReportHandler.pointLibraryResultSet.storeLocalSentence(ownerTablePID, ownerType, 
+								sentenceToSave, eventNumber, roleNumber, lang_code, pointOpenProject);
 					} else {
 						if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
 						pointReportHandler.pointLibraryResultSet.storeGlobalSentence(sentenceTablePID, sentenceToSave, eventNumber,
@@ -545,7 +591,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			if (localSentence) {
 				if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
 				sentenceTablePID = pointReportHandler.pointLibraryResultSet.
-					selectSentenceSetPID(eventTablePID, eventNumber, roleNumber,
+					selectSentenceSetPID(ownerTablePID, ownerType, eventNumber, roleNumber,
 										 			lang_code, dataBaseIndex);
 			} else {
 				if (englishUSsentence) {
@@ -554,28 +600,23 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 											roleNumber, dataBaseIndex);
 				} else {
 					if (nameSentence) sentenceTablePID = pointReportHandler.pointLibraryResultSet.
-									selectSentenceSetPID(null_RPID, eventNumber, 1,lang_code, dataBaseIndex);
+									selectSentenceSetPID(null_RPID, 0, eventNumber,1 ,lang_code, dataBaseIndex);
 					else sentenceTablePID = globalSentenTablePID;
 					if (HGlobal.DEBUG)  
 						System.out.println(" Global sentence PID:" + sentenceTablePID + " Lang: " + lang_code); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
-
-			sentenceFound = pointReportHandler.pointLibraryResultSet.
-					getSentenceSetString(sentenceTablePID, dataBaseIndex);
+			if (sentenceTablePID == null_RPID) return sentenceFound;
+			sentenceFound = pointReportHandler.pointLibraryResultSet. getSentenceSetString(sentenceTablePID, dataBaseIndex);
 			if (HGlobal.DEBUG) System.out.println(" Sentence found: " + sentenceFound);	//$NON-NLS-1$
-			if (!localSentence && sentenceFound.equals("NOSENTENCE")) warningMsg();	//$NON-NLS-1$
 			return sentenceFound;
 
 		} catch (HBException hbe) {
 			if (HGlobal.DEBUG) System.out.println("ERROR: in HG0548 sentence loading " + hbe.getMessage());	//$NON-NLS-1$
-			if (hbe.getMessage().startsWith("WARNING")) //warningMsg();
-				JOptionPane.showMessageDialog(btn_Save,hbe.getMessage(),
-									"Sentence edit", JOptionPane.WARNING_MESSAGE);
-			else if (HGlobal.writeLogs) {
+			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0548 sentence loading " + hbe.getMessage()); //$NON-NLS-1$
 				HB0711Logging.printStackTraceToFile(hbe);
-				}
+			}
 		}
 		return sentenceFound;
 	}
@@ -638,7 +679,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 /**
  * warningMsg - show message re sentence missing
- */
+ */ 
 	public void warningMsg() {
 		// collapse combobox display
 		comboRoleNames.getUI().setPopupVisible(comboRoleNames, false);

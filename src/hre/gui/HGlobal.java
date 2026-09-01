@@ -45,7 +45,7 @@ public class HGlobal {
 	public static String releaseDate = "1 Aug 2026";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "V23";		    // Set Database DDL version //$NON-NLS-1$
-	public static String databaseBuild = "DDL V23 2026-08-01";	// Set Database DDL build //$NON-NLS-1$
+	public static String databaseBuild = "DDL V23 2026-08-10";	// Set Database DDL build //$NON-NLS-1$
 
 	public static boolean DEBUG = false;				    // DEBUG variable - set in App settings, not saved
 	public static boolean TIME = false;				        // TIME variable - set in App settings; enables timing msgs to console
