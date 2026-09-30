@@ -100,6 +100,7 @@ package hre.bila;
   * 		   2026-07-31 - Added assocRelationData[4] = eventTablePID; (N. Tolleshaug)
   * 		   2026-08-19 - Modified for handling preferred name (N.Tolleshaug)
   * 		   2026-08-28 - Updated for save preferred event/assoc name (N.Tolleshaug)
+  *			   2026-09-11 - Updated addToT451_EVNT_ASSOC according to V23 (N.Tolleshaug)
   *****************************************************************************************/
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -3827,6 +3828,8 @@ class EditEventRecord extends HBBusinessLayer {
 			hreTable.updateInt("ROLE_NUM", roleNumber);
 			hreTable.updateInt("SEQUENCE", 1);
 			hreTable.updateLong("MEMO_RPID", null_RPID);
+			hreTable.updateInt("PRIMARY_NUM", 1);
+			hreTable.updateLong("PREF_NAME_RPID", null_RPID);
 		//Insert row
 			hreTable.insertRow();
 		// End transaction

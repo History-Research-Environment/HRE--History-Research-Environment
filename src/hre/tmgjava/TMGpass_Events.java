@@ -84,6 +84,7 @@ package hre.tmgjava;
 *			  2026-07-05 - Added updateLong("SENT_OWNER_RPID", null_RPID) to T168 (N. Tolleshaug)
 *			  2026-08-10 - Changed to assocTablePID to ownerTablePID (N. Tolleshaug)
 * 			  2026-08-18 - Added NAMEREC event best name import (N. Tolleshaug)
+* 			  2026-09-13 - Update to fix issue 34.07 import with only partner PER1
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -1351,7 +1352,9 @@ class TMGpass_Events  {
 
 		// Extract the partner roles from witness table e.dbf
 				int[] roles;
-				if (per1 != 0 && per2 != 0)
+	// 
+				//if (per1 != 0 && per2 != 0) - Changed to fix issue 34.07 import with only PER1
+				if (per1 != 0 || per2 != 0)
 					if (admin == marrGroup || admin == divorceGroup) {
 						if (roleEvents.containsKey(gnumIndex + proOffset)) {
 							roles = roleEvents.get(gnumIndex + proOffset);
@@ -1361,7 +1364,7 @@ class TMGpass_Events  {
 								primaryRoleFound++;
 								//noRole = true;
 								if (TMGglobal.TRACE) System.out.println(" Not found role: " + eper);
-							}
+							} 
 						} else {
 							roles = new int[2];
 							if (eper == per1) roles[0] = Integer.parseInt(role);

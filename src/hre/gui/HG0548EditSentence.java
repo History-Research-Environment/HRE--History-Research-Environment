@@ -16,8 +16,8 @@ package hre.gui;
  * v0.05.0033 2026-03-08 Added more code for sentence preload (N. Tolleshaug)
  * 			  2026-06-05 Removed console printout (N. Tolleshaug)
  * 			  2026-06-12 Activated save for standard T168 sentences (N. Tolleshaug)
- * v0.05.0034 2026-07-01-Only defaukt sentence implemented  (N. Tolleshaug)
- * 			  2026-07-11-Defaukt and local sentence implemented  (N. Tolleshaug)
+ * v0.05.0034 2026-07-01-Only default sentence implemented  (N. Tolleshaug)
+ * 			  2026-07-11-Default and local sentence implemented  (N. Tolleshaug)
  * 			  2026-07-15 Handling selection local, global and English(US) sentences (N. Tolleshaug)
  * 			  2026-07-16 Added warning English(US) sentences (N. Tolleshaug)
  * 			  2026-07-17 Improved message and eror handling (N. Tolleshaug)
@@ -26,11 +26,8 @@ package hre.gui;
  * 		      2026-07-30 Modified contructor to receive eventtabkePID (N. Tolleshaug)
  * 			  2026-07-30 Fixed save event sentence (N. Tolleshaug)
  * 			  2026-08-05 Handling LOCAL sentences with ownerTypes (N. Tolleshaug)
- *************************************************************************************
- * Notes for incomplete code still requiring attention
- * NOTE01 v0.05.0034 -  Only defaukt sentence implemented NToLocal sentence need update
- * 						defaultSentence = true
- *
+ * 			  2026-09-03 Remove NOSENTENCE default sentence field; redo NLS (D Ferguson)
+ * 			  2026-09-16 Fix problems handling male+female sentences (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -41,8 +38,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-//import java.sql.ResultSet;
-//import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,7 +59,6 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.DefaultCaret;
 
 import hre.bila.HB0711Logging;
-//import hre.bila.HBBusinessLayer;
 import hre.bila.HBEventRoleManager;
 import hre.bila.HBException;
 import hre.bila.HBProjectOpenData;
@@ -77,18 +71,18 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Sentence
  * @author D Ferguson
- * @version v0.04.0032
+ * @version v0.05.0034
  * @since 2025-06-25
  */
 public class HG0548EditSentence extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	private static final int nameRelatedEventGroup = 1;
 	public static final String screenID = "54800"; //$NON-NLS-1$
-	
+
 	long null_RPID  = 1999999999999999L;
 	long proOffset  = 1000000000000000L;
 	String lang_code = HGlobal.dataLanguage;
-	
+
 	HBEventRoleManager pointEventRoleManager;
 	HBReportHandler pointReportHandler;
 	HBProjectOpenData pointOpenProject;
@@ -110,8 +104,9 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	boolean localSentence = false;
 	boolean englishUSsentence = false;
 	boolean nameSentence = false;
-	String sexCode;
+	String sexCode = "U";			//$NON-NLS-1$
 	String eventRoleSentence = "";	//$NON-NLS-1$
+	String convertedSentence = "";  //$NON-NLS-1$
 	String[] sexSentences;
 	String workSentence = "";	//$NON-NLS-1$
 	String editedSentence = ""; //$NON-NLS-1$
@@ -121,13 +116,15 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	String[] nameEventsTypes;
 	int[] nameEventsNumbers;
 	int[] eventRoleNumbers;
-	long[] eventRoleSentensePID;
+	long[] eventRoleSentencePID;
 	JComboBox<String> comboRoleNames;
 	JComboBox<String> comboSentenceOption;
-	String[] sentenceOptions = {" Local"," Global"," Englist(US)"};
+	String[] sentenceOptions = {HG0548Msgs.Text_21,		// Local
+								HG0548Msgs.Text_22,		// Global
+								HG0548Msgs.Text_23};	// English(US)
 	int currentComboIndex = 0, roleNumber;
 	String displayLanguage = "";	//$NON-NLS-1$
-	
+
 /**
  * HG0548EditSentence constructor for edit name
  * @throws HBException
@@ -146,7 +143,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		ownerType = 1; // Set owner type name sentence for LOCAL
 		editSentenseConstructor();
 	}
-	
+
 /**
  * HG0548EditSentence constructor for edit event
  * @throws HBException
@@ -166,12 +163,12 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		editSentenseConstructor();
 	}
-	
-	
-	/**
-	 * HG0548EditSentence constructor for edit event
-	 * @throws HBException
-	 */
+
+
+/**
+ * HG0548EditSentence constructor for edit event
+ * @throws HBException
+ */
 		public HG0548EditSentence(HBProjectOpenData pointOpenProject, long ownerTablePID, long eventTablePID,
 									int ownerType, int eventNumber, int roleNumber, String sexCode)  {
 			this.pointOpenProject = pointOpenProject;
@@ -187,11 +184,11 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 			editSentenseConstructor();
 		}
-		
+
 /**
  * Create the dialog
  * @throws HBException
- */	
+ */
 	private void editSentenseConstructor() {
 
 	// Setup references for HG0450
@@ -204,22 +201,20 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 		// Get the lists of Roles and their reference Numbers for this eventNumber
 		if (nameSentence) {
-			//System.out.println(" Edit name sentence type " + eventNameType + " Name PID: " + nameTablePID);
 			try {
 				nameEventsTypes = pointEventRoleManager.getEventTypeList(nameRelatedEventGroup);
 				nameEventsNumbers = pointEventRoleManager.getEventTypes();
 			} catch (HBException hbe) {
-				System.out.println(" Name event list error: " + hbe.getMessage());
-				hbe.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0548 event list error " + hbe.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(hbe);
+				}
 			}
-		} else 
+		} else
 			try {
 				eventRoleNames = pointEventRoleManager.getRolesForEvent(eventNumber, "");	//$NON-NLS-1$
 				eventRoleNumbers = pointEventRoleManager.getEventRoleNumbers();
-				eventRoleSentensePID = pointEventRoleManager.getEventRoleSentencePID();
-				// Above gets the data for the current language, but we also need to get the Eng(US) versions
-				// To do this, temporarily set the global datalanguage to ENG(US) and then restore it
-	
+				eventRoleSentencePID = pointEventRoleManager.getEventRoleSentencePID();
 			} catch (HBException hbe) {
 				if (HGlobal.writeLogs) {
 					HB0711Logging.logWrite("ERROR: in HG0548 sentence role loading " + hbe.getMessage()); //$NON-NLS-1$
@@ -247,8 +242,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		toolBar.add(btn_Helpicon);
 		contents.add(toolBar, "north");	//$NON-NLS-1$
 
-		JLabel role = new JLabel(HG0548Msgs.Text_1);// Select Role
-		if (nameSentence) role.setText("Select Type");
+		JLabel role = new JLabel(HG0548Msgs.Text_1);	// Select Role
+		if (nameSentence) role.setText(HG0548Msgs.Text_24);	// Select Type
 		contents.add(role, "cell 0 0, alignx left");		//$NON-NLS-1$
 	// Load the combobox with the rolenames and set the selected one to match roleName parameter
 		comboRoleNames = new JComboBox<String>();
@@ -273,8 +268,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 		contents.add(langCode, "cell 1 0, alignx left");		//$NON-NLS-1$
 
 	//**********************************************************************************************
-	// NOTE01 - need the GLOBALsentence for eache role and also the LOCAL sentence (if there is one).
-	// NOTE02 - LOCAL, if exists, over-rides the GLOBAL one)
+	// NOTE - need the GLOBALsentence for eache role and also the LOCAL sentence (if there is one).
+	// NOTE - LOCAL, if exists, over-rides the GLOBAL one)
 	// Also need to set the 'default' JLabel as visible (if GLOBAL) or not (if LOCAL).
 	//**********************************************************************************************
 
@@ -328,41 +323,46 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 	// End of Panel Definition
 
-	// create eventReportDate instance
+	// Load current sentence by role and type
 		try {
-			
 	// Test if LOCAL sentence exist
-			if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
-			sentenceTablePID = pointReportHandler.pointLibraryResultSet.
-				selectSentenceSetPID(ownerTablePID, ownerType, eventNumber, roleNumber,
-									 			lang_code, dataBaseIndex);
-			if (sentenceTablePID == null_RPID) 
-				comboSentenceOption.setSelectedIndex(1);
+			if (nameSentence) roleNumber = 1;
+			else roleNumber = eventRoleNumbers[currentComboIndex];
+			sentenceTablePID = pointReportHandler.pointLibraryResultSet.selectSentenceSetPID(ownerTablePID,
+													ownerType, eventNumber, roleNumber, lang_code, dataBaseIndex);
+			if (sentenceTablePID == null_RPID)
+				comboSentenceOption.setSelectedIndex(1);		// Global
 			 else {
-				comboSentenceOption.setSelectedIndex(0);
+				comboSentenceOption.setSelectedIndex(0);		// Local
 				localSentence = true; // Set LOCAL sentence
-				//System.out.println(" Local detected");
 			}
-			
+
 		// Set up sentence processing for events or names
 			if (nameSentence) pointReportHandler.createReportNameData(nameTablePID);
 			else pointReportHandler.createReportEventData(eventTablePID, ownerTablePID, ownerType);
-			
-		// Load initial Role setting's sentence and convert role numbers to names
+
+		// Load initial Role setting's sentence PID
 			currentComboIndex = comboRoleNames.getSelectedIndex();
-			if (nameSentence) eventNumber = nameEventsNumbers[currentComboIndex];
-			if (nameSentence) roleSentencePID = null_RPID;
-			else roleSentencePID = eventRoleSentensePID[currentComboIndex];
-			
-		//System.out.println(" Global sentence initial  PID: " + roleSentencePID + " Event Type: " + eventNumber);
+			if (nameSentence) {
+				eventNumber = nameEventsNumbers[currentComboIndex];
+				roleSentencePID = null_RPID;
+			}
+			else roleSentencePID = eventRoleSentencePID[currentComboIndex];
+
+		// Get the event/role sentence, convert Role#s to Rolenames, for correct sex code,
+		// load that to the sentence area, run the parser and put its output into preview area
 			eventRoleSentence = getEventRoleSentenceforEvents(currentComboIndex, roleSentencePID);
-			sentenceTextArea.append(convertSentRoleNumToNames(eventRoleSentence));
+			convertedSentence = convertSentRoleNumToNames(eventRoleSentence);
+			sentenceTextArea.setText("");	//$NON-NLS-1$
+			sentenceTextArea.append(convertedSentence);
 	    	previewTextArea.setText("");	//$NON-NLS-1$
-			previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
-			pointReportHandler.runTMGparcer(eventRoleSentence);
+			previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+			pointReportHandler.runTMGparcer(convertedSentence);
 		} catch (HBException hbe) {
-			System.out.println(" HG0548EditSentence - initiate: " + hbe.getMessage());	//$NON-NLS-1$
-			hbe.printStackTrace();
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0548 sentence initiate " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
 		}
 
 	// If we need to, show the Sentence Warning msg
@@ -386,32 +386,33 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 		// Listener for sentence textarea edits
 		sentenceEditListen = new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {updateFieldState();}
-            @Override
-            public void removeUpdate(DocumentEvent e) {updateFieldState();}
-            @Override
-            public void changedUpdate(DocumentEvent e) {updateFieldState();}
-            protected void updateFieldState() {
-
-       /* for every edit, if the edited sentence matches the event's default role sentence,
-          enable the word "(default)" in the 'lbl_default field
-          if it doesn't match, diable the default field */
-	        	eventRoleSentence = convertSentRoleNamesToNums(sentenceTextArea.getText());
-	        	previewTextArea.setText("");	//$NON-NLS-1$
-	        	try {
+			@Override
+			public void insertUpdate(DocumentEvent e) {updateFieldState();}
+			@Override
+			public void removeUpdate(DocumentEvent e) {updateFieldState();}
+			@Override
+			public void changedUpdate(DocumentEvent e) {updateFieldState();}
+			protected void updateFieldState() {
+			/* for every edit, if the edited sentence matches the event's default role sentence,
+	          enable the word "(default)" in the 'lbl_default field
+	          if it doesn't match, disable the default field */
+				eventRoleSentence = convertSentRoleNamesToNums(sentenceTextArea.getText());
+				previewTextArea.setText("");	//$NON-NLS-1$
+				try {
 					previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
-				// Attempt to trigger complete sentence parcer
+					// Attempt to trigger complete sentence parser
 					//pointReportHandler.runTMGparcer(eventRoleSentence);
-	            	sentenceChanged = true;
-	           // Not possible to update default English(US) sentense
-	            	if (!englishUSsentence) btn_Save.setEnabled(true);
+					sentenceChanged = true;
+					// Not possible to update default English(US) sentense
+					if (!englishUSsentence) btn_Save.setEnabled(true);
 				} catch (HBException hbe) {
-					System.out.println(" HG0548EditSentence - sentence edit error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0548 sentence edit error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
-            }
-        };
+			}
+		};
         sentenceTextArea.getDocument().addDocumentListener(sentenceEditListen);
 
 		// Listener for roleName combobox selection
@@ -439,11 +440,12 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 					// NO option - carry on with the new combobox selection
 						currentComboIndex = comboRoleNames.getSelectedIndex();
 						if (nameSentence) roleSentencePID = null_RPID;
-						else roleSentencePID = eventRoleSentensePID[currentComboIndex];
+						else roleSentencePID = eventRoleSentencePID[currentComboIndex];
 						if (nameSentence) eventNumber = nameEventsNumbers[currentComboIndex];
-						//System.out.println(" Global role selected sentense PID: " + roleSentencePID);
+
 					// Test if LOCAL sentence exist
-						if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
+						if (nameSentence) roleNumber = 1;
+						else roleNumber = eventRoleNumbers[currentComboIndex];
 						sentenceTablePID = pointReportHandler.pointLibraryResultSet.
 							selectSentenceSetPID(ownerTablePID, ownerType, eventNumber, roleNumber,
 												 			lang_code, dataBaseIndex);
@@ -451,21 +453,25 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 						else {
 							comboSentenceOption.setSelectedIndex(0);
 							localSentence = true; // Set LOCAL sentence
-							//System.out.println(" Local detected");
 						}
-					// Collect current sentence
+					// Temporarily remove docListener
+						sentenceTextArea.getDocument().removeDocumentListener(sentenceEditListen);
+					// Get the new event/role sentence, convert Role#s to Rolenames, for correct sex code,
+					// load that to the sentence area, run the parser and put its output into preview area
 						eventRoleSentence = getEventRoleSentenceforEvents(currentComboIndex, roleSentencePID);
-					// Clear out current sentence
-						sentenceTextArea.setText("");		//$NON-NLS-1$
-					// Load and convert sentence role numbers to role namese
-						sentenceTextArea.append(convertSentRoleNumToNames(eventRoleSentence));
-					// Set up preview of sentence
-				    	previewTextArea.setText("");		//$NON-NLS-1$
-						previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
-						//pointReportHandler.runTMGparcer(eventRoleSentence);
+						convertedSentence = convertSentRoleNumToNames(eventRoleSentence);
+						sentenceTextArea.setText("");	//$NON-NLS-1$
+						sentenceTextArea.append(convertedSentence);
+				    	previewTextArea.setText("");	//$NON-NLS-1$
+						previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+					// Restore docListner
+						sentenceTextArea.getDocument().addDocumentListener(sentenceEditListen);
+
 					} catch (HBException hbe) {
-						System.out.println(" HG0548EditSentence - listener combo: " + hbe.getMessage());	//$NON-NLS-1$
-						hbe.printStackTrace();
+						if (HGlobal.writeLogs) {
+							HB0711Logging.logWrite("ERROR: in HG0548 rolename error " + hbe.getMessage()); //$NON-NLS-1$
+							HB0711Logging.printStackTraceToFile(hbe);
+						}
 					}
 				// If we need to, show the Sentence Warning msg
 					if (showWarning) {
@@ -483,48 +489,56 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			@Override
 			public void actionPerformed(ActionEvent actEvent) {
 				if (englishUSsentence) {
-				    JOptionPane.showMessageDialog(null,"Cannot update Englis(US) sentence",
-				    		" Save Enlish(US)",JOptionPane.ERROR_MESSAGE);
+				    JOptionPane.showMessageDialog(btn_Save,
+				    		HG0548Msgs.Text_25,		// Cannot update English(US) sentence
+				    		HG0548Msgs.Text_26,		// Save English(US)
+				    		JOptionPane.ERROR_MESSAGE);
 					return;
 				}
 			// Convert rolenames back to rolenumbers via convert routine
 				currentComboIndex = comboRoleNames.getSelectedIndex();
 				editedSentence = sentenceTextArea.getText();
-				sentenceToSave = convertSentRoleNamesToNums(editedSentence);
-			// if sentenceToSave is null, the conversion routine flagged an error - do not save it
-				if (sentenceToSave == null) {
-					System.out.println(" HG0548EditSentence - sentenceToSave epty ");	//$NON-NLS-1$
-					return;
+				if (editedSentence.length() == 0) sentenceToSave = "";	//$NON-NLS-1$
+				else {
+					sentenceToSave = convertSentRoleNamesToNums(editedSentence);
+					// if sentenceToSave is null, the conversion routine flagged an error - do not save it
+					if (sentenceToSave == null) return;
 				}
 
+		    // If it was male or female sentence, reconstitute and return the full eventRoleSentence
+				if (multiSexSentences) {
+					if (sexCode.equals("F")) sentenceToSave = sexSentences[0] + "$!&" + sentenceToSave;	//$NON-NLS-1$ //$NON-NLS-2$
+					else sentenceToSave = sentenceToSave + "$!&" + sexSentences[1];							//$NON-NLS-1$
+				}
+			// Save it
 				try {
 					if (localSentence) {
-						if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
-						pointReportHandler.pointLibraryResultSet.storeLocalSentence(ownerTablePID, ownerType, 
+						if (nameSentence) roleNumber = 1;
+						else roleNumber = eventRoleNumbers[currentComboIndex];
+						pointReportHandler.pointLibraryResultSet.storeLocalSentence(ownerTablePID, ownerType,
 								sentenceToSave, eventNumber, roleNumber, lang_code, pointOpenProject);
 					} else {
-						if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
+						if (nameSentence) roleNumber = 1;
+						else roleNumber = eventRoleNumbers[currentComboIndex];
 						pointReportHandler.pointLibraryResultSet.storeGlobalSentence(sentenceTablePID, sentenceToSave, eventNumber,
 								roleNumber, lang_code, pointOpenProject);
 					}
-
 				} catch (HBException hbe) {
-					System.out.println(" Save new sentence error: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0548 sentence save error " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
-
 				sentenceChanged = false;
-
 				if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: save and exit HG0548EditSentence");	//$NON-NLS-1$
 				dispose();
 			}
 		});
 
-	// Switc between local and global sentenses
+	// Switch between local and global sentenses
 		comboSentenceOption.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent actEvent) {
 				int selection = comboSentenceOption.getSelectedIndex();
-				//System.out.println(" Selection: " + comboSentenceOption.getSelectedItem());
 				if (selection == 0) {
 					localSentence = true;
 					englishUSsentence = false;
@@ -538,32 +552,30 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 					localSentence = false;
 					btn_Save.setEnabled(false);
 				}
-
 				sentenceChanged = false;
 				try {
+				 // Temporarily remove docListener
 					sentenceTextArea.getDocument().removeDocumentListener(sentenceEditListen);
 					currentComboIndex = comboRoleNames.getSelectedIndex();
 					if (nameSentence) eventNumber = nameEventsNumbers[currentComboIndex];
 					if (nameSentence) roleSentencePID = null_RPID;
-					else roleSentencePID = eventRoleSentensePID[currentComboIndex];
-					//roleSentencePID = eventRoleSentensePID[currentComboIndex];
+					else roleSentencePID = eventRoleSentencePID[currentComboIndex];
 
-				// Collect current sentence
+				// Get the event/role sentence, convert Role#s to Rolenames, for correct sex code,
+				// load that to the sentence area, run the parser and put its output into preview area
 					eventRoleSentence = getEventRoleSentenceforEvents(currentComboIndex, roleSentencePID);
-
-				// Clear out current sentence
-					sentenceTextArea.setText("");		//$NON-NLS-1$
-
-				// Load and convert sentence role numbers to role namese
-					sentenceTextArea.append(convertSentRoleNumToNames(eventRoleSentence));
-				// Set up preview of sentence
-			    	previewTextArea.setText("");		//$NON-NLS-1$
-					previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
-					//pointReportHandler.runTMGparcer(eventRoleSentence);
+					convertedSentence = convertSentRoleNumToNames(eventRoleSentence);
+					sentenceTextArea.setText("");	//$NON-NLS-1$
+					sentenceTextArea.append(convertedSentence);
+			    	previewTextArea.setText("");	//$NON-NLS-1$
+					previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+				// Restore docListner
 					sentenceTextArea.getDocument().addDocumentListener(sentenceEditListen);
 				} catch (HBException hbe) {
-					System.out.println(" HG0548EditSentence - local/global button: " + hbe.getMessage());	//$NON-NLS-1$
-					hbe.printStackTrace();
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0548 in local/global switch " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
 				}
 			}
 		});
@@ -579,30 +591,32 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	}	// End HG0548EditSentence constructor
 
 /**
- * eteventRoleSentenceforEvents
+ * geteventRoleSentenceforEvents
  * @param currentComboIndex
  * @return
  */
 	private String getEventRoleSentenceforEvents(int currentComboIndex, long globalSentenTablePID) {
 	// Load the sentence for this langcode either local or global
-		String sentenceFound = "NOSENTENCE";//$NON-NLS-1$
+		String sentenceFound = "";//$NON-NLS-1$
 		int roleNumber;
 		try {
 			if (localSentence) {
-				if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
+				if (nameSentence) roleNumber = 1;
+				else roleNumber = eventRoleNumbers[currentComboIndex];
 				sentenceTablePID = pointReportHandler.pointLibraryResultSet.
 					selectSentenceSetPID(ownerTablePID, ownerType, eventNumber, roleNumber,
 										 			lang_code, dataBaseIndex);
 			} else {
 				if (englishUSsentence) {
-					if (nameSentence) roleNumber = 1; else roleNumber = eventRoleNumbers[currentComboIndex];
+					if (nameSentence) roleNumber = 1;
+					else roleNumber = eventRoleNumbers[currentComboIndex];
 					sentenceTablePID =  pointReportHandler.pointLibraryResultSet.selectFallBackUSsentSetPID(eventNumber,
 											roleNumber, dataBaseIndex);
 				} else {
 					if (nameSentence) sentenceTablePID = pointReportHandler.pointLibraryResultSet.
 									selectSentenceSetPID(null_RPID, 0, eventNumber,1 ,lang_code, dataBaseIndex);
 					else sentenceTablePID = globalSentenTablePID;
-					if (HGlobal.DEBUG)  
+					if (HGlobal.DEBUG)
 						System.out.println(" Global sentence PID:" + sentenceTablePID + " Lang: " + lang_code); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
@@ -626,14 +640,17 @@ public class HG0548EditSentence extends HG0450SuperDialog {
  * @param eventRoleSentence
  * @return
  */
-	public String convertSentRoleNumToNames(String eventRoleSentence) {
+	private String convertSentRoleNumToNames(String eventRoleSentence) {
+		// Assume not multi-sex sentences to sart with
+		multiSexSentences = false;
+		sexSentences = new String[2];
 		// Setup default rolename/nums for this routine to use
 		String[] formatRoleNames = eventRoleNames;
 		int[] formatRoleNums = eventRoleNumbers;
         String replacement = "";		//$NON-NLS-1$
 	// If eventRoleSentence has error flag, change error message and return
 		if (eventRoleSentence.equals("NOSENTENCE")) {			//$NON-NLS-1$
-			//eventRoleSentence = HG0548Msgs.Text_12;		// No sentence exists for this role in this language
+			// No sentence exists for this role in this language
 			eventRoleSentence = "";		//$NON-NLS-1$
 			return eventRoleSentence;
 		}
@@ -679,15 +696,15 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 /**
  * warningMsg - show message re sentence missing
- */ 
-	public void warningMsg() {
+ */
+	private void warningMsg() {
 		// collapse combobox display
 		comboRoleNames.getUI().setPopupVisible(comboRoleNames, false);
 		// show warning msg
 		JOptionPane.showMessageDialog(lbl_Preview,
 				HG0548Msgs.Text_13 + displayLanguage 	// No sentence exists in
 				+ HG0548Msgs.Text_14					// for this Role. \n
-				+ "copy and edit english(US) sentence",			// The English(US) sentence is shown for reference.
+				+ HG0548Msgs.Text_15,					// The English(US) sentence is shown for reference.
 				HG0548Msgs.Text_16, 					// Role sentence missing
 				JOptionPane.WARNING_MESSAGE);
 	}		// End warningMsg
@@ -697,12 +714,11 @@ public class HG0548EditSentence extends HG0450SuperDialog {
  * @param editedSentence
  * @return converted sentence
  */
-	public String convertSentRoleNamesToNums(String sentence) {
+	private String convertSentRoleNamesToNums(String sentence) {
         String replacement = "";		//$NON-NLS-1$
-
-		// Look for role references (like [RF:father] etc). If there are none,
-		// and we aren't in male/female sentence mode, return sentence unchanged
-		if (!sentence.contains("[R") && !multiSexSentences) return sentence;		//$NON-NLS-1$
+		// Look for role references (like [RF:father] etc).
+        // If there are none, return sentence unchanged as there's nothing to do.
+		if (!sentence.contains("[R")) return sentence;		//$NON-NLS-1$
 
 		// Setup a regex to find role reference patterns
 		Pattern pattern = Pattern.compile("(\\[R[a-zA-Z0-9]{0,4}:)([^]]+)(])"); 		//$NON-NLS-1$
@@ -735,15 +751,9 @@ public class HG0548EditSentence extends HG0450SuperDialog {
             replacement = "";			//$NON-NLS-1$
         }
         matcher.appendTail(result);
-        // Store the reformatted sentence text
-        workSentence = result.toString();
-
-        // Now we need to know if we worked on a male or fenale or complete sentence
-        // so that we can return the complete eventRoleSentence string back to be saved
-        if (!multiSexSentences) return workSentence;
-        // If it was the female sentence, reconstitute and return the full eventRoleSentence
-        if (sexCode.equals("F")) return sexSentences[0] + "$!&" + workSentence;	//$NON-NLS-1$ //$NON-NLS-2$
-		return workSentence + "$!&" + sexSentences[1];							//$NON-NLS-1$
+        // Return the reformatted sentence text
+        return result.toString();
 
 	}		// End convertSentRoleNamesToNums
+
 }  // End of HG0548EditSentence

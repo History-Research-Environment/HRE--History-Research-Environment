@@ -67,6 +67,9 @@ package hre.gui;
  * 	  		  2026-08-29 Fix for add new event (N.Tolleshaug)
  *   		  2026-08-29 Updated for preferred name setting (N.Tolleshaug)
  *    		  2026-08-30 Fix for preferred name setting fallback (N.Tolleshaug)
+ *    		  2026-09-02 Pref name Option 1 changed to Primary name (N.Tolleshaug)
+ * 			  2026-09-03 Update NLS (D Ferguson)
+ * 			  2026-09-30 Fix for HRE Issue 34.18 Close add event (N.Tolleshaug)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -143,6 +146,7 @@ import hre.bila.HBWhereWhenHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG0547Msgs;
+import hre.nls.HGlobalMsgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -215,10 +219,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     JComboBox<String> locationNameStyles;
 	JComboBox<String> combo_prefName1;
 	JComboBox<String> combo_prefName2;
-	String[] prefNameOptions1 = {"Standard setting"};
-	String[] prefNameOptions2 = {"Standard setting"};
+	String[] prefNameOptions1 = {HG0547Msgs.Text_44};		// Primary Name
+	String[] prefNameOptions2 = {HG0547Msgs.Text_44};		// Primary Name
 	String defaultSetting = prefNameOptions1[0];
-	long eventPrefNanePID = null_RPID, personTablePID = null_RPID, primPartnerRPID = null_RPID, 
+	long eventPrefNanePID = null_RPID, personTablePID = null_RPID, primPartnerRPID = null_RPID,
 			secPartnerRPID = null_RPID, priPartnerPrefNamePID = null_RPID, secPartnerPrefNamePID = null_RPID;
 	boolean changedPrefName = false;
     TableModelListener eventLocationListener;
@@ -318,18 +322,18 @@ public class HG0547EditEvent extends HG0450SuperDialog {
  * @throws HBException
  */
 	public HG0547EditEvent(HBProjectOpenData pointOpenProject, int eventNumber, int roleNumber,
-							long eventTablePID, long  partnerTablePID, String sexCode) throws HBException {
-		
+							long pointEventPID, long  partnerTablePID, String sexCode) throws HBException {
+
 		if (HGlobal.writeLogs)
 			HB0711Logging.logWrite("Action: entering HG0547EditEvent");	//$NON-NLS-1$
 		if (HGlobal.DEBUG && HGlobal.writeLogs)
 			HB0711Logging.logWrite(" Editing Event: " + eventNumber + " role: " + roleNumber + " PID: " + eventTablePID);	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		
+
 	// Set pointOpenproject in super - HG0450SuperDialog
 		this.pointOpenProject = pointOpenProject;
 		this.eventRoleNum = roleNumber;
 		this.eventNum = eventNumber;
-		this.eventTablePID = eventTablePID;
+		this.eventTablePID = pointEventPID;
 		this.partnerTablePID = partnerTablePID;
 		this.sexCode = sexCode;
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();
@@ -370,8 +374,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				eventTable.first();
 				startHDatePID = eventTable.getLong("START_HDATE_RPID");		//$NON-NLS-1$
 				sortHDatePID = eventTable.getLong("SORT_HDATE_RPID");		//$NON-NLS-1$
-				personTablePID = eventTable.getLong("PRIM_ASSOC_RPID");
-				eventPrefNanePID = eventTable.getLong("PREF_NAME_RPID"); 
+				personTablePID = eventTable.getLong("PRIM_ASSOC_RPID");		//$NON-NLS-1$
+				eventPrefNanePID = eventTable.getLong("PREF_NAME_RPID");	//$NON-NLS-1$
 			} catch (SQLException sqle) {
 				if (HGlobal.writeLogs) {
 					HB0711Logging.logWrite("ERROR: in HG0547Edit getting personTable: " + sqle.getMessage()); //$NON-NLS-1$
@@ -422,27 +426,28 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			personTablePID = pointOpenProject.getSelectedPersonPID();
 			try {
 				partnerTableRS.first();
-				primPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
-				objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID);
-				priPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");
+				primPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");					//$NON-NLS-1$
+				objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID, false);
+				priPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");				//$NON-NLS-1$
 				if (personTablePID == primPartnerRPID) {
-					secPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");				
-					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID);
-					secPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
+					secPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");				//$NON-NLS-1$
+					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID, false);
+					secPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");			//$NON-NLS-1$
 				} else {
-					primPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
-					objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID);
-					priPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
-					secPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");				
-					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID);
-					secPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");
+					primPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");				//$NON-NLS-1$
+					objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID, false);
+					priPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");			//$NON-NLS-1$
+					secPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");				//$NON-NLS-1$
+					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID, false);
+					secPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");			//$NON-NLS-1$
 				}
 			} catch (SQLException sqle) {
-				System.out.println(" HG0547EditEvent - partner data process: " + sqle.getMessage());
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0547Edit getting partner data: " + sqle.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 			}
-    // Get and extract the partner names and roles - mark with [P1] or [P2]
-    		
+    // Get and extract the partner names and roles, check for No name and mark with [P1] or [P2]
     		partnerNames = pointWhereWhenHandler.getPartnerNames(partnerTablePID);
     			eventPersonNamePri = partnerNames[0].trim();
     			eventPersonNameSec = partnerNames[1].trim();
@@ -451,19 +456,18 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     	} else {
 			eventPersonNamePri = eventPersonName;
 			roleNamePri = "(" + pointWhereWhenHandler.getEventRoleName(eventNumber, roleNumber) + ")     [P1]"; //$NON-NLS-1$ //$NON-NLS-2$
-		//  Load data for preferred name setting	
+		//  Load data for preferred name setting
 			if (pointEditEvent instanceof HG0547AddEvent)
-				objNameData1 = pointPersonHandler.preparePersonNameTable(pointOpenProject.getSelectedPersonPID());
-			else 
-				objNameData1 = pointPersonHandler.preparePersonNameTable(personTablePID);
-			//System.out.println(" Event preferred  name PID: " + eventPrefNanePID);
+				objNameData1 = pointPersonHandler.preparePersonNameTable(pointOpenProject.getSelectedPersonPID(), false);
+			else
+				objNameData1 = pointPersonHandler.preparePersonNameTable(personTablePID, false);
     	}
 		if (HGlobal.DEBUG && HGlobal.writeLogs)
 			HB0711Logging.logWrite("Action: in HG0547Edit Event " + eventName + " partners " + eventPersonNamePri + ", " + eventPersonNameSec); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	 // Load ALL current Assocs Names, current roles
 		tableAssocsData = pointWhereWhenHandler.getAssociateTable();
-		
+
 /************************************
  * Setup main panel and its contents
  ***********************************/
@@ -534,7 +538,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	// Event Name/role/date sub-panel
 		JPanel topEvntPanel = new JPanel();
 		topEvntPanel.setBorder(new EtchedBorder(EtchedBorder.RAISED, null, null));
-		topEvntPanel.setLayout(new MigLayout("insets 5", "[]10[]10[]20[]10[]20[]10[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		topEvntPanel.setLayout(new MigLayout("insets 5", "[]10[]10[]20[]10[]50[]", "[]5[]"));	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		lbl_actualEvent = new JLabel(eventName);
 		lbl_actualEvent.setFont(lbl_actualEvent.getFont().deriveFont(lbl_actualEvent.getFont().getStyle() | Font.BOLD));
@@ -568,9 +572,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		sortDateText.setBackground(UIManager.getColor("TextField.background"));  //$NON-NLS-1$
 		topEvntPanel.add(sortDateText, "cell 4 1");	//$NON-NLS-1$
 
-		JLabel lbl_prefName1 = new JLabel("Preferred:");
+		JLabel lbl_prefName1 = new JLabel(HG0547Msgs.Text_49);		// Preferred Name:
 		topEvntPanel.add(lbl_prefName1, "cell 5 0");	//$NON-NLS-1$
-		
+
 // Set up list of pref person names and select preferred
 		int selectedIndex = 0;
 		int rows = 0;
@@ -579,29 +583,25 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		prefNameOptions1[0] = defaultSetting;
 		for (int i = 0; i < rows; i++) {
 			prefNameOptions1[i + 1] = (String) objNameData1[i][1];
-			if (partnerEvent) {			
-				//System.out.println(" Compare-1: " + priPartnerPrefNamePID
-				//	+ " & " + objNameData1[i][3]);
-				if (personTablePID == primPartnerRPID) 
+			if (partnerEvent) {
+				if (personTablePID == primPartnerRPID)
 					if (priPartnerPrefNamePID == (long) objNameData1[i][3])  selectedIndex = i + 1;
-				else 
+				else
 					if (secPartnerPrefNamePID == (long) objNameData1[i][3])  selectedIndex = i + 1;
 			} else {
-				//System.out.println(" Compare-1: " + eventPrefNanePID
-				//		+ " & " + objNameData1[i][3]);
 				if (eventPrefNanePID == (long) objNameData1[i][3])  selectedIndex = i + 1;
 			}
 		}
-		
+
 		DefaultComboBoxModel<String> comboNameModel1
-						= new DefaultComboBoxModel<>(prefNameOptions1);	
+						= new DefaultComboBoxModel<>(prefNameOptions1);
 		combo_prefName1 = new JComboBox<>(comboNameModel1);
-		combo_prefName1.setSelectedIndex(selectedIndex); // Set preferred name for event 
-		topEvntPanel.add(combo_prefName1, "cell 6 0");	//$NON-NLS-1$
-		
-		JLabel lbl_prefName2 = new JLabel("Preferred:");
+		combo_prefName1.setSelectedIndex(selectedIndex); // Set preferred name for event
+		topEvntPanel.add(combo_prefName1, "cell 5 0");	//$NON-NLS-1$
+
+		JLabel lbl_prefName2 = new JLabel(HG0547Msgs.Text_49);		// Preferred Name:
 		topEvntPanel.add(lbl_prefName2, "cell 5 1");	//$NON-NLS-1$
-		 
+
 		if (partnerEvent) {
 		// Set up list of sec person names and select preferred
 			selectedIndex = 0;
@@ -611,22 +611,21 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 			prefNameOptions2[0] = defaultSetting;
 			for (int i = 0; i < rows; i++) {
 				prefNameOptions2[i + 1] = (String) objNameData2[i][1];
-				//System.out.println(" Compare-2: " + secPartnerPrefNamePID
-				//		+ " & " + objNameData2[i][3]);
-				if (personTablePID == primPartnerRPID) 
+				if (personTablePID == primPartnerRPID)
 					if (priPartnerPrefNamePID == (long) objNameData2[i][3])  selectedIndex = i + 1;
 				else
 					if (secPartnerPrefNamePID == (long) objNameData2[i][3])  selectedIndex = i + 1;
 			}
-		}	
+		}
 
-		DefaultComboBoxModel<String> comboNameModel2 = new DefaultComboBoxModel<>(prefNameOptions2);		
-		combo_prefName2 = new JComboBox<>(comboNameModel2);	
-		topEvntPanel.add(combo_prefName2, "cell 6 1");	//$NON-NLS-1$
-		if (partnerEvent) combo_prefName2.setSelectedIndex(selectedIndex); // Set preferred name for event 
-		
-		if (eventPersonNameSec.isEmpty()) {
-			lbl_prefName2.setVisible(false);				// only show for marriage events
+		DefaultComboBoxModel<String> comboNameModel2 = new DefaultComboBoxModel<>(prefNameOptions2);
+		combo_prefName2 = new JComboBox<>(comboNameModel2);
+		topEvntPanel.add(combo_prefName2, "cell 5 1");	//$NON-NLS-1$
+		if (partnerEvent) combo_prefName2.setSelectedIndex(selectedIndex); // Set preferred name for event
+
+		//if (eventPersonNameSec.isEmpty() || partnerNames[1].trim().equals(HGlobalMsgs.Text_21.trim())) {		// No name recorded
+		if (eventPersonNameSec.isEmpty() || secPartnerRPID == null_RPID) { // No name recorded
+			lbl_prefName2.setVisible(false);		// only show for marriage events unless partner is a no name
 			combo_prefName2.setVisible(false);
 		}
 
@@ -1495,7 +1494,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 				if (partnerEvent) {
 					setPartnerPrefNameAction();
 				} else {
-					if (selectedIndex > 0) {	
+					if (selectedIndex > 0) {
 						eventPrefNanePID = pointPersonHandler.getPersonNameTablePID(selectedIndex - 1);
 						//System.out.println( " Selected event PID: " + eventPrefNanePID);
 					} else {
@@ -1522,14 +1521,14 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		btn_Close.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				// Test for unsaved changes
+			// Test for unsaved changes
 				if (btn_Save.isEnabled()) {
 					if (JOptionPane.showConfirmDialog(btn_Save,
 							HG0547Msgs.Text_41		//There are unsaved changes. \n
 							+ HG0547Msgs.Text_42,	// Do you still wish to exit this screen?
 							HG0547Msgs.Text_43,		// Edit Event
 							JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-						// YES option
+					// YES option
 						if (HGlobal.writeLogs)
 							HB0711Logging.logWrite("Action: cancelling out of HG0547EditEvent (no Save)"); //$NON-NLS-1$
 
@@ -1543,8 +1542,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 
 						dispose();
 
-					} else {	// NO option - do nothing
-					}
+					} else {}	// NO option - do nothing
+					
 				} else {	// Close, with Save not enabled
 					if (HGlobal.writeLogs)
 						HB0711Logging.logWrite("Action: exiting HG0547EditEvent (no updates done)"); //$NON-NLS-1$
@@ -1571,10 +1570,10 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	}	// End HG0547EditEvent constructor
-	
+
 /**
  * setPartnerPrefNameAction()
- * 
+ *
  */
 	private void setPartnerPrefNameAction() {
 		int selectedIndex;

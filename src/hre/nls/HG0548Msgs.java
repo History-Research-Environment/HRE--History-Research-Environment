@@ -17,7 +17,7 @@ public class HG0548Msgs extends NLS {
 	public static String Text_10;
 
 	public static String Text_11;
-	public static String Text_12;
+
 	public static String Text_13;
 	public static String Text_14;
 	public static String Text_15;
@@ -27,11 +27,17 @@ public class HG0548Msgs extends NLS {
 	public static String Text_19;
 	public static String Text_20;
 
+	public static String Text_21;
+	public static String Text_22;
+	public static String Text_23;
+	public static String Text_24;
+	public static String Text_25;
+	public static String Text_26;
+
 	public HG0548Msgs(String guiLanguage) {
 		// set the Bundle Name to the requested language
 		BUNDLE_NAME = "hre.nls.HG0548-" + guiLanguage;  //$NON-NLS-1$
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, HG0548Msgs.class);
 	}
-
 }

@@ -36,7 +36,8 @@ package hre.gui;
  * 			  2026-01-30 Make event double-click invoke Edit automatically (D Ferguson)
  * 			  2026-01-31 Reload Event List for correct event group after changes (D Ferguson)
  * 			  2026-02-02 Log all catch block msgs and do NLS update (D Ferguson)
- * v0.05.0033 2026-06-09 Screen is resizable but nothing grews to fill it (D Ferguson)
+ * v0.05.0033 2026-06-09 Screen is resizable; fix nothing growing when resized (D Ferguson)
+ * v0.05.0034 2026-08-29 Set primary role in role list as default when event selected (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE05 code needed for Grouped Events, Enable/Disable Events
@@ -83,7 +84,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Manage Events
  * @author D Ferguson
- * @version v0.05.0033
+ * @version v0.05.0034
  * @since 2022-04-07
  */
 
@@ -123,22 +124,24 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 
 	// Lists for holding event/role data
 	private JList<String> eventList;
-	private JList<String> roleList;
+	private JList<String> roleNameList;
+	private JList<Integer> roleTypeList;
+	private JList<Boolean> roleKeyList;
 	String[] eventTypeList;
 	int[] eventTypeNumber;
-	String[] eventRoleList;
 	Object[][] eventRoleData;
 
     private int indexSelectedEvent;
     private int selectedEventType;
     private int selectedRoleType;
-    private int indexSelectedRole;
     private int selectedPartnerTableRow;
     private int eventGroup = 0;
-    private boolean roleListenOn = true;
+    private boolean roleListenerOn = true;
     private boolean partnerEventDetected = false;
     DefaultListModel<String> eventListmodel;
-    DefaultListModel<String> roleListmodel;
+    DefaultListModel<String> roleNameListmodel;
+    DefaultListModel<Integer> roleTypeListmodel;
+    DefaultListModel<Boolean> roleKeyListmodel;
     int[] marrTypes;
 
 	JButton btn_Add;
@@ -147,6 +150,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	JButton btn_Delete;
 	JButton btn_Copy;
 	JButton btn_Disable;
+	JButton btn_Select;
 
 /**
  * String getClassName()
@@ -187,8 +191,12 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    DefaultListModel<String> eventListmodel = new DefaultListModel<String>();
 	    eventList = new JList<String>(eventListmodel);
 	    resetEventList(eventGroup);
-	    DefaultListModel<String> roleListmodel = new DefaultListModel<String>();
-	    roleList = new JList<String>(roleListmodel);
+	    DefaultListModel<String> roleNameListmodel = new DefaultListModel<String>();
+	    roleNameList = new JList<String>(roleNameListmodel);
+	    DefaultListModel<Integer> roleTypeListmodel = new DefaultListModel<Integer>();
+	    roleTypeList = new JList<Integer>(roleTypeListmodel);
+	    DefaultListModel<Boolean> roleKeyListmodel = new DefaultListModel<Boolean>();
+	    roleKeyList = new JList<Boolean>(roleKeyListmodel);
 
 /***********************************
  * Setup main panel and its contents
@@ -373,7 +381,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 	    JScrollPane eventScrollPane = new JScrollPane(eventList);
 		eventScrollPane.setPreferredSize(new Dimension(180, 0));
 		eventPanel.add(eventScrollPane, "cell 0 1, grow, pushy");	//$NON-NLS-1$
-		contents.add(eventPanel, "cell 2 0, aligny top, grow");
+		contents.add(eventPanel, "cell 2 0, aligny top, grow");		//$NON-NLS-1$
 
 /************************************
  * Setup Role Panel and its contents
@@ -386,9 +394,9 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		rolePanel.add(lblRoles, "cell 0 0, alignx center");	//$NON-NLS-1$
 
 		// Load the Role list
-		roleList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-	    roleList.setLayoutOrientation(JList.VERTICAL);
-		JScrollPane roleScrollPane = new JScrollPane(roleList);
+		roleNameList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+	    roleNameList.setLayoutOrientation(JList.VERTICAL);
+		JScrollPane roleScrollPane = new JScrollPane(roleNameList);
 		roleScrollPane.setPreferredSize(new Dimension(120, 0));
 		rolePanel.add(roleScrollPane, "cell 0 1, grow, pushy");	//$NON-NLS-1$
 		contents.add(rolePanel, "cell 3 0, aligny top, grow");	//$NON-NLS-1$
@@ -396,7 +404,7 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 /****************************************************
  * Setup control buttons at bottom and display screen
  ****************************************************/
-		JButton btn_Select = new JButton(HG0552Msgs.Text_39);	// Select
+		btn_Select = new JButton(HG0552Msgs.Text_39);	// Select
 		btn_Select.setToolTipText(HG0552Msgs.Text_40);			// Select the chosen Event for use
 		btn_Select.setEnabled(false);
 		contents.add(btn_Select, "cell 3 2, align right, gapx 20, tag ok"); //$NON-NLS-1$
@@ -873,7 +881,6 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 							HB0711Logging.printStackTraceToFile(hbe);
 						}
 					}
-					btn_Select.setEnabled(false);
 				// Enable all the relevant action buttons
 					btn_Edit.setEnabled(true);
 					btn_Delete.setEnabled(true);
@@ -899,17 +906,17 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 		});
 
 		// Listener to action selection of row in Roles list
-	    ListSelectionListener roleListener = new ListSelectionListener() {
-	    	public void valueChanged(ListSelectionEvent selectRole) {
-	    		if (roleListenOn) {
-	    			if (!roleList.getValueIsAdjusting()) {
-	    				// If a Partner event/role selected, direct user to Partners area
-	    				try {
+		ListSelectionListener roleListener = new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent selectRole) {
+				if (roleListenerOn) {
+					if (!roleNameList.getValueIsAdjusting()) {
+						// If a Partner event/role selected, direct user to Partners area
+						try {
 							if (testForPartnerEvent(selectedEventType)) {
 								JOptionPane.showMessageDialog(radio_Address,
-															HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
-															HG0552Msgs.Text_62, // Add Partner Event
-															JOptionPane.INFORMATION_MESSAGE);
+										HG0552Msgs.Text_61,	// Proceed by selecting 'Add new partner' \nfrom within the Partner table
+										HG0552Msgs.Text_62, // Add Partner Event
+										JOptionPane.INFORMATION_MESSAGE);
 								if (reminderDisplay != null) reminderDisplay.dispose();
 								if (HGlobal.writeLogs) HB0711Logging.logWrite("Action: exiting HG0552ManageEvent to partner event"); //$NON-NLS-1$
 								dispose();
@@ -920,22 +927,20 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
 								HB0711Logging.printStackTraceToFile(hbe);
 							}
 						}
-	    			// Otherwise, save the roleList index and selected value for use
-	    				indexSelectedRole = roleList.getSelectedIndex();
-	    				int[] eventRoleTypes = pointEventRoleManager.getEventRoleNumbers();
-	    				selectedRoleType = eventRoleTypes[indexSelectedRole];
-	    			// Enable the Select action
-	    				btn_Select.setEnabled(true);
-	    			// Disable all action buttons (no longer needed)
-	    				btn_Edit.setEnabled(false);
-	    				btn_Delete.setEnabled(false);
-	    				btn_Copy.setEnabled(false);
-	    				btn_Disable.setEnabled(false);
-	    			}
-	    		}
-	    	}
-	    };
-		roleList.addListSelectionListener(roleListener);
+						// Save the role type (number) for use
+						selectedRoleType = roleTypeListmodel.getElementAt(roleNameList.getSelectedIndex());
+						// Enable the Select action
+						btn_Select.setEnabled(true);
+						// Disable all action buttons (no longer needed)
+						btn_Edit.setEnabled(false);
+						btn_Delete.setEnabled(false);
+						btn_Copy.setEnabled(false);
+						btn_Disable.setEnabled(false);
+					}
+				}
+			}
+		};
+		roleNameList.addListSelectionListener(roleListener);
 
 		// Listener for Add new Event Type button
 		btn_Add.addActionListener(new ActionListener() {
@@ -1136,25 +1141,53 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  * @throws HBException
  */
     public void resetRoleList(int selectedEvent) throws HBException {
-    	roleListmodel = (DefaultListModel<String>) roleList.getModel();
-    	String[] newRoleList = pointEventRoleManager.getRolesForEvent(selectedEvent, "");	//$NON-NLS-1$
+    	// Get the role data for this event
+		// eventRoleData[i][0] = EVNT_ROLE_NAME;   eventRoleData[i][1] = EVNT_ROLE_NUM
+		// eventRoleData[i][2] = EVNT_ROLE_SEQ;    eventRoleData[i][3] = KEY_ASSOC - boolean
+		eventRoleData = pointEventRoleManager.getRolesDataForEvent(selectedEvent, ""); //$NON-NLS-1$
 
-    // Turn off RoleListener and clear role list
-    	roleListenOn = false;
-    	if(roleListmodel.size() > 0) {
-    		roleListmodel.removeAllElements();
-    		roleListmodel.clear();
-    		roleList.removeAll();
+	   	roleNameListmodel = (DefaultListModel<String>) roleNameList.getModel();
+	   	roleTypeListmodel = (DefaultListModel<Integer>) roleTypeList.getModel();
+	   	roleKeyListmodel = (DefaultListModel<Boolean>) roleKeyList.getModel();
+
+    // Turn off RoleListener and clear any role Name list and rolekey list
+	   	roleListenerOn = false;
+    	if(roleNameListmodel.size() > 0) {
+    		roleNameListmodel.removeAllElements();
+    		roleNameListmodel.clear();
+    		roleNameList.removeAll();
+       		roleTypeListmodel.removeAllElements();
+    		roleTypeListmodel.clear();
+    		roleTypeList.removeAll();
+       		roleKeyListmodel.removeAllElements();
+    		roleKeyListmodel.clear();
+    		roleKeyList.removeAll();
     	}
-    // reload role list
-    	if (newRoleList.length > 0)
-    		for (int i = 0; i < newRoleList.length; i++)  roleListmodel.addElement(newRoleList[i]);
+    // reload role list and key list
+    	if (eventRoleData.length > 0) {
+    		for (int i = 0; i < eventRoleData.length; i++)  {
+    			roleNameListmodel.addElement((String) eventRoleData[i][0]);		// Add role names to model
+       			roleTypeListmodel.addElement((Integer) eventRoleData[i][1]);	// Add role type numbers to model
+    			roleKeyListmodel.addElement((boolean) eventRoleData[i][3]);		// Add role key entries to model
+    		}
+    		// Find first Key assoc in key list and select that role name as a default selection
+    		for (int i= 0; i < roleKeyListmodel.getSize(); i++)	{
+    			boolean keyValue = roleKeyListmodel.getElementAt(i);
+    			if (keyValue) {
+      				roleNameList.setSelectedIndex(i);
+      				// and save the role type (number) for use
+    				selectedRoleType = roleTypeListmodel.getElementAt(i);
+    				btn_Select.setEnabled(true);
+    				break;
+    			}
+    		}
+    	}
     	else JOptionPane.showMessageDialog(contents,
     			HG0552Msgs.Text_63,	// No Event Roles found. Are you using the correct \n HRE Data Presentation Language setting?
     			HG0552Msgs.Text_64, // Event Roles
     			JOptionPane.ERROR_MESSAGE);
     // turn on rolelistener again
-    	roleListenOn = true;
+    	roleListenerOn = true;
     }
 
 /**
@@ -1162,13 +1195,20 @@ public class HG0552ManageEvent extends HG0450SuperDialog {
  */
     public void clearBothLists() {
    	// Turn off RoleListener and clear role list
-      	roleListenOn = false;
-        if (roleListmodel != null && roleListmodel.size() > 0) {
-            roleListmodel.removeAllElements();
-            roleListmodel.clear();
-            roleList.removeAll();
+    	roleListenerOn = false;
+        if (roleNameListmodel != null && roleNameListmodel.size() > 0) {
+            roleNameListmodel.removeAllElements();
+            roleNameListmodel.clear();
+            roleNameList.removeAll();
+            roleTypeListmodel.removeAllElements();
+            roleTypeListmodel.clear();
+            roleTypeList.removeAll();
+       		roleKeyListmodel.removeAllElements();
+    		roleKeyListmodel.clear();
+    		roleKeyList.removeAll();
         }
-        roleListenOn = true;
+       // turn on role listener again
+        roleListenerOn = true;
      // Clean out existing event list
         if (eventListmodel != null && eventListmodel.size() > 0) {
             eventListmodel.removeAllElements();

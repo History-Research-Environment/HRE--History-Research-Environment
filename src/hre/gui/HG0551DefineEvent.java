@@ -299,6 +299,7 @@ public class HG0551DefineEvent extends HG0450SuperDialog {
 		addEventType = false;
 		initiate = true;
 		pointPersonHandler = pointOpenProject.getPersonHandler();
+		pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 		dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 		constructDefineEvent(addEventType, copyEventType, initiate);
 	}

@@ -20,11 +20,11 @@ package hre.gui;
  * 			  2026-07-29 Remove use of 'sentenceRole' variable (D Ferguson)
  * 			  2026-07-31 Added eventTablePID = (long) assocRelationData[4]; (N. Tolleshaug)
  * 			  2026-08-05 ownerType = 3; Owner type associate for LOCAL(N. Tolleshaug)
- * 			  2026-08-16 Add Preferred name functions to inpersRolePanel (D Ferguson)
+ * 			  2026-08-16 Add Preferred name functions to persRolePanel (D Ferguson)
+ * 			  2026-08-22 Make 1st Primary role the default in role list (D Ferguson)
  * 			  2026-08-28 Implemented Preferred name for associate (N. Tolleshaug)
- **************************************************************************************
- * NB: HG05070Msgs.Text_154 & 156   no longer used
- *****************************************************/
+ * 			  2026-09-03 Update NLS (D Ferguson)
+ **************************************************************************************/
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -59,8 +59,9 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 	HBEventRoleManager pointEventRoleManager;
 
 	Object[][] roleData;
-	String[] assocRoleList;
-	int[] assocRoleNumber;
+	String[] assocRoleNames;
+	int[] assocRoleNumbers;
+	boolean[] assocRoleKey;
 	Object[] assocRelationData = null;
 	String memoString;
 	long assocTablePID, assocPersonRPID;
@@ -78,7 +79,6 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 									int eventNumber, int indexInAssocTable, boolean addAssoc) throws HBException {
 		super(pointPersonHandler, pointOpenProject, addAssoc);
 		this.addRelation = addAssoc;
-		//citeTableName = "T451";
 		ownerType = 3; // Set owner type associate for LOCAL
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();
 		pointEventRoleManager.setSelectedLanguage(HGlobal.dataLanguage);
@@ -97,7 +97,7 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 
 	// Get the selected Persons PID, Role#, Name and sexNum code
 		assocRelationData = pointWhereWhenHandler.getAssocTableData(indexInAssocTable);
-	/**	
+	/**
 		assocRelationData  content:
 				[0] = assocTablePID, [1] = eventRoleCode, [2] = personName.trim(),
 			    [3] = sexNum, [4] = eventTablePID;
@@ -117,48 +117,52 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 				HB0711Logging.logWrite("Status: in HG0507SelAssoc AssocData: " 		//$NON-NLS-1$
 						+ assocRelationData[0] + "/" + assocRelationData[1] + "/"	//$NON-NLS-1$ //$NON-NLS-2$
 						+ assocRelationData[2] +"/" + assocRelationData[3]) ;		//$NON-NLS-1$
-			
+
 			assocTablePID = (long) assocRelationData[0];
 			citedTablePID = assocTablePID;
-			//System.out.println(" Select associate - event PID: " + assocRelationData[4]);
+
 			try {
 				String selectString = pointPersonHandler.setSelectSQL("*", pointPersonHandler.eventAssocTable,	//$NON-NLS-1$
 					"PID = " + assocTablePID);																//$NON-NLS-1$
 				ResultSet assocTableRS = pointPersonHandler.requestTableData(selectString, dataBaseIndex);
 				personTablePID = pointOpenProject.getSelectedPersonPID();
 				assocTableRS.first();
-				assocPersonRPID = assocTableRS.getLong("ASSOC_RPID");
-				objNameData1 = pointPersonHandler.preparePersonNameTable(assocPersonRPID);
-				assocPrefNamePID = assocTableRS.getLong("PREF_NAME_RPID");
+				assocPersonRPID = assocTableRS.getLong("ASSOC_RPID");		//$NON-NLS-1$
+				objNameData1 = pointPersonHandler.preparePersonNameTable(assocPersonRPID, false);
+				assocPrefNamePID = assocTableRS.getLong("PREF_NAME_RPID");	//$NON-NLS-1$
 			} catch (SQLException sqle) {
-				System.out.println(" HG0507SelectPerson - partner data process: " + sqle.getMessage());
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0507SelAssoc partner data load: " + sqle.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 			}
-			
-		// Set up list of pref person names 1 and select preferred		
-			JLabel lbl_prefName1 = new JLabel("Preferred:");
-			persRolePanel.add(lbl_prefName1, "cell 2 0");	//$NON-NLS-1$
+
+		// Set up list of pref person names and select preferred
+			JLabel lbl_prefName1 = new JLabel(HG05070Msgs.Text_155);		// Preferred Name:
+			persRolePanel.add(lbl_prefName1, "cell 2 0, alignx right");	//$NON-NLS-1$
 			selectedIndex = 0;
 			rows = objNameData1.length;
 			prefNameOptions1 = new String[rows + 1];
 			prefNameOptions1[0] = defaultSetting;
 			for (int i = 0; i < rows; i++) {
-				prefNameOptions1[i + 1] = (String) objNameData1[i][1];	
+				prefNameOptions1[i + 1] = (String) objNameData1[i][1];
 				//System.out.println(" Assoc compare: " + priPartnerPrefNamePID
 				//	+ " & " + objNameData1[i][3]);
 				if (assocPrefNamePID == (long) objNameData1[i][3])  selectedIndex = i + 1;
 			}
-			
+
 			DefaultComboBoxModel<String> comboNameModel1
 						= new DefaultComboBoxModel<>(prefNameOptions1);			// Load names
 			combo_prefName1 = new JComboBox<>(comboNameModel1);
-			combo_prefName1.setSelectedIndex(selectedIndex); // Set preferred name for event 
-			persRolePanel.add(combo_prefName1, "cell 2 0");	//$NON-NLS-1$		
-			
-		// Set up listeneres for preferred name
+			combo_prefName1.setSelectedIndex(selectedIndex); // Set preferred name for event
+			persRolePanel.add(combo_prefName1, "cell 2 0, alignx right");	//$NON-NLS-1$
+
+		// Set up listener for preferred name
 			activatePrefNameListener();
 		}
 	// Get the role data for this event type
+		// roleData[i][0] = EVNT_ROLE_NAME		roleData[i][1] = EVNT_ROLE_NUM
+		// roleData[i][2] = EVNT_ROLE_SEQ		roleData[i][3] = KEY_ASSOC - boolean
 		roleData = pointEventRoleManager.getRolesDataForEvent(eventNumber, ""); //$NON-NLS-1$
 
 	// Update event memo
@@ -178,18 +182,24 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 			lbl_PersonName.setText((String) assocRelationData[2]);	// Edit assoc:
 
 	// Collect assoc role data
-		assocRoleList = new String[roleData.length];
-		assocRoleNumber = new int[roleData.length];
-		for (int i= 0; i < roleData.length; i++)
-			assocRoleList[i] = (String)roleData[i][0];
-
-		for (int i= 0; i < roleData.length; i++)
-			assocRoleNumber[i] = (Integer)roleData[i][1];
-
-	    updateComboPanel(comboBox_Relationships, assocRoleList);
+		assocRoleNames = new String[roleData.length];		// for role names
+		assocRoleNumbers = new int[roleData.length];		// for role numbers
+		assocRoleKey = new boolean[roleData.length];		// for key indicator
+		for (int i= 0; i < roleData.length; i++)	{
+			assocRoleNames[i] = (String)roleData[i][0];
+			assocRoleNumbers[i] = (Integer)roleData[i][1];
+			assocRoleKey[i] = (boolean)roleData[i][3];
+		}
+	// Load the combobox with rolenames
+	    updateComboPanel(comboBox_Relationships, assocRoleNames);
+	// Find first Key assoc in role list and make it the default displayed
+		for (int i= 0; i < roleData.length; i++)	{
+			if (assocRoleKey[i]) {
+				comboBox_Relationships.setSelectedIndex(i);
+				break;
+			}
+		}
 		comboBox_Relationships.setVisible(true);
-		
-		//objCiteData = pointCitationSourceHandler.getCitationSourceData(assocTablePID, citeTableName);
 
 	// Remove the Sentence Editor button from screen for Add Assoc case
 		if (addRelation) btn_Sentence.setVisible(false);
@@ -215,7 +225,7 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 								(long)assocRelationData[0], pointPersonHandler.eventAssocTable);
 						pointWhereWhenHandler.updateAssocTableRow((long)assocRelationData[0], roleNumber);
-						
+
 						if (changedPrefName)
 							pointWhereWhenHandler.updateAssocPrefName((long)assocRelationData[0], assocPrefNamePID);
 					}
@@ -268,8 +278,8 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
 		btn_Save.setEnabled(true);
 		btn_Save.setVisible(true);
 		btn_Save.setText(HG05070Msgs.Text_157);	// Update Associate
-    	for (int i = 0; i < assocRoleNumber.length; i++) {
-    		if (assocRoleNumber[i] == assocRole) assocRoleindex = i;
+    	for (int i = 0; i < assocRoleNumbers.length; i++) {
+    		if (assocRoleNumbers[i] == assocRole) assocRoleindex = i;
     	}
     	comboBox_Relationships.setSelectedIndex(assocRoleindex);
     	eventRoleNumber = assocRole;

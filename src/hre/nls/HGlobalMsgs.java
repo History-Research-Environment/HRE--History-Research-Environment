@@ -18,6 +18,9 @@ public class HGlobalMsgs extends NLS {
 	public static String Text_11;
 	public static String Text_12;
 
+	public static String Text_20;	// For HBPersonHandler
+	public static String Text_21;	// For HBLibraryResultSet
+
 	public static String Text_52;
 	public static String Text_53;
 	public static String Text_54;

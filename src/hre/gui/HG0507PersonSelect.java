@@ -73,20 +73,29 @@ package hre.gui;
  * v0.05.0033 2026-05-29 Change default double-click to ManagePerson, not VP (D Ferguson)
  * 			  2026-06-09 Make filter text change not require ID re-selection (D Ferguson)
  * v0.05.0034 2026-08-10 Make tableEntity Name sort case-insensitive ( D Ferguson)
+ * 			  2026-09-20 Make splitpane divider controls more visible (D Ferguson)
+ * 			  2020-09-22 Always retain selected person as selected (D Ferguson)
  ***************************************************************************************
  * NOTES for incomplete functionality
  * NOTE02 No code for importing saved filters
  ***************************************************************************************/
 
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.ArrayList;
@@ -121,6 +130,7 @@ import javax.swing.RowFilter;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
@@ -128,12 +138,19 @@ import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.RowSorterEvent;
+import javax.swing.event.RowSorterListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+
+import com.jtattoo.plaf.BaseSplitPaneDivider;
+import com.jtattoo.plaf.BaseSplitPaneUI;
 
 import hre.bila.HB0711Logging;
 import hre.bila.HBException;
@@ -166,6 +183,12 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 	private int focusPersIDX = 1;	// default start person
 	private int foundRow;
 	private int selectedRow;
+	private static int selectedRowInTable = -1;
+	private int viewRow;
+	private boolean restoringEntitySelection = false;
+	private boolean filteringEntityTable = false;
+	private TableRowSorter<TableModel> entitySorter;
+
 	private long tablePersonPID;
 	private boolean findActivated = false;
 	private ActionListener comboViewChange = null;
@@ -435,10 +458,30 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		// Setup JTable to show data
 		table_Entity = new JTable() {
 			private static final long serialVersionUID = 1L;
-				@Override
-				public boolean isCellEditable(int row, int column) {
-					return false;
-			}};
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return false;
+			}
+			@Override
+			public void tableChanged(TableModelEvent e) {
+				super.tableChanged(e);
+				if (e.getType() == TableModelEvent.UPDATE && selectedRowInTable >= 0) {
+					SwingUtilities.invokeLater(() -> {
+						int restoreViewRow = convertRowIndexToView(selectedRowInTable);
+						if (restoreViewRow >= 0) {
+							restoringEntitySelection = true;
+							try {
+								changeSelection(restoreViewRow, 0, false, false);
+							} finally {
+								restoringEntitySelection = false;
+							}
+							scrollRectToVisible(getCellRect(restoreViewRow, 0, true));
+							repaint();
+						}
+					});
+				}
+			}
+		};
 		table_Entity.setMaximumSize(new Dimension(32767, 32767));
 		table_Entity.setFillsViewportHeight(true);
 
@@ -517,7 +560,79 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 					JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollTable, treePane);
 					splitPane.setOneTouchExpandable(true);
 					splitPane.setResizeWeight(1.0);		//Screen growth goes all to left panel
-					splitPane.setDividerSize(10);
+					splitPane.setDividerSize(20);
+
+					// As a splitpane's divider arrows are too small too see clearly, we
+					// over-ride JTattoo's divider classes with our own and define larger
+					// arrows with a black border and fill color that works with all themes.
+					splitPane.setUI(new BaseSplitPaneUI() {
+						@Override
+						public BasicSplitPaneDivider createDefaultDivider() {
+							return new BaseSplitPaneDivider(this) {
+								@Override
+								protected JButton createLeftOneTouchButton() {
+									return createArrowButton(true);
+								}
+								@Override
+								protected JButton createRightOneTouchButton() {
+									return createArrowButton(false);
+								}
+								private JButton createArrowButton(boolean left) {
+									JButton b = new JButton() {
+										@Override
+										protected void paintComponent(Graphics g) {
+										    int w = getWidth();
+										    int h = getHeight();
+										    Graphics2D g2 = (Graphics2D) g.create();
+										    try {
+										        g2.setRenderingHint(
+										            RenderingHints.KEY_ANTIALIASING,
+										            RenderingHints.VALUE_ANTIALIAS_ON
+										        );
+										        int s = 5;
+										        int cx = w / 2;
+										        int cy = h / 2;
+										        g2.setColor(Color.BLUE);		// Will show as border
+										        if (left) {
+										            g2.fillPolygon(
+										                new int[] { cx - s - 1, cx + s + 1, cx + s + 1 },
+										                new int[] { cy, cy - s - 1, cy + s + 1 },
+										                3
+										            );
+										        } else {
+										            g2.fillPolygon(
+										                new int[] { cx + s + 1, cx - s - 1, cx - s - 1 },
+										                new int[] { cy, cy - s - 1, cy + s + 1 }, 3
+										            );
+										        }
+										        g2.setColor(Color.RED);		// This shows as fill color
+										        if (left) {
+										            g2.fillPolygon(
+										                new int[] { cx - s, cx + s, cx + s },
+										                new int[] { cy, cy - s, cy + s },  3
+										            );
+										        } else {
+										            g2.fillPolygon(
+										                new int[] { cx + s, cx - s, cx - s },
+										                new int[] { cy, cy - s, cy + s },  3
+										            );
+										        }
+										    } finally {
+										        g2.dispose();
+										    }
+										}
+									};
+									b.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+									b.setFocusPainted(false);
+									b.setBorderPainted(false);
+									b.setContentAreaFilled(false);
+									b.setRolloverEnabled(true);
+									return b;
+								}
+							};
+						}
+					});
+
 					contents.add(splitPane, "cell 0 3 4 1, grow"); //$NON-NLS-1$
 
 		     // Setup table model and renderer
@@ -558,21 +673,34 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		        		col++;
 		        	}
 		        }
-
 				table_Entity.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
 				// Disable auto sorter creation (we are creating our own)
 				table_Entity.setAutoCreateRowSorter(false);
 				TableModel myModel = table_Entity.getModel();
-				TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
+				entitySorter = new TableRowSorter<>(myModel);
 				// Apply lexicographic comparator for column 1 but ignore case and treat space as a real character
-				sorter.setComparator(1, String.CASE_INSENSITIVE_ORDER);
+				entitySorter.setComparator(1, String.CASE_INSENSITIVE_ORDER);
 				// Presort on column 1
 				List<RowSorter.SortKey> psortKeys1 = new ArrayList<>();
 				psortKeys1.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
-				sorter.setSortKeys(psortKeys1);
+				entitySorter.setSortKeys(psortKeys1);
 				// Install sorter
-				table_Entity.setRowSorter(sorter);
+				table_Entity.setRowSorter(entitySorter);
+				table_Entity.setUpdateSelectionOnSort(true);
+				entitySorter.addRowSorterListener(new RowSorterListener() {
+				    @Override
+				    public void sorterChanged(RowSorterEvent e) {
+				        if (e.getType() == RowSorterEvent.Type.SORTED && !filteringEntityTable) {
+				            SwingUtilities.invokeLater(() -> {
+				                int selectedViewRow = table_Entity.getSelectedRow();
+				                if (selectedViewRow >= 0) {
+				                    table_Entity.scrollRectToVisible(table_Entity.getCellRect(selectedViewRow, 0, true));
+				                }
+				            });
+				        }
+				    }
+				});
 
 			    // Set tooltips and header format
 				table_Entity.getTableHeader().setToolTipText(HG05070Msgs.Text_80);
@@ -590,12 +718,12 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 				scrollTable.setViewportView(table_Entity);
 
 				// Now set the sorted table view to start at the required focus person
-				table_Entity.setRowSelectionAllowed(true);
-				for(int i = 0; i < table_Entity.getRowCount(); i++){
-					if(table_Entity.getValueAt(i, 0).equals(focusPersIDX)){
-				        	table_Entity.changeSelection(i, 0, true, true);
-				        	break;
-				        }
+				for (int i = 0; i < table_Entity.getRowCount(); i++) {
+				    if (table_Entity.getValueAt(i, 0).equals(focusPersIDX)) {
+				        selectedRowInTable = table_Entity.convertRowIndexToModel(i);
+				        table_Entity.changeSelection(i, 0, true, true);
+				        break;
+				    }
 				}
 				table_Entity.requestFocus();
 
@@ -676,9 +804,7 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		   	                    if (tableValue.toLowerCase().contains(searchValue.toLowerCase())) {
 		   	                    // set the found row to the middle of the scrollpane; adjusted for scroll-up or down
 		   	                    	int first = table_Entity.rowAtPoint(new Point(0, viewRect.y));
-		   	                    	if (first > row) {
-										halfVisibleRows = -halfVisibleRows;
-									}
+		   	                    	if (first > row) halfVisibleRows = -halfVisibleRows;
 		   	                    	table_Entity.scrollRectToVisible(table_Entity.getCellRect(row + halfVisibleRows, 1, true));
 		   	                    // set the 'found' row as selected, clear any other selection, save it
 		   	                    	table_Entity.changeSelection(row, 0, false, false);
@@ -795,7 +921,6 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 						if (!chkbox_Filter.isSelected()) {
 								setTableFilter(allColumnsText2, ""); //$NON-NLS-1$  // All Columns allColumnsText2
 								comboBox_Subset.setSelectedIndex(0);
-								table_Entity.setRowSorter(sorter);
 						}
 					}
 				});
@@ -816,18 +941,14 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 					@Override
 					public void actionPerformed(ActionEvent event) {
 						int selectIndex = comboBox_View.getSelectedIndex();
-
 					// Set index in Business Layer
 						pointPersonHandler.setNameDisplayIndex(selectIndex);
-
 					// Set selected person style index in open project
 						pointOpenProject.setNameDisplayIndex(selectIndex);
 						pointOpenProject.storeNameStyleIndex(screenID);
-
 					// Force regenerate of table and tree with new name style
 						pointOpenProject.pointTree = null;
 						pointOpenProject.personSelectData = null;
-
 					// Initiate new PersonSelect window in Front
 						pointPersonHandler.initiatePersonSelect(pointOpenProject, "F");	//$NON-NLS-1$
 						dispose();
@@ -874,7 +995,6 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 								comboBox_View.setSelectedIndex(1);
 							} else
 								comboBox_View.setSelectedIndex(pointOpenProject.getNameDisplayIndex());
-
 					// reset for next button click
 							btn_DisplayType.setText(HG05070Msgs.Text_51);		// Use Name Styles
 							selectStyleNamesControl = true;
@@ -892,57 +1012,59 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 					public void valueChanged(ListSelectionEvent event) {
 						long personTablePID;
 						int personVPindex = 0;
-							if (!event.getValueIsAdjusting()) {
-								int viewRow = table_Entity.getSelectedRow();
-								int selectedRowInTable = table_Entity.convertRowIndexToModel(viewRow);
-						 // Return if filter location triggers select in table
-								if (selectedRowInTable == -1)
-									return;
-
-								personTablePID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
-								try {
-									if (!findActivated) {
-								// Find next open eventVP
-										personVPindex = pointViewPointHandler.findClosedVP("5300", pointOpenProject);  //$NON-NLS-1$
-										String personVPident = pointViewPointHandler.getPersonScreenID(personVPindex);
+						if (!event.getValueIsAdjusting()) {
+							viewRow = table_Entity.getSelectedRow();
+							// JTable may temporarily have no selected row
+							if (viewRow < 0)
+								return;
+							selectedRowInTable = table_Entity.convertRowIndexToModel(viewRow);
+							// A restore after sorting is not a new user selection
+							if (restoringEntitySelection)
+								return;
+							personTablePID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
+							try {
+								if (!findActivated) {
+									// Find next open eventVP
+									personVPindex = pointViewPointHandler.findClosedVP("5300", pointOpenProject);  //$NON-NLS-1$
+									String personVPident = pointViewPointHandler.getPersonScreenID(personVPindex);
+									if (HGlobal.DEBUG && HGlobal.writeLogs)
+										HB0711Logging.logWrite("Status: in HG0507PerSelect row: " + selectedRowInTable //$NON-NLS-1$
+												+ " personVPindex: " + personVPindex	//$NON-NLS-1$
+												+ " personVPident: " + personVPident	//$NON-NLS-1$
+												+ " PersonPID: " + personTablePID);		//$NON-NLS-1$
+									// Set PID for event from event list
+									if (personVPindex >= 0) {
+										pointOpenProject.pointGuiData.setTableViewPointPID(personVPident, personTablePID);
+									} else {
+										userInfoInitVP(1);
 										if (HGlobal.DEBUG && HGlobal.writeLogs)
-											HB0711Logging.logWrite("Status: in HG0507PerSelect row: " + selectedRowInTable //$NON-NLS-1$
-													+ " personVPindex: " + personVPindex	//$NON-NLS-1$
-													+ " personVPident: " + personVPident	//$NON-NLS-1$
-													+ " PersonPID: " + personTablePID);		//$NON-NLS-1$
-								// Set PID for event from event list
-										if (personVPindex >= 0) {
-											pointOpenProject.pointGuiData.setTableViewPointPID(personVPident, personTablePID);
-										} else {
-											userInfoInitVP(1);
-											if (HGlobal.DEBUG && HGlobal.writeLogs)
-												HB0711Logging.logWrite("Status: in HG0507PerSelect valueChanged - personVPindex: "	//$NON-NLS-1$
-														+ personVPindex);
-										}
-									} else
-										findActivated = false;
+											HB0711Logging.logWrite("Status: in HG0507PerSelect valueChanged - personVPindex: "	//$NON-NLS-1$
+													+ personVPindex);
+									}
+								} else
+									findActivated = false;
 
 								// Set visible IDX for Person Select
-									pointOpenProject.pointGuiData.setVisibleIDX(screenID, selectedRowInTable + 1);
-									if (selectedRowInTable < 0)
-										return;			// exit if listener call was caused by emptying table_User
+								pointOpenProject.pointGuiData.setVisibleIDX(screenID, selectedRowInTable + 1);
+								if (selectedRowInTable < 0)
+									return;			// exit if listener call was caused by emptying table_User
 
-									int indexPerson = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
-									String selectedPersonPID = (String) myTableModel.getValueAt(selectedRowInTable, 1);
-									pointPersonHandler.setSelectedPerson(projectName, selectedRowInTable, indexPerson, selectedPersonPID);
+								int indexPerson = (Integer) myTableModel.getValueAt(selectedRowInTable, 0);
+								String selectedPersonPID = (String) myTableModel.getValueAt(selectedRowInTable, 1);
+								pointPersonHandler.setSelectedPerson(projectName, selectedRowInTable, indexPerson, selectedPersonPID);
 								// Reset Tree in scrollTree pane to the selected person
-									showAncestor.setSelected(true);
-									pointTree.setFocusPerson(indexPerson);
-								} catch (HBException hbe) {
-									if (HGlobal.writeLogs) {
-										HB0711Logging.logWrite("ERROR: in HG0507PerSelect selecting person: " + hbe.getMessage()); //$NON-NLS-1$
-										HB0711Logging.printStackTraceToFile(hbe);
-									}
-									JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_93 + hbe.getMessage(),
-											HG05070Msgs.Text_94,JOptionPane.INFORMATION_MESSAGE);
+								showAncestor.setSelected(true);
+								pointTree.setFocusPerson(indexPerson);
+							} catch (HBException hbe) {
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0507PerSelect selecting person: " + hbe.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(hbe);
 								}
-								scrollTree.setViewportView(tree);
+								JOptionPane.showMessageDialog(contents, HG05070Msgs.Text_93 + hbe.getMessage(),
+										HG05070Msgs.Text_94,JOptionPane.INFORMATION_MESSAGE);
 							}
+							scrollTree.setViewportView(tree);
+						}
 					}
 				});
 
@@ -1038,6 +1160,17 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 					}
 				});
 
+				// Listener to hide swap panel button if splitpane is collapsed
+				splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
+				    @Override
+				    public void propertyChange(PropertyChangeEvent evt) {
+				        int location = splitPane.getDividerLocation();
+				        int max = splitPane.getMaximumDividerLocation();
+				        if (location == 0 || location > max) btn_Swap.setVisible(false);
+				        else btn_Swap.setVisible(true);
+				    }
+				});
+
 	        }	// End SwingWorker done component
 	    };   // End of SwingWorker method
 
@@ -1105,30 +1238,29 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		filterText = filterText.replaceAll("\\(", "\\\\(");		//$NON-NLS-1$	//$NON-NLS-2$
 		filterText = filterText.replaceAll("\\)", "\\\\)");		//$NON-NLS-1$	//$NON-NLS-2$
 		filterText = filterText.replaceAll("\\*", "\\\\*");		//$NON-NLS-1$	//$NON-NLS-2$
-		// Setup sorter
-		TableModel myModel = table_Entity.getModel();
-		TableRowSorter<TableModel> sorter = new TableRowSorter<>(myModel);
+	    filteringEntityTable = true;
 		try {
 			if (selectString.trim().equals(allColumnsText2.trim())) {				// All Columns
 				// For whole table
-				sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText));	// case-insensitive unicode filter //$NON-NLS-1$
+				entitySorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText));	// case-insensitive unicode filter //$NON-NLS-1$
 			} else { // All Columns
 				for (int i = 0; i < tableColHeads.length; i++) {
-									if (selectString.trim().equals(tableColHeads[i].trim())) {
-										// For only one column
-										sorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText, i));	// case-insensitive unicode filter //$NON-NLS-1$
-										break;
-									}
-							}
+					if (selectString.trim().equals(tableColHeads[i].trim())) {
+						// For only one column
+						entitySorter.setRowFilter(RowFilter.regexFilter("(?iu)" + filterText, i));	// case-insensitive unicode filter //$NON-NLS-1$
+						break;
+					}
+				}
 			}
 		} catch (PatternSyntaxException pse) {
 			JOptionPane.showMessageDialog(chkbox_Filter, HG05070Msgs.Text_121 						// Cannot use
-												+ filterText + HG05070Msgs.Text_122,				// as a filter
-												HG05070Msgs.Text_123, JOptionPane.ERROR_MESSAGE);	// Filter Text Error
+					+ filterText + HG05070Msgs.Text_122,				// as a filter
+					HG05070Msgs.Text_123, JOptionPane.ERROR_MESSAGE);	// Filter Text Error
+		} finally {
+			filteringEntityTable = false;
 		}
-	    table_Entity.setRowSorter(sorter);
-	    // Set scroll bar to top of filter results
-	    scrollTable.getViewport().setViewPosition(new Point(0,0));
+		// Set scroll bar to top of filter results
+		scrollTable.getViewport().setViewPosition(new Point(0,0));
 	}	// End setTableFilter
 
 /**
@@ -1159,8 +1291,7 @@ public class HG0507PersonSelect extends HG0451SuperIntFrame implements ActionLis
 		String names = HG05070Msgs.Text_98;
 		Vector<hre.bila.HBTreeCreator.GenealogyPerson> partners = pointTree.findPartners();
 		if (partners != null) {
-			for (GenealogyPerson partner : partners)
-			 {
+			for (GenealogyPerson partner : partners) {
 				if (partner != null)
 					names = names + partner.getName() + "\n"; //$NON-NLS-1$
 				else

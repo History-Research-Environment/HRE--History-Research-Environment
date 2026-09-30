@@ -52,11 +52,12 @@ public class HG0547Msgs extends NLS {
 	public static String Text_41;
 	public static String Text_42;
 	public static String Text_43;
-
+	public static String Text_44;
 	public static String Text_45;
 	public static String Text_46;
 	public static String Text_47;
 	public static String Text_48;
+	public static String Text_49;
 
 // Text in HG0547PartnerEvent
 	public static String Text_50;

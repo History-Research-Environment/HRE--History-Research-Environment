@@ -98,18 +98,20 @@ public class HG05070Msgs extends NLS {
 	public static String Text_145;
 	public static String Text_146;
 	public static String Text_147;
+	public static String Text_148;
 
 	// Used by HG0507SelectAssociate, -Parent, -Partner
 	public static String Text_150;
 	public static String Text_151;
 	public static String Text_152;
 	public static String Text_153;
-	public static String Text_154;
 
-	public static String Text_156;
+	public static String Text_155;
+
 	public static String Text_157;
 	public static String Text_158;
 	public static String Text_159;
+
 	// Used by HG0507SelectParent
 	public static String Text_160;
 	public static String Text_161;

@@ -89,6 +89,7 @@ package hre.gui;
  * 						 Make Relation diagram close when person chnages (D Ferguson + ChatGPT)
  * 			  2026-08-18 Make Relation display inter-active (D Ferguson + ChatGPT)
  * 			  2026-08-20 Moved all Relation handling code to RelationHandler (D Ferguson)
+ * 			  2026-09-17 Ensure we restart in same card as when we left (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 need listener and code for handling DNA data
@@ -194,6 +195,7 @@ import net.miginfocom.swing.MigLayout;
 public class HG0506ManagePerson extends HG0451SuperIntFrame {
 	private static final long serialVersionUID = 001L;
 	public static final String screenID = "50600";	//$NON-NLS-1$
+	private static String subScreenID;
 	private String className;
 
 	protected HBPersonHandler pointPersonHandler;
@@ -1294,6 +1296,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "EVENTS");	//$NON-NLS-1$
+		    	  subScreenID = "E";				//$NON-NLS-1$
 		      }
 		    };
 		 ActionListener actionRadioPartners = new ActionListener() {
@@ -1301,6 +1304,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "PARTNERS");	//$NON-NLS-1$
+		    	  subScreenID = "P";				//$NON-NLS-1$
 		      }
 		    };
 		 ActionListener actionRadioAssocs = new ActionListener() {
@@ -1308,6 +1312,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "ASSOCIATES");	//$NON-NLS-1$
+		    	  subScreenID = "A";				//$NON-NLS-1$
 		      }
 		    };
 		 ActionListener actionRadioNames = new ActionListener() {
@@ -1315,6 +1320,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "NAMES");	//$NON-NLS-1$
+		    	  subScreenID = "N";				//$NON-NLS-1$
 		      }
 		    };
 		 ActionListener actionRadioFlag = new ActionListener() {
@@ -1322,6 +1328,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "FLAGS");	//$NON-NLS-1$
+		    	  subScreenID = "F";				//$NON-NLS-1$
 		      }
 		    };
 		 ActionListener actionRadioMedia = new ActionListener() {
@@ -1329,6 +1336,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "MEDIA");	//$NON-NLS-1$
+		    	  subScreenID = "M";				//$NON-NLS-1$
 		      }
 		    };
 		 ActionListener actionRadioDNA = new ActionListener() {
@@ -1336,6 +1344,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 			public void actionPerformed(ActionEvent actionEvent) {
 		    	  CardLayout cl = (CardLayout)(rightPanel.getLayout());
 		    	  cl.show(rightPanel, "DNA");	//$NON-NLS-1$
+		    	  subScreenID = "D";				//$NON-NLS-1$
 		      }
 		    };
 		// Link the listeners above to the radio buttons
@@ -1346,6 +1355,12 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		radio_Flag.addActionListener(actionRadioFlag);
 		radio_Media.addActionListener(actionRadioMedia);
 		radio_DNA.addActionListener(actionRadioDNA);
+		// Ensure the card sub-screen that was open before is where we start again.
+		// Only needed for Partners, Names so far.
+		if (subScreenID != null) {
+			if (subScreenID.equals("P")) radio_Partners.doClick();
+			if (subScreenID.equals("N")) radio_Names.doClick();
+		}
 
 		// Define ActionListeners for Events table right-click popupMenu
 		// For popupMenu item popMenu0 & 10 - general Add Event option
@@ -1387,7 +1402,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 		        	long partnerTablePID = (long)partnerRelationData[0];
 
 					HG0547EditEvent editPartnerScreen;
-					System.out.println(" ManagePerson - New Partner Event partnerTablePID: " + partnerTablePID + "/" + eventNumber);
+					//System.out.println(" ManagePerson - New Partner Event partnerTablePID: " + partnerTablePID + "/" + eventNumber);
 					editPartnerScreen = pointHBWhereWhenHandler.activateAddPartnerEvent(pointOpenProject,
 														eventNumber, roleNumber, partnerTablePID, selectedPartnerTableRow);
 					if (editPartnerScreen == null) 	return;

@@ -29,9 +29,12 @@
 * 			  2026-07-29 Removed 'sentenceRole' variables (D Ferguson)
 * 			  2026-07-31 Initiate variable long eventTablePID = null_RPID (N. Tolleshaug)
 * 			  2026-08-05 ownerType = 2; Owner type event for LOCAL (N. Tolleshaug)
- * 			  2026-08-16 Add Preferred name functions to inpersRolePanel (D Ferguson)
- * 			  2026-08-28 Implemented listner for Preferred name (N. Tolleshaug)
+ * 			  2026-08-16 Add eded name functions to persRolePanel (D Ferguson)
+ * 			  2026-08-28 Implemented listener for Preferred name (N. Tolleshaug)
  *   		  2026-08-29 Partner save fix for default setting problem (N. Tolleshaug)
+ *   		  2026-09-02 Pref name Option 1 changed to Primary name (N.Tolleshaug)
+ * 			  2026-09-03 Update NLS (D Ferguson)
+ * 			  2026-09-20 Updateissue 34.07 select and update P2 partner (N. Tolleshaug)
 *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -129,6 +132,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
     HG0507PersonSelect personSelect;
 	HBProjectOpenData pointOpenProject;
 	HG0507SelectPerson pointSelectPerson = this;
+	public HG0507SelectPartner pointSelectPartner; // Used to point back to select partner
 	public HBCitationSourceHandler pointCitationSourceHandler;
 	HG0507SelectPerson personFrame = this;
 
@@ -152,7 +156,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	protected int ownerType = 2; // Set owner type event  for LOCAL
 	public long personPID = null_RPID, personTablePID = null_RPID, citedTablePID = null_RPID; // Mod 13.6.2026 NTo
 	long ownerTablePID = null_RPID, eventTablePID = null_RPID, partnerTablePID;
-	long primPartnerRPID = null_RPID, 
+	long primPartnerRPID = null_RPID,
 			secPartnerRPID = null_RPID, priPartnerPrefNamePID = null_RPID, secPartnerPrefNamePID = null_RPID;
 	private String idText, allColumnsText1, allColumnsText2;
 	String[] tablePersColHeads = null;
@@ -164,19 +168,18 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	JComboBox<String> comboBox_Subset;
 	JComboBox<String> combo_prefName1;
 	JComboBox<String> combo_prefName2;
-	
+
     Object[][] objNameData1; // Stores the name list for selected pre name
     Object[][] objNameData2; // Stores the name list for selected sec name
-	
-	String[] prefNameOptions = {"Standard setting"};
-	String[] prefNameOptions1 = {"Standard setting"};
-	String[] prefNameOptions2 = {"Standard setting"};
+
+	String[] prefNameOptions = {HG05070Msgs.Text_148};		// Primary Name
+	String[] prefNameOptions1 = {HG05070Msgs.Text_148};		// Primary Name
+	String[] prefNameOptions2 = {HG05070Msgs.Text_148};		// Primary Name
 	String defaultSetting = prefNameOptions1[0];
 	boolean changedPrefName = false;
 	boolean partnerEvent = false;
 	Object[] partnerRelationData;
 	long assocPrefNamePID;
-
 
     JTextArea memoText; 				// accessed by update
 	DocumentListener memoTextChange;	// accessed by update
@@ -198,8 +201,6 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	private Object[][] tablePersData;
 	private JTable tablePersons;
 	DefaultTableModel myTableModel = null;
-	
-
 
 	Object[][] objCiteData;
 	Object objCiteDataToEdit[] = new Object[2]; // to hold data to pass to Citation editor
@@ -311,9 +312,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		comboBox_Subset = new JComboBox<>();
 		comboBox_Subset.setToolTipText(HG05070Msgs.Text_43);	// List of saved filter and subset names
 
-		for (int i = 1; i < tablePersColHeads.length; i++) 
+		for (int i = 1; i < tablePersColHeads.length; i++)
 			comboBox_Subset.addItem(tablePersColHeads[i]);
-			
+
 		comboBox_Subset.addItem(idText);					// ID
 		comboBox_Subset.addItem(allColumnsText1);			// All Columns
 		findPanel.add(comboBox_Subset, "cell 1 2"); //$NON-NLS-1$
@@ -359,7 +360,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	// Define Alternate panels for use after Select button clicked (visibility false initially)
 	// Define panel for Assoc/Parent/Partner name(s)/role(s)
 		persRolePanel = new JPanel();
-		persRolePanel.setLayout(new MigLayout("insets 5", "[]10[]50[]10[]", "[][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		persRolePanel.setLayout(new MigLayout("insets 5", "[]10[]50[]", "[][][]")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		lbl_Parent = new JLabel();
 		lbl_Parent.setText(newTitle); // Set new title for window
 		lbl_Parent.setFont(lbl_Parent.getFont().deriveFont(lbl_Parent.getFont().getStyle() | Font.BOLD));
@@ -369,7 +370,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		persRolePanel.add(lbl_PersonName, "cell 0 0, alignx left"); //$NON-NLS-1$
 
 		comboBox_Relationships = new JComboBox<>();
-		persRolePanel.add(comboBox_Relationships, "cell 1 0, alignx left"); //$NON-NLS-1
+		persRolePanel.add(comboBox_Relationships, "cell 1 0, alignx left"); //$NON-NLS-1$
 
 		contents.add(persRolePanel, "cell 0 0, grow, hidemode 3"); //$NON-NLS-1$
 		pack();
@@ -654,7 +655,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Cancel1.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) 
+				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 1st phase"); //$NON-NLS-1$
 		    	dispose();
 			}
@@ -663,7 +664,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		btn_Cancel2.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				if (HGlobal.writeLogs) 
+				if (HGlobal.writeLogs)
 					HB0711Logging.logWrite("Action: cancelling out of HG0507SelectPerson 2nd phase"); //$NON-NLS-1$
 		    	dispose();
 			}
@@ -835,7 +836,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				}
 			}
 		});
-		
+
 
 	// Listener for tablePersons row selection of a relation to be added
 		tablePersons.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -885,15 +886,21 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					clickedRow = tablePersons.getSelectedRow();
 					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
-					//System.out.println(" Selected Person PID: " + personPID);
+				
+				// return selected partner for partner table update
+					if (pointSelectPartner != null)
+						pointSelectPartner.updateSecondaryPartner(personPID);
+					
 					dispose();
 				// Temp solution to avoid setting of focusPerson
 					if (!addRelation)
 						try {
 							pointOpenProject.setFocusPersonPID(personPID);
 						} catch (HBException hbe) {
-							System.out.println(" ERROR: - Update T126 focus person PID");	//$NON-NLS-1$
-							hbe.printStackTrace();
+							if (HGlobal.writeLogs) {
+								HB0711Logging.logWrite("ERROR: in HG0507SelPerson select: " + hbe.getMessage()); //$NON-NLS-1$
+								HB0711Logging.printStackTraceToFile(hbe);
+							}
 						}
 				// Only used to select HG0566-Source element names
 					pointCitationSourceHandler.updatePersonName(personPID);
@@ -1027,9 +1034,9 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		});
 
 	}	// End HG0507SelectPerson constructor
-	
+
 /**
- * protected void activatePrefNameListener()	
+ * protected void activatePrefNameListener()
  */
 	protected void activatePrefNameListener() {
 		combo_prefName1.addActionListener (new ActionListener() {
@@ -1039,7 +1046,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				if (partnerEvent) {
 					setPartnerPrefNameAction();
 				} else {
-					if (selectedIndex > 0) {	
+					if (selectedIndex > 0) {
 						assocPrefNamePID = pointPersonHandler.getPersonNameTablePID(selectedIndex - 1);
 						//System.out.println( " Assoc PRI - PID: " + assocPrefNamePID);
 					} else {
@@ -1051,7 +1058,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				btn_Save.setEnabled(true);
 			}
 		});
-		
+
 	// On selection within Preferred Name2 combobox
 		if (partnerEvent)
 			combo_prefName2.addActionListener (new ActionListener() {
@@ -1063,10 +1070,10 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 				}
 			});
 	}
-	
+
 /**
  * setPartnerPrefNameAction()
- * 
+ *
  */
 	private void setPartnerPrefNameAction() {
 		int selectedIndex;

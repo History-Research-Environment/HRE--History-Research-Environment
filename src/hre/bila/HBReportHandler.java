@@ -36,6 +36,9 @@ package hre.bila;
  * 			  2026=08-06 - Split off RelationCalc into HBRelationHandler (D Ferguson)
  * 			  2026=08-08 - Added handling of "S" sentence variables for associates (N. Tolleshaug)
  * 			  2026-08-30 - Prepare preferred name presentation(N. Tolleshaug)
+ * 			  2026-09-07 - Add handling of TMG's [:TAB:] (D Ferguson)
+ * 			  2026-09-07 - Improved exception handling and error reports (N. Tolleshaug)
+ *			  2026-09-08 - Fixed error in findSubjectNameTablePID (N. Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
@@ -206,6 +209,7 @@ public class HBReportHandler extends HBBusinessLayer {
 		repl.put("[:SIZE]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
 		repl.put("[SCAP:]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
 		repl.put("[:SCAP]", ""); 			//$NON-NLS-1$ //$NON-NLS-2$
+		repl.put("[:TAB:]", "&emsp"); 			//$NON-NLS-1$ //$NON-NLS-2$  // NB: this enters 4 spaces (std tab width)
 		Pattern pattern1 = Pattern.compile
 			("\\[BOLD:\\]|\\[:BOLD\\]|\\[ITAL:\\]|\\[:ITAL\\]|\\[UND:\\]|\\[:UND\\]|\\[SUP:\\]|\\[:SUP\\]|\\[SUB:\\]|\\[:SUB\\]|\\[HID:\\]|\\[:HID\\]|\\[CAP:\\]|\\[:CAP\\]|\\[HTML:\\]|\\[:HTML\\]|\\[WEB:\\]|\\[:WEB\\]|\\[EMAIL:\\]|\\[:EMAIL\\]|\\[INDEX:\\]|\\[:INDEX\\]|\\[SIZE:\\]|\\[:SIZE\\]|\\[SCAP:\\]|\\[:SCAP\\]"); //$NON-NLS-1$
 		Matcher matcher1 = pattern1.matcher(markers);
@@ -747,7 +751,7 @@ public class HBReportHandler extends HBBusinessLayer {
         String regexStandard = "\\[(.*?)\\]"; // [P] was married <to [PO]> <[D]> <[L]>
         String regexRoles = "\\[R:\\d{5}\\]"; // (en-US)[R:Barn] was born <at [L2]> <in [L]> <[D]>. <[M]>
         if (HGlobal.DEBUG) System.out.println(" Input sentence: " + inputSentence);
-        
+
         try {
 	        int count;
 	        patternVariables = Pattern.compile(regexStandard);
@@ -833,14 +837,18 @@ public class HBReportHandler extends HBBusinessLayer {
 	        reportSentence = reportSentence.replace("<",""); // Temp removal of misplaced
 	        reportSentence = reportSentence.replace(">",""); // Temp removal of misplaced
 	        reportSentence = reportSentence.replace("(en-US)","");
-	      
+
 	        if (HGlobal.DEBUG) System.out.println(" Report sentence build: " + reportSentence);
 	        return reportSentence;
-	        
+
 		} catch (Exception exe) {
-			System.out.println(" HBReportHandler - sentenseParser error: " + exe.getMessage());
-			exe.printStackTrace();
-			throw new HBException(" HBReportHandler - sentenseParser error: " + exe.getMessage());
+			System.out.println(" HBReportHandler - Sentence: " + inputSentence 
+								+ " Parser error: " + exe.getMessage());
+			if (HGlobal.writeLogs) HB0711Logging.logWrite(" HBReportHandler - Sentence: " + inputSentence 
+								+ " Parser error: " + exe.getMessage());
+			//exe.printStackTrace();
+			throw new HBException(" HBReportHandler - Sentence: " + inputSentence 
+								+ " Parser error: " + exe.getMessage());
 		}
     }
 
@@ -856,25 +864,25 @@ public class HBReportHandler extends HBBusinessLayer {
     }
 
  /**
-  * indLocalSentenceSETPID()
+  * findLocalSentenceSETPID()
   * @return
   * @throws HBException
-  */
+  
  	public long findLocalSentenceSetPID(long eventTablePID) throws HBException {
  		ResultSet sentenceSetRS;
  		String selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
  		sentenceSetRS = requestTableData(selectString, dataBaseIndex);
  		try {
  			sentenceSetRS.first();
- 			//return sentenceSetRS.getLong("PRIM_ASSOC_SENTENCE_RPID"); // ****  Removed in V23
  			return null_RPID;  //
  		} catch (SQLException sqle) {
  			System.out.println(" HBReportHandler - indLocalSentenceSetPID: " + sqle.getMessage());
  			throw new HBException("HBReportHandler - indLocalSentenceSetPID: \" + sqle.getMessage()");
  		}
  	}
-
-    /**
+*/
+    
+/**
 	T450_EVNT
 	PID
 	CL_COMMIT_RPID
@@ -905,9 +913,9 @@ public class HBReportHandler extends HBBusinessLayer {
 		long eventTablePID, memoRPID;
 		String selectString, eventDate, locationName, eventPersonName;
 		ResultSet eventTableRS, personTableRS, assocTableRS, partnerTableRS;
-		long personTablePID, ownerTablePID, nameStylePID, bestPersonNamePID, startHdate, 
-			eventLocationPID, priPartnerPID, secPartnerPID;
-		long assocPersonPrefRPID, eventPersonPrefNamePID = null_RPID, priPartnerPrefNamePID = null_RPID, 
+		long personTablePID = null_RPID, ownerTablePID = null_RPID, nameStylePID = null_RPID, bestPersonNamePID = null_RPID, startHdate,
+			eventLocationPID, priPartnerPID = null_RPID, secPartnerPID = null_RPID;
+		long assocPersonPrefRPID, eventPersonPrefNamePID = null_RPID, priPartnerPrefNamePID = null_RPID,
 			 secPartnerPrefNamePID = null_RPID;
 		int dataBaseIndex, visbleIdent, eventType, eventGroup, birthSex, subjectBirthSex, ownerType;
 		HashMap<String,String> personNameElements, subjectNameElements, locationNameElements;
@@ -922,7 +930,7 @@ public class HBReportHandler extends HBBusinessLayer {
 		ReportEventTMG(HBProjectOpenData pointOpenProject, long eventTablePID, long ownerTablePID, int ownerType) throws HBException {
 			this.eventTablePID = eventTablePID;
 			this.ownerTablePID = ownerTablePID;
-			this.ownerType = ownerType; // owner type:  1 - name, 2 - event, 3 - associate, 4 - partner 
+			this.ownerType = ownerType; // owner type:  1 - name, 2 - event, 3 - associate, 4 - partner
 			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 			pointHREmemo = pointOpenProject.getHREmemo();
 			pointPersonHandler = pointOpenProject.getPersonHandler();
@@ -978,14 +986,20 @@ public class HBReportHandler extends HBBusinessLayer {
 				visbleIdent = personTableRS.getInt("VISIBLE_ID");
 				birthSex = personTableRS.getInt("BIRTH_SEX");
 				nameStyleCodes = getOuputReportStyleCodes(bestPersonNamePID);
-				
+
 				if (eventPersonPrefNamePID == null_RPID)  eventPersonPrefNamePID = bestPersonNamePID;
 				if (priPartnerPrefNamePID == null_RPID) priPartnerPrefNamePID = bestPersonNamePID;
 				if (secPartnerPrefNamePID == null_RPID) secPartnerPrefNamePID = bestPersonNamePID;
+				//System.out.println(" Event person best nane PID: " + eventPersonPrefNamePID);
 
 			} catch (SQLException sqle) {
+				System.out.println(" ReportEventTMG personTablePID: " + personTablePID);
+				System.out.println( " Pri PID: " + priPartnerPID + " Sec PID: " + secPartnerPID);
+				System.out.println(" Event Person name: " + getPersonName());
+				System.out.println(" Event date: " + eventDate);
+				System.out.println(" Event location: " + getLocationName());
 				sqle.printStackTrace();
-				throw new HBException("ReportEventData error: " + sqle.getMessage());
+				throw new HBException("ReportEventTMG error: " + sqle.getMessage());
 			}
 /*
 			System.out.println(" ReportEventData pers PID: " + personTablePID);
@@ -1018,24 +1032,35 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
 		    				selectPersonNameElements(eventPersonPrefNamePID, dataBaseIndex);
 		    		String[] roleData = sentenceVariable.split(":");
-		    		if (roleData.length > 1) {
-		    			roleNumber = roleData[1];
-		    			//System.out.println(" Role number: " + roleNumber);
-		    			if (partnerEvent) {
-		    				if (roleNumber.equals("00020")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
-		    				if (roleNumber.equals("00004")) return findPersonName(priPartnerPID, priPartnerPrefNamePID);
-		    				if (roleNumber.equals("00003")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
-			    			return findPersonName(findAssociatePersonRole(roleNumber), null_RPID);
-		    			} else {
-		    				if (roleNumber.equals("00001") || roleNumber.equals("00003"))
-		    					return getPersonName(personNameElements, visbleIdent);
-		    				return findPersonName(findAssociatePersonRole(roleNumber), assocPersonPrefRPID);
-		    			}
-		    					
-
-		    		} else return "?" + sentenceVariable;
+		    		if (roleData.length <= 1) return "?" + sentenceVariable;
+					roleNumber = roleData[1];
+					if (partnerEvent) {
+						if (roleNumber.equals("00020")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
+						if (roleNumber.equals("00004")) return findPersonName(priPartnerPID, priPartnerPrefNamePID);
+						if (roleNumber.equals("00003")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
+						return findPersonName(findAssociatePersonRole(roleNumber), null_RPID);
+					}
+					if (roleNumber.equals("00001") || roleNumber.equals("00003"))
+						return getPersonName(personNameElements, visbleIdent);
+	// Temp added to test long sentence				
+					if (roleNumber.equals("00002")) {
+						String withessList = "";
+						if (rows > 0) {
+							for (int i = 0; i < associatePID.length; i++) {
+								//System.out.println(" Nr: " + i + " witnes: " + associatePID[i]);
+								if (i < associatePID.length -1)
+								withessList = withessList 
+										+ findAssociatePersonName(i + 1) + ", ";
+								else 	withessList = withessList 
+										+ findAssociatePersonName(i + 1);
+							}
+							return withessList;
+						} else  return "";
+					}
+					
+					return findPersonName(findAssociatePersonRole(roleNumber), assocPersonPrefRPID);
 		    	}
-		    		
+
 
 		    /* Process Px
 		    	Summarising Px in sentence reference terms:
@@ -1062,7 +1087,7 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			else if (birthSex == 3) return "Hen";
 
 		    		if (sentenceVariable.equals("PO") || sentenceVariable.equals("P2")
-		    										  || sentenceVariable.equals("POS"))								 
+		    										  || sentenceVariable.equals("POS"))
 		    			return getPersonOptional();
 
 		    		switch (sentenceVariable) {
@@ -1074,41 +1099,54 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			case "PLS":  return personNameElements.get(personNameCodeArray[4]);
 		    			//default: return "?" + sentenceVariable;
 		    		}
-		    	
+
 			    	/**
 			    	 * [PAR] The parents of the Current Principal
 					 * [PARO]The parents of the Other Principal
 					 * [PAR1] The parents of Principal #1
 					 * [PAR2] The parents of Principal #2
 			    	 */
-			    	
+
 			    	if (sentenceVariable.startsWith("PA")) {
 			    			String prefix;
-			    			if (birthSex == 1) prefix = " son of "; 
-			    			else if (birthSex == 2) prefix = " dauther of "; 
+			    			if (birthSex == 1) prefix = " son of ";
+			    			else if (birthSex == 2) prefix = " dauther of ";
 			    			else prefix = " parents ";
-			    			switch (sentenceVariable) {	
-			    			case "PAR":  
-			    				if (partnerEvent) 
-			    					return prefix + findPersonName(findFatherForPerson(priPartnerPID), null_RPID);   
-			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID); 
-			    			case "PARO": 
-			    				if (partnerEvent) 
-			    					return prefix + findPersonName(findFatherForPerson(secPartnerPID), null_RPID);  
-			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID);  
-			    			case "PAR1": return "?" + ownerType + sentenceVariable; 
-			    			case "PAR2": return "?" + ownerType + sentenceVariable; 
+			    			switch (sentenceVariable) {
+			    			case "PAR":
+			    				if (partnerEvent)
+			    					return prefix + findPersonName(findFatherForPerson(priPartnerPID), null_RPID);
+			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID);
+			    			case "PARO":
+			    				if (partnerEvent)
+			    					return prefix + findPersonName(findFatherForPerson(secPartnerPID), null_RPID);
+			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID);
+			    			case "PAR1": return "?" + ownerType + sentenceVariable;
+			    			case "PAR2": return "?" + ownerType + sentenceVariable;
 			    			default: return "??" + sentenceVariable;
 			    		}
 			    	}
 		    	}
-		    	
+
 		    // Process date
 		    	if (sentenceVariable.startsWith("D")) {
 		    		return  eventDate;
 		    	}
 
-		    // process Lx variables
+// process Lx variables
+/*
+ * Level 1  [LA], [L1] or [ADDRESSEE]
+ * Level 2  [LD], [L2] or [DETAIL]  also [DETAIL1], [DETAIL2], ... [DETAIL9] alternatively, [LD1], [LD2], ... [LD9]
+ * Level 3  [LCI], [L3] or [CITY]
+ * Level 4  [LCN], [L4] or [COUNTY]
+ * Level 5  [LS], [L5] or [STATE]
+ * Level 6  [LCR], [L6] or [COUNTRY]
+ * Level 7  [LZ], [L7] or [ZIP]
+ * Level 8  [LP], [L8] or[PHONE]
+ * Level 9  [LL], [L9] or [LATLONG]
+ * Level 10[LT], [L10] or [TEMPLE]
+ */
+		    	
 		    	if (sentenceVariable.startsWith("L")) {
 					if (locationNameElements == null)
 						locationNameElements = pointPersonHandler.pointLibraryResultSet.
@@ -1116,26 +1154,36 @@ public class HBReportHandler extends HBBusinessLayer {
 				 	if (sentenceVariable.equals("L")) return getLocationName();
 		    		switch (sentenceVariable) {
 		    			case "L1":  return locationNameElements.get(locationNameCodeArray[0]);
+		    			case "LA":  return locationNameElements.get(locationNameCodeArray[0]);
+		    			
 		    			case "L2":  return locationNameElements.get(locationNameCodeArray[1]);
+		    			case "LD":  return locationNameElements.get(locationNameCodeArray[1]);
+		    			
 		    			case "L3":  return locationNameElements.get(locationNameCodeArray[2]);
+		    			case "LCI":  return locationNameElements.get(locationNameCodeArray[2]);
+		    			
 		    			case "L4":  return locationNameElements.get(locationNameCodeArray[3]);
+		    			case "LCN":  return locationNameElements.get(locationNameCodeArray[3]);
+		    			
 		    			case "L5":  return locationNameElements.get(locationNameCodeArray[4]);
+		    			case "LS":  return locationNameElements.get(locationNameCodeArray[4]);
+		    			
 		    			case "L6":  return locationNameElements.get(locationNameCodeArray[5]);
+		    			case "LZ":  return locationNameElements.get(locationNameCodeArray[5]);
 		    			default: return "?" + sentenceVariable;
 		    		}
 		    	 }
-		    	
+
 			// process Sx variables Subject variables
 		    // Need update *******************************************' NTo 7-8-2026
 		    	if (sentenceVariable.startsWith("S")) {
 		    		//System.out.println(" S-variable OwnerType: " + ownerType + " OwnerPID:" + ownerTablePID);
-		    		if ( ownerType == 3) {
-		    			long bestSubjectPersonName = findSubjectNameRablePID(ownerTablePID);
-			    		if (subjectNameElements == null)
-			    			subjectNameElements =  pointPersonHandler.pointLibraryResultSet.
-			    				selectPersonNameElements(bestSubjectPersonName, dataBaseIndex);
-		    		} else return "?" + ownerType + "/" +sentenceVariable;
-		    		
+		    		if ( ownerType != 3) return "?" + ownerType + "/" +sentenceVariable;
+					long bestSubjectPersonName = findSubjectNameTablePID(ownerTablePID);
+					if (subjectNameElements == null)
+						subjectNameElements =  pointPersonHandler.pointLibraryResultSet.
+							selectPersonNameElements(bestSubjectPersonName, dataBaseIndex);
+
 		    		switch (sentenceVariable) {
 		    			case "S": return getPersonName(subjectNameElements, visbleIdent);
 		    			case "S+": return getPersonName(subjectNameElements, visbleIdent);
@@ -1145,9 +1193,12 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			case "SL": return subjectNameElements.get(personNameCodeArray[4]);
 		    			case "SA": return "?Age";
 		    			case "SE": return "?ExAge";
-		    			case "SP": if (subjectBirthSex == 1) return "She"; else if (subjectBirthSex == 2) return "He"; 
-		    			case "SPP": if (subjectBirthSex == 1) return "Her"; else if (subjectBirthSex == 2) return "His"; 
-		    			case "SM": if (subjectBirthSex == 1) return "Her"; else if (subjectBirthSex == 2) return "Him"; 
+		    			case "SP": if (subjectBirthSex == 1) return "She";
+						if (subjectBirthSex == 2) return "He";
+		    			case "SPP": if (subjectBirthSex == 1) return "Her";
+						if (subjectBirthSex == 2) return "His";
+		    			case "SM": if (subjectBirthSex == 1) return "Her";
+						if (subjectBirthSex == 2) return "Him";
 		    			case "SGS": return subjectNameElements.get(personNameCodeArray[2]) + "'s";
 		    			case "SFS": return subjectNameElements.get(personNameCodeArray[2]) + "'s";
 		    			case "SLS": return subjectNameElements.get(personNameCodeArray[4]) + "'s";
@@ -1159,7 +1210,7 @@ public class HBReportHandler extends HBBusinessLayer {
 		    	 if (sentenceVariable.startsWith("W")) {
 		    		 if (rows == 0)
 		    			 rows = collectAssociatePersons(eventTablePID);
-		    		 if (rows < 1) return "?" + sentenceVariable;	 
+		    		 if (rows < 1) return "?" + sentenceVariable;
 		    		 if (sentenceVariable.equals("W"))
 		    			 return findPersonName(associatePID[0], associatePrefNameRPID[0]);
 					 if (sentenceVariable.equals("WO") && rows > 1)
@@ -1168,23 +1219,28 @@ public class HBReportHandler extends HBBusinessLayer {
 		    			 return findPersonName(associatePID[2], associatePrefNameRPID[2]);
 					 if (sentenceVariable.equals("WM")) return "WM memo";
 					 return "?" + sentenceVariable;
-		  
+
 		    	 }
 
 		    // Process memo
-		    	 if (sentenceVariable.startsWith("M")) 
+		    	 if (sentenceVariable.startsWith("M"))
 						return pointHREmemo.readMemo(memoRPID);
-		    	 
-		    // create new line or [:CR:]	 
-		    	 if (sentenceVariable.startsWith(":CR:")) 
+
+		    // create new line or [:CR:]
+		    	 if (sentenceVariable.startsWith(":CR:"))
 		    		 return "\n";
-		    	 
+
+		    // handle [:TAB:] - treat as 4 spaces (width of std TAB)
+		    	 if (sentenceVariable.startsWith(":TAB:"))
+		    		 return "    ";
+
+
 		    	 return "?" + sentenceVariable;
 
 			} catch (HBException hbe) {
-				System.out.println(" Sentence variable error: " + hbe.getMessage());
+				System.out.println(" ReportEventTMG - Sentence variable: " + sentenceVariable + " error: " + hbe.getMessage());
 				hbe.printStackTrace();
-				throw new HBException();
+				throw new HBException(" ReportEventTMG");
 			}
 	    }
 
@@ -1219,65 +1275,66 @@ public class HBReportHandler extends HBBusinessLayer {
 				//System.out.println(" Output Style Codes: " + codeString);
 				return outputDataCodes;
 			} catch (SQLException sqle) {
-				System.out.println(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+				System.out.println(" ReportEventTMG - getOuputStyleCodes: " + sqle.getMessage());
 				sqle.printStackTrace();
-				throw new HBException(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+				throw new HBException(" ReportEventTMG - getOuputStyleCodes: " + sqle.getMessage());
 			}
 		}
-	
-		
+
+
 		private long findMotherForPerson(long personTablePID) throws HBException {
 			return findValueForPerson("EGG_PROVIDER_RPID", personTablePID);
 		}
-		
+
 		private long findFatherForPerson(long personTablePID) throws HBException {
 			return findValueForPerson("SPERM_PROVIDER_RPID", personTablePID);
 		}
-		
+
 		private long findBestNameForPerson(long personTablePID) throws HBException {
 			return findValueForPerson("BEST_NAME_RPID", personTablePID);
 		}
-		
+
 		private long findValueForPerson(String relation, long personTablePID ) throws HBException {
 			ResultSet personTableRS;
 			selectString = setSelectSQL(relation, personTable, "PID = " + personTablePID);
 			personTableRS = requestTableData(selectString, dataBaseIndex);
 			try {
+				if (isResultSetEmpty(personTableRS)) return null_RPID;
 				personTableRS.first();
 				return personTableRS.getLong(relation);
 			} catch (SQLException sqle) {
-				System.out.println("findParentForPerson - " + sqle.getMessage());
+				System.out.println(" ReportEventTMG - findParentForPerson - " + sqle.getMessage());
 				sqle.printStackTrace();
-				throw new HBException();
+				throw new HBException(" ReportEventTMG - findValueForPerson error: " + sqle.getMessage());
 			}
 		}
-	
+
 /**
- * private long findSubjectNameRablePID(long assocTablePID)		
+ * private long findSubjectNameRablePID(long assocTablePID)
  * @param assocTablePID
  * @return
  * @throws HBException
  */
-	private long findSubjectNameRablePID(long assocTablePID) throws HBException {
-		ResultSet personNameRS;
+	private long findSubjectNameTablePID(long assocTablePID) throws HBException {
+		ResultSet personNameRS, assocTableRS;
 		long assocPersonTablePID, assocPersonPefNamePID;
-		selectString = setSelectSQL("ASSOC_RPID", eventAssocTable,"PID = " + assocTablePID);
-		personNameRS = requestTableData(selectString, dataBaseIndex);
+		selectString = setSelectSQL("ASSOC_RPID,PREF_NAME_RPID", eventAssocTable,"PID = " + assocTablePID);
+		assocTableRS = requestTableData(selectString, dataBaseIndex);
 		try {
-			personNameRS.first();
-			assocPersonTablePID = personNameRS.getLong("ASSOC_RPID");
-			assocPersonPefNamePID = personNameRS.getLong("PREF_NAME_RPID");
+			assocTableRS.first();
+			assocPersonTablePID = assocTableRS.getLong("ASSOC_RPID");
+			assocPersonPefNamePID = assocTableRS.getLong("PREF_NAME_RPID");
 			selectString = setSelectSQL("BEST_NAME_RPID,BIRTH_SEX", personTable,"PID = " + assocPersonTablePID);
 			personNameRS = requestTableData(selectString, dataBaseIndex);
 			personNameRS.first();
 			subjectBirthSex = personNameRS.getInt("BIRTH_SEX");
 			if (assocPersonPefNamePID == null_RPID) return personNameRS.getLong("BEST_NAME_RPID");
-			else return assocPersonPefNamePID;
+			return assocPersonPefNamePID;
 		} catch (SQLException sqle) {
-			System.out.println(" HBReportHandler - findSubjectNameRablePID" + sqle.getMessage());
+			System.out.println(" ReportEventTMG - findSubjectNameTablePID error: " + sqle.getMessage());
 			sqle.printStackTrace();
-			throw new HBException(" HBReportHandler - findSubjectNameRablePID" + sqle.getMessage());
-		}	
+			throw new HBException(" ReportEventTMG - findSubjectNameTablePID error: " + sqle.getMessage());
+		}
 	}
 
 /**
@@ -1304,6 +1361,7 @@ public class HBReportHandler extends HBBusinessLayer {
  */
 		public String findAssociatePersonName(int index) throws HBException {
 			index = index -1;
+			if (rows == 0) rows = collectAssociatePersons(eventTablePID);
 			if (index < 0 || index > rows) return "";
 			return findPersonName(associatePID[index], associatePrefNameRPID[index]);
 		}
@@ -1315,17 +1373,22 @@ public class HBReportHandler extends HBBusinessLayer {
 			selectString = setSelectSQL("*", personTable, "PID = " + personTablePID);
 			personTableRS = requestTableData(selectString, dataBaseIndex);
 			try {
+				if (isResultSetEmpty(personTableRS)) {
+					//System.out.println(" ReportEventData - findPersonName error personNamePID: " + personTablePID);
+					return " Not found!";
+				}
 				personTableRS.first();
+				viibleIdent = personTableRS.getInt("VISIBLE_ID");
 				if (prefNamePID == null_RPID)
 					bestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
 				else bestPersonNamePID = prefNamePID;
-				viibleIdent = personTableRS.getInt("VISIBLE_ID");
+				
 				personNameElements =  pointLibraryResultSet.
 						selectPersonNameElements(bestPersonNamePID, dataBaseIndex);
 				return getPersonName(personNameElements, viibleIdent);
 			} catch (SQLException sqle) {
 				sqle.printStackTrace();
-				throw new HBException(" ReportEventData - findPersonName error: " + sqle.getMessage());
+				throw new HBException(" ReportEventTMG - findPersonName error: " + sqle.getMessage());
 			}
 		}
 
@@ -1477,7 +1540,7 @@ public class HBReportHandler extends HBBusinessLayer {
 				}
 			} catch (SQLException sqle) {
 				sqle.printStackTrace();
-				throw new HBException(" ReportEventData - collectAssocatePersons error: " + sqle.getMessage());
+				throw new HBException(" ReportEventTMG - collectAssocatePersons error: " + sqle.getMessage());
 			}
 			return nrOfRows;
 
@@ -1505,7 +1568,8 @@ public class HBReportHandler extends HBBusinessLayer {
 		public String getEventMemo() throws HBException {
 			return pointHREmemo.readMemo(memoRPID);
 		}
-	} // End ReportEventData
+		
+	} // End ReportEventTMG
 
 /**
  * class ReportNameTMG
@@ -1558,8 +1622,11 @@ public class HBReportHandler extends HBBusinessLayer {
 				visbleIdent = personTableRS.getInt("VISIBLE_ID");
 				birthSex = personTableRS.getInt("BIRTH_SEX");
 			} catch (SQLException sqle) {
+				System.out.println(" ReportEventTMG personNameTablePID: " + nameTablePID);
+				System.out.println(" Person name: " + getPersonName());
+				System.out.println(" Event date: " + eventDate);
 				sqle.printStackTrace();
-				throw new HBException("ReportEventData error: " + sqle.getMessage());
+				throw new HBException(" HBReportHandler - ReportNameTMG error: " + sqle.getMessage());
 			}
 		}
 
@@ -1594,9 +1661,9 @@ public class HBReportHandler extends HBBusinessLayer {
 				//System.out.println(" Output Style Codes: " + codeString);
 				return outputDataCodes;
 			} catch (SQLException sqle) {
-				System.out.println(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+				System.out.println(" ReportNameTMG - getOuputStyleCodes: " + sqle.getMessage());
 				sqle.printStackTrace();
-				throw new HBException(" HBReportHandler - getOuputStyleCodes: " + sqle.getMessage());
+				throw new HBException(" ReportNameTMG - getOuputStyleCodes: " + sqle.getMessage());
 			}
 		}
 
@@ -1642,8 +1709,9 @@ public class HBReportHandler extends HBBusinessLayer {
  * returnSentenceVariable(String sentenceVariable)
  * @param sentenceVariable
  * @return
+ * @throws HBException 
  */
-		public String returnSentenceVariable(String sentenceVariable) {
+		public String returnSentenceVariable(String sentenceVariable) throws HBException {
 			if (HGlobal.DEBUG) System.out.println(" Not found sentence variable: " + sentenceVariable);
 			try {
 			   	if (sentenceVariable.startsWith("P")) {
@@ -1681,14 +1749,16 @@ public class HBReportHandler extends HBBusinessLayer {
 			    // Process memo
 		    	 if (sentenceVariable.startsWith("M"))
 						return pointHREmemo.readMemo(memoRPID);
-				 return "";
+		    	 
+		    	 return "?" + sentenceVariable;
 
 			} catch (HBException hbe) {
-				System.out.println(" Sentence variable error: " + hbe.getMessage());
+				System.out.println(" ReportNameTMG - Sentence variable: " + sentenceVariable 
+						+ "  error: " + hbe.getMessage());
 				hbe.printStackTrace();
+				throw new HBException(" ReportNameTMG - error: " + hbe.getMessage());
 			}
-			return "?" + sentenceVariable;
 		}
-	}
+	} // End class ReportNameTMG
 } // End Class HBReportHandler
 

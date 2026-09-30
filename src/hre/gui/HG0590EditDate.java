@@ -19,6 +19,7 @@ package hre.gui;
  * 			  2024-10-01 Organize imports, clean dead code (D Ferguson)
  * 			  2024-10-28 Add test for date being cleared as a valid entry (D Ferguson)
  * v0.04.0032 2026-01-04 Log debug msgs (D Ferguson)
+ * v0.05.0034 2026-09-28 Adjust 'after' dates SortCode so they sort correctly (D Ferguson)
  * *************************************************************************************
  * Notes on incomplete functionality:
  * Does not yet support different calendar types
@@ -54,7 +55,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * Edit Date
  * @author D Ferguson
- * @version v0.03.0032
+ * @version v0.05.0034
  * @since 2023-08-21
  */
 
@@ -1042,6 +1043,12 @@ public class HG0590EditDate extends JDialog {
 			break;
 		case "A" :		//$NON-NLS-1$
 			sortQual = "5";	// after	//$NON-NLS-1$
+			// For 'after' dates we adjust any missing mth/day data to be 12 & 31
+			// to ensure 'after' dates sort after dates in the same year/mth.
+			StringBuilder newSortString = new StringBuilder(sortString);
+			if (sortString.substring(20,24).equals("0000")) newSortString.replace(20, 24, "3311");  // replace days = 0000
+			if (sortString.substring(16,20).equals("0000")) newSortString.replace(16, 20, "1122");	// replace mths = 0000
+			sortString = newSortString.toString();
 			break;
 		case "W" :		//$NON-NLS-1$
 			sortQual = "6";	// between/and	//$NON-NLS-1$

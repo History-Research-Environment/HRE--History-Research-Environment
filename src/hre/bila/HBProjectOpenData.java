@@ -70,8 +70,9 @@ package hre.bila;
  * 			  2026-01-18 - Added code to support extract of HRE table to CSV file (D Ferguson)
  * 			  2026-01-27 - Updated code for database index setting for handlers(N.Tolleshaug)
  * v0.05.0033 2026-04-06 - Added method getFocusPersonPID (N. Tolleshaug)
- * 			  2026-04-09 - Added methods to update tFocusPersonPID (N. Tolleshaug)
+ * 			  2026-04-09 - Added methods to update FocusPersonPID (N. Tolleshaug)
  * v0.05.0034 2026-08-06 - Updated for new HBRelationsHandler (D Ferguson)
+ * 			  2026-09-01 - Test DB build not for new empty projects (N. Tolleshaug)
  ********************************************************************************************/
 
 import java.awt.Container;
@@ -81,7 +82,6 @@ import java.awt.Point;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-//import java.util.HashMap;
 import java.util.HashMap;
 
 import javax.swing.JDialog;
@@ -810,23 +810,11 @@ public class HBProjectOpenData {
 					getDatabaseVersion(pointSchemaDefTable, dataBaseIndex);
 
 	// Check dtabase version
-		    if (!databaseDDLversion.contains("V23")) {
+		    if (!databaseDDLversion.contains("V23")) 
 				throw new HBException(" HBProjectOpenData - HRE database version not accepted" +
 					" found: " + databaseDDLversion);
-			}
-/**
- * Give WARNING if generated HRE does not match database build
- */
-		    if (!databaseDDLversion.contains(HGlobal.databaseBuild)) {
-				System.out.println(" WARNING: database build: " + databaseDDLversion
-						+ " using HRE for version DDL" + HGlobal.databaseBuild );
-				JOptionPane.showMessageDialog(null, " WARNING: \nOpened DB build: " + databaseDDLversion
-						+ "\nnot equal to HRE expected DB build " + HGlobal.databaseBuild  ,
-						"Project Open databse", JOptionPane.WARNING_MESSAGE);
-			}
 
-
-		// Set up ResultSet T126_PROJECTS
+	// Set up ResultSet T126_PROJECTS
 			selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.projectTable,"");
 			projectTableRS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
 			try {
@@ -836,11 +824,32 @@ public class HBProjectOpenData {
 				focusPersonPID = projectTableRS.getLong("FOCUS_PER_PID");
 				projectTableRS.close();
 			} catch (SQLException sqle) {
-				if (HGlobal.DEBUG) {
+				if (HGlobal.DEBUG) 
 					System.out.println(" table T126_PROJECTS - IS_IMPORTED not found!");
-				}
 				importedProject = true;
 			}
+			
+			selectSQL = pointProjectHandler.setSelectSQL("*", pointProjectHandler.personTable,"");
+			ResultSet table401_PERSONS = pointProjectHandler.requestTableData(selectSQL, dataBaseIndex);
+			
+/**
+ * Give WARNING if person table not empty and generated HRE does not match database build
+ */
+		   try {
+			if (!pointProjectHandler.isResultSetEmpty(table401_PERSONS))
+				if (!databaseDDLversion.contains(HGlobal.databaseBuild)) {
+					System.out.println(" WARNING: database build: " + databaseDDLversion
+							+ " using HRE for version DDL" + HGlobal.databaseBuild );
+		    		if (HGlobal.DEBUG && HGlobal.writeLogs)
+		    			HB0711Logging.logWrite(" WARNING: database build: " + databaseDDLversion
+								+ " using HRE for version DDL" + HGlobal.databaseBuild );
+					JOptionPane.showMessageDialog(null, " WARNING: \nOpened DB build: " + databaseDDLversion
+							+ "\nnot equal to HRE expected DB build " + HGlobal.databaseBuild  ,
+							"Project Open databse", JOptionPane.WARNING_MESSAGE);
+				}
+			} catch (SQLException sqle) {
+				throw new HBException(" Open Project . isResultSetEmpty error: " + sqle.getMessage());
+			}			
 
 		// Print focus person PID
 			if (HGlobal.DEBUG)
@@ -880,7 +889,10 @@ public class HBProjectOpenData {
 			}
 			closeDatabase(dataBaseIndex);
 			throw new HBException("ProjectOpenData - initiate error: \n" + hde.getMessage());
-		}
+		}/* catch (HeadlessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} */
 
 	} // open Project
 

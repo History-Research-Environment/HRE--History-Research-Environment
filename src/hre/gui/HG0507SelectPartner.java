@@ -22,10 +22,13 @@ package hre.gui;
  * 			  2026-08-16 Add Preferred name functions to inpersRolePanel (D Ferguson)
  * 			  2026-08-28 Implemented Preferred name for partner (N. Tolleshaug)
  * 			  2026-08-29 Partner save fix for default setting problem (N. Tolleshaug)
- *************************************************************************************
- * NB: HG05070Msgs.Text_145 no lnger used
- **************************************************/
+ * 			  2026-09-03 Update NLS (D Ferguson)
+ * 			  2026-09-13 Update for issue 34.07 import with only partner PER1(N. Tolleshaug)
+ * 			  2026-09-20 Updateissue 34.07 select and update P2 partner (N. Tolleshaug)
+ * 			  2026-09-28 Tidy NON-NLS and standardize catch blocks (D Ferguson)
+ *************************************************************************************/
 
+import java.awt.Cursor;
 //import java.awt.Font;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -35,6 +38,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 
@@ -51,17 +55,17 @@ import hre.nls.HG05070Msgs;
  * @version v0.05.0034
  * @since 2024-04-05
  */
-
 public class HG0507SelectPartner extends HG0507SelectPerson {
 	private static final long serialVersionUID = 1L;
 
 	long null_RPID  = 1999999999999999L;
 	protected HBWhereWhenHandler pointHBWhereWhenHandler;
+	HBPersonHandler pointPersonHandler;
 	HG0507SelectPartner pointSelectPartner = this;
-	boolean addRelation;
+	boolean addRelation, partnerChanged = false;
+	long newPartnerPID = null_RPID;
 	String[] partnerTypeList;
 	int [] partnerTypeNumbers;
-	//Object[] partnerRelationData;
 	final static int partnerEventGroup = -2; // Include both group 6 and 7
 
 	private ActionListener comboRole1Change = null;
@@ -74,6 +78,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	String selectPartnerRoles = " AND EVNT_ROLE_NUM BETWEEN 1 AND 99";	//$NON-NLS-1$
 	int priRole, secRole;
 	String memoString;
+	JButton btn_nRole2 = new JButton();
+	JLabel lbl_prefName2;
+	DefaultComboBoxModel<String> comboNameModel2;
 
 /**
  * HG0507SelectPartner constructor
@@ -87,6 +94,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 										 int selectedRowInTable, boolean addPartner) throws HBException {
 		super(pointPersonHandler, pointOpenProject, addPartner);
 		this.addRelation = addPartner;
+		this.pointPersonHandler =  pointPersonHandler;
 		citeTableName = "T404";		//$NON-NLS-1$
 		ownerType = 4; // Set owner type partner for LOCAL
 
@@ -101,11 +109,11 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 
 		pointHBWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 
-/* partnerRelationData content
-  			      [0] = partnerTablePID; [1] = eventype; [2] = prirole; [3] = secrole;
-				  [4] = priname; [5] = secname, [6] = sex# code of person, [7] = sex# of partner
-				  [8] = eventTablePID for partner event
-*/
+		/* partnerRelationData content:
+		   [0] = partnerTablePID; [1] = eventype; [2] = prirole; [3] = secrole;
+		   [4] = priname; [5] = secname, [6] = sex# code of person, [7] = sex# of partner
+		   [8] = eventTablePID for partner event
+		*/
 		partnerRelationData = pointPersonHandler.getPartnerTableData(selectedRowInTable);
 
 	// Get the  data for this partnerPID
@@ -120,74 +128,81 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 				ResultSet partnerTableRS = pointPersonHandler.requestTableData(selectString, dataBaseIndex);
 				personTablePID = pointOpenProject.getSelectedPersonPID();
 				partnerTableRS.first();
-				primPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
-				objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID);
-				priPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");
+				primPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");					//$NON-NLS-1$
+				objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID, false);
+				priPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");				//$NON-NLS-1$
 				if (personTablePID == primPartnerRPID) {
-					secPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");				
-					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID);
-					secPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
+					secPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");				//$NON-NLS-1$
+					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID, false);
+					secPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");			//$NON-NLS-1$
 				} else {
-					primPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
-					objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID);
-					priPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
-					secPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");				
-					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID);
-					secPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");
+					primPartnerRPID = partnerTableRS.getLong("SEC_PARTNER_RPID");				//$NON-NLS-1$
+					objNameData1 = pointPersonHandler.preparePersonNameTable(primPartnerRPID, false);
+					priPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");			//$NON-NLS-1$
+					secPartnerRPID = partnerTableRS.getLong("PRI_PARTNER_RPID");				//$NON-NLS-1$
+					objNameData2 = pointPersonHandler.preparePersonNameTable(secPartnerRPID, false);
+					secPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");			//$NON-NLS-1$
 				}
 			} catch (SQLException sqle) {
-				System.out.println(" HG0507SelectPartner - partner data process: " + sqle.getMessage());
-				sqle.printStackTrace();
+				if (HGlobal.writeLogs) {
+					HB0711Logging.logWrite("ERROR: in HG0507SelPartner data load: " + sqle.getMessage()); //$NON-NLS-1$
+					HB0711Logging.printStackTraceToFile(sqle);
+				}
 			}
-	// Set up list of pref person names 1 and select preferred		
-			JLabel lbl_prefName1 = new JLabel("Preferred:");
+	// Set up list of pref person names 1 and select preferred
+			JLabel lbl_prefName1 = new JLabel(HG05070Msgs.Text_155);		// Preferred Name:
 			persRolePanel.add(lbl_prefName1, "cell 2 1");	//$NON-NLS-1$
 			selectedIndex = 0;
 			rows = objNameData1.length;
 			prefNameOptions1 = new String[rows + 1];
 			prefNameOptions1[0] = defaultSetting;
 			for (int i = 0; i < rows; i++) {
-				prefNameOptions1[i + 1] = (String) objNameData1[i][1];	
-				//System.out.println(" Compare-1: " + priPartnerPrefNamePID
-				//	+ " & " + objNameData1[i][3]);
-				if (personTablePID == primPartnerRPID) 
+				prefNameOptions1[i + 1] = (String) objNameData1[i][1];
+				//System.out.println(" Compare-1: " + priPartnerPrefNamePID	+ " & " + objNameData1[i][3]);
+				if (personTablePID == primPartnerRPID)
 					if (priPartnerPrefNamePID == (long) objNameData1[i][3])  selectedIndex = i + 1;
-				else 
+				else
 					if (secPartnerPrefNamePID == (long) objNameData1[i][3])  selectedIndex = i + 1;
 			}
-			
+
 			DefaultComboBoxModel<String> comboNameModel1
 						= new DefaultComboBoxModel<>(prefNameOptions1);			// Load names
 			combo_prefName1 = new JComboBox<>(comboNameModel1);
-			combo_prefName1.setSelectedIndex(selectedIndex); // Set preferred name for event 
-			persRolePanel.add(combo_prefName1, "cell 3 1");	//$NON-NLS-1$		
-			
-			JLabel lbl_prefName2 = new JLabel("Preferred:");
-			//lbl_prefName2.setFont(lbl_prefName2.getFont().deriveFont(lbl_prefName2.getFont().getStyle() | Font.BOLD));
+			combo_prefName1.setSelectedIndex(selectedIndex); // Set preferred name for event
+			persRolePanel.add(combo_prefName1, "cell 2 1");	//$NON-NLS-1$
+
+			lbl_prefName2 = new JLabel(HG05070Msgs.Text_155);		// Preferred Name:
 			persRolePanel.add(lbl_prefName2, "cell 2 2");	//$NON-NLS-1$
-			
+
 		// Set up list of pref person names 2 and select preferred
-			selectedIndex = 0;
-			rows = objNameData2.length;
+			selectedIndex = 0; rows = 0;
+		// Update to fix issue 34.07 import with only partner PER1
+			if (objNameData2 != null)
+					rows = objNameData2.length;
 			prefNameOptions2 = new String[rows + 1];
 			prefNameOptions2[0] = defaultSetting;
 			for (int i = 0; i < rows; i++) {
-				prefNameOptions2[i + 1] = (String) objNameData2[i][1];	
-				//System.out.println(" Compare-2: " + secPartnerPrefNamePID
-				//	+ " & " + objNameData2[i][3]);
-				if (personTablePID == primPartnerRPID) 
+				prefNameOptions2[i + 1] = (String) objNameData2[i][1];
+				//System.out.println(" Compare-2: " + secPartnerPrefNamePID + " & " + objNameData2[i][3]);
+				if (personTablePID == primPartnerRPID)
 					if (priPartnerPrefNamePID == (long) objNameData2[i][3])  selectedIndex = i + 1;
-				else 
+				else
 					if (secPartnerPrefNamePID == (long) objNameData2[i][3])  selectedIndex = i + 1;
 			}
-			
-			DefaultComboBoxModel<String> comboNameModel2
-						= new DefaultComboBoxModel<>(prefNameOptions2);			// Load names
+
+			comboNameModel2 = new DefaultComboBoxModel<>(prefNameOptions2);			// Load names
 			combo_prefName2 = new JComboBox<>(comboNameModel2);
-			combo_prefName2.setSelectedIndex(selectedIndex); // Set preferred name for event 
-			persRolePanel.add(combo_prefName2, "cell 3 2");	//$NON-NLS-1$
-			
-		// Set up listeneres for preferred name
+			combo_prefName2.setSelectedIndex(selectedIndex); // Set preferred name for event
+			persRolePanel.add(combo_prefName2, "cell 2 2");	//$NON-NLS-1$
+
+			// If 'no name' indicator set, make Preferred name 2 items invisible
+			if (secPartnerRPID == null_RPID) {
+			//if (partnerRelationData[5].equals(HGlobalMsgs.Text_21.trim())) {		// No name recorded
+				lbl_prefName2.setVisible(false);
+				combo_prefName2.setVisible(false);
+			}
+
+		// Set up listeners for preferred name
 			activatePrefNameListener();
 
 		// Set event and role for sentence editor
@@ -220,11 +235,11 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		// Get the citation data for this partnerPID
 			partnerTablePID = (long)partnerRelationData[0];
 			objCiteData = pointCitationSourceHandler.getCitationSourceData(partnerTablePID, citeTableName); //for T404
-		// and sort it on GUI sequence
+			// and sort it on GUI sequence
 			Arrays.sort(objCiteData, (o1, o2) -> Integer.compare((Integer) o1[4], (Integer) o2[4]));
 			// and ensure it is displayed
 			resetCitationTable(citeTableName);
-		} else if (HGlobal.DEBUG) System.out.println(" Partner relation data == null");
+		} else if (HGlobal.DEBUG) System.out.println(" Partner relation data == null");		//$NON-NLS-1$
 
 	// Get the partner details
 		partnerTypeList = pointPersonHandler.getPartnerEventList(partnerEventGroup);
@@ -249,12 +264,11 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		lbl_nRole1.setText("" + pointPersonHandler.getManagedPersonName());	//$NON-NLS-1$
 
 	// Tailor the persRolePanel for partners
-//		lbl_Parent.setText(HG05070Msgs.Text_145);		//  Edit partner/event
 		lbl_Parent.setText(HG05070Msgs.Text_174);		//  Set Event Type
 		persRolePanel.add(lbl_nRole1, "cell 0 1");		//$NON-NLS-1$
 		comboPartRole1 = new JComboBox<>(partnerRoleList);
 		persRolePanel.add(comboPartRole1, "cell 1 1");		//$NON-NLS-1$
-		persRolePanel.add(lbl_nRole2, "cell 0 2");		//$NON-NLS-1$
+		persRolePanel.add(btn_nRole2, "cell 0 2");			//$NON-NLS-1$
 		comboPartRole2 = new JComboBox<>(partnerRoleList);
 		persRolePanel.add(comboPartRole2, "cell 1 2");		//$NON-NLS-1$
 
@@ -269,7 +283,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 /********************
  * Action Listeners
  *******************/
-	// Listener for selection within partner1 role combobox
+		// Listener for selection within partner1 role combobox
 		comboRole1Change = new ActionListener () {
 	        @Override
 	        public void actionPerformed(ActionEvent e) {
@@ -281,7 +295,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	    };
 		comboPartRole1.addActionListener(comboRole1Change);
 
-	// Listener for selection within partner2 role combobox
+		// Listener for selection within partner2 role combobox
 		comboRole2Change = new ActionListener () {
 	        @Override
 	        public void actionPerformed(ActionEvent e) {
@@ -355,11 +369,9 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 						if (memoEdited)
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 									(long)partnerRelationData[0], pointPersonHandler.personPartnerTable);
-
-				// update partner table memo
+						// update partner table memo
 						pointPersonHandler.updatePartner((long)partnerRelationData[0],
 												selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
-
 					}
 
 				// Redo citation sequence, but only if more than 1 citation left
@@ -367,13 +379,11 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 						pointCitationSourceHandler.updateCiteGUIseq(personPID, citeTableName, objCiteData);
 						citationOrderChanged = false;
 					}
-
 					pointOpenProject.reloadT401Persons();
 					pointOpenProject.reloadT402Names();
 					pointOpenProject.getPersonHandler().resetPersonSelect();
 					pointOpenProject.getPersonHandler().resetPersonManager();
 					dispose();
-
 				} catch (HBException hbe) {
 					if (HGlobal.writeLogs) {
 						HB0711Logging.logWrite("ERROR: in HG0507SelPartner event save: " + hbe.getMessage()); //$NON-NLS-1$
@@ -397,16 +407,17 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 						if (memoEdited)
 							pointPersonHandler.updateSelectGUIMemo(memoText.getText(),
 									(long)partnerRelationData[0], pointPersonHandler.personPartnerTable);
-						
 					// update partner table
 						pointPersonHandler.updatePartner((long)partnerRelationData[0],
-												selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);				
+											selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
+					// Update secndary partner P2
+						if (partnerChanged)
+							pointPersonHandler.updateSecondaryPartner(partnerTablePID, newPartnerPID);
 					// Update preferred name
 						if (changedPrefName)
-							pointPersonHandler.updatePartnerPrefName(partnerTablePID, 
+							pointPersonHandler.updatePartnerPrefName(partnerTablePID,
 											priPartnerPrefNamePID, secPartnerPrefNamePID);
 					}
-
 				} catch (HBException hbe) {
 					if (HGlobal.writeLogs) {
 						HB0711Logging.logWrite("ERROR: in HG0507SelPartner save: " + hbe.getMessage()); //$NON-NLS-1$
@@ -420,6 +431,32 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 				dispose();
 			}
 		});
+
+		// Listener for btn_nRole2 - enable selection of new partner
+		btn_nRole2.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			// Call the SelectPerson code to select new Partner
+				HG0507SelectPerson personSelectScreen;
+				try {
+					personSelectScreen = new HG0507SelectPerson(pointPersonHandler, pointOpenProject, false);
+					personSelectScreen.additionalPanel = false; // Setting in Selectperson
+					personSelectScreen.pointSelectPartner = pointSelectPartner;
+					personSelectScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyShow = btn_nRole2.getLocationOnScreen();
+					personSelectScreen.setLocation(xyShow.x, xyShow.y);
+					personSelectScreen.setVisible(true);
+					setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+				} catch (HBException hbe) {
+					if (HGlobal.writeLogs) {
+						HB0711Logging.logWrite("ERROR: in HG0507 change partner: " + hbe.getMessage()); //$NON-NLS-1$
+						HB0711Logging.printStackTraceToFile(hbe);
+					}
+				}
+	        }
+	      });
+
 	}		// End HG0507SelectPartner constructor
 
 /**
@@ -439,6 +476,48 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	    jCombo.setModel(model);
 	}
 
+ /**
+  * public void updateSecondaryPartner(long updatePartnerPID)
+  * @param newPartnerPID
+ * @throws HBException
+  */
+    public void updateSecondaryPartner(long updatePartnerPID) {
+    	String partnerName;
+    	if (HGlobal.DEBUG) System.out.println(" Update partner P2: " + newPartnerPID);	//$NON-NLS-1$
+    	partnerChanged = true;
+    	newPartnerPID = updatePartnerPID;
+    	try {
+    	// Set new partner name
+    		partnerName = pointPersonHandler.getPersonName(newPartnerPID);
+    		btn_nRole2.setText(partnerName);
+    		objNameData2 = pointPersonHandler.preparePersonNameTable(newPartnerPID, false);
+    	// Set up list of pref person names 2 and select preferred
+			selectedIndex = 0; rows = 0;
+		// Update to fix issue 34.07 import with only partner PER1
+			if (objNameData2 != null) rows = objNameData2.length;
+			prefNameOptions2 = new String[rows + 1];
+			prefNameOptions2[0] = defaultSetting;
+			for (int i = 0; i < rows; i++) {
+				prefNameOptions2[i + 1] = (String) objNameData2[i][1];
+				//System.out.println(" Reset-2: " + secPartnerPrefNamePID + " & " + objNameData2[i][3]);
+				if (personTablePID == primPartnerRPID)
+					if (priPartnerPrefNamePID == (long) objNameData2[i][3])  selectedIndex = i + 1;
+				else
+					if (secPartnerPrefNamePID == (long) objNameData2[i][3])  selectedIndex = i + 1;
+			}
+
+			updateComboPanel(combo_prefName2, prefNameOptions2); // Reload new names
+			combo_prefName2.setSelectedIndex(selectedIndex); // Set preferred name for event
+			lbl_prefName2.setVisible(true);
+			combo_prefName2.setVisible(true);
+		} catch (HBException hbe) {
+			if (HGlobal.writeLogs) {
+				HB0711Logging.logWrite("ERROR: in HG0507SelPartner updateSecondaryPartner: " + hbe.getMessage()); //$NON-NLS-1$
+				HB0711Logging.printStackTraceToFile(hbe);
+			}
+		}
+    }
+
 /**
  * 	public void setEditPartnerRole()
  */
@@ -454,8 +533,8 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		btn_SaveEvent.setVisible(false);
 		btn_Save.setText(HG05070Msgs.Text_176);		// Update
 
-    // Set edit label for partner2
-    	lbl_nRole2.setText("" + partnerRelationData[5]);	//$NON-NLS-1$
+		// Set edit button for partner2
+		btn_nRole2.setText("" + partnerRelationData[5]);	//$NON-NLS-1$
     	for (int i = 0; i < partnerTypeNumbers.length; i++) {
     		if (partnerTypeNumbers[i] == partnerEventNumber) {
 				partnerRoleindex = i;

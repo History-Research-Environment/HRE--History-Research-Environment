@@ -1,8 +1,8 @@
 package hre.bila;
-/*****************************************************************************
+/**********************************************************************************************
  * Process SQL requests to HRE database
  * Library for for HBProjectHandler
- *****************************************************************************
+ ***********************************************************************************************
  * v0.00.0017 2020-01-27 First version (N. Tolleshaug)
  * v0.00.0017 2020-02-06 Corrected error opening empty database or no
  * 						   content in database tables (N. Tolleshaug)
@@ -17,7 +17,9 @@ package hre.bila;
  * 			  2023-08-25 Updated date pattern parcer (N. Tolleshaug)
  * v0.01.0031 2023-12-08 class HREmemo extends HBBusinessLayer (N. Tolleshaug)
  * v0.01.0032 2024-12-22 Updated for new project B32 (N. Tolleshaug)
- *****************************************************************************
+ * v0.05.0034 2026-09-11 Clear clob - updateClob("LONG_SENT", (Clob) null) (N.Tolleshaug)
+ * 			  2026-09-12 Correction - updateClob("LONG_MEMO", (Clob) null) (N.Tolleshaug)
+ ***********************************************************************************************
  */
 
 import java.io.File;
@@ -906,7 +908,6 @@ class HdateInput {
  * @Since  2023-04-23
  */
 class HREmemo extends HBBusinessLayer {
-	//class HREmemo {
 
 	static long proOffset = 1000000000000000L;
 	static long null_RPID  = 1999999999999999L;
@@ -1023,6 +1024,7 @@ class HREmemo extends HBBusinessLayer {
 			if (memoElement.length() <= memoLimit) {
 				hreTable.updateBoolean("IS_LONG", false);
 				hreTable.updateString("SHORT_MEMO", memoElement);
+				hreTable.updateClob("LONG_MEMO", (Clob) null);
 			} else {
 				hreTable.updateBoolean("IS_LONG", true);
 				shortMemo = memoElement.substring(0, memoLimit);
@@ -1076,10 +1078,11 @@ class HREmemo extends HBBusinessLayer {
 			myClob = pointDBlayer.getConnection(dataBaseIndex).createNClob();
 			return myClob;
 		} catch (SQLException sqle) {
-			throw new HDException("Request Connection SQL error: \n" + sqle.getMessage());
+			throw new HDException("createNClob() Connection SQL error: \n" + sqle.getMessage());
 			//e.printStackTrace();
 		}
 	}
+	
 
 /**
  * readMemo(long memoTablePID) throws HBException
@@ -1141,7 +1144,7 @@ class HREmemo extends HBBusinessLayer {
 	ABBR VARCHAR(200)
 	);
  * @throws HCException
- */
+ 
 	public static void addToT204_DATA_TRAN(long tablePID,
 											int tableID,
 											String dataString,
@@ -1170,8 +1173,9 @@ class HREmemo extends HBBusinessLayer {
 					+ sqle.getMessage());
 		}
 	}
+*/
+} // End HREmemo
 
-}
 
 
 

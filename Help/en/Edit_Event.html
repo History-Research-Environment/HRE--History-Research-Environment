@@ -1,34 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Edit Event</title>
+  <title>Add/Update Event</title>
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
 	<link rel="stylesheet" href="hre.css" type="text/css"/>
 </head>
 
 <body>
 
-<H1>Edit Event</H1>
+<H1>Add/Update Event</H1>
 <table border="0" width="100%">
   <tr>
   <td>
-<p>The Edit Event screen allows you to edit the selected Event of your project.<br>
-The Language defaults to the current HRE Data language but may be changed to edit the Event for any other supported language.</p>
+<p>This screen allows you to edit a new Event before saving it or to update an existing Event.</p>
 
-<p>The screen consists of 3 tabs for General settings, Roles and Sentences, plus Event Hints.</p>
+<p>Edit Items are controlled by selections in the control panel at left. Note that Flags and Media options are not yet available.</p>
 
-<p><b>General settings:</b><br>
-Here you can edit the Event's name and which event group it belongs to.<br>
-The GEDCOM settings define how it should be exported to GEDCOM - either under its own tag name or as an Event tag with a sub-type equal to the name.<br>
-The Event validity settings define in what calendar year range the event may be used and the Minimum number of Primary Associates are required for this event.</p>
+<p><b>Dates:</b> entries may be made for the event date and required Sort Date.</p>
 
-<p><b>Roles and Sentences:</b><br>
-This section allows for the editing of the roles that can be applied to associates of the event and whether or not they are Primary (required) roles.<br>
-Sentence structures may be edited for each role and each role can be restricted by Sex and Age.<br>
-Note that changing the Event language will change the roles to those that are applicable for that language.</p>
+<p><b>Associates:</b> a right-click in the Associates panel opens the Person list and allows selection of further people to add to the event, 
+followed by selection of their Role and any required Memo infomation.</p>
 
-<p><b>Event Hints:</b><br>
-This tab provides you with a free-form text area for you to describe any hints that you may wish to record to assist in the usage of the event.</p>
+<p><b>Location:</b> the location panel allows for selection of the Location Style and entry of location data for the event.</p>
+
+<p><b>Memo:</b> the Memo panel allows entry of any memo data for the event.</p>
+
+<p><b>Citation:</b> citations may be added or deleted by use of the +/- buttons and existing citation edited by double-clicking on their entry. 
+They may also be re-ordered in the list by use of the up/down arrow buttons.</p>
+
+<p><b>Change Event Type:</b> use of this button allows the current Event type to be changed to any event type OF THIS EVENT GROUP and to chanage the Role of the subject person. 
+Note that if the Event is changed, existing Associates may need to have their role changed to a role that exists in the new Event type.</p>
+
+<p><b>Sentence Editor:</b> use of this button allows edting of the sentence applying to any roles of this event type.</p>
 </td></tr>
 
 <tr><td>
@@ -43,7 +46,7 @@ This tab provides you with a free-form text area for you to describe any hints t
 
 <br>
 <div id="updated">
-<i>This page was updated on: 26 Jan. 2026</i></div>
+<i>This page was updated on: 4 June 2026</i></div>
 <br>
 
 </body>
