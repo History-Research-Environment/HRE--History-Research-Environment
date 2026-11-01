@@ -101,6 +101,7 @@ package hre.bila;
   * 		   2026-08-19 - Modified for handling preferred name (N.Tolleshaug)
   * 		   2026-08-28 - Updated for save preferred event/assoc name (N.Tolleshaug)
   *			   2026-09-11 - Updated addToT451_EVNT_ASSOC according to V23 (N.Tolleshaug)
+  *			   2026-10-15 - Fix to set selected role number for partner event (N.Tolleshaug)
   *****************************************************************************************/
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -1107,7 +1108,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 			selectString = setSelectSQL("*", eventTable, "PID = " + eventTablePID);
 			selectedEventTable = requestTableData(selectString, dataBaseIndex);
 
-		// Fix 23.5.2026 - NTo to avoid editing of a father recoding in Person Mnager even table
+		// Fix 23.5.2026 - NTo to avoid editing of a father recoding in Person Manager even table
 			if (isResultSetEmpty(selectedEventTable))
 				throw new HBException(" No rexord in event table for the edited row!");
 
@@ -1122,6 +1123,13 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 				partnerTableRS.first();
 				partnerTablePID = partnerTableRS.getLong("PID");
 				eventNumber = partnerTableRS.getInt("PARTNER_TYPE");	
+				
+			// Fix 14.10.2026 - to set role number for partner event
+				if (pointOpenProject.getSelectedPersonPID() == partnerTableRS.getLong("PRI_PARTNER_RPID"))
+					roleNumber = partnerTableRS.getInt("PRI_ROLE"); 
+				else roleNumber = partnerTableRS.getInt("SEC_ROLE"); 
+			// End Fix 14.10.2026
+				
 			} else {
 				eventNumber = selectedEventTable.getInt("EVNT_TYPE");
 				roleNumber = selectedEventTable.getInt("PRIM_ASSOC_ROLE_NUM");
@@ -1324,6 +1332,7 @@ public class HBWhereWhenHandler extends HBBusinessLayer {
 		try {
 			eventTableRS = requestTableData(selectString, dataBaseIndex);
 			if (isResultSetEmpty(eventTableRS)) {
+				System.out.println(" deleteSingleEvent RS empty!");
 				return;
 			}
 			eventTableRS.beforeFirst();

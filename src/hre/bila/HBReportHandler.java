@@ -39,6 +39,10 @@ package hre.bila;
  * 			  2026-09-07 - Add handling of TMG's [:TAB:] (D Ferguson)
  * 			  2026-09-07 - Improved exception handling and error reports (N. Tolleshaug)
  *			  2026-09-08 - Fixed error in findSubjectNameTablePID (N. Tolleshaug)
+ *			  2026-10-10 - Implemented preliminary narratove report (N. Tolleshaug)
+ *			  2026-10-12 - Added names events to  preliminary narratove report (N. Tolleshaug)
+ *		      2026-10-15 - Updated [R:NNNNNN] roles for editing and report (N. Tolleshaug)
+ *			  2026-10-17 - Updated SNN and + type sentence variable  (N. Tolleshaug)
  *********************************************************************************************/
 
 import java.sql.ResultSet;
@@ -79,7 +83,7 @@ public class HBReportHandler extends HBBusinessLayer {
  * @param eventTablePID
  * @return
  */
-	public ReportEventTMG createReportEventData(long eventTablePID, long ownerTablePID, int ownerType) {
+	public ReportEventTMG createReportEventData(long personTablePID, long eventTablePID, long ownerTablePID, int ownerType) {
 		try {
 		// Set up the element code arrays
 			if (eventTablePID == null_RPID || eventTablePID == 0) {
@@ -88,7 +92,7 @@ public class HBReportHandler extends HBBusinessLayer {
 			}
 			personNameCodeArray = personNameCodes.split("\\|");
 			locationNameCodeArray = locationNameCodes.split("\\|");
-			pointReportEventTMG = new ReportEventTMG(pointOpenProject, eventTablePID, ownerTablePID, ownerType);
+			pointReportEventTMG = new ReportEventTMG(pointOpenProject, personTablePID, eventTablePID, ownerTablePID, ownerType);
 			pointReportNameTMG = null;
 			return pointReportEventTMG;
 		} catch (HBException hbe) {
@@ -102,9 +106,9 @@ public class HBReportHandler extends HBBusinessLayer {
  * @param nameTablePID
  * @return
  */
-	public ReportNameTMG createReportNameData(long nameTablePID) {
+	public ReportNameTMG createReportNameData(long personTablePID, long nameTablePID) {
 		try {
-			pointReportNameTMG = new ReportNameTMG(pointOpenProject, nameTablePID);
+			pointReportNameTMG = new ReportNameTMG(pointOpenProject, personTablePID, nameTablePID);
 			pointReportEventTMG = null;
 		} catch (HBException hbe) {
 			System.out.println(" HBReportHandler - ReportNameData. " + hbe.getMessage());
@@ -116,7 +120,7 @@ public class HBReportHandler extends HBBusinessLayer {
 /**
  * Constructor HBReportHandler
  */
-	HBReportHandler(HBProjectOpenData pointOpenProject) {
+	public HBReportHandler(HBProjectOpenData pointOpenProject) {
 		super();
 		this.pointOpenProject = pointOpenProject;
 		pointDBlayer = pointOpenProject.getPointDBlayer();
@@ -124,6 +128,46 @@ public class HBReportHandler extends HBBusinessLayer {
 		pointHREmemo = pointOpenProject.getHREmemo();
 		pointRepositoryHandler = pointOpenProject.getRepositoryHandler();
 	}
+
+/**
+ * public void prepareReportSentence(long personTablePID) throws HBException {
+ * @param personTablePID
+ * @throws HBException
+ */
+	public long selectGlobalSentencePID(int eventType, int eventRole, String languageCode) throws HBException {
+	// Get global sentence
+		ResultSet roleTableRS;
+		//String sentenceFormat = "";
+		long globalSentencePID = null_RPID;
+		String selectString = pointReportHandler.setSelectSQL("*", pointReportHandler.eventRoleTable,
+				  "EVNT_TYPE = " + eventType 
+				+ " AND EVNT_ROLE_NUM = " + eventRole 
+				+ " AND LANG_CODE = '" + languageCode + "';");
+		try {
+			roleTableRS = pointReportHandler.requestTableData(selectString, dataBaseIndex);
+			roleTableRS.first();
+			globalSentencePID = roleTableRS.getLong("ROLE_SENTENCE_RPID");
+			//sentenceFormat = pointLibraryResultSet.getSentenceSetString(globalSentencePID, dataBaseIndex);
+			return globalSentencePID;
+		} catch (HBException hbe) {
+			System.out.println(" HBReportHandler - prepareReportSentenc. " + hbe.getMessage());
+			hbe.printStackTrace();
+		} catch (SQLException sqle) {
+			System.out.println(" HBReportHandler - prepareReportSentenc. " + sqle.getMessage());
+			sqle.printStackTrace();
+		}
+		return globalSentencePID;
+	}
+/**
+ * public int[] sortDate(String[] sortStrings)
+ * @param sortStrings
+ * @return
+ */
+	public int[] sortDate(String[] sortStrings) {
+		return pointLibraryBusiness.sorter.sort(sortStrings);
+	}
+	
+
 
 /**
  * parseFootnoteBiblio - converts footnote/bibliography templates to HTML display form
@@ -750,7 +794,9 @@ public class HBReportHandler extends HBBusinessLayer {
     	String regexAlter = "<\\[(.*?)\\]>";  // <[L2]> or <[L]>
         String regexStandard = "\\[(.*?)\\]"; // [P] was married <to [PO]> <[D]> <[L]>
         String regexRoles = "\\[R:\\d{5}\\]"; // (en-US)[R:Barn] was born <at [L2]> <in [L]> <[D]>. <[M]>
-        if (HGlobal.DEBUG) System.out.println(" Input sentence: " + inputSentence);
+        
+        if (HGlobal.DEBUG) 
+        	System.out.println(" sentenceParser - Input sentence: " + inputSentence);
 
         try {
 	        int count;
@@ -799,6 +845,7 @@ public class HBReportHandler extends HBBusinessLayer {
 	        if (HGlobal.DEBUG) System.out.println(" Number of alters: " + count);
 
 	        count = 0;
+	        //System.out.println(" Matcher - R: Roles: " + reportSentence);
 	        matcherRoles = patternRoles .matcher(reportSentence);
 	        while (matcherRoles.find()) {
 	         //matcher.group() extracts the matched role
@@ -837,6 +884,8 @@ public class HBReportHandler extends HBBusinessLayer {
 	        reportSentence = reportSentence.replace("<",""); // Temp removal of misplaced
 	        reportSentence = reportSentence.replace(">",""); // Temp removal of misplaced
 	        reportSentence = reportSentence.replace("(en-US)","");
+	        reportSentence = reportSentence.replace("|og","");
+	        reportSentence = reportSentence.replace("|and","");
 
 	        if (HGlobal.DEBUG) System.out.println(" Report sentence build: " + reportSentence);
 	        return reportSentence;
@@ -844,9 +893,9 @@ public class HBReportHandler extends HBBusinessLayer {
 		} catch (Exception exe) {
 			System.out.println(" HBReportHandler - Sentence: " + inputSentence 
 								+ " Parser error: " + exe.getMessage());
+			exe.printStackTrace();
 			if (HGlobal.writeLogs) HB0711Logging.logWrite(" HBReportHandler - Sentence: " + inputSentence 
 								+ " Parser error: " + exe.getMessage());
-			//exe.printStackTrace();
 			throw new HBException(" HBReportHandler - Sentence: " + inputSentence 
 								+ " Parser error: " + exe.getMessage());
 		}
@@ -917,17 +966,21 @@ public class HBReportHandler extends HBBusinessLayer {
 			eventLocationPID, priPartnerPID = null_RPID, secPartnerPID = null_RPID;
 		long assocPersonPrefRPID, eventPersonPrefNamePID = null_RPID, priPartnerPrefNamePID = null_RPID,
 			 secPartnerPrefNamePID = null_RPID;
+		long birthDatePID;
 		int dataBaseIndex, visbleIdent, eventType, eventGroup, birthSex, subjectBirthSex, ownerType;
 		HashMap<String,String> personNameElements, subjectNameElements, locationNameElements;
 		long[] associatePID;
 		int[] associateRoles;
+		boolean[] primaryAssoc;
 		int[] primaryNumbers;
 		long[] associatePrefNameRPID;
+		HashMap<Integer,Long> personRoleMap = new HashMap<Integer,Long>();
 		String[] partnerNames, nameStyleCodes;
 		boolean partnerEvent = false;
 		int rows = 0;
 
-		ReportEventTMG(HBProjectOpenData pointOpenProject, long eventTablePID, long ownerTablePID, int ownerType) throws HBException {
+		ReportEventTMG(HBProjectOpenData pointOpenProject, long persTablePID, long eventTablePID, long ownerTablePID, int ownerType) throws HBException {
+			this.personTablePID = persTablePID;
 			this.eventTablePID = eventTablePID;
 			this.ownerTablePID = ownerTablePID;
 			this.ownerType = ownerType; // owner type:  1 - name, 2 - event, 3 - associate, 4 - partner
@@ -937,7 +990,7 @@ public class HBReportHandler extends HBBusinessLayer {
 			this.pointDBlayer = pointPersonHandler.pointDBlayer;
 			pointWhereWhenHandler = pointOpenProject.getWhereWhenHandler();
 			pointLibraryResultSet = pointPersonHandler.pointLibraryResultSet;
-			personTablePID = pointOpenProject.getSelectedPersonPID();
+			
 
 		// Look up data from eventable
 			selectString = setSelectSQL("*", eventTable,"PID = " + eventTablePID);
@@ -951,6 +1004,8 @@ public class HBReportHandler extends HBBusinessLayer {
 				eventType = eventTableRS.getInt("EVNT_TYPE");
 			// PRIM_ASSOC_RPID cannot be used since for partner events alway fixed
 			// personTablePID = eventTableRS.getLong("PRIM_ASSOC_RPID");
+			// Register primary role in event
+				personRoleMap.put(eventTableRS.getInt("PRIM_ASSOC_ROLE_NUM"), personTablePID);
 				startHdate = eventTableRS.getLong("START_HDATE_RPID");
 				eventLocationPID = eventTableRS.getLong("EVNT_LOCN_RPID");
 				eventPersonPrefNamePID =  eventTableRS.getLong("PREF_NAME_RPID");
@@ -966,6 +1021,11 @@ public class HBReportHandler extends HBBusinessLayer {
 					partnerTableRS.first();
 					priPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
 					priPartnerPrefNamePID = partnerTableRS.getLong("PRPRI_NAME_RPID");
+					
+				// Register primary/secondary role for partner
+					personRoleMap.put(partnerTableRS.getInt("PRI_ROLE"), partnerTableRS.getLong("PRI_PARTNER_RPID"));
+					personRoleMap.put(partnerTableRS.getInt("SEC_ROLE"), partnerTableRS.getLong("SEC_PARTNER_RPID"));
+					
 					if (personTablePID == priPartnerPID) {
 						secPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
 						secPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
@@ -973,7 +1033,6 @@ public class HBReportHandler extends HBBusinessLayer {
 						secPartnerPID = partnerTableRS.getLong("PRI_PARTNER_RPID");
 						priPartnerPID = partnerTableRS.getLong("SEC_PARTNER_RPID");
 						priPartnerPrefNamePID = partnerTableRS.getLong("PRSEC_NAME_RPID");
-						personTablePID = priPartnerPID;
 					}
 					partnerTableRS.close();
 		    	}
@@ -983,6 +1042,7 @@ public class HBReportHandler extends HBBusinessLayer {
 				personTableRS = requestTableData(selectString, dataBaseIndex);
 				personTableRS.first();
 				bestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
+				birthDatePID = personTableRS.getLong("BIRTH_HDATE_RPID");
 				visbleIdent = personTableRS.getInt("VISIBLE_ID");
 				birthSex = personTableRS.getInt("BIRTH_SEX");
 				nameStyleCodes = getOuputReportStyleCodes(bestPersonNamePID);
@@ -1018,60 +1078,45 @@ public class HBReportHandler extends HBBusinessLayer {
  */
 		 public String returnSentenceVariable(String sentenceVariable) throws HBException {
 			int rows = 0;
-			String roleNumber = "00000";
-			//long personTablePID;
+			int roleNumber = 0;
 			try {
 /* Proceess R - role variables
  *    At the adoption of [R:00003], <[D]>, <[L]> [RP:00008] was listed as the natural child of [R:00004] and [R:00005]. <[M]>
  *    [RP:00010] was [R:00003]'s birth father, as noted in the adoption proceedings <at [L2]> <in [L3]> <[D]>. <[M]>
  */
-		    	if (sentenceVariable.startsWith("R") || sentenceVariable.startsWith("RP") ) {
+		    	if (sentenceVariable.startsWith("R") && !sentenceVariable.startsWith("RP")) {
 		    		if (rows == 0)
 		    			rows = collectAssociatePersons(eventTablePID);
 		    		if (personNameElements == null)
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
 		    				selectPersonNameElements(eventPersonPrefNamePID, dataBaseIndex);
+		    		
 		    		String[] roleData = sentenceVariable.split(":");
 		    		if (roleData.length <= 1) return "?" + sentenceVariable;
-					roleNumber = roleData[1];
-					if (partnerEvent) {
-						if (roleNumber.equals("00020")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
-						if (roleNumber.equals("00004")) return findPersonName(priPartnerPID, priPartnerPrefNamePID);
-						if (roleNumber.equals("00003")) return findPersonName(secPartnerPID, secPartnerPrefNamePID);
-						return findPersonName(findAssociatePersonRole(roleNumber), null_RPID);
-					}
-					if (roleNumber.equals("00001") || roleNumber.equals("00003"))
-						return getPersonName(personNameElements, visbleIdent);
-	// Temp added to test long sentence				
-					if (roleNumber.equals("00002")) {
-						String withessList = "";
-						if (rows > 0) {
-							for (int i = 0; i < associatePID.length; i++) {
-								//System.out.println(" Nr: " + i + " witnes: " + associatePID[i]);
-								if (i < associatePID.length -1)
-								withessList = withessList 
-										+ findAssociatePersonName(i + 1) + ", ";
-								else 	withessList = withessList 
-										+ findAssociatePersonName(i + 1);
-							}
-							return withessList;
-						} else  return "";
-					}
-					
-					return findPersonName(findAssociatePersonRole(roleNumber), assocPersonPrefRPID);
-		    	}
+					roleNumber = Integer.parseInt(roleData[1]); // The person role number
+					if (personRoleMap.size() == 0) return "?" + sentenceVariable;
+		    		if (HGlobal.DEBUG) 
+		    			System.out.println(" Role number: " + roleData[1] 
+	    					+ " Person PID: " + personRoleMap.get(roleNumber));;
+					if (personRoleMap.get(roleNumber) != null)
+						return findPersonName(personRoleMap.get(roleNumber), null_RPID);
+					else return "(--?--R:" + roleNumber + ")";	
+		    	} 
+		    	if (sentenceVariable.startsWith("RP")) 
+		    				if (birthSex == 1) return "She";
+		    				else if (birthSex == 2) return "He";
+    						else if (birthSex == 3) return "Hen";
 
-
-		    /* Process Px
-		    	Summarising Px in sentence reference terms:
-
-		    	    [P1] -- produces the name of the person entered in the P1 slot in the event tag
-		    	    [P2] -- produces the name of the person entered in the P2 slot in the event tag
-		    	    [P] --  produces the name of the subject of the sentence (who will be a P1 or a P2 person
-		    	    [PO] -- produces the name of the other principal (if there is one),
-		    	    	    the one who is not the subject.
-
-            */
+		    	
+		    	
+	    /* Process Px
+	    	Summarising Px in sentence reference terms:
+	    	    [P1] -- produces the name of the person entered in the P1 slot in the event tag
+	    	    [P2] -- produces the name of the person entered in the P2 slot in the event tag
+	    	    [P] --  produces the name of the subject of the sentence (who will be a P1 or a P2 person
+	    	    [PO] -- produces the name of the other principal (if there is one),
+	    	    	    the one who is not the subject.
+        */
 		    	if (sentenceVariable.startsWith("P")) {
 		    		if (personNameElements == null)
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
@@ -1115,11 +1160,14 @@ public class HBReportHandler extends HBBusinessLayer {
 			    			switch (sentenceVariable) {
 			    			case "PAR":
 			    				if (partnerEvent)
-			    					return prefix + findPersonName(findFatherForPerson(priPartnerPID), null_RPID);
+			    					return prefix + findPersonName(findFatherForPerson(priPartnerPID), null_RPID)
+			    						+ " and " + findPersonName(findMotherForPerson(priPartnerPID), null_RPID);
 			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID);
+			    						 
 			    			case "PARO":
 			    				if (partnerEvent)
-			    					return prefix + findPersonName(findFatherForPerson(secPartnerPID), null_RPID);
+			    					return prefix + findPersonName(findFatherForPerson(secPartnerPID), null_RPID)
+			    						+ " and " + findPersonName(findMotherForPerson(secPartnerPID), null_RPID);
 			    				 else return prefix + findPersonName(findFatherForPerson(personTablePID), null_RPID);
 			    			case "PAR1": return "?" + ownerType + sentenceVariable;
 			    			case "PAR2": return "?" + ownerType + sentenceVariable;
@@ -1151,6 +1199,9 @@ public class HBReportHandler extends HBBusinessLayer {
 					if (locationNameElements == null)
 						locationNameElements = pointPersonHandler.pointLibraryResultSet.
 						   selectLocationNameElements(eventLocationPID, dataBaseIndex);
+					
+					if (locationNameElements.size() == 0) return "?" + sentenceVariable;
+					
 				 	if (sentenceVariable.equals("L")) return getLocationName();
 		    		switch (sentenceVariable) {
 		    			case "L1":  return locationNameElements.get(locationNameCodeArray[0]);
@@ -1175,30 +1226,37 @@ public class HBReportHandler extends HBBusinessLayer {
 		    	 }
 
 			// process Sx variables Subject variables
-		    // Need update *******************************************' NTo 7-8-2026
 		    	if (sentenceVariable.startsWith("S")) {
-		    		//System.out.println(" S-variable OwnerType: " + ownerType + " OwnerPID:" + ownerTablePID);
-		    		if ( ownerType != 3) return "?" + ownerType + "/" +sentenceVariable;
-					long bestSubjectPersonName = findSubjectNameTablePID(ownerTablePID);
+		    	// SP updated 17.10.2026 - NTo
+		    		//System.out.println(" S-variable: " + sentenceVariable + "  OwnerType: " 
+		    		//			+ ownerType + " OwnerPID:" + ownerTablePID + " Sex: " + birthSex);
+
 					if (subjectNameElements == null)
 						subjectNameElements =  pointPersonHandler.pointLibraryResultSet.
-							selectPersonNameElements(bestSubjectPersonName, dataBaseIndex);
-
-		    		switch (sentenceVariable) {
-		    			case "S": return getPersonName(subjectNameElements, visbleIdent);
+							//selectPersonNameElements(bestSubjectPersonName, dataBaseIndex);
+							selectPersonNameElements(eventPersonPrefNamePID, dataBaseIndex);
+						
+					if (subjectNameElements.size() == 0) return "?" + sentenceVariable;
+					subjectBirthSex = birthSex;  // Assume subjext is P!
+		    		switch (sentenceVariable.trim()) {
+		    			case "S": return getPersonName(subjectNameElements, visbleIdent); 
 		    			case "S+": return getPersonName(subjectNameElements, visbleIdent);
 		    			case "SS": return subjectNameElements.get(personNameCodeArray[2]);
 		    			case "SG": return subjectNameElements.get(personNameCodeArray[2]);
 		    			case "SF": return subjectNameElements.get(personNameCodeArray[2]);
 		    			case "SL": return subjectNameElements.get(personNameCodeArray[4]);
-		    			case "SA": return "?Age";
-		    			case "SE": return "?ExAge";
+		    			case "SA": return " at age" + pointLibraryResultSet.
+		    								calculateAge(startHdate, personTablePID, dataBaseIndex);
+		    			case "SE": return "?ExAge"; 
 		    			case "SP": if (subjectBirthSex == 1) return "She";
-						if (subjectBirthSex == 2) return "He";
+		    					   else if (subjectBirthSex == 2) return "He";
+		    					   else return "Hen";
 		    			case "SPP": if (subjectBirthSex == 1) return "Her";
-						if (subjectBirthSex == 2) return "His";
+		    						 else if (subjectBirthSex == 2) return "His";
+		    						 else return "Hen";		    			
 		    			case "SM": if (subjectBirthSex == 1) return "Her";
-						if (subjectBirthSex == 2) return "Him";
+		    						else if (subjectBirthSex == 2) return "Him";
+		    						else return "Hen";
 		    			case "SGS": return subjectNameElements.get(personNameCodeArray[2]) + "'s";
 		    			case "SFS": return subjectNameElements.get(personNameCodeArray[2]) + "'s";
 		    			case "SLS": return subjectNameElements.get(personNameCodeArray[4]) + "'s";
@@ -1221,6 +1279,11 @@ public class HBReportHandler extends HBBusinessLayer {
 					 return "?" + sentenceVariable;
 
 		    	 }
+		    	 
+		   // Calculate  Age	 
+		    	 if (sentenceVariable.startsWith("A"))
+						return " at age" + pointLibraryResultSet.
+								calculateAge(startHdate, personTablePID, dataBaseIndex);
 
 		    // Process memo
 		    	 if (sentenceVariable.startsWith("M"))
@@ -1233,15 +1296,17 @@ public class HBReportHandler extends HBBusinessLayer {
 		    // handle [:TAB:] - treat as 4 spaces (width of std TAB)
 		    	 if (sentenceVariable.startsWith(":TAB:"))
 		    		 return "    ";
-
+		    	 
+		    	 if (sentenceVariable.startsWith("+"))
+		    		 return "";
 
 		    	 return "?" + sentenceVariable;
 
 			} catch (HBException hbe) {
 				System.out.println(" ReportEventTMG - Sentence variable: " + sentenceVariable + " error: " + hbe.getMessage());
 				hbe.printStackTrace();
-				throw new HBException(" ReportEventTMG");
-			}
+				throw new HBException(" ReportEventTMG: Sentence variable: " + sentenceVariable + " error: " + hbe.getMessage());
+			}  
 	    }
 
 /**
@@ -1314,13 +1379,14 @@ public class HBReportHandler extends HBBusinessLayer {
  * @param assocTablePID
  * @return
  * @throws HBException
- */
+ 
 	private long findSubjectNameTablePID(long assocTablePID) throws HBException {
 		ResultSet personNameRS, assocTableRS;
-		long assocPersonTablePID, assocPersonPefNamePID;
+		long assocPersonTablePID = null_RPID, assocPersonPefNamePID = null_RPID;
 		selectString = setSelectSQL("ASSOC_RPID,PREF_NAME_RPID", eventAssocTable,"PID = " + assocTablePID);
 		assocTableRS = requestTableData(selectString, dataBaseIndex);
 		try {
+			if (isResultSetEmpty(assocTableRS)) return null_RPID;
 			assocTableRS.first();
 			assocPersonTablePID = assocTableRS.getLong("ASSOC_RPID");
 			assocPersonPefNamePID = assocTableRS.getLong("PREF_NAME_RPID");
@@ -1329,14 +1395,14 @@ public class HBReportHandler extends HBBusinessLayer {
 			personNameRS.first();
 			subjectBirthSex = personNameRS.getInt("BIRTH_SEX");
 			if (assocPersonPefNamePID == null_RPID) return personNameRS.getLong("BEST_NAME_RPID");
-			return assocPersonPefNamePID;
+			else return assocPersonPefNamePID;
 		} catch (SQLException sqle) {
 			System.out.println(" ReportEventTMG - findSubjectNameTablePID error: " + sqle.getMessage());
 			sqle.printStackTrace();
 			throw new HBException(" ReportEventTMG - findSubjectNameTablePID error: " + sqle.getMessage());
 		}
 	}
-
+*/
 /**
  * Returns partner Optional (PO) name or name first of person in associate list if not partener event
  * @return person name with visible id.
@@ -1348,9 +1414,10 @@ public class HBReportHandler extends HBBusinessLayer {
 			if (rows == 0) rows = collectAssociatePersons(eventTablePID);
 			if (rows < 1) return "";
 		// Find the primary P2 name
-			for (int i = 0; i < primaryNumbers.length; i++)
+			for (int i = 0; i < primaryNumbers.length; i++)	
 				if (primaryNumbers[i] == 2) return findPersonName(associatePID[i], associatePrefNameRPID[i]);
-			return findPersonName(associatePID[0], associatePrefNameRPID[0]);
+			if (primaryAssoc[0]) return findPersonName(associatePID[0], associatePrefNameRPID[0]);
+			else return "";
 		}
 
 /**
@@ -1375,7 +1442,7 @@ public class HBReportHandler extends HBBusinessLayer {
 			try {
 				if (isResultSetEmpty(personTableRS)) {
 					//System.out.println(" ReportEventData - findPersonName error personNamePID: " + personTablePID);
-					return " Not found!";
+					return "(--?--)";
 				}
 				personTableRS.first();
 				viibleIdent = personTableRS.getInt("VISIBLE_ID");
@@ -1526,15 +1593,19 @@ public class HBReportHandler extends HBBusinessLayer {
 				nrOfRows = assocTableRS.getRow();
 				associatePID = new long[nrOfRows];
 				associateRoles = new int[nrOfRows];
+				primaryAssoc = new boolean[nrOfRows] ;
 				primaryNumbers = new int[nrOfRows];
 				associatePrefNameRPID = new long[nrOfRows];
 				assocTableRS.beforeFirst();
 				while (assocTableRS.next()) {
 					associatePID[index] = assocTableRS.getLong("ASSOC_RPID");
 					associateRoles[index] = assocTableRS.getInt("ROLE_NUM");
+					primaryAssoc[index] = assocTableRS.getBoolean("KEY_ASSOC");
 					primaryNumbers[index] = assocTableRS.getInt("PRIMARY_NUM");
 					associatePrefNameRPID[index] = assocTableRS.getLong("PREF_NAME_RPID");
-					//System.out.println(" Assocs: " + associatePID[index] + "/" + associateRoles[index]
+				// Register  roles for associates
+					personRoleMap.put(associateRoles[index], associatePID[index]);
+					//System.out.println(" Assocs roles: " + associatePID[index] + "/" + associateRoles[index]
 					//		+ "/" + primaryNumbers[index]);
 					index++;
 				}
@@ -1592,9 +1663,9 @@ public class HBReportHandler extends HBBusinessLayer {
  * @param nameTablePID
  * @throws HBException
  */
-		ReportNameTMG(HBProjectOpenData pointOpenProject, long nameTablePID) throws HBException {
+		ReportNameTMG(HBProjectOpenData pointOpenProject, long selectedTablePID, long nameTablePID) throws HBException {
 			this.nameTablePID = nameTablePID;
-			selectedPersonPID = pointOpenProject.getSelectedPersonPID();
+			this.selectedPersonPID = selectedTablePID;
 			dataBaseIndex = pointOpenProject.getOpenDatabaseIndex();
 			pointHREmemo = pointOpenProject.getHREmemo();
 			pointPersonHandler = pointOpenProject.getPersonHandler();
@@ -1603,7 +1674,8 @@ public class HBReportHandler extends HBBusinessLayer {
 			pointLibraryResultSet = pointPersonHandler.pointLibraryResultSet;
 			nameStyleCodes = getOuputReportStyleCodes(nameTablePID);
 
-			if (HGlobal.DEBUG) System.out.println(" ReportNameTMG  Name table PID: " +  nameTablePID);
+			if (HGlobal.DEBUG) 
+				System.out.println(" ReportNameTMG  Name table PID: " +  nameTablePID);
 		// Look up data from nametable
 			selectString = setSelectSQL("*", personNameTable, "PID = " + nameTablePID);
 			personNameTableRS = requestTableData(selectString, dataBaseIndex);
@@ -1621,6 +1693,7 @@ public class HBReportHandler extends HBBusinessLayer {
 				eventBestPersonNamePID = personTableRS.getLong("BEST_NAME_RPID");
 				visbleIdent = personTableRS.getInt("VISIBLE_ID");
 				birthSex = personTableRS.getInt("BIRTH_SEX");
+				
 			} catch (SQLException sqle) {
 				System.out.println(" ReportEventTMG personNameTablePID: " + nameTablePID);
 				System.out.println(" Person name: " + getPersonName());
@@ -1717,10 +1790,9 @@ public class HBReportHandler extends HBBusinessLayer {
 			   	if (sentenceVariable.startsWith("P")) {
 		    		if (personNameElements == null)
 		    			personNameElements =  pointPersonHandler.pointLibraryResultSet.
-		    				selectPersonNameElements(selectedPersonPID, dataBaseIndex);
+		    				selectPersonNameElements(eventBestPersonNamePID, dataBaseIndex);
 
-		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("P+")
-		    										 || sentenceVariable.equals("P1"))
+		    		if (sentenceVariable.equals("P") || sentenceVariable.equals("PP"))
 		    				return getPersonName(personNameElements, visbleIdent);
 
 		    		if (sentenceVariable.equals("PP"))
@@ -1736,8 +1808,7 @@ public class HBReportHandler extends HBBusinessLayer {
 			    			personNamedElements =  pointPersonHandler.pointLibraryResultSet.
 			    				selectPersonNameElements(nameTablePID, dataBaseIndex);
 
-			    		if (sentenceVariable.equals("N") || sentenceVariable.equals("P+")
-			    										 || sentenceVariable.equals("P1"))
+			    		if (sentenceVariable.equals("N"))
 			    				return getPersonName(personNamedElements, 0);
 			   	}
 			    // Process date

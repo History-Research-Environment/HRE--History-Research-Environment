@@ -113,6 +113,7 @@ import hre.nls.HG0581Msgs;
 import hre.nls.HG0590Msgs;
 import hre.nls.HG0620Msgs;
 import hre.nls.HG0660Msgs;
+import hre.nls.HG0667Msgs;
 import hre.nls.HGJavaMsgs;
 import hre.nls.HGlobalMsgs;
 
@@ -167,9 +168,9 @@ public class HA0001HREstart {
 			String pathUserHRE = System.getProperty("user.home") + File.separator + "HRE" + File.separator;
 			HGlobal.helpPath = "file:\\" + pathUserHRE + "Help\\";
 			HGlobal.keyStorePath = pathUserHRE + "KeyStore\\";
-			if (dBversion.startsWith("v22c")) {
-				HGlobal.seedProjectFile = pathUserHRE + "HRE Seed database v22c.mv.db";
-				HGlobal.sampleProjectFile = pathUserHRE + "HRE Sample database v22c.mv.db";
+			if (dBversion.startsWith("V23")) {
+				HGlobal.seedProjectFile = pathUserHRE + "HRE Seed database V23.mv.db";
+				HGlobal.sampleProjectFile = pathUserHRE + "HRE Sample database V23.mv.db";
 			} else System.out.println("HA0001HREstart - selected DataBase not found! - " + dBversion);
 		}
 
@@ -524,6 +525,7 @@ public class HA0001HREstart {
 		new HG0590Msgs(HGlobal.nativeLanguage);
 		new HG0620Msgs(HGlobal.nativeLanguage);
 		new HG0660Msgs(HGlobal.nativeLanguage);
+		new HG0667Msgs(HGlobal.nativeLanguage);
 		new HGlobalMsgs(HGlobal.nativeLanguage);
 
 	}  // End setGUIlanguage

@@ -20,6 +20,7 @@ package hre.bila;
  * 			  2026-08-13 Make ascendancies/descendencies direct line
  * 			  2026-08-17 Add ability to return PID of clicked area of display (ChatGPT)
  * 			  2026-08-20 Moved in all Relation handling methods from HG0506ManagePerson (D Ferguson)
+ * 			  2026-10-04 Add parameter to relationshipPanel to turn on/off click action (D Ferguson)
  ************************************************************************************************/
 
 import java.awt.BasicStroke;
@@ -253,7 +254,8 @@ public class HBRelationHandler extends HBBusinessLayer {
  * @param startPID
  * @return
  */
-	    private static Map<Long, List<AncestorOccurrence>> buildAncestorMap(
+	    @SuppressWarnings("unused")
+		private static Map<Long, List<AncestorOccurrence>> buildAncestorMap(
 	            long startPID, long NULL_RPID, int maxDepth) {
 
 	        Map<Long, List<AncestorOccurrence>> map = new HashMap<>();
@@ -581,28 +583,31 @@ public class HBRelationHandler extends HBBusinessLayer {
 	        private Rectangle lcaBounds;
 	        private Dimension calculatedSize = new Dimension(MIN_PANEL_WIDTH, MIN_PANEL_HEIGHT);
 
-	        public RelationshipPanel(RelationshipPath path) {
+	        public RelationshipPanel(RelationshipPath path, boolean allowClick) {
 	            this.path = path != null ? path : new RelationshipPath();
 	            Font textFieldFont = UIManager.getFont("TextField.font");
 	            if (textFieldFont != null) setFont(textFieldFont);
 	            setBackground(UIManager.getColor("TableHeader.background"));		// diagram background colour
 	            setOpaque(true);
 	            computeLayout();
-	            // Add mouse listener for click action in panel
-	            addMouseListener(new MouseAdapter() {
-	                @Override
-	                public void mouseClicked(MouseEvent e) {
-	                    handleMouseClick(e);
-	                }
-	            });
-	            // Add mouse listener to change cursor to show clickable area
-		        addMouseMotionListener(new MouseMotionAdapter() {
-		            public void mouseMoved(MouseEvent e) {
-		                long pid = findPIDat(e.getPoint());
-		                if (pid != 0L) setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		                else setCursor(Cursor.getDefaultCursor());
-		            }
-		        });
+	         // If panel is allowed to be clickable, establish mouse listeners
+	            if (allowClick) {
+	            	// Add mouse listener for click action in panel
+	            	addMouseListener(new MouseAdapter() {
+	            		@Override
+	            		public void mouseClicked(MouseEvent e) {
+	            			handleMouseClick(e);
+	            		}
+	            	});
+	            	// Add mouse listener to change cursor to show clickable area
+	            	addMouseMotionListener(new MouseMotionAdapter() {
+	            		public void mouseMoved(MouseEvent e) {
+	            			long pid = findPIDat(e.getPoint());
+	            			if (pid != 0L) setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+	            			else setCursor(Cursor.getDefaultCursor());
+	            		}
+	            	});
+	            }
 	        }
 	        // routine to get PID of clicked person area
 	        private void handleMouseClick(MouseEvent e) {
@@ -632,8 +637,6 @@ public class HBRelationHandler extends HBBusinessLayer {
 	                LongConsumer handler) {
 	            this.personClickHandler = handler;
 	        }
-
-
 
 	        // Recomputes the node positions and required panel size
 	        private void computeLayout() {
@@ -759,6 +762,7 @@ public class HBRelationHandler extends HBBusinessLayer {
 	                firstNode = false;
 	            }
 	        }
+	        // Get the person name text and place in box
 	        private void drawLca(Graphics2D g2) {
 	            Long lcaPID = path.getLcaPID();
 	            String text = lcaPID == null  ? "No common LCA" : getDisplayName(lcaPID);
@@ -766,6 +770,7 @@ public class HBRelationHandler extends HBBusinessLayer {
 	            		new Color(255, 255, 255),		// LCA box color Mauve = 225, 210, 250
 	                    new Color(105, 70, 140));		// darker
 	        }
+	        // Draw a node box
 	        private void drawNodes(Graphics2D g2, List<NodeLayout> nodes) {
 	            for (NodeLayout node : nodes) {
 	                Color fill;
@@ -780,6 +785,7 @@ public class HBRelationHandler extends HBBusinessLayer {
 	                drawPersonBox(g2, node.bounds, getDisplayName(node.pid), fill,border);
 	            }
 	        }
+	        // Draw each person box and its text
 	        private void drawPersonBox(Graphics2D g2, Rectangle bounds,String text,
 	                					Color fill, Color border) {
 	            g2.setColor(fill);
@@ -819,10 +825,10 @@ public class HBRelationHandler extends HBBusinessLayer {
 	        }
 
 	       // Return Person name from PID lookup
-	        private String getDisplayName(long pid) {
+	        private String getDisplayName(long PID) {
 	        	String persName = "";
 	        	try {
-					persName = pointPersonHandler.getPersonName(pid);
+					persName = pointPersonHandler.getPersonName(PID);
 				} catch (HBException sqle) {
 					  if (HGlobal.writeLogs) {
 						  HB0711Logging.logWrite("ERROR: in getDisplayName " + sqle.getMessage());	//$NON-NLS-1$

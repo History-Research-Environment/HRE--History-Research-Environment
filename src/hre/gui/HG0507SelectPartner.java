@@ -26,6 +26,8 @@ package hre.gui;
  * 			  2026-09-13 Update for issue 34.07 import with only partner PER1(N. Tolleshaug)
  * 			  2026-09-20 Updateissue 34.07 select and update P2 partner (N. Tolleshaug)
  * 			  2026-09-28 Tidy NON-NLS and standardize catch blocks (D Ferguson)
+ * 			  2026-10-03 Implemented interface TransferSelectedPerson (N. Tolleshaug)
+ * 			  2026-10-04 Updated SelectPerson handling of set focusperson (N. Tolleshaug)
  *************************************************************************************/
 
 import java.awt.Cursor;
@@ -55,14 +57,15 @@ import hre.nls.HG05070Msgs;
  * @version v0.05.0034
  * @since 2024-04-05
  */
-public class HG0507SelectPartner extends HG0507SelectPerson {
+public class HG0507SelectPartner extends HG0507SelectPerson implements TransferSelectedPerson {
 	private static final long serialVersionUID = 1L;
 
 	long null_RPID  = 1999999999999999L;
 	protected HBWhereWhenHandler pointHBWhereWhenHandler;
 	HBPersonHandler pointPersonHandler;
 	HG0507SelectPartner pointSelectPartner = this;
-	boolean addRelation, partnerChanged = false;
+	//boolean addRelation, partnerChanged = false;
+	boolean addPartner, partnerChanged = false;
 	long newPartnerPID = null_RPID;
 	String[] partnerTypeList;
 	int [] partnerTypeNumbers;
@@ -92,8 +95,8 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 	public HG0507SelectPartner(HBPersonHandler pointPersonHandler,
 										HBProjectOpenData pointOpenProject,
 										 int selectedRowInTable, boolean addPartner) throws HBException {
-		super(pointPersonHandler, pointOpenProject, addPartner);
-		this.addRelation = addPartner;
+		super(pointPersonHandler, pointOpenProject, false);
+		this.addPartner = addPartner;
 		this.pointPersonHandler =  pointPersonHandler;
 		citeTableName = "T404";		//$NON-NLS-1$
 		ownerType = 4; // Set owner type partner for LOCAL
@@ -278,7 +281,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 		lbl_PersonName.setVisible(false);
 
 	// Remove the Sentence Editor button from screen for Add Partner case
-		if (addRelation) btn_Sentence.setVisible(false);
+		if (addPartner) btn_Sentence.setVisible(false);
 
 /********************
  * Action Listeners
@@ -353,7 +356,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 				long createdPartnerTablePID;
 				try {
 					pointPersonHandler.setNewPartnerPID(personPID);
-					if (addRelation) {
+					if (addPartner) {
 						createdPartnerTablePID = pointPersonHandler.addNewPartner(selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
 						if (memoEdited) {
 							pointPersonHandler.createSelectGUIMemo(memoText.getText(),pointPersonHandler.personPartnerTable);
@@ -399,7 +402,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
 					pointPersonHandler.setNewPartnerPID(personPID);
-					if (addRelation) {
+					if (addPartner) {
 						createdPartnerTablePID = pointPersonHandler.addNewPartner(selectedPartnerType, partnerRoleType[priRole], partnerRoleType[secRole]);
 						if (memoEdited)
 							pointPersonHandler.createSelectGUIMemo(memoText.getText(),pointPersonHandler.personPartnerTable);
@@ -442,7 +445,7 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
 				try {
 					personSelectScreen = new HG0507SelectPerson(pointPersonHandler, pointOpenProject, false);
 					personSelectScreen.additionalPanel = false; // Setting in Selectperson
-					personSelectScreen.pointSelectPartner = pointSelectPartner;
+					personSelectScreen.pointSelectInterface = pointSelectPartner; // Setting in Selectperson
 					personSelectScreen.setModalityType(ModalityType.APPLICATION_MODAL);
 					Point xyShow = btn_nRole2.getLocationOnScreen();
 					personSelectScreen.setLocation(xyShow.x, xyShow.y);
@@ -554,4 +557,12 @@ public class HG0507SelectPartner extends HG0507SelectPerson {
     	}
     	comboPartRole2.setSelectedIndex(secPartnerRoleIndex);
 	}
+	
+/**
+ * interface TransferSelectedPerson
+ */
+		@Override
+		public void updatePersonPointer(long personPID) {
+			updateSecondaryPartner(personPID);
+		}
 }		// End HG0507SelectPartner

@@ -41,8 +41,8 @@ import hre.bila.HBProjectOpenData;
  * @version Build 0.05.3426.0905
  */
 public class HGlobal {
-	public static String buildNo = "0.05.3426.1001";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
-	public static String releaseDate = "1 Oct 2026";		// and release date to match //$NON-NLS-1$
+	public static String buildNo = "0.05.3426.1010";		// Set Build number as V.vv.BBYY.MMDD //$NON-NLS-1$
+	public static String releaseDate = "10 Oct 2026";		// and release date to match //$NON-NLS-1$
 
 	public static String databaseVersion = "V23";		    // Set Database DDL version //$NON-NLS-1$
 	public static String databaseBuild = "DDL V23 2026-08-10";	// Set Database DDL build //$NON-NLS-1$

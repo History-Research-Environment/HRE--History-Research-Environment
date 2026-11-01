@@ -967,7 +967,8 @@ public class HBLibraryResultSet {
 							"PID = " + sentenseSetTablePID);
 			sentenceSetRS = pointBusinessLayer.requestTableData(selectString, dataBaseIndex);
 			sentenceSetRS.first();
-			if (pointBusinessLayer.isResultSetEmpty(sentenceSetRS)) return "NOSENTENCE";
+			if (pointBusinessLayer.isResultSetEmpty(sentenceSetRS)) 
+					return "NOSENTENCE fpr PID: " + sentenseSetTablePID;
 			if (sentenceSetRS.getBoolean("IS_LONG"))  {
 				Clob clobSentence = sentenceSetRS.getClob("LONG_SENT");
 		         Reader readClob = clobSentence.getCharacterStream();
@@ -977,7 +978,8 @@ public class HBLibraryResultSet {
 		         sentence = buffer.toString();
 		         //System.out.println(" LONG sentence" + sentence);
 			} else sentence = sentenceSetRS.getString("SHORT_SENT");
-			if (sentence.length() < 5) return "NOSENTENCE";
+			if (sentence.length() < 5) 
+					return "NOSENTENCE fpr PID: " + sentenseSetTablePID;
 			return sentence;
 		} catch (SQLException | IOException sqle) {
 			System.out.println(" HBLibraryResultSet - getSentenceSetString: " + sqle.getMessage());

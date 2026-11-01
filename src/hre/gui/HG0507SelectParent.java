@@ -14,6 +14,7 @@ package hre.gui;
  * v0.05.0033 2025-06-13 Fix for correct citation parent relation (N. Tolleshaug)
  * v0.05.0034 2026-07-23 Remove btn_Sentence visibility (D Ferguson)
  * 			  2026-08-16 Code sync with other changes in persRolePanel (D Ferguson)
+ * 			  2026-10-04 Updated SelectPerson handling of set focusperson (N. Tolleshaug)
  *************************************************************************************
  * NOTES on missing functionality
  * 		Need check that we're not adding a parent to itself
@@ -59,7 +60,7 @@ public class HG0507SelectParent extends HG0507SelectPerson {
  */
 	public HG0507SelectParent(HBPersonHandler pointPersonHandler,
 			HBProjectOpenData pointOpenProject, int selectedRowInTable, boolean addParent) throws HBException {
-		super(pointPersonHandler, pointOpenProject, addParent);
+		super(pointPersonHandler, pointOpenProject, false);
 		this.selectedRowInTable = selectedRowInTable;
 		this.addRelation = addParent;
 		citeTableName = "T405";		//$NON-NLS-1$

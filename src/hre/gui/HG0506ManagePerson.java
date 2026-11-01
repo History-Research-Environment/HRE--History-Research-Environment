@@ -90,6 +90,7 @@ package hre.gui;
  * 			  2026-08-18 Make Relation display inter-active (D Ferguson + ChatGPT)
  * 			  2026-08-20 Moved all Relation handling code to RelationHandler (D Ferguson)
  * 			  2026-09-17 Ensure we restart in same card as when we left (D Ferguson)
+ * 			  2026-10-04 Adjust call to relationshipPanel, enable clickable (D Ferguson)
  ***********************************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 need listener and code for handling DNA data
@@ -2214,7 +2215,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				        pointHBRelationHandler.findRelationships(focusPID, targetPID);
 			// Build the panel layout based on the Primary focusPID - > LCA -> targetpID paths
 				RelationshipPanel panel =
-				        new HBRelationHandler.RelationshipPanel(relations.primaryPath);
+				        new HBRelationHandler.RelationshipPanel(relations.primaryPath, true);  // allow panel to be clickable
 
 			// Setup a handler for cursor click within the display
 				panel.setPersonClickHandler(pid -> {
@@ -2279,7 +2280,7 @@ public class HG0506ManagePerson extends HG0451SuperIntFrame {
 				        pointHBRelationHandler.findRelationships(focusPID, targetPID);
 			// Build the panel layout based on the Secondary focusPID - > LCA -> targetpID paths
 				RelationshipPanel panel =
-				        new HBRelationHandler.RelationshipPanel(relations.secondaryPath);
+				        new HBRelationHandler.RelationshipPanel(relations.secondaryPath, true);  // allow panel to be clickable
 
 			// Setup a handler for cursor click within the display
 				panel.setPersonClickHandler(pid -> {

@@ -70,6 +70,7 @@ package hre.gui;
  *    		  2026-09-02 Pref name Option 1 changed to Primary name (N.Tolleshaug)
  * 			  2026-09-03 Update NLS (D Ferguson)
  * 			  2026-09-30 Fix for HRE Issue 34.18 Close add event (N.Tolleshaug)
+ * 			  2026-10-22 Add Assocs table +/-, Up, Down controls (D Ferguson)
  ********************************************************************************
  * NOTES for incomplete functionality:
  * NOTE07 needs code to handle adding/deleting media items
@@ -146,7 +147,6 @@ import hre.bila.HBWhereWhenHandler;
 import hre.gui.HGlobalCode.JTableCellTabbing;
 import hre.gui.HGlobalCode.focusPolicy;
 import hre.nls.HG0547Msgs;
-import hre.nls.HGlobalMsgs;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -205,6 +205,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
     boolean memoEdited = false; 		// Signals memo is edited
     boolean changedLocationNameStyle = false;   // Signals nane style changed
     boolean citationOrderChanged = false;
+    boolean associateOrderChanged = false;
     boolean partnerEvent = false;
     int selectedStyleIndex;
 
@@ -247,6 +248,8 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	Object objCiteDataToEdit[] = new Object[2]; // To hold data to pass to Citation editor
     Object objTempCiteData[] = new Object[2];   // To temporarily hold a row of data when moving rows around
     public Object[][] tableAssocsData;
+	Object objAssocDataToEdit[] = new Object[2]; // To hold data to pass to Assoc editor
+    Object objTempAssocData[] = new Object[2];   // To temporarily hold a row of data when moving rows around
     String[] tableAssocsHeader;
     String[] tableCiteHeader;
    	Object[][] roleData;	// Contains Role Name, Role Number, Role Seq.
@@ -640,6 +643,32 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		lbl_Assocs.setFont(lbl_Assocs.getFont().deriveFont(lbl_Assocs.getFont().getStyle() | Font.BOLD));
 		midLeftEvntPanel.add(lbl_Assocs, "cell 0 0");	//$NON-NLS-1$
 
+		JButton btn_AddAssoc = new JButton("+"); //$NON-NLS-1$
+		btn_AddAssoc.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
+		btn_AddAssoc.setMaximumSize(new Dimension(24, 24));
+		btn_AddAssoc.setEnabled(true);
+		midLeftEvntPanel.add(btn_AddAssoc, "cell 0 0, alignx center, aligny top, gapx 50"); //$NON-NLS-1$
+
+		JButton btn_DelAssoc = new JButton("-"); //$NON-NLS-1$
+		btn_DelAssoc.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
+		btn_DelAssoc.setMaximumSize(new Dimension(24, 24));
+		btn_DelAssoc.setEnabled(false);
+		midLeftEvntPanel.add(btn_DelAssoc, "cell 0 0, aligny top"); //$NON-NLS-1$
+
+		ImageIcon upAssoc = new ImageIcon(getClass().getResource("/hre/images/arrow_up16.png")); //$NON-NLS-1$
+		JButton btn_UpAssoc = new JButton(upAssoc);
+		btn_UpAssoc.setVerticalAlignment(SwingConstants.TOP);
+		btn_UpAssoc.setMaximumSize(new Dimension(20, 20));
+		btn_UpAssoc.setEnabled(false);
+		midLeftEvntPanel.add(btn_UpAssoc, "cell 0 0, aligny top, gapx 10"); //$NON-NLS-1$
+
+		ImageIcon downAssoc = new ImageIcon(getClass().getResource("/hre/images/arrow_down16.png")); //$NON-NLS-1$
+		JButton btn_DownAssoc = new JButton(downAssoc);
+		btn_DownAssoc.setVerticalAlignment(SwingConstants.TOP);
+		btn_DownAssoc.setMaximumSize(new Dimension(20, 20));
+		btn_DownAssoc.setEnabled(false);
+		midLeftEvntPanel.add(btn_DownAssoc, "cell 0 0, aligny top"); //$NON-NLS-1$
+
 		// Create scrollpane and table for the Assoc/Role data
 		assocModel = new DefaultTableModel (tableAssocsData, tableAssocsHeader);
 		tableAssocs = new JTable(assocModel) {
@@ -802,33 +831,33 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		lbl_Citation.setFont(lbl_Citation.getFont().deriveFont(lbl_Citation.getFont().getStyle() | Font.BOLD));
 		botmRightEvntPanel.add(lbl_Citation, "cell 0 0, align left");	//$NON-NLS-1$
 
-		JButton btn_Add = new JButton("+"); //$NON-NLS-1$
-		btn_Add.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
-		btn_Add.setMaximumSize(new Dimension(24, 24));
-		btn_Add.setEnabled(true);
-		botmRightEvntPanel.add(btn_Add, "cell 1 0, alignx center, aligny top"); //$NON-NLS-1$
+		JButton btn_AddCite = new JButton("+"); //$NON-NLS-1$
+		btn_AddCite.setFont(new Font("Arial", Font.BOLD, 12)); //$NON-NLS-1$
+		btn_AddCite.setMaximumSize(new Dimension(24, 24));
+		btn_AddCite.setEnabled(true);
+		botmRightEvntPanel.add(btn_AddCite, "cell 1 0, alignx center, aligny top"); //$NON-NLS-1$
 
-		JButton btn_Del = new JButton("-"); //$NON-NLS-1$
-		btn_Del.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
-		btn_Del.setMaximumSize(new Dimension(24, 24));
-		btn_Del.setEnabled(false);
-		botmRightEvntPanel.add(btn_Del, "cell 1 0, aligny top"); //$NON-NLS-1$
+		JButton btn_DelCite = new JButton("-"); //$NON-NLS-1$
+		btn_DelCite.setFont(new Font("Arial", Font.BOLD, 12));	//$NON-NLS-1$
+		btn_DelCite.setMaximumSize(new Dimension(24, 24));
+		btn_DelCite.setEnabled(false);
+		botmRightEvntPanel.add(btn_DelCite, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		ImageIcon upArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_up16.png")); //$NON-NLS-1$
-		JButton btn_Up = new JButton(upArrow);
-		btn_Up.setVerticalAlignment(SwingConstants.TOP);
-		btn_Up.setToolTipText(HG0547Msgs.Text_13);	// Moves Citation up the list
-		btn_Up.setMaximumSize(new Dimension(20, 20));
-		btn_Up.setEnabled(false);
-		botmRightEvntPanel.add(btn_Up, "cell 1 0, aligny top, gapx 10"); //$NON-NLS-1$
+		JButton btn_UpCite = new JButton(upArrow);
+		btn_UpCite.setVerticalAlignment(SwingConstants.TOP);
+		btn_UpCite.setToolTipText(HG0547Msgs.Text_13);	// Moves Citation up the list
+		btn_UpCite.setMaximumSize(new Dimension(20, 20));
+		btn_UpCite.setEnabled(false);
+		botmRightEvntPanel.add(btn_UpCite, "cell 1 0, aligny top, gapx 10"); //$NON-NLS-1$
 
 		ImageIcon downArrow = new ImageIcon(getClass().getResource("/hre/images/arrow_down16.png")); //$NON-NLS-1$
-		JButton btn_Down = new JButton(downArrow);
-		btn_Down.setVerticalAlignment(SwingConstants.TOP);
-		btn_Down.setToolTipText(HG0547Msgs.Text_14);	// Moves Citation down the list
-		btn_Down.setMaximumSize(new Dimension(20, 20));
-		btn_Down.setEnabled(false);
-		botmRightEvntPanel.add(btn_Down, "cell 1 0, aligny top"); //$NON-NLS-1$
+		JButton btn_DownCite = new JButton(downArrow);
+		btn_DownCite.setVerticalAlignment(SwingConstants.TOP);
+		btn_DownCite.setToolTipText(HG0547Msgs.Text_14);	// Moves Citation down the list
+		btn_DownCite.setMaximumSize(new Dimension(20, 20));
+		btn_DownCite.setEnabled(false);
+		botmRightEvntPanel.add(btn_DownCite, "cell 1 0, aligny top"); //$NON-NLS-1$
 
 		JLabel lbl_Surety = new JLabel(HG0547Msgs.Text_15);	// Surety
 		botmRightEvntPanel.add(lbl_Surety, "cell 2 0");	//$NON-NLS-1$
@@ -1264,6 +1293,12 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	    tableAssocs.addMouseListener(new MouseAdapter() {
 			@Override
             public void mousePressed(MouseEvent me) {
+	           	if (me.getClickCount() == 1 && tableAssocs.getSelectedRow() != -1) {
+		           	// SINGLE-CLICK - turn on table controls
+		        		btn_DelAssoc.setEnabled(true);
+		        		btn_UpAssoc.setEnabled(true);
+		        		btn_DownAssoc.setEnabled(true);
+		           	}
                 if (me.getButton() == MouseEvent.BUTTON3) {
                 // RIGHT-CLICK
                 	rowClicked = tableAssocs.rowAtPoint(me.getPoint());
@@ -1272,8 +1307,73 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 					else
 						popupMenuAssoc.show(me.getComponent(), me.getX(), me.getY());
                 }
+
             }
         });
+
+	// Listener for Add Associate button
+		btn_AddAssoc.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// Fire the popMenuAdd entry
+				popMenuAdd.doClick();
+				btn_Save.setEnabled(true);
+			}
+		});
+
+	// Listener for Delete Associate button
+		btn_DelAssoc.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+           		rowClicked = tableAssocs.getSelectedRow();
+				// Fire the popMenuDel entry
+				popMenuDel.doClick();
+				btn_Save.setEnabled(true);
+			}
+		});
+
+	// Listener for move Associate up button
+		btn_UpAssoc.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				int selectedRow = tableAssocs.getSelectedRow();
+				// only allow move up if not at top of table
+				if (selectedRow >= 1) {
+				// Switch rows in assocModel
+					assocModel.moveRow(selectedRow, selectedRow, selectedRow-1);
+				// Switch rows in underlying tableAssocsData
+					objTempAssocData = tableAssocsData[selectedRow-1];
+					tableAssocsData[selectedRow-1] = tableAssocsData[selectedRow];
+					tableAssocsData[selectedRow] = objTempAssocData;
+				//  Reset visible selected row
+				    tableAssocs.setRowSelectionInterval(selectedRow-1, selectedRow-1);
+				    btn_Save.setEnabled(true);
+					associateOrderChanged = true;
+				}
+			}
+		});
+
+	// Listener for move Associate down button
+		btn_DownAssoc.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				int tableSize = tableAssocs.getRowCount();
+				int selectedRow = tableAssocs.getSelectedRow();
+				// only allow move down if not at end of table
+				if (selectedRow < tableSize-1) {
+				// Switch rows in assocModel
+					assocModel.moveRow(selectedRow, selectedRow, selectedRow+1);
+				// Switch rows in underlying tableAssocsData
+					objTempAssocData = tableAssocsData[selectedRow];
+					tableAssocsData[selectedRow] = tableAssocsData[selectedRow+1];
+					tableAssocsData[selectedRow+1] = objTempAssocData;
+				//  Reset visible selected row
+					tableAssocs.setRowSelectionInterval(selectedRow+1, selectedRow+1);
+				    btn_Save.setEnabled(true);
+					associateOrderChanged = true;
+				}
+			}
+		});
 
 	// Listener for Change Event Type button
 		btn_EventType.addActionListener(new ActionListener() {
@@ -1312,9 +1412,9 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 	        public void mousePressed(MouseEvent me) {
 	           	if (me.getClickCount() == 1 && tableCite.getSelectedRow() != -1) {
 	           	// SINGLE-CLICK - turn on table controls
-	        		btn_Del.setEnabled(true);
-	        		btn_Up.setEnabled(true);
-	        		btn_Down.setEnabled(true);
+	        		btn_DelCite.setEnabled(true);
+	        		btn_UpCite.setEnabled(true);
+	        		btn_DownCite.setEnabled(true);
 	           	}
         		// DOUBLE_CLICK - get Object to pass to  Citation Editor and do so
 	           	if (me.getClickCount() == 2 && tableCite.getSelectedRow() != -1) {
@@ -1333,7 +1433,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	// Listener for Add Citation button
-		btn_Add.addActionListener(new ActionListener() {
+		btn_AddCite.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				pointCitationSourceHandler.setCitedTableData(citeOwnerType, eventTablePID);
@@ -1349,7 +1449,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	// Listener for Delete Citation button
-		btn_Del.addActionListener(new ActionListener() {
+		btn_DelCite.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
            		int atRow = tableCite.getSelectedRow();
@@ -1367,7 +1467,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	// Listener for move Citation up button
-		btn_Up.addActionListener(new ActionListener() {
+		btn_UpCite.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				int selectedRow = tableCite.getSelectedRow();
@@ -1388,7 +1488,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 		});
 
 	// Listener for move Citation down button
-		btn_Down.addActionListener(new ActionListener() {
+		btn_DownCite.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				int tableSize = tableCite.getRowCount();
@@ -1543,7 +1643,7 @@ public class HG0547EditEvent extends HG0450SuperDialog {
 						dispose();
 
 					} else {}	// NO option - do nothing
-					
+
 				} else {	// Close, with Save not enabled
 					if (HGlobal.writeLogs)
 						HB0711Logging.logWrite("Action: exiting HG0547EditEvent (no updates done)"); //$NON-NLS-1$

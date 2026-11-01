@@ -42,6 +42,7 @@ package hre.gui;
  * v0.03.0031 2024-12-02 Replace JoptionPane 'null' locations with 'contents' (D Ferguson)
  * v0.04.0032 2026-01-06 Log catch block and DEBUG msgs (D Ferguson)
  * v0.05.0034 2026-08-10 Apply improved sorter process to al placenames (D Ferguson)
+ * 			  2026-10-02 line 632 - getLocationTablePID(selectedRowInTable) (N. Tolleshaug)
  ****************************************************************************************
  * NOTES for incomplete functionality
  * NOTE03 No code for importing saved filters
@@ -625,10 +626,10 @@ public class HG0507LocationSelect extends HG0451SuperIntFrame  {
 								viewRow = table_Entity.getSelectedRow();
 								selectedRowInTable = table_Entity.convertRowIndexToModel(viewRow);
 								if (selectedRowInTable < 0)
-								 {
 									return;				//exit if listener call was caused by emptying table_User
-								}
-								locationTablePID = pointWhereWhenHandler.getLocationTablePID(selectedRowInTable + 1);
+								
+								//locationTablePID = pointWhereWhenHandler.getLocationTablePID(selectedRowInTable + 1);
+								locationTablePID = pointWhereWhenHandler.getLocationTablePID(selectedRowInTable);
 								locationVPindex = pointViewPointHandler.findClosedVP("5303", pointOpenProject);	//$NON-NLS-1$
 								String locationVPident = pointViewPointHandler.getLocationScreenID(locationVPindex);
 

@@ -95,9 +95,10 @@ package hre.gui;
  * 			  2026-04-04 Remove Notepads from Person Menu (D Ferguson)
  * 			  2026-04-20 Fix 33.02 change P-symbol popup location (D Ferguson)
  * v0.05.0034 2026-07-14 Fix 33.18 Add table count data into Project Summary (D Ferguson)
+ * 			  2026-10-01 Add Relationship Chart to Reports emnu (D Ferguson)
+ * 			  2026-10-10 Activated report memy narrative report (N Tolleshaug)
  *********************************************************************************************
- * NLS: Text_37 no longer used
- **********************************
+
  */
 import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
@@ -320,7 +321,7 @@ public class HG0401HREMain extends JFrame {
 
 		// Create a bufferedimage from the current HRE logo
 		try {
-			logo = ImageIO.read(HG0401HREMain.class.getResourceAsStream("/hre/images/HRE-logo.png"));
+			logo = ImageIO.read(HG0401HREMain.class.getResourceAsStream("/hre/images/HRE-logo.png"));	//$NON-NLS-1$
 		} catch (IOException ioe) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0401M loading HRE logo " + ioe.getMessage()); //$NON-NLS-1$
@@ -647,9 +648,12 @@ public class HG0401HREMain extends JFrame {
 			JMenuItem menuAncDes = new JMenuItem(HG0401Msgs.Text_126);
 			menuAncDes.setEnabled(false);			//set disabled until a project opens
 			menuReports.add(menuAncDes);
-			JMenuItem menuRepList = new JMenuItem(HG0401Msgs.Text_73);
-			menuRepList.setEnabled(false);			//set disabled until a project opens
-			menuReports.add(menuRepList);
+			JMenuItem menuRepNarr = new JMenuItem(HG0401Msgs.Text_73);		// Individual Narrative
+			menuRepNarr.setEnabled(false);			//set disabled until a project opens
+			menuReports.add(menuRepNarr);
+			JMenuItem menuRepRel = new JMenuItem(HG0401Msgs.Text_37);		// Relationship Chart
+			menuRepRel.setEnabled(false);			//set disabled until a project opens
+			menuReports.add(menuRepRel);
 			JMenuItem menuRepLog = new JMenuItem(HG0401Msgs.Text_74);
 			menuReports.add(menuRepLog);
 
@@ -886,6 +890,8 @@ public class HG0401HREMain extends JFrame {
 						menuManLocStyle.setEnabled(false);
 					// Report items
 						menuAncDes.setEnabled(false);
+						menuRepNarr.setEnabled(false);
+						menuRepRel.setEnabled(false);
 						}
 			}
 		});
@@ -1027,8 +1033,9 @@ public class HG0401HREMain extends JFrame {
 			menuManLocStyle.setEnabled(true);
 			// Report menu items
 			menuReports.setVisible(true);
-			//menuRepList.setEnabled(true);
 			menuAncDes.setEnabled(true);
+			menuRepRel.setEnabled(true);
+			menuRepNarr.setEnabled(true);
 			// Other menus
 			menuResearch.setVisible(true);
 			menuET.setVisible(true);
@@ -1630,14 +1637,55 @@ public class HG0401HREMain extends JFrame {
 				else xyReport = menuReports.getLocationOnScreen();
 				ancdesScreen.setLocation(xyReport.x, xyReport.y + 50);
 				ancdesScreen.setVisible(true);
-				}
-				catch (HBException mpe) {
+			} catch (HBException mpe) {
 					if (HGlobal.writeLogs) {
 						HB0711Logging.logWrite("ERROR: in HG0401M activating AncDesc Report " + mpe.getMessage()); //$NON-NLS-1$
 						HB0711Logging.printStackTraceToFile(mpe);
 					}
 				}
 			 }
+		});
+
+		// Reports -> Relationship Chart
+		menuRepRel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg) {
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
+				HG0667RelationChart relScreen;
+				try {
+					relScreen = new HG0667RelationChart(pointOpenProject);
+					relScreen.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyReport;
+					if (longMenu) xyReport = menuWhWh.getLocationOnScreen();
+					else xyReport = menuReports.getLocationOnScreen();
+					relScreen.setLocation(xyReport.x, xyReport.y + 50);
+					relScreen.setVisible(true);
+				} catch (HBException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+
+		// Reports -> Individual Narrative Report
+		menuRepNarr.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg) {
+				HBProjectOpenData pointOpenProject = getSelectedOpenProject();
+				HG0665PersonNarrativeReport narrativeReport;
+				try {
+					narrativeReport = new HG0665PersonNarrativeReport(pointOpenProject);
+					narrativeReport.setModalityType(ModalityType.APPLICATION_MODAL);
+					Point xyReport;
+					if (longMenu) xyReport = menuWhWh.getLocationOnScreen();
+					else xyReport = menuReports.getLocationOnScreen();
+					narrativeReport.setLocation(xyReport.x, xyReport.y + 50);
+					narrativeReport.setVisible(true);
+				} catch (HBException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		});
 
 		// Reports -> Logging

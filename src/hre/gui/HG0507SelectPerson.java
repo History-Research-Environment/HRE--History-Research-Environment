@@ -35,6 +35,9 @@
  *   		  2026-09-02 Pref name Option 1 changed to Primary name (N.Tolleshaug)
  * 			  2026-09-03 Update NLS (D Ferguson)
  * 			  2026-09-20 Updateissue 34.07 select and update P2 partner (N. Tolleshaug)
+ * 			  2026-10-03 Implemented interface TransferSelectedPerson (N. Tolleshaug)
+ * 			  2026-10-04 Updated SelectPerson handling of set focusperson (N. Tolleshaug)
+ * 			  2026-10-04 Add connectivity to HG0667RelationChart (D Ferguson)
 *************************************************************************************
  * Notes for incomplete code still requiring attention
  * NOTE03 need to recognise the current setting of the person name style (fails somehow)
@@ -117,7 +120,6 @@ import net.miginfocom.swing.MigLayout;
  * @version v0.05.0034
  * @since 2024-03-10
  */
-
 public class HG0507SelectPerson extends HG0450SuperDialog {
 	private static final long serialVersionUID = 001L;
 	long null_RPID  = 1999999999999999L;
@@ -126,6 +128,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 // Controls the added memo panel
 	public boolean additionalPanel = true; // Turned off in HG0566EditSource
 
+	public TransferSelectedPerson pointSelectInterface;  // Pointer to interface to return selected personPID
 	HG0507SelectPerson thisSelectPerson = this;
 	public HG0547EditEvent pointEditEvent;
     public HBPersonHandler pointPersonHandler;
@@ -133,6 +136,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	HBProjectOpenData pointOpenProject;
 	HG0507SelectPerson pointSelectPerson = this;
 	public HG0507SelectPartner pointSelectPartner; // Used to point back to select partner
+	public HG0667RelationChart pointRelationChart; // Used to point back to relation chart
 	public HBCitationSourceHandler pointCitationSourceHandler;
 	HG0507SelectPerson personFrame = this;
 
@@ -337,7 +341,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 			}};
 		tablePersons.setMaximumSize(new Dimension(32767, 32767));
 		tablePersons.setFillsViewportHeight(true);
-		// Setup tabbing within table against all rows but only column 1-3
+	// Setup tabbing within table against all rows but only column 1-3
 		if (tablePersons.getRowCount() > 0)
 					JTableCellTabbing.setTabMapping(tablePersons, 0, tablePersons.getRowCount(), 1, 3);
 		personPanel.add(scrollTable, "cell 0 0"); //$NON-NLS-1$
@@ -393,7 +397,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	    memoText.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
 	    memoText.setBackground(UIManager.getColor("Table.background"));	//$NON-NLS-1$	// match table background
 	    memoText.setBorder(new JTable().getBorder());		// match Table border
-		// Setup scrollpane with textarea
+	// Setup scrollpane with textarea
 		JScrollPane memoTextScroll = new JScrollPane(memoText);
 		memoTextScroll.setMinimumSize(new Dimension(570, 100));
 		memoTextScroll.getViewport().setOpaque(false);
@@ -442,7 +446,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		JLabel lbl_Surety = new JLabel(HG05070Msgs.Text_138);	// Surety
 		citePanel.add(lbl_Surety, "cell 2 0");		//$NON-NLS-1$
 
-		// Create scrollpane and table for the Citations; HG0507SelectParent/Partner will load the citation data
+	// Create scrollpane and table for the Citations; HG0507SelectParent/Partner will load the citation data
 		citeModel = new DefaultTableModel(objCiteData, tableCiteHeader);
 		JTable tableCite = new JTable(citeModel) {
 			private static final long serialVersionUID = 1L;
@@ -499,7 +503,7 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 		if (addRelation)
 			control2Panel.add(btn_SaveEvent, "cell 0 0, alignx right, gapx 10, tag ok"); //$NON-NLS-1$
 		btn_Save = new JButton(HG05070Msgs.Text_140);		// Save
-			control2Panel.add(btn_Save, "cell 0 0, alignx right, gapx 10, tag ok");	//$NON-NLS-1$
+		control2Panel.add(btn_Save, "cell 0 0, alignx right, gapx 10, tag ok");	//$NON-NLS-1$
 		JButton btn_Cancel2 = new JButton(HG05070Msgs.Text_141);	// Cancel
 		btn_Cancel2.setEnabled(true);
 		control2Panel.add(btn_Cancel2, "cell 0 0, alignx right, gapx 10, tag cancel"); //$NON-NLS-1$
@@ -879,29 +883,29 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 					setTitle(addTitle);
 					pack();
 				} else {
-
-				// If only used to collec the selected peron PID
+				// If only used to collect the selected peron PID
 					if (tablePersons.getSelectedRow() == -1) return;
 				// Otherwise, find personPID clicked
 					clickedRow = tablePersons.getSelectedRow();
 					selectedRowInTable = tablePersons.convertRowIndexToModel(clickedRow);
 					personPID = pointPersonHandler.getPersonTablePID(selectedRowInTable);
-				
-				// return selected partner for partner table update
-					if (pointSelectPartner != null)
-						pointSelectPartner.updateSecondaryPartner(personPID);
-					
-					dispose();
-				// Temp solution to avoid setting of focusPerson
-					if (!addRelation)
-						try {
-							pointOpenProject.setFocusPersonPID(personPID);
-						} catch (HBException hbe) {
-							if (HGlobal.writeLogs) {
-								HB0711Logging.logWrite("ERROR: in HG0507SelPerson select: " + hbe.getMessage()); //$NON-NLS-1$
-								HB0711Logging.printStackTraceToFile(hbe);
+
+				// Return selected person through inteface TransferSelectedPerson
+					if (pointSelectInterface != null) {
+						pointSelectInterface.updatePersonPointer(personPID);
+						dispose();
+					} else
+					// Setting of focusPerson
+						if (addRelation)
+							try {
+								pointOpenProject.setFocusPersonPID(personPID);
+								dispose();
+							} catch (HBException hbe) {
+								if (HGlobal.writeLogs) {
+									HB0711Logging.logWrite("ERROR: in HG0507SelPerson select: " + hbe.getMessage()); //$NON-NLS-1$
+									HB0711Logging.printStackTraceToFile(hbe);
+								}
 							}
-						}
 				// Only used to select HG0566-Source element names
 					pointCitationSourceHandler.updatePersonName(personPID);
 				}
@@ -1177,5 +1181,6 @@ public class HG0507SelectPerson extends HG0450SuperDialog {
 	    // Set scroll bar to top of filter results
 	    scrollTable.getViewport().setViewPosition(new Point(0,0));
 	}	// End setTableFilter
+
 
 }  // End of HG0507SelectPerson

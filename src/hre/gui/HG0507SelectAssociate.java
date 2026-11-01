@@ -24,6 +24,7 @@ package hre.gui;
  * 			  2026-08-22 Make 1st Primary role the default in role list (D Ferguson)
  * 			  2026-08-28 Implemented Preferred name for associate (N. Tolleshaug)
  * 			  2026-09-03 Update NLS (D Ferguson)
+ * 			  2026-10-04 Updated SelectPerson handling of set focusperson (N. Tolleshaug)
  **************************************************************************************/
 
 import java.awt.event.ActionEvent;
@@ -77,7 +78,7 @@ public class HG0507SelectAssociate extends HG0507SelectPerson {
  */
 	public HG0507SelectAssociate(HBPersonHandler pointPersonHandler, HBProjectOpenData pointOpenProject,
 									int eventNumber, int indexInAssocTable, boolean addAssoc) throws HBException {
-		super(pointPersonHandler, pointOpenProject, addAssoc);
+		super(pointPersonHandler, pointOpenProject, false);
 		this.addRelation = addAssoc;
 		ownerType = 3; // Set owner type associate for LOCAL
 		pointEventRoleManager = pointOpenProject.getEventRoleManager();

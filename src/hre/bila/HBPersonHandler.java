@@ -141,8 +141,10 @@ package hre.bila;
   *  		   2026-09-01 - New preparePersonNameTable(long selectPersonPID, boolean setPrimary) (N.Tolleshaug)
   *  		   2026-09-06 - NLS the (Primary) text (D Ferguson)
   * 		   2026-09-13 - Issue 34.04 - removed  fix -correct the list of children (N.Tolleshaug)
-  * 		   2026-09-20 - Updateissue 34.07 select and update P2 partner (N. Tolleshaug)
-  *********************************************************************************************
+  * 		   2026-09-20 - Update 34.07 select and update P2 partner (N. Tolleshaug)
+  *			   2026-10-03 - Update 34.20 Line 3534 modified addNamesToEvents() (N.Tolleshaug)
+  *			   2026-10-04 - Updated SelectPerson handling of set focusperson (N. Tolleshaug)
+  **************************************************************************************************
   * 	Interpretation of partnerRelationData
   *		Interpretation 	0 = partnerTablePID, 1 = partneType, 2 = priPartRole, 3 = secPartRole
   *					    4 = selectedPerson, 5 = partner name, 6 = sex# code of person,
@@ -1803,7 +1805,7 @@ public class HBPersonHandler extends HBBusinessLayer {
 	public HG0507SelectPerson activateSelectFocusPerson(HBProjectOpenData pointOpenProject) throws HBException {
 		HG0507SelectPerson pointSelectPerson = null;
 		try {
-			pointSelectPerson = new HG0507SelectPerson(this, pointOpenProject,false);
+			pointSelectPerson = new HG0507SelectPerson(this, pointOpenProject, true);
 			pointSelectPerson.additionalPanel = false;
 			return pointSelectPerson;
 		} catch (HBException hbe) {
@@ -3537,7 +3539,8 @@ class PersonSelectData {
 		String[] personNameStyle;
 		int index = 0;
 		ResultSet personNameSelected;
-		long nameHDatePID, sortHDatePID, eventNameHDatePID, personNamePID, nameStyleRPID;
+		//long nameHDatePID, sortHDatePID, eventNameHDatePID, personNamePID, nameStyleRPID;
+		long nameHDatePID, sortHDatePID, personNamePID, nameStyleRPID;
 		int nameType;
 		try {
 			selectString = setSelectSQL("*", personNameTable, "OWNER_RPID = " + selectPersonPID);
@@ -3549,7 +3552,6 @@ class PersonSelectData {
 					nameStyleRPID = personNameSelected.getLong("NAME_STYLE_RPID");
 
 					personNameStyle =  getNameStyleOutputCodes(nameStylesOutput, nameStyleRPID, "N", dataBaseIndex);
-					//events = new String[7];
 					personNamePID = personNameSelected.getLong("PID");
 					events = new Object[8];
 
@@ -3562,12 +3564,12 @@ class PersonSelectData {
 					events[0] = pointLibraryResultSet.getEventName(nameType,langCode, dataBaseIndex).trim();
 					events[1] = pointLibraryResultSet.exstractDate(nameHDatePID, dataBaseIndex).trim();
 					events[2] = " ---- ";
-					if (nameHDatePID == null_RPID) eventNameHDatePID = sortHDatePID;
-						else eventNameHDatePID = nameHDatePID;
+					//if (nameHDatePID == null_RPID) eventNameHDatePID = sortHDatePID;
+					//	else eventNameHDatePID = nameHDatePID;
 					events[3] = pointLibraryResultSet.selectPersonName(personNamePID, dataBaseIndex, personNameStyle).trim();
-					events[4] = "" + pointLibraryResultSet.calculateAge(eventNameHDatePID, selectPersonPID, dataBaseIndex);
+					events[4] = "" + pointLibraryResultSet.calculateAge(nameHDatePID, selectPersonPID, dataBaseIndex);
 					events[5] = "N";
-					events[6] = pointLibraryResultSet.exstractSortString(eventNameHDatePID, dataBaseIndex);
+					events[6] = pointLibraryResultSet.exstractSortString(sortHDatePID, dataBaseIndex);
 					events[7] = personNamePID;
 					index++;
 					eventList.add(events);

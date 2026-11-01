@@ -85,6 +85,7 @@ package hre.tmgjava;
 *			  2026-08-10 - Changed to assocTablePID to ownerTablePID (N. Tolleshaug)
 * 			  2026-08-18 - Added NAMEREC event best name import (N. Tolleshaug)
 * 			  2026-09-13 - Update to fix issue 34.07 import with only partner PER1
+* 			  2026-10-20 - removed NAMEREC System.out.println(" Witness vector: (N. Tolleshaug)
  * **************************************************************************************/
 
 import java.sql.ResultSet;
@@ -305,7 +306,8 @@ class TMGpass_Events  {
 					vectorSize = tmgEtable.getVectorSize(tableGrecno);
 					for (int i = 0; i < vectorSize; i++) {
 						namerec = tmgEtable.findVectorInt(tableGrecno, i, "NAMEREC");
-						if (namerec != 0) System.out.println(" Witness vector: " + i
+						if (TMGglobal.DEBUG)
+							if (namerec != 0) System.out.println(" Witness vector: " + i
 								
 								+ " Admin: " + adminGroup + "/"
 								+ " E-Type: " + etypeNumber + " - "

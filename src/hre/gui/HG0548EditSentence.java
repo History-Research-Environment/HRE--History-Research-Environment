@@ -28,6 +28,9 @@ package hre.gui;
  * 			  2026-08-05 Handling LOCAL sentences with ownerTypes (N. Tolleshaug)
  * 			  2026-09-03 Remove NOSENTENCE default sentence field; redo NLS (D Ferguson)
  * 			  2026-09-16 Fix problems handling male+female sentences (D Ferguson)
+ * 			  2026-10-10 Modiifcation to handle narrative report (N. Tolleshaug)
+ * 			  2026-10-12 Added names events correction (N. Tolleshaug)
+ * 			  2026-10-19 Allow preview area to be copied (D Ferguson)
  ************************************************************************************/
 
 import java.awt.Component;
@@ -92,7 +95,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 	int ownerType = 0; // owner type:  1 - name, 2 - event, 3 - associate, 4 - partner
 
 	private JPanel contents;
-	long eventTablePID, ownerTablePID, nameTablePID, roleSentencePID = null_RPID, sentenceTablePID;
+	long personTablePID, eventTablePID, ownerTablePID, nameTablePID, roleSentencePID = null_RPID, sentenceTablePID;
 
 	JTextArea sentenceTextArea, previewTextArea;
 	JLabel lbl_Preview;
@@ -166,7 +169,7 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 
 /**
- * HG0548EditSentence constructor for edit event
+ * HG0548EditSentence constructor for edit associate
  * @throws HBException
  */
 		public HG0548EditSentence(HBProjectOpenData pointOpenProject, long ownerTablePID, long eventTablePID,
@@ -298,7 +301,6 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 
 		previewTextArea = new JTextArea(HG0548Msgs.Text_6);
 		previewTextArea.setEditable(false);
-		previewTextArea.setFocusable(false);
 		previewTextArea.setWrapStyleWord(true);
 		previewTextArea.setLineWrap(true);
 		previewTextArea.setFont(new Font(font.getName(), font.getStyle(), font.getSize()));  // Set text size/font to current JTattoo setting
@@ -338,8 +340,9 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			}
 
 		// Set up sentence processing for events or names
-			if (nameSentence) pointReportHandler.createReportNameData(nameTablePID);
-			else pointReportHandler.createReportEventData(eventTablePID, ownerTablePID, ownerType);
+			personTablePID  = pointOpenProject.getSelectedPersonPID();
+			if (nameSentence) pointReportHandler.createReportNameData(personTablePID, nameTablePID);
+			else pointReportHandler.createReportEventData(personTablePID, eventTablePID, ownerTablePID, ownerType);
 
 		// Load initial Role setting's sentence PID
 			currentComboIndex = comboRoleNames.getSelectedIndex();
@@ -356,8 +359,10 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 			sentenceTextArea.setText("");	//$NON-NLS-1$
 			sentenceTextArea.append(convertedSentence);
 	    	previewTextArea.setText("");	//$NON-NLS-1$
-			previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
-			pointReportHandler.runTMGparcer(convertedSentence);
+			//previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+			previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
+			//pointReportHandler.runTMGparcer(convertedSentence);
+			pointReportHandler.runTMGparcer(eventRoleSentence);
 		} catch (HBException hbe) {
 			if (HGlobal.writeLogs) {
 				HB0711Logging.logWrite("ERROR: in HG0548 sentence initiate " + hbe.getMessage()); //$NON-NLS-1$
@@ -463,7 +468,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 						sentenceTextArea.setText("");	//$NON-NLS-1$
 						sentenceTextArea.append(convertedSentence);
 				    	previewTextArea.setText("");	//$NON-NLS-1$
-						previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+						//previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+						previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
 					// Restore docListner
 						sentenceTextArea.getDocument().addDocumentListener(sentenceEditListen);
 
@@ -568,7 +574,8 @@ public class HG0548EditSentence extends HG0450SuperDialog {
 					sentenceTextArea.setText("");	//$NON-NLS-1$
 					sentenceTextArea.append(convertedSentence);
 			    	previewTextArea.setText("");	//$NON-NLS-1$
-					previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+					//previewTextArea.append(pointReportHandler.sentenceParser(convertedSentence));
+					previewTextArea.append(pointReportHandler.sentenceParser(eventRoleSentence));
 				// Restore docListner
 					sentenceTextArea.getDocument().addDocumentListener(sentenceEditListen);
 				} catch (HBException hbe) {
